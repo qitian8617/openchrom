@@ -11,15 +11,7 @@ package net.openchrom.xxd.processor.supplier.baijiu.core;
 
 public final class Gb2757Judge {
 
-	public static final double GRAIN_LIMIT_100VOL_GL = 0.6d;
-	public static final double OTHER_LIMIT_100VOL_GL = 2.0d;
-
 	private Gb2757Judge() {
-	}
-
-	public static double limit100Vol(BaijiuRawMaterial rawMaterial) {
-
-		return rawMaterial == BaijiuRawMaterial.OTHER ? OTHER_LIMIT_100VOL_GL : GRAIN_LIMIT_100VOL_GL;
 	}
 
 	public static double convertTo100Vol(double methanolGramsPerLiter, double abvPercent) {
@@ -30,9 +22,12 @@ public final class Gb2757Judge {
 		return methanolGramsPerLiter * 100.0d / abvPercent;
 	}
 
-	public static Gb2757Result judge(Double methanolGramsPerLiter, double abvPercent, BaijiuRawMaterial rawMaterial) {
+	public static Gb2757Result judge(Double methanolGramsPerLiter, double abvPercent, BaijiuRawMaterial rawMaterial, BaijiuMethodSettings settings) {
 
-		double limit = limit100Vol(rawMaterial);
+		double limit = settings == null ? Double.NaN : settings.gb2757Limit100VolGL(rawMaterial);
+		if(!(limit > 0.0d) || Double.isNaN(limit)) {
+			return new Gb2757Result(false, false, methanolGramsPerLiter != null, methanolGramsPerLiter == null ? 0.0d : methanolGramsPerLiter, Double.NaN, Double.NaN, "\u672a\u914d\u7f6e GB 2757 \u7532\u9187\u9650\u91cf\uff0c\u8bf7\u5728\u65b9\u6cd5\u6216\u504f\u597d\u8bbe\u7f6e\u4e2d\u586b\u5199\u3002");
+		}
 		if(abvPercent <= 0.0d) {
 			return new Gb2757Result(false, false, methanolGramsPerLiter != null, methanolGramsPerLiter == null ? 0.0d : methanolGramsPerLiter, Double.NaN, limit, "\u7f3a\u5c11\u9152\u7cbe\u5ea6\uff0c\u65e0\u6cd5\u6309 GB 2757 \u6298\u7b97\u5224\u5b9a\u3002");
 		}

@@ -12,7 +12,6 @@ package net.openchrom.xxd.processor.supplier.baijiu.core;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import org.eclipse.chemclipse.model.core.IChromatogram;
 import org.eclipse.chemclipse.model.core.IPeak;
@@ -41,15 +40,15 @@ public final class BaijiuAnalysisEngine {
 		}
 		List<? extends IPeak> peaks = chromatogram.getPeaks();
 		if(peaks == null || peaks.isEmpty()) {
-			return "\u5f53\u524d\u8c31\u56fe\u6ca1\u6709\u5cf0\u3002\u8bf7\u5148\u505a\u5cf0\u68c0\u6d4b\u548c\u79ef\u5206\u3002";
+			return "\u5f53\u524d\u8c31\u56fe\u6ca1\u6709\u5cf0\u3002\u8bf7\u5148\u70b9\u300c\u63a8\u8350\u79ef\u5206\u300d\uff0c\u6216\u624b\u52a8\u505a\u5cf0\u68c0\u6d4b\u548c\u79ef\u5206\u3002";
 		}
-		Map<String, MatchedPeak> matched = PeakMatcher.match(peaks, settings);
-		MatchedPeak istd = matched.get(BaijiuCatalog.ISTD_ID);
+		PeakMatchResult matchResult = PeakMatcher.matchDetailed(peaks, settings);
+		MatchedPeak istd = matchResult.get(BaijiuCatalog.ISTD_ID);
 		if(istd == null) {
-			return "\u672a\u5339\u914d\u5230\u5185\u6807\u5cf0\uff08\u4e59\u9178\u6b63\u4e01\u916f\uff09\u3002\u8bf7\u5148\u586b\u672c\u673a\u4fdd\u7559\u65f6\u95f4\u6216\u52a0\u5bbd RT \u7a97\u53e3\u3002";
+			return "\u672a\u5339\u914d\u5230\u5185\u6807\u5cf0\uff08" + settings.getIstdName() + "\uff09\u3002\u8bf7\u5148\u586b\u672c\u673a\u4fdd\u7559\u65f6\u95f4\u3001\u52a0\u5bbd RT \u7a97\u53e3\uff0c\u6216\u5728\u5cf0\u5339\u914d\u9875\u624b\u52a8\u6307\u5b9a\u3002";
 		}
 		if(!PeakMatcher.hasIntegratedArea(istd.getPeak())) {
-			return "\u5185\u6807\u5cf0\u9762\u79ef\u4e3a 0\uff0c\u8bf7\u5148\u79ef\u5206\u3002";
+			return "\u5185\u6807\u5cf0\u9762\u79ef\u4e3a 0\uff0c\u8bf7\u5148\u70b9\u300c\u63a8\u8350\u79ef\u5206\u300d\u6216\u624b\u52a8\u79ef\u5206\u3002";
 		}
 		double cIstd = settings.injectedIstdGramsPerLiter();
 		if(!(cIstd > 0.0d)) {
@@ -62,14 +61,14 @@ public final class BaijiuAnalysisEngine {
 			if(compound.isInternalStandard()) {
 				continue;
 			}
-			MatchedPeak match = matched.get(compound.getId());
+			MatchedPeak match = matchResult.get(compound.getId());
 			if(match == null) {
-				missing.add(compound.getName());
+				missing.add(settings.displayName(compound));
 				continue;
 			}
 			settings.getInstrumentRtMin().put(compound.getId(), match.getRetentionTimeMin());
 			if(!PeakMatcher.hasIntegratedArea(match.getPeak())) {
-				missing.add(compound.getName() + "(\u672a\u79ef\u5206)");
+				missing.add(settings.displayName(compound) + "(\u672a\u79ef\u5206)");
 				continue;
 			}
 			double mix = settings.mixGramsPerLiter(compound);
@@ -90,6 +89,9 @@ public final class BaijiuAnalysisEngine {
 		if(!missing.isEmpty()) {
 			message.append(" \u672a\u6821\u6b63\uff1a").append(String.join("\u3001", missing)).append("\u3002");
 		}
+		if(!matchResult.getUnmatched().isEmpty()) {
+			message.append(" \u5c1a\u6709 ").append(matchResult.getUnmatched().size()).append(" \u4e2a\u672a\u5339\u914d\u5cf0\uff0c\u53ef\u5728\u300c\u5cf0\u5339\u914d\u300d\u9875\u624b\u52a8\u6307\u5b9a\u3002");
+		}
 		return message.toString();
 	}
 
@@ -100,25 +102,31 @@ public final class BaijiuAnalysisEngine {
 		}
 		List<? extends IPeak> peaks = chromatogram.getPeaks();
 		if(peaks == null || peaks.isEmpty()) {
-			return BaijiuAnalysisResult.failure("\u5f53\u524d\u8c31\u56fe\u6ca1\u6709\u5cf0\u3002\u8bf7\u5148\u505a\u5cf0\u68c0\u6d4b\u548c\u79ef\u5206\u3002");
+			return BaijiuAnalysisResult.failure("\u5f53\u524d\u8c31\u56fe\u6ca1\u6709\u5cf0\u3002\u8bf7\u5148\u70b9\u300c\u63a8\u8350\u79ef\u5206\u300d\uff0c\u6216\u624b\u52a8\u505a\u5cf0\u68c0\u6d4b\u548c\u79ef\u5206\u3002");
 		}
 		double cIstd = settings.injectedIstdGramsPerLiter();
 		if(!(cIstd > 0.0d)) {
 			return BaijiuAnalysisResult.failure("\u5185\u6807\u8fdb\u6837\u6d53\u5ea6\u65e0\u6548\uff0c\u8bf7\u68c0\u67e5\u8d2e\u5907\u6db2\u6d53\u5ea6\u548c\u52a0\u5165\u4f53\u79ef\u3002");
 		}
-		Map<String, MatchedPeak> matched = PeakMatcher.match(peaks, settings);
-		MatchedPeak istd = matched.get(BaijiuCatalog.ISTD_ID);
+		if(sample != null && sample.hasBlockingErrors()) {
+			return BaijiuAnalysisResult.failure(String.join(" ", sample.validate()));
+		}
+		PeakMatchResult matchResult = PeakMatcher.matchDetailed(peaks, settings);
+		MatchedPeak istd = matchResult.get(BaijiuCatalog.ISTD_ID);
 		if(istd == null) {
-			return BaijiuAnalysisResult.failure("\u672a\u5339\u914d\u5230\u5185\u6807\u5cf0\uff08\u4e59\u9178\u6b63\u4e01\u916f\uff09\u3002");
+			return BaijiuAnalysisResult.failure("\u672a\u5339\u914d\u5230\u5185\u6807\u5cf0\uff08" + settings.getIstdName() + "\uff09\u3002\u53ef\u5728\u300c\u5cf0\u5339\u914d\u300d\u9875\u624b\u52a8\u6307\u5b9a\u3002");
 		}
 		if(!PeakMatcher.hasIntegratedArea(istd.getPeak())) {
 			return BaijiuAnalysisResult.failure("\u5185\u6807\u5cf0\u9762\u79ef\u4e3a 0\uff0c\u8bf7\u5148\u79ef\u5206\u3002");
 		}
 		List<String> warnings = new ArrayList<>();
+		if(sample != null) {
+			warnings.addAll(sample.validate());
+		}
 		List<BaijiuQuantRow> rows = new ArrayList<>();
 		Double methanol = null;
 		for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
-			MatchedPeak match = matched.get(compound.getId());
+			MatchedPeak match = matchResult.get(compound.getId());
 			double expected = settings.expectedRtMin(compound);
 			double mix = settings.mixGramsPerLiter(compound);
 			Double rf = settings.responseFactor(compound.getId());
@@ -139,7 +147,7 @@ public final class BaijiuAnalysisEngine {
 				remark = "\u672a\u79ef\u5206";
 			} else if(rf == null || rf <= 0.0d || rf.isNaN()) {
 				remark = "\u672a\u6821\u6b63";
-				warnings.add(compound.getName() + "\u5c1a\u672a\u6821\u6b63");
+				warnings.add(settings.displayName(compound) + "\u5c1a\u672a\u6821\u6b63");
 			} else {
 				double value = InternalStandardMath.concentrationGramsPerLiter(rf, cIstd, area, istd.getArea());
 				if(value >= 0.0d) {
@@ -154,8 +162,19 @@ public final class BaijiuAnalysisEngine {
 			}
 			rows.add(new BaijiuQuantRow(compound, peak, expected, rt, area, mix, rf, concentration, remark));
 		}
-		Gb2757Result gb2757 = Gb2757Judge.judge(methanol, sample.getAbvPercent(), sample.getRawMaterial());
-		return new BaijiuAnalysisResult(true, "\u5b9a\u91cf\u5b8c\u6210\u3002", rows, gb2757, chromatogram, cIstd, warnings);
+		Gb2757Result gb2757 = Gb2757Judge.judge(methanol, sample == null ? 0.0d : sample.getAbvPercent(), sample == null ? BaijiuRawMaterial.GRAIN : sample.getRawMaterial(), settings);
+		List<BaijiuQuantRow> flagged = new ArrayList<>();
+		for(BaijiuQuantRow row : rows) {
+			Boolean overLimit = null;
+			if(row.getCompound().isMethanol() && gb2757 != null && gb2757.isJudged() && gb2757.isMethanolDetected()) {
+				overLimit = !gb2757.isPassed();
+			}
+			flagged.add(row.withOverLimit(overLimit));
+		}
+		if(!matchResult.getUnmatched().isEmpty()) {
+			warnings.add("\u5c1a\u6709 " + matchResult.getUnmatched().size() + " \u4e2a\u672a\u5339\u914d\u5cf0");
+		}
+		return new BaijiuAnalysisResult(true, "\u5b9a\u91cf\u5b8c\u6210\u3002", flagged, matchResult.getUnmatched(), gb2757, chromatogram, cIstd, warnings);
 	}
 
 	public static void applyToChromatogram(IChromatogram chromatogram, BaijiuAnalysisResult result, BaijiuSampleInfo sample) {

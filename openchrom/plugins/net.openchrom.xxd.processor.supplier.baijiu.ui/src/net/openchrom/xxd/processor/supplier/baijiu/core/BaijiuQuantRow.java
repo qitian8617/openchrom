@@ -22,8 +22,14 @@ public final class BaijiuQuantRow {
 	private final Double responseFactor;
 	private final Double concentrationGL;
 	private final String remark;
+	private final Boolean overLimit;
 
 	public BaijiuQuantRow(BaijiuCompound compound, IPeak peak, double expectedRtMin, double matchedRtMin, double area, double mixGramsPerLiter, Double responseFactor, Double concentrationGL, String remark) {
+
+		this(compound, peak, expectedRtMin, matchedRtMin, area, mixGramsPerLiter, responseFactor, concentrationGL, remark, null);
+	}
+
+	public BaijiuQuantRow(BaijiuCompound compound, IPeak peak, double expectedRtMin, double matchedRtMin, double area, double mixGramsPerLiter, Double responseFactor, Double concentrationGL, String remark, Boolean overLimit) {
 
 		this.compound = compound;
 		this.peak = peak;
@@ -34,6 +40,12 @@ public final class BaijiuQuantRow {
 		this.responseFactor = responseFactor;
 		this.concentrationGL = concentrationGL;
 		this.remark = remark == null ? "" : remark;
+		this.overLimit = overLimit;
+	}
+
+	public BaijiuQuantRow withOverLimit(Boolean overLimit) {
+
+		return new BaijiuQuantRow(compound, peak, expectedRtMin, matchedRtMin, area, mixGramsPerLiter, responseFactor, concentrationGL, remark, overLimit);
 	}
 
 	public BaijiuCompound getCompound() {
@@ -79,5 +91,21 @@ public final class BaijiuQuantRow {
 	public String getRemark() {
 
 		return remark;
+	}
+
+	public Boolean getOverLimit() {
+
+		return overLimit;
+	}
+
+	public String getOverLimitLabel() {
+
+		if(compound != null && compound.isInternalStandard()) {
+			return "ISTD";
+		}
+		if(overLimit == null) {
+			return "\u2014";
+		}
+		return overLimit.booleanValue() ? "\u8d85\u9650" : "\u672a\u8d85\u9650";
 	}
 }

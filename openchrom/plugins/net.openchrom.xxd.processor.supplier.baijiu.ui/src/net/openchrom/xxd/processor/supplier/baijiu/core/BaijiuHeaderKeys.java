@@ -18,6 +18,7 @@ public final class BaijiuHeaderKeys {
 	public static final String ANALYST = "Baijiu Analyst";
 	public static final String DATE = "Baijiu Date";
 	public static final String RAW_MATERIAL = "Baijiu Raw Material";
+	public static final String BATCH = "Baijiu Batch";
 	public static final String METHANOL_100 = "Baijiu Methanol 100%vol g/L";
 	public static final String GB2757 = "Baijiu GB 2757";
 	public static final String METHOD_NOTE = "Baijiu Method Note";

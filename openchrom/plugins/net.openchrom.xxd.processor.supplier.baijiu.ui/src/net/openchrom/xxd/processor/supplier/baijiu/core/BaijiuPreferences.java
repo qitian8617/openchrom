@@ -16,16 +16,32 @@ import org.osgi.service.prefs.BackingStoreException;
 public final class BaijiuPreferences {
 
 	private static final String NODE = "net.openchrom.xxd.processor.supplier.baijiu.ui";
+	private static final String METHOD_NAME = "method.name";
+	private static final String COLUMN = "method.column";
+	private static final String OVEN = "method.oven";
+	private static final String SAMPLING = "method.sampling.hz";
+	private static final String RUNTIME = "method.runtime.min";
+	private static final String ISTD_NAME = "istd.name";
 	private static final String ISTD_STOCK = "istd.stock.gl";
 	private static final String SAMPLE_ML = "volume.sample.ml";
 	private static final String ISTD_ML = "volume.istd.ml";
 	private static final String WINDOW = "rt.window.min";
+	private static final String AROMA_TEMPLATE = "method.aroma";
+	private static final String GAS_CARRIER = "gas.carrier";
+	private static final String GAS_SPLIT = "gas.split";
+	private static final String GAS_INJECTOR = "gas.injector.c";
+	private static final String GAS_DETECTOR = "gas.detector.c";
+	private static final String GB_GRAIN = "gb2757.grain.limit";
+	private static final String GB_OTHER = "gb2757.other.limit";
 	private static final String RF = "rf.";
 	private static final String RT = "rt.";
 	private static final String MIX = "mix.";
 	private static final String WIN = "win.";
+	private static final String NAME = "name.";
+	private static final String ASSIGN = "assign.";
 	private static final String SAMPLE_NO = "sample.no";
 	private static final String LIQUOR_NAME = "sample.liquor";
+	private static final String BATCH = "sample.batch";
 	private static final String AROMA = "sample.aroma";
 	private static final String ABV = "sample.abv";
 	private static final String ANALYST = "sample.analyst";
@@ -36,14 +52,44 @@ public final class BaijiuPreferences {
 
 	public static BaijiuMethodSettings loadMethod() {
 
+		BaijiuMethodSettings settings = BaijiuMethodSettings.defaultNongxiangFid();
 		IEclipsePreferences prefs = prefs();
-		BaijiuMethodSettings settings = new BaijiuMethodSettings();
-		settings.setIstdStockGramsPerLiter(prefs.getDouble(ISTD_STOCK, BaijiuMethodSettings.DEFAULT_ISTD_STOCK_GL));
-		settings.setSampleVolumeMl(prefs.getDouble(SAMPLE_ML, BaijiuMethodSettings.DEFAULT_SAMPLE_ML));
-		settings.setIstdVolumeMl(prefs.getDouble(ISTD_ML, BaijiuMethodSettings.DEFAULT_ISTD_ML));
-		settings.setDefaultWindowMin(prefs.getDouble(WINDOW, BaijiuMethodSettings.DEFAULT_WINDOW_MIN));
+		overlayText(prefs, METHOD_NAME, settings::setMethodName);
+		overlayText(prefs, COLUMN, settings::setColumnSummary);
+		overlayText(prefs, OVEN, settings::setOvenProgram);
+		if(contains(prefs, SAMPLING)) {
+			settings.setSamplingRateHz(prefs.getDouble(SAMPLING, settings.getSamplingRateHz()));
+		}
+		if(contains(prefs, RUNTIME)) {
+			settings.setRunTimeMin(prefs.getDouble(RUNTIME, settings.getRunTimeMin()));
+		}
+		overlayText(prefs, ISTD_NAME, settings::setIstdName);
+		if(contains(prefs, ISTD_STOCK)) {
+			settings.setIstdStockGramsPerLiter(prefs.getDouble(ISTD_STOCK, settings.getIstdStockGramsPerLiter()));
+		}
+		if(contains(prefs, SAMPLE_ML)) {
+			settings.setSampleVolumeMl(prefs.getDouble(SAMPLE_ML, settings.getSampleVolumeMl()));
+		}
+		if(contains(prefs, ISTD_ML)) {
+			settings.setIstdVolumeMl(prefs.getDouble(ISTD_ML, settings.getIstdVolumeMl()));
+		}
+		if(contains(prefs, WINDOW)) {
+			settings.setDefaultWindowMin(prefs.getDouble(WINDOW, settings.getDefaultWindowMin()));
+		}
+		overlayText(prefs, AROMA_TEMPLATE, value -> settings.setAromaTemplate(BaijiuAromaType.fromId(value)));
+		overlayText(prefs, GAS_CARRIER, settings::setCarrierGas);
+		overlayText(prefs, GAS_SPLIT, settings::setSplitRatio);
+		overlayText(prefs, GAS_INJECTOR, settings::setInjectorTempC);
+		overlayText(prefs, GAS_DETECTOR, settings::setDetectorTempC);
+		if(contains(prefs, GB_GRAIN)) {
+			settings.setGb2757GrainLimit100VolGL(prefs.getDouble(GB_GRAIN, settings.getGb2757GrainLimit100VolGL()));
+		}
+		if(contains(prefs, GB_OTHER)) {
+			settings.setGb2757OtherLimit100VolGL(prefs.getDouble(GB_OTHER, settings.getGb2757OtherLimit100VolGL()));
+		}
 		for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
 			String id = compound.getId();
+			overlayText(prefs, NAME + id, value -> settings.getCompoundNames().put(id, value));
 			double rf = prefs.getDouble(RF + id, Double.NaN);
 			if(!Double.isNaN(rf) && rf > 0.0d) {
 				settings.getResponseFactors().put(id, rf);
@@ -60,7 +106,12 @@ public final class BaijiuPreferences {
 			if(!Double.isNaN(window) && window > 0.0d) {
 				settings.getWindowMin().put(id, window);
 			}
+			double assigned = prefs.getDouble(ASSIGN + id, Double.NaN);
+			if(!Double.isNaN(assigned) && assigned > 0.0d) {
+				settings.getManualAssignmentsRtMin().put(id, assigned);
+			}
 		}
+		settings.seedInstrumentRetentionTimes();
 		return settings;
 	}
 
@@ -70,16 +121,40 @@ public final class BaijiuPreferences {
 			return;
 		}
 		IEclipsePreferences prefs = prefs();
+		prefs.put(METHOD_NAME, settings.getMethodName());
+		prefs.put(COLUMN, settings.getColumnSummary());
+		prefs.put(OVEN, settings.getOvenProgram());
+		prefs.putDouble(SAMPLING, settings.getSamplingRateHz());
+		prefs.putDouble(RUNTIME, settings.getRunTimeMin());
+		prefs.put(ISTD_NAME, settings.getIstdName());
 		prefs.putDouble(ISTD_STOCK, settings.getIstdStockGramsPerLiter());
 		prefs.putDouble(SAMPLE_ML, settings.getSampleVolumeMl());
 		prefs.putDouble(ISTD_ML, settings.getIstdVolumeMl());
 		prefs.putDouble(WINDOW, settings.getDefaultWindowMin());
+		prefs.put(AROMA_TEMPLATE, settings.getAromaTemplate().getId());
+		prefs.put(GAS_CARRIER, settings.getCarrierGas());
+		prefs.put(GAS_SPLIT, settings.getSplitRatio());
+		prefs.put(GAS_INJECTOR, settings.getInjectorTempC());
+		prefs.put(GAS_DETECTOR, settings.getDetectorTempC());
+		if(!Double.isNaN(settings.getGb2757GrainLimit100VolGL())) {
+			prefs.putDouble(GB_GRAIN, settings.getGb2757GrainLimit100VolGL());
+		}
+		if(!Double.isNaN(settings.getGb2757OtherLimit100VolGL())) {
+			prefs.putDouble(GB_OTHER, settings.getGb2757OtherLimit100VolGL());
+		}
 		for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
 			String id = compound.getId();
+			String name = settings.getCompoundNames().get(id);
+			if(name == null || name.isBlank()) {
+				prefs.remove(NAME + id);
+			} else {
+				prefs.put(NAME + id, name);
+			}
 			putOrRemove(prefs, RF + id, settings.getResponseFactors().get(id));
 			putOrRemove(prefs, RT + id, settings.getInstrumentRtMin().get(id));
 			putOrRemove(prefs, MIX + id, settings.getMixGramsPerLiter().get(id));
 			putOrRemove(prefs, WIN + id, settings.getWindowMin().get(id));
+			putOrRemove(prefs, ASSIGN + id, settings.getManualAssignmentsRtMin().get(id));
 		}
 		flush(prefs);
 	}
@@ -92,6 +167,9 @@ public final class BaijiuPreferences {
 		}
 		if(sample.getLiquorName().isEmpty()) {
 			sample.setLiquorName(prefs.get(LIQUOR_NAME, ""));
+		}
+		if(sample.getBatchNo().isEmpty()) {
+			sample.setBatchNo(prefs.get(BATCH, ""));
 		}
 		sample.setAromaType(BaijiuAromaType.fromId(prefs.get(AROMA, BaijiuAromaType.NONG.getId())));
 		if(sample.getAbvPercent() <= 0.0d) {
@@ -108,11 +186,25 @@ public final class BaijiuPreferences {
 		IEclipsePreferences prefs = prefs();
 		prefs.put(SAMPLE_NO, sample.getSampleNo());
 		prefs.put(LIQUOR_NAME, sample.getLiquorName());
+		prefs.put(BATCH, sample.getBatchNo());
 		prefs.put(AROMA, sample.getAromaType().getId());
 		prefs.putDouble(ABV, sample.getAbvPercent());
 		prefs.put(ANALYST, sample.getAnalyst());
 		prefs.put(RAW, sample.getRawMaterial().getId());
 		flush(prefs);
+	}
+
+	private static void overlayText(IEclipsePreferences prefs, String key, java.util.function.Consumer<String> setter) {
+
+		String value = prefs.get(key, null);
+		if(value != null && !value.isBlank()) {
+			setter.accept(value);
+		}
+	}
+
+	private static boolean contains(IEclipsePreferences prefs, String key) {
+
+		return prefs.get(key, null) != null;
 	}
 
 	private static void putOrRemove(IEclipsePreferences prefs, String key, Double value) {

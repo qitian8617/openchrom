@@ -23,6 +23,7 @@ public final class BaijiuSampleInfo {
 
 	private String sampleNo = "";
 	private String liquorName = "";
+	private String batchNo = "";
 	private BaijiuAromaType aromaType = BaijiuAromaType.NONG;
 	private double abvPercent = 0.0d;
 	private String analyst = "";
@@ -47,6 +48,16 @@ public final class BaijiuSampleInfo {
 	public void setLiquorName(String liquorName) {
 
 		this.liquorName = nullToEmpty(liquorName);
+	}
+
+	public String getBatchNo() {
+
+		return batchNo;
+	}
+
+	public void setBatchNo(String batchNo) {
+
+		this.batchNo = nullToEmpty(batchNo);
 	}
 
 	public BaijiuAromaType getAromaType() {
@@ -99,6 +110,35 @@ public final class BaijiuSampleInfo {
 		this.rawMaterial = rawMaterial == null ? BaijiuRawMaterial.GRAIN : rawMaterial;
 	}
 
+	public java.util.List<String> validate() {
+
+		java.util.List<String> messages = new java.util.ArrayList<>();
+		if(sampleNo.isEmpty()) {
+			messages.add("\u8bf7\u586b\u5199\u6837\u54c1\u7f16\u53f7\u3002");
+		}
+		if(abvPercent < 0.0d || abvPercent > 100.0d) {
+			messages.add("\u9152\u7cbe\u5ea6\u5e94\u5728 0\u2013100 %vol\u3002");
+		} else if(abvPercent <= 0.0d) {
+			messages.add("\u8bf7\u586b\u5199\u9152\u7cbe\u5ea6\uff0c\u5426\u5219\u65e0\u6cd5\u6309 GB 2757 \u6298\u7b97\u7532\u9187\u3002");
+		}
+		return messages;
+	}
+
+	public boolean hasBlockingErrors() {
+
+		return abvPercent < 0.0d || abvPercent > 100.0d;
+	}
+
+	public void applyMethodDefaults(BaijiuMethodSettings settings) {
+
+		if(settings == null) {
+			return;
+		}
+		if(aromaType == null) {
+			aromaType = settings.getAromaTemplate();
+		}
+	}
+
 	public void writeTo(IChromatogram chromatogram) {
 
 		if(chromatogram == null) {
@@ -115,6 +155,7 @@ public final class BaijiuSampleInfo {
 		chromatogram.setColumnDetails(BaijiuCatalog.COLUMN_DETAILS);
 		chromatogram.putHeaderData(BaijiuHeaderKeys.SAMPLE_NO, sampleNo);
 		chromatogram.putHeaderData(BaijiuHeaderKeys.LIQUOR_NAME, liquorName);
+		chromatogram.putHeaderData(BaijiuHeaderKeys.BATCH, batchNo);
 		chromatogram.putHeaderData(BaijiuHeaderKeys.AROMA, aromaType.getLabel());
 		chromatogram.putHeaderData(BaijiuHeaderKeys.ABV, Double.toString(abvPercent));
 		chromatogram.putHeaderData(BaijiuHeaderKeys.ANALYST, analyst);
@@ -131,6 +172,7 @@ public final class BaijiuSampleInfo {
 		}
 		info.setSampleNo(value(chromatogram, BaijiuHeaderKeys.SAMPLE_NO, ""));
 		info.setLiquorName(value(chromatogram, BaijiuHeaderKeys.LIQUOR_NAME, chromatogram.getSampleName()));
+		info.setBatchNo(value(chromatogram, BaijiuHeaderKeys.BATCH, ""));
 		info.setAromaType(BaijiuAromaType.fromId(value(chromatogram, BaijiuHeaderKeys.AROMA, "")));
 		info.setAbvPercent(parseDouble(value(chromatogram, BaijiuHeaderKeys.ABV, "0"), 0.0d));
 		String analyst = value(chromatogram, BaijiuHeaderKeys.ANALYST, chromatogram.getOperator());

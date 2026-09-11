@@ -40,16 +40,17 @@ public final class BaijiuReportHtml {
 		html.append("<h2>").append(escape("\u6837\u54c1\u4fe1\u606f")).append("</h2>");
 		html.append("<table class=\"meta\"><tr>");
 		html.append(meta("\u6837\u54c1\u7f16\u53f7", sample.getSampleNo()));
-		html.append(meta("\u9152\u540d/\u6279\u53f7", sample.getLiquorName()));
+		html.append(meta("\u9152\u540d", sample.getLiquorName()));
 		html.append(meta("\u9999\u578b", sample.getAromaType().getLabel()));
 		html.append("</tr><tr>");
 		html.append(meta("\u9152\u7cbe\u5ea6 %vol", format(sample.getAbvPercent(), 2)));
+		html.append(meta("\u6279\u53f7", sample.getBatchNo()));
 		html.append(meta("\u68c0\u6d4b\u4eba", sample.getAnalyst()));
 		html.append(meta("\u68c0\u6d4b\u65e5\u671f", sample.getDateText()));
 		html.append("</tr><tr>");
 		html.append(meta("\u539f\u6599\u7c7b\u578b", sample.getRawMaterial().getLabel()));
 		html.append(meta("\u8272\u8c31\u67f1", BaijiuCatalog.COLUMN_DETAILS));
-		html.append(meta("\u5185\u6807", "\u4e59\u9178\u6b63\u4e01\u916f"));
+		html.append(meta("\u5185\u6807", settings.getIstdName()));
 		html.append("</tr></table>");
 
 		if(result != null && result.getChromatogram() != null) {
@@ -62,7 +63,7 @@ public final class BaijiuReportHtml {
 
 		html.append("<h2>").append(escape("\u5cf0\u8868")).append("</h2>");
 		html.append("<table><thead><tr>");
-		html.append(th("\u7ec4\u5206")).append(th("RT / min")).append(th("\u9762\u79ef")).append(th("\u542b\u91cf g/L")).append(th("\u5907\u6ce8"));
+		html.append(th("\u7ec4\u5206")).append(th("RT / min")).append(th("\u9762\u79ef")).append(th("RF")).append(th("\u542b\u91cf g/L")).append(th("\u8d85\u9650")).append(th("\u5907\u6ce8"));
 		html.append("</tr></thead><tbody>");
 		if(result != null) {
 			for(BaijiuQuantRow row : result.getRows()) {
@@ -70,11 +71,13 @@ public final class BaijiuReportHtml {
 				html.append(td(row.getCompound().getName(), false));
 				html.append(td(Double.isNaN(row.getMatchedRtMin()) ? "-" : format(row.getMatchedRtMin(), 3), true));
 				html.append(td(row.getArea() <= 0.0d ? "-" : format(row.getArea(), 1), true));
+				html.append(td(row.getResponseFactor() == null ? "-" : format(row.getResponseFactor(), 4), true));
 				if(row.getCompound().isInternalStandard()) {
 					html.append(td("ISTD", true));
 				} else {
 					html.append(td(row.getConcentrationGL() == null ? "-" : format(row.getConcentrationGL(), 4), true));
 				}
+				html.append(td(row.getOverLimitLabel(), true));
 				html.append(td(row.getRemark(), false));
 				html.append("</tr>");
 			}
@@ -94,7 +97,8 @@ public final class BaijiuReportHtml {
 		}
 
 		html.append("<p class=\"note\">");
-		html.append(escape("\u5185\u6807\u8d2e\u5907\u6db2 ")).append(format(settings.getIstdStockGramsPerLiter(), 2)).append(" g/L\uff1b");
+		html.append(escape("\u5185\u6807 ")).append(escape(settings.getIstdName())).append("\uff1b");
+		html.append(escape("\u8d2e\u5907\u6db2 ")).append(format(settings.getIstdStockGramsPerLiter(), 2)).append(" g/L\uff1b");
 		html.append(escape("\u6837\u54c1 ")).append(format(settings.getSampleVolumeMl(), 3)).append(" mL + ");
 		html.append(escape("\u5185\u6807 ")).append(format(settings.getIstdVolumeMl(), 3)).append(" mL\u3002");
 		html.append(escape("\u5382\u5546\u8c31\u56fe RT \u4ec5\u4f9b\u53c2\u8003\uff0c\u5b9a\u6027\u4ee5\u672c\u673a RT \u7a97\u53e3\u4e3a\u51c6\u3002\u6df7\u6807\u6d53\u5ea6\u8bf7\u4ee5\u5b9e\u6536\u6807\u7b7e\u4e3a\u51c6\u3002"));

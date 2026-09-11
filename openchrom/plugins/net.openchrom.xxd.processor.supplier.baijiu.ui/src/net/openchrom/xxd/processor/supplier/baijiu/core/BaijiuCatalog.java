@@ -17,7 +17,16 @@ public final class BaijiuCatalog {
 
 	public static final String ISTD_ID = "n_butyl_acetate";
 	public static final String METHANOL_ID = "methanol";
+	public static final String ISTD_NAME = "\u4e59\u9178\u6b63\u4e01\u916f";
+	public static final String DEFAULT_METHOD_NAME = "\u6d53\u9999 FID \u9ed8\u8ba4\u65b9\u6cd5";
 	public static final String COLUMN_DETAILS = "XP-\u767D\u9152 C2, 30 m \u00d7 0.32 mm ID \u00d7 1.00 \u00b5m, MAX 250 \u00b0C, S/N 24090305";
+	public static final String DEFAULT_OVEN_PROGRAM = "60 \u2103 \u4fdd\u6301 2 min\uff0c8 \u2103/min \u5347\u81f3 180 \u2103\uff08\u7ea6 19 min\uff0c\u4e0e\u6f14\u793a\u8c31\u56fe\u4e00\u81f4\uff09";
+	public static final String GAS_PATH_NOTE = "\u6c14\u8def\u7531\u4eba\u5de5\u64cd\u4f5c\uff0c\u8f6f\u4ef6\u4e0d\u63a7\u5236\u4eea\u5668\u3002";
+	public static final String DEFAULT_CARRIER_GAS = "N2\uff08\u624b\u52a8\uff09";
+	public static final String DEFAULT_SPLIT = "\u624b\u52a8\u5206\u6d41";
+	public static final double DEFAULT_SAMPLING_HZ = 20.0d;
+	public static final double DEFAULT_RUNTIME_MIN = 19.0d;
+	public static final double DEFAULT_INSTRUMENT_RT_OFFSET_MIN = 0.055d;
 
 	private static final List<BaijiuCompound> COMPOUNDS = Collections.unmodifiableList(Arrays.asList( //
 			compound("acetaldehyde", "\u4e59\u919b", 2.261, 0.2654, false, false, true, ""), //
@@ -54,6 +63,19 @@ public final class BaijiuCatalog {
 			}
 		}
 		return null;
+	}
+
+	public static BaijiuCompound istd() {
+
+		return byId(ISTD_ID);
+	}
+
+	public static double defaultInstrumentRtMin(BaijiuCompound compound) {
+
+		if(compound == null) {
+			return Double.NaN;
+		}
+		return compound.getVendorRtMin() + DEFAULT_INSTRUMENT_RT_OFFSET_MIN;
 	}
 
 	private static BaijiuCompound compound(String id, String name, double vendorRtMin, double mixGL, boolean istd, boolean methanol, boolean verify, String note) {

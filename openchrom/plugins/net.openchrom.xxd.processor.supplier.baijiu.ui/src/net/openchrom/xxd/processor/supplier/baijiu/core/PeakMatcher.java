@@ -25,33 +25,40 @@ public final class PeakMatcher {
 
 	public static Map<String, MatchedPeak> match(List<? extends IPeak> peaks, BaijiuMethodSettings settings) {
 
+		return matchDetailed(peaks, settings).getMatched();
+	}
+
+	public static PeakMatchResult matchDetailed(List<? extends IPeak> peaks, BaijiuMethodSettings settings) {
+
 		List<IPeak> unused = new ArrayList<>();
 		if(peaks != null) {
 			unused.addAll(peaks);
 		}
 		Map<String, MatchedPeak> matched = new LinkedHashMap<>();
-		for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
-			double expected = settings.expectedRtMin(compound);
-			double window = settings.windowMin(compound);
-			IPeak best = null;
-			double bestScore = Double.POSITIVE_INFINITY;
-			for(IPeak peak : unused) {
-				double rtMin = retentionTimeMin(peak);
-				double delta = Math.abs(rtMin - expected);
-				if(delta <= window) {
-					double score = delta - 1.0e-12d * area(peak);
-					if(score < bestScore) {
-						bestScore = score;
-						best = peak;
-					}
+		if(settings != null) {
+			for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
+				Double assigned = settings.getManualAssignmentsRtMin().get(compound.getId());
+				if(assigned == null || !(assigned > 0.0d)) {
+					continue;
+				}
+				IPeak peak = takeClosest(unused, assigned, Math.max(settings.windowMin(compound), 0.02d));
+				if(peak != null) {
+					matched.put(compound.getId(), new MatchedPeak(compound, peak, retentionTimeMin(peak), area(peak)));
 				}
 			}
+		}
+		for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
+			if(matched.containsKey(compound.getId())) {
+				continue;
+			}
+			double expected = settings == null ? BaijiuCatalog.defaultInstrumentRtMin(compound) : settings.expectedRtMin(compound);
+			double window = settings == null ? BaijiuMethodSettings.DEFAULT_WINDOW_MIN : settings.windowMin(compound);
+			IPeak best = takeClosest(unused, expected, window);
 			if(best != null) {
-				unused.remove(best);
 				matched.put(compound.getId(), new MatchedPeak(compound, best, retentionTimeMin(best), area(best)));
 			}
 		}
-		return matched;
+		return new PeakMatchResult(matched, unused);
 	}
 
 	public static double retentionTimeMin(IPeak peak) {
@@ -65,6 +72,22 @@ public final class PeakMatcher {
 			retentionTime = model.getPeakMaximum().getRetentionTime();
 		}
 		return retentionTime / 60000.0d;
+	}
+
+	public static int startRetentionTime(IPeak peak) {
+
+		if(peak == null || peak.getPeakModel() == null) {
+			return 0;
+		}
+		return peak.getPeakModel().getStartRetentionTime();
+	}
+
+	public static int stopRetentionTime(IPeak peak) {
+
+		if(peak == null || peak.getPeakModel() == null) {
+			return 0;
+		}
+		return peak.getPeakModel().getStopRetentionTime();
 	}
 
 	public static double area(IPeak peak) {
@@ -89,5 +112,26 @@ public final class PeakMatcher {
 	public static boolean hasIntegratedArea(IPeak peak) {
 
 		return peak != null && peak.getIntegratedArea() > 0.0d;
+	}
+
+	private static IPeak takeClosest(List<IPeak> unused, double expectedRtMin, double windowMin) {
+
+		IPeak best = null;
+		double bestScore = Double.POSITIVE_INFINITY;
+		for(IPeak peak : unused) {
+			double rtMin = retentionTimeMin(peak);
+			double delta = Math.abs(rtMin - expectedRtMin);
+			if(delta <= windowMin) {
+				double score = delta - 1.0e-12d * area(peak);
+				if(score < bestScore) {
+					bestScore = score;
+					best = peak;
+				}
+			}
+		}
+		if(best != null) {
+			unused.remove(best);
+		}
+		return best;
 	}
 }
