@@ -37,6 +37,11 @@ public class Gb2757Judge_1_Test {
 		assertTrue(result.isPassed());
 		assertEquals(0.3461538d, result.getMethanol100GL(), 1.0e-4d);
 		assertEquals("\u5408\u683c", result.getVerdictLabel());
+		assertTrue(result.getConversionExplanation().contains("0.1800"));
+		assertTrue(result.getConversionExplanation().contains("100"));
+		assertTrue(result.getLimitSource().contains("GB 2757"));
+		assertTrue(result.getLimitSource().contains("0.6000") || result.getLimitSource().contains("0.6"));
+		assertEquals("GB 2757", result.getStandardLabel());
 	}
 
 	@Test

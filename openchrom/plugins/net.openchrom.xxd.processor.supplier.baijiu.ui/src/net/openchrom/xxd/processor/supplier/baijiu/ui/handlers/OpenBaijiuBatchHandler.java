@@ -11,18 +11,15 @@ package net.openchrom.xxd.processor.supplier.baijiu.ui.handlers;
 
 import org.eclipse.e4.core.contexts.Active;
 import org.eclipse.e4.core.di.annotations.Execute;
-import org.eclipse.e4.core.di.annotations.Optional;
-import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.swt.widgets.Shell;
 
-import net.openchrom.xxd.processor.supplier.baijiu.ui.ChromatogramBridge;
-import net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuAnalysisShell;
+import net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuBatchShell;
 
-public class OpenBaijiuAnalysisHandler {
+public class OpenBaijiuBatchHandler {
 
 	@Execute
-	public void execute(@Active Shell shell, @Optional EPartService partService) {
+	public void execute(@Active Shell shell) {
 
-		BaijiuAnalysisShell.open(shell, ChromatogramBridge.resolve(partService), partService);
+		BaijiuBatchShell.open(shell);
 	}
 }

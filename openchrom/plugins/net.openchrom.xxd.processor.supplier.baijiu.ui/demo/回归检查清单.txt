@@ -1,0 +1,28 @@
+白酒演示回归检查清单（Week 2）
+
+演示文件（不在 git，本地 OpenChrom-week1-ws / E:\OpenChrom\baijiu-demo）
+  mix-15plus-istd.ocb（或 白酒混标_15组分加内标.ocb）
+  sample-nongxiang.ocb（或 白酒样品_浓香模拟.ocb）
+
+检查项
+  1. 峰数
+     打开混标或样品 → 白酒工作台「推荐积分」或分析窗「推荐积分」
+     2–17 min 约 16 个峰，面积不为 0
+  2. 内标
+     峰匹配页：乙酸正丁酯，本机 RT 约 10.382 min，已积分
+     进样内标浓度默认 1.6000 g/L（17.6 g/L × 0.10 / 1.10）
+  3. 甲醇 GB 2757
+     样品编号 LD-BJ-001，酒精度 52，原料 粮谷酿造
+     定量后测得甲醇约 0.180 g/L
+     折算 100%vol ≈ 0.3462 g/L，限量 0.6 g/L（来自厂方法/偏好，非 Java 写死）
+     判定「合格」，面板同时显示测得值、折算公式、限量来源/标准版本
+  4. 报告
+     「预览/打印报告」打开 HTML
+     含样品信息、方法摘要、谱图缩略、结果表、GB 判定
+     「打印 / 另存为 PDF」走系统打印对话框
+     「导出 CSV / Excel(CSV)」可被 Excel 打开
+
+无头可测部分已写入 fragment test：
+  Gb2757Judge_1_Test、BaijiuReport_1_Test、BaijiuBatchEngine_1_Test、BaijiuRegressionChecklist_1_Test
+
+已知环境噪声（忽略）：LaiendeAboutHandler CNFE、CDK/inchi unresolved

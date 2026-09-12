@@ -9,9 +9,6 @@
  *******************************************************************************/
 package net.openchrom.xxd.processor.supplier.baijiu.ui.shell;
 
-import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.eclipse.swt.SWT;
@@ -29,6 +26,7 @@ import org.eclipse.swt.widgets.Text;
 
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuAnalysisResult;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuMethodSettings;
+import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuReportExport;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuReportHtml;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuSampleInfo;
 
@@ -43,25 +41,24 @@ public final class BaijiuReportShell {
 		Shell shell = new Shell(parent, SWT.SHELL_TRIM | SWT.APPLICATION_MODAL);
 		shell.setText("\u767d\u9152\u5206\u6790\u62a5\u544a");
 		shell.setLayout(new GridLayout(1, false));
-		shell.setSize(980, 760);
+		shell.setSize(1000, 780);
 
 		Composite buttons = new Composite(shell, SWT.NONE);
-		buttons.setLayout(new GridLayout(3, false));
+		buttons.setLayout(new GridLayout(6, false));
 		buttons.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
 		Browser browser = createBrowser(shell);
-		Text fallback = null;
 		if(browser != null) {
 			browser.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 			browser.setText(html);
 		} else {
-			fallback = new Text(shell, SWT.BORDER | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL);
+			Text fallback = new Text(shell, SWT.BORDER | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL);
 			fallback.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 			fallback.setText(html);
 		}
 
 		Button print = new Button(buttons, SWT.PUSH);
-		print.setText("\u6253\u5370");
+		print.setText("\u6253\u5370 / \u53e6\u5b58\u4e3a PDF");
 		Browser printable = browser;
 		print.setEnabled(printable != null);
 		print.addListener(SWT.Selection, e -> {
@@ -70,9 +67,17 @@ public final class BaijiuReportShell {
 			}
 		});
 
-		Button save = new Button(buttons, SWT.PUSH);
-		save.setText("\u4fdd\u5b58 HTML");
-		save.addListener(SWT.Selection, e -> saveHtml(shell, html));
+		Button saveHtml = new Button(buttons, SWT.PUSH);
+		saveHtml.setText("\u4fdd\u5b58 HTML");
+		saveHtml.addListener(SWT.Selection, e -> save(shell, html, "*.html", "baijiu-report.html", false, sample, settings, result));
+
+		Button saveCsv = new Button(buttons, SWT.PUSH);
+		saveCsv.setText("\u5bfc\u51fa CSV");
+		saveCsv.addListener(SWT.Selection, e -> save(shell, html, "*.csv", "baijiu-results.csv", true, sample, settings, result));
+
+		Button saveExcel = new Button(buttons, SWT.PUSH);
+		saveExcel.setText("\u5bfc\u51fa Excel(CSV)");
+		saveExcel.addListener(SWT.Selection, e -> save(shell, html, "*.csv", "baijiu-results-excel.csv", true, sample, settings, result));
 
 		Button close = new Button(buttons, SWT.PUSH);
 		close.setText("\u5173\u95ed");
@@ -96,11 +101,11 @@ public final class BaijiuReportShell {
 		}
 	}
 
-	private static void saveHtml(Shell shell, String html) {
+	private static void save(Shell shell, String html, String extension, String fileName, boolean csv, BaijiuSampleInfo sample, BaijiuMethodSettings settings, BaijiuAnalysisResult result) {
 
 		FileDialog dialog = new FileDialog(shell, SWT.SAVE);
-		dialog.setFilterExtensions(new String[] {"*.html"});
-		dialog.setFileName("baijiu-report.html");
+		dialog.setFilterExtensions(new String[] {extension});
+		dialog.setFileName(fileName);
 		dialog.setOverwrite(true);
 		String path = dialog.open();
 		if(path == null || path.isEmpty()) {
@@ -108,8 +113,10 @@ public final class BaijiuReportShell {
 		}
 		try {
 			Path file = Path.of(path);
-			try(OutputStreamWriter writer = new OutputStreamWriter(Files.newOutputStream(file), StandardCharsets.UTF_8)) {
-				writer.write(html);
+			if(csv) {
+				BaijiuReportExport.writeExcelCsv(file, sample, settings, result);
+			} else {
+				BaijiuReportExport.writeHtml(file, html);
 			}
 		} catch(Exception e) {
 			MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);

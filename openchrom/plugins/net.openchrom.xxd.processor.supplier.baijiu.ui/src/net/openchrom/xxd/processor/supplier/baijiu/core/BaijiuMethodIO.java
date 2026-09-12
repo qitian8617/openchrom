@@ -91,6 +91,8 @@ public final class BaijiuMethodIO {
 		putText(settings::setDetectorTempC, properties, "gas.detector.c", overwriteExisting, settings.getDetectorTempC());
 		putDouble(settings::setGb2757GrainLimit100VolGL, properties, "gb2757.grain.limit.100vol.gl", overwriteExisting || Double.isNaN(settings.getGb2757GrainLimit100VolGL()), settings.getGb2757GrainLimit100VolGL());
 		putDouble(settings::setGb2757OtherLimit100VolGL, properties, "gb2757.other.limit.100vol.gl", overwriteExisting || Double.isNaN(settings.getGb2757OtherLimit100VolGL()), settings.getGb2757OtherLimit100VolGL());
+		putText(settings::setGb2757Standard, properties, "gb2757.standard", overwriteExisting, settings.getGb2757Standard());
+		putText(settings::setGb2757LimitSource, properties, "gb2757.limit.source", overwriteExisting, settings.getGb2757LimitSource());
 		double offset = parseDouble(properties.getProperty("instrument.rt.offset.min"), BaijiuCatalog.DEFAULT_INSTRUMENT_RT_OFFSET_MIN);
 		for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
 			String id = compound.getId();
@@ -136,6 +138,8 @@ public final class BaijiuMethodIO {
 		if(!Double.isNaN(settings.getGb2757OtherLimit100VolGL())) {
 			properties.setProperty("gb2757.other.limit.100vol.gl", format(settings.getGb2757OtherLimit100VolGL()));
 		}
+		properties.setProperty("gb2757.standard", settings.getGb2757Standard());
+		properties.setProperty("gb2757.limit.source", settings.getGb2757LimitSource());
 		for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
 			String id = compound.getId();
 			String name = settings.getCompoundNames().get(id);

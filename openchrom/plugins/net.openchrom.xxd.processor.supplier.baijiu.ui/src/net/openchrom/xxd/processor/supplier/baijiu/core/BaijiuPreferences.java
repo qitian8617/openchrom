@@ -33,6 +33,8 @@ public final class BaijiuPreferences {
 	private static final String GAS_DETECTOR = "gas.detector.c";
 	private static final String GB_GRAIN = "gb2757.grain.limit";
 	private static final String GB_OTHER = "gb2757.other.limit";
+	private static final String GB_STANDARD = "gb2757.standard";
+	private static final String GB_SOURCE = "gb2757.limit.source";
 	private static final String RF = "rf.";
 	private static final String RT = "rt.";
 	private static final String MIX = "mix.";
@@ -87,6 +89,8 @@ public final class BaijiuPreferences {
 		if(contains(prefs, GB_OTHER)) {
 			settings.setGb2757OtherLimit100VolGL(prefs.getDouble(GB_OTHER, settings.getGb2757OtherLimit100VolGL()));
 		}
+		overlayText(prefs, GB_STANDARD, settings::setGb2757Standard);
+		overlayText(prefs, GB_SOURCE, settings::setGb2757LimitSource);
 		for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
 			String id = compound.getId();
 			overlayText(prefs, NAME + id, value -> settings.getCompoundNames().put(id, value));
@@ -142,6 +146,8 @@ public final class BaijiuPreferences {
 		if(!Double.isNaN(settings.getGb2757OtherLimit100VolGL())) {
 			prefs.putDouble(GB_OTHER, settings.getGb2757OtherLimit100VolGL());
 		}
+		prefs.put(GB_STANDARD, settings.getGb2757Standard());
+		prefs.put(GB_SOURCE, settings.getGb2757LimitSource());
 		for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
 			String id = compound.getId();
 			String name = settings.getCompoundNames().get(id);

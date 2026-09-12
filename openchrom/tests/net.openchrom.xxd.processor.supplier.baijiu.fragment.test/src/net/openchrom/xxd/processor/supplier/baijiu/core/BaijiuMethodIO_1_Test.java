@@ -38,5 +38,6 @@ public class BaijiuMethodIO_1_Test {
 		assertEquals(2.80d, loaded.expectedRtMin(BaijiuCatalog.byId("methanol")), 1.0e-9d);
 		assertEquals(0.55d, loaded.getGb2757GrainLimit100VolGL(), 1.0e-9d);
 		assertEquals(17.6d, loaded.getIstdStockGramsPerLiter(), 1.0e-9d);
+		assertEquals("GB 2757", loaded.getGb2757Standard());
 	}
 }

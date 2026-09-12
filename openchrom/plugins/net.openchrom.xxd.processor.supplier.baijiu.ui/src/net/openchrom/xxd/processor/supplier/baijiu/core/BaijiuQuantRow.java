@@ -101,7 +101,7 @@ public final class BaijiuQuantRow {
 	public String getOverLimitLabel() {
 
 		if(compound != null && compound.isInternalStandard()) {
-			return "ISTD";
+			return BaijiuTerms.ISTD;
 		}
 		if(overLimit == null) {
 			return "\u2014";

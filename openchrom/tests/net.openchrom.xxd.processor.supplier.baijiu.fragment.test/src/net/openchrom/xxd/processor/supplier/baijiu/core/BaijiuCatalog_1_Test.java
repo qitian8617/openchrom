@@ -46,6 +46,7 @@ public class BaijiuCatalog_1_Test {
 		Properties properties = BaijiuMethodIO.loadBundledDefaults();
 		assertEquals("0.6", properties.getProperty("gb2757.grain.limit.100vol.gl"));
 		assertEquals("2.0", properties.getProperty("gb2757.other.limit.100vol.gl"));
+		assertEquals("GB 2757", properties.getProperty("gb2757.standard"));
 		assertEquals("17.6", properties.getProperty("istd.stock.gl"));
 		assertEquals("1.00", properties.getProperty("volume.sample.ml"));
 		assertEquals("0.10", properties.getProperty("volume.istd.ml"));

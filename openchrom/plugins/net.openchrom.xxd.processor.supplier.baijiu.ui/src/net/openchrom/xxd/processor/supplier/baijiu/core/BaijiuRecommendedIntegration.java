@@ -34,6 +34,17 @@ public final class BaijiuRecommendedIntegration {
 	private BaijiuRecommendedIntegration() {
 	}
 
+	public static String integrate(IChromatogram chromatogram) {
+
+		if(chromatogram instanceof IChromatogramCSD chromatogramCSD) {
+			return integrate(new ChromatogramSelectionCSD(chromatogramCSD));
+		}
+		if(chromatogram == null) {
+			return "\u6ca1\u6709\u6253\u5f00\u7684\u8272\u8c31\u56fe\u3002\u8bf7\u5148\u5728\u5de5\u4f5c\u7ad9\u6253\u5f00 FID \u8c31\u56fe\uff08\u6f14\u793a mix-15plus-istd.ocb\uff09\u3002";
+		}
+		return "\u5f53\u524d\u8c31\u56fe\u4e0d\u662f FID\uff08CSD\uff09\u7c7b\u578b\uff0c\u65e0\u6cd5\u4f7f\u7528\u63a8\u8350\u79ef\u5206\u3002\u8bf7\u6253\u5f00\u767d\u9152\u6f14\u793a .ocb \u6216\u5176\u4ed6 FID \u8c31\u56fe\u3002";
+	}
+
 	public static String integrate(IChromatogramSelection chromatogramSelection) {
 
 		if(chromatogramSelection == null || chromatogramSelection.getChromatogram() == null) {

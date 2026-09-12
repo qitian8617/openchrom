@@ -50,7 +50,9 @@ import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuPreferences;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuQuantRow;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuRawMaterial;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuRecommendedIntegration;
+import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuReportExport;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuSampleInfo;
+import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuTerms;
 import net.openchrom.xxd.processor.supplier.baijiu.core.Gb2757Result;
 import net.openchrom.xxd.processor.supplier.baijiu.core.PeakMatchResult;
 import net.openchrom.xxd.processor.supplier.baijiu.core.PeakMatcher;
@@ -92,7 +94,11 @@ public final class BaijiuAnalysisShell {
 	private Label injectedIstd;
 	private Label chromatogramLabel;
 	private Label status;
-	private Label gbBanner;
+	private Label gbVerdict;
+	private Label gbMeasured;
+	private Label gbConversion;
+	private Label gbLimit;
+	private Label gbSource;
 	private Table resultTable;
 	private Table methodTable;
 	private Table matchTable;
@@ -185,6 +191,9 @@ public final class BaijiuAnalysisShell {
 
 		chromatogramLabel = new Label(root, SWT.WRAP);
 		chromatogramLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		Label glossary = new Label(root, SWT.WRAP);
+		glossary.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		glossary.setText(BaijiuTerms.GLOSSARY + " \u719f\u7ec3\u64cd\u4f5c\u5458\u53ef\u76f4\u63a5\u7528\u672c\u7a97\uff1b\u65b0\u64cd\u4f5c\u5458\u53ef\u8d70\u300c\u4e09\u6b65\u5411\u5bfc\u300d\u3002");
 
 		Group methodGroup = group(root, "\u6d53\u9999 FID \u65b9\u6cd5\u6458\u8981");
 		methodGroup.setLayout(new GridLayout(6, false));
@@ -239,17 +248,29 @@ public final class BaijiuAnalysisShell {
 		istdMl.addModifyListener(e -> updateInjectedLabel());
 
 		Composite buttons = new Composite(root, SWT.NONE);
-		buttons.setLayout(new GridLayout(7, false));
+		buttons.setLayout(new GridLayout(8, false));
 		button(buttons, "\u8bfb\u53d6\u5f53\u524d\u8c31\u56fe", e -> reloadChromatogram());
 		button(buttons, "\u63a8\u8350\u79ef\u5206", e -> recommendedIntegrate(parent.getShell()));
 		button(buttons, "\u7528\u5f53\u524d\u8c31\u56fe\u505a\u6821\u6b63", e -> calibrate(parent.getShell()));
 		button(buttons, "\u5b9a\u91cf\u5e76\u5199\u56de\u5cf0\u8868", e -> quantify(parent.getShell(), true, true));
 		button(buttons, "\u9884\u89c8/\u6253\u5370\u62a5\u544a", e -> report(parent.getShell()));
+		button(buttons, "\u5bfc\u51fa\u7ed3\u679c CSV", e -> exportCsv(parent.getShell()));
 		button(buttons, "\u4fdd\u5b58\u65b9\u6cd5", e -> saveMethod(parent.getShell()));
 		button(buttons, "\u53e6\u5b58\u5382\u65b9\u6cd5", e -> savePlantMethod(parent.getShell()));
 
-		gbBanner = new Label(root, SWT.WRAP);
-		gbBanner.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		Group gbGroup = group(root, "GB 2757 \u7532\u9187\u5224\u5b9a");
+		gbGroup.setLayout(new GridLayout(1, false));
+		gbVerdict = new Label(gbGroup, SWT.WRAP);
+		gbVerdict.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		gbMeasured = new Label(gbGroup, SWT.WRAP);
+		gbMeasured.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		gbConversion = new Label(gbGroup, SWT.WRAP);
+		gbConversion.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		gbLimit = new Label(gbGroup, SWT.WRAP);
+		gbLimit.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		gbSource = new Label(gbGroup, SWT.WRAP);
+		gbSource.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		clearGbPanel();
 
 		resultTable = new Table(root, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL);
 		GridData tableData = new GridData(SWT.FILL, SWT.FILL, true, true);
@@ -257,7 +278,7 @@ public final class BaijiuAnalysisShell {
 		resultTable.setLayoutData(tableData);
 		resultTable.setHeaderVisible(true);
 		resultTable.setLinesVisible(true);
-		String[] columns = {"\u7ec4\u5206", "\u671f\u671bRT", "\u5339\u914dRT", "\u9762\u79ef", "RF", "\u542b\u91cf g/L", "\u5185\u6807", "\u8d85\u9650", "\u5907\u6ce8"};
+		String[] columns = {"\u7ec4\u5206", "\u671f\u671bRT", "\u5339\u914dRT", "\u5cf0\u9762\u79ef", "\u54cd\u5e94\u56e0\u5b50", "\u542b\u91cf g/L", "\u5185\u6807", "\u8d85\u9650", "\u5907\u6ce8"};
 		int[] widths = {100, 70, 70, 80, 70, 80, 50, 70, 140};
 		for(int i = 0; i < columns.length; i++) {
 			TableColumn column = new TableColumn(resultTable, SWT.NONE);
@@ -478,7 +499,7 @@ public final class BaijiuAnalysisShell {
 		fillResultTable(result);
 		fillMatchTables();
 		if(!result.isSuccess()) {
-			gbBanner.setText("");
+			clearGbPanel();
 			if(dialogOnError) {
 				warn(shell, result.getMessage());
 			}
@@ -491,12 +512,7 @@ public final class BaijiuAnalysisShell {
 			BaijiuPreferences.saveMethod(settings);
 			BaijiuPreferences.saveSampleDefaults(sample);
 		}
-		Gb2757Result gb = result.getGb2757Result();
-		if(gb != null) {
-			gbBanner.setText("GB 2757\uff1a" + gb.getVerdictLabel() + "  " + gb.getSummary());
-			Color color = shell.getDisplay().getSystemColor(gb.isJudged() && !gb.isPassed() ? SWT.COLOR_RED : SWT.COLOR_DARK_GREEN);
-			gbBanner.setForeground(color);
-		}
+		showGb(shell, result.getGb2757Result());
 		String statusText = result.getMessage() + (result.getWarnings().isEmpty() ? "" : " " + String.join("\u3001", result.getWarnings()));
 		setStatus(statusText);
 	}
@@ -528,6 +544,67 @@ public final class BaijiuAnalysisShell {
 			return;
 		}
 		BaijiuReportShell.open(shell, sample, settings, result);
+	}
+
+	private void exportCsv(Shell shell) {
+
+		collectAll();
+		BaijiuSampleInfo sample = readSample();
+		BaijiuAnalysisResult result = lastResult;
+		if(result == null || !result.isSuccess()) {
+			result = BaijiuAnalysisEngine.quantify(chromatogram(), sample, settings);
+			lastResult = result;
+			fillResultTable(result);
+			showGb(shell, result.getGb2757Result());
+		}
+		if(result == null || !result.isSuccess()) {
+			warn(shell, result == null ? "\u65e0\u6cd5\u5bfc\u51fa\u3002" : result.getMessage());
+			return;
+		}
+		FileDialog dialog = new FileDialog(shell, SWT.SAVE);
+		dialog.setFilterExtensions(new String[] {"*.csv"});
+		dialog.setFileName("baijiu-results.csv");
+		dialog.setOverwrite(true);
+		String path = dialog.open();
+		if(path == null || path.isEmpty()) {
+			return;
+		}
+		try {
+			BaijiuReportExport.writeExcelCsv(Path.of(path), sample, settings, result);
+			info(shell, "\u5df2\u5bfc\u51fa\uff08Excel \u53ef\u76f4\u63a5\u6253\u5f00\uff09\uff1a" + path);
+		} catch(Exception e) {
+			warn(shell, "\u5bfc\u51fa\u5931\u8d25\uff1a" + e.getMessage());
+		}
+	}
+
+	private void showGb(Shell shell, Gb2757Result gb) {
+
+		if(gbVerdict == null || gbVerdict.isDisposed()) {
+			return;
+		}
+		if(gb == null) {
+			clearGbPanel();
+			return;
+		}
+		gbVerdict.setText(gb.getStandardLabel() + " \u5224\u5b9a\uff1a" + gb.getVerdictLabel() + "    " + gb.getSummary());
+		Color color = shell.getDisplay().getSystemColor(!gb.isJudged() ? SWT.COLOR_DARK_YELLOW : (gb.isPassed() ? SWT.COLOR_DARK_GREEN : SWT.COLOR_RED));
+		gbVerdict.setForeground(color);
+		gbMeasured.setText("\u6d4b\u5f97\u7532\u9187\uff1a" + (gb.isMethanolDetected() ? format(gb.getMethanolMeasuredGL(), 4) + " g/L" : "\u672a\u68c0\u51fa"));
+		gbConversion.setText(gb.getConversionExplanation());
+		gbLimit.setText("\u6298\u7b97 100%vol\uff1a" + (gb.isJudged() && gb.isMethanolDetected() ? format(gb.getMethanol100GL(), 4) + " g/L" : "-") + "    \u9650\u91cf\uff1a" + (Double.isNaN(gb.getLimit100GL()) ? "-" : format(gb.getLimit100GL(), 4) + " g/L\uff08100%vol\uff09"));
+		gbSource.setText(gb.getLimitSource());
+	}
+
+	private void clearGbPanel() {
+
+		if(gbVerdict == null || gbVerdict.isDisposed()) {
+			return;
+		}
+		gbVerdict.setText("GB 2757\uff1a\u5c1a\u672a\u5224\u5b9a");
+		gbMeasured.setText("\u6d4b\u5f97\u7532\u9187\uff1a\u2014");
+		gbConversion.setText("\u6298\u7b97\u516c\u5f0f\uff1a\u6d4b\u5f97\u7532\u9187(g/L) \u00d7 100 / \u9152\u7cbe\u5ea6(%vol)");
+		gbLimit.setText("\u9650\u91cf\u6765\u81ea\u5382\u65b9\u6cd5/\u504f\u597d\u8bbe\u7f6e\uff0c\u4e0d\u5199\u6b7b\u5728\u5224\u5b9a\u903b\u8f91\u4e2d\u3002");
+		gbSource.setText("");
 	}
 
 	private void saveMethod(Shell shell) {
@@ -592,8 +669,8 @@ public final class BaijiuAnalysisShell {
 			item.setText(3, row.getArea() <= 0.0d ? "-" : format(row.getArea(), 1));
 			item.setText(4, row.getResponseFactor() == null ? "-" : format(row.getResponseFactor(), 4));
 			if(row.getCompound().isInternalStandard()) {
-				item.setText(5, "ISTD");
-				item.setText(6, "\u662f");
+				item.setText(5, BaijiuTerms.ISTD);
+				item.setText(6, BaijiuTerms.ISTD);
 			} else {
 				item.setText(5, row.getConcentrationGL() == null ? "-" : format(row.getConcentrationGL(), 4));
 				item.setText(6, "\u5426");
@@ -609,7 +686,7 @@ public final class BaijiuAnalysisShell {
 		for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
 			TableItem item = new TableItem(methodTable, SWT.NONE);
 			item.setData(compound);
-			item.setText(0, settings.displayName(compound) + (compound.isInternalStandard() ? " (ISTD)" : ""));
+			item.setText(0, settings.displayName(compound) + (compound.isInternalStandard() ? "\uff08\u5185\u6807\uff09" : ""));
 			item.setText(1, format(compound.getVendorRtMin(), 3));
 			item.setText(2, format(settings.expectedRtMin(compound), 3));
 			item.setText(3, format(settings.windowMin(compound), 3));
@@ -903,7 +980,7 @@ public final class BaijiuAnalysisShell {
 		String[] labels = new String[compounds.size()];
 		for(int i = 0; i < compounds.size(); i++) {
 			BaijiuCompound compound = compounds.get(i);
-			labels[i] = settings.displayName(compound) + (compound.isInternalStandard() ? " (ISTD)" : "");
+			labels[i] = settings.displayName(compound) + (compound.isInternalStandard() ? "\uff08\u5185\u6807\uff09" : "");
 		}
 		return labels;
 	}

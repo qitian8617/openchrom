@@ -36,6 +36,8 @@ public final class BaijiuMethodSettings {
 	private double defaultWindowMin = DEFAULT_WINDOW_MIN;
 	private double gb2757GrainLimit100VolGL = Double.NaN;
 	private double gb2757OtherLimit100VolGL = Double.NaN;
+	private String gb2757Standard = "GB 2757";
+	private String gb2757LimitSource = "\u5382\u65b9\u6cd5/\u504f\u597d\u8bbe\u7f6e";
 	private final Map<String, String> compoundNames = new LinkedHashMap<>();
 	private final Map<String, Double> instrumentRtMin = new LinkedHashMap<>();
 	private final Map<String, Double> windowMin = new LinkedHashMap<>();
@@ -226,6 +228,26 @@ public final class BaijiuMethodSettings {
 	public void setGb2757OtherLimit100VolGL(double gb2757OtherLimit100VolGL) {
 
 		this.gb2757OtherLimit100VolGL = gb2757OtherLimit100VolGL;
+	}
+
+	public String getGb2757Standard() {
+
+		return gb2757Standard;
+	}
+
+	public void setGb2757Standard(String gb2757Standard) {
+
+		this.gb2757Standard = gb2757Standard == null || gb2757Standard.isBlank() ? "GB 2757" : gb2757Standard.trim();
+	}
+
+	public String getGb2757LimitSource() {
+
+		return gb2757LimitSource;
+	}
+
+	public void setGb2757LimitSource(String gb2757LimitSource) {
+
+		this.gb2757LimitSource = gb2757LimitSource == null || gb2757LimitSource.isBlank() ? "\u5382\u65b9\u6cd5/\u504f\u597d\u8bbe\u7f6e" : gb2757LimitSource.trim();
 	}
 
 	public double gb2757Limit100VolGL(BaijiuRawMaterial rawMaterial) {
