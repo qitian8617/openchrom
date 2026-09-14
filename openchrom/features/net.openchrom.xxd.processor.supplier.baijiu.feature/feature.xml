@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="net.openchrom.xxd.processor.supplier.baijiu.feature"
+      label="Baijiu Analysis"
+      version="1.6.32.qualifier"
+      provider-name="OpenChrom"
+      plugin="net.openchrom.feature.branding"
+      license-feature="org.eclipse.license"
+      license-feature-version="2.0.2.qualifier">
+
+   <description url="http://www.openchrom.net">
+      Liquor chromatogram peak identification, ISTD quantitation and GB 2757 methanol judgement for the workstation.
+   </description>
+
+   <copyright url="http://www.openchrom.net">
+      Copyright (c) 2026 OpenChrom
+   </copyright>
+
+   <license url="%licenseURL">
+      %license
+   </license>
+
+   <plugin
+         id="net.openchrom.xxd.processor.supplier.baijiu.ui"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+</feature>
