@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="ASCII"?>
+<fragment:ModelFragments xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:advanced="http://www.eclipse.org/ui/2010/UIModel/application/ui/advanced" xmlns:basic="http://www.eclipse.org/ui/2010/UIModel/application/ui/basic" xmlns:commands="http://www.eclipse.org/ui/2010/UIModel/application/commands" xmlns:fragment="http://www.eclipse.org/ui/2010/UIModel/fragment" xmlns:menu="http://www.eclipse.org/ui/2010/UIModel/application/ui/menu" xmi:id="_gcwsFrag001">
+  <imports xsi:type="advanced:Area" xmi:id="_gcwsEditorArea" elementId="org.eclipse.chemclipse.rcp.app.ui.editor"/>
+  <fragments xsi:type="fragment:StringModelFragment" xmi:id="_gcwsCmdFrag" featurename="commands" parentElementId="org.eclipse.chemclipse.rcp.ide.application">
+    <elements xsi:type="commands:Command" xmi:id="_gcwsCmd" elementId="net.openchrom.xxd.control.supplier.temperature.ui.command.open" commandName="%command.openInstrumentControl"/>
+  </fragments>
+  <fragments xsi:type="fragment:StringModelFragment" xmi:id="_gcwsHdlFrag" featurename="handlers" parentElementId="org.eclipse.chemclipse.rcp.ide.application">
+    <elements xsi:type="commands:Handler" xmi:id="_gcwsHdl" elementId="net.openchrom.xxd.control.supplier.temperature.ui.handler.open" contributionURI="bundleclass://net.openchrom.xxd.control.supplier.temperature.ui/net.openchrom.xxd.control.supplier.temperature.ui.handlers.OpenInstrumentControlHandler" command="_gcwsCmd"/>
+  </fragments>
+  <fragments xsi:type="fragment:StringModelFragment" xmi:id="_gcwsMenuFrag" featurename="children" parentElementId="org.eclipse.chemclipse.rcp.app.ui.menu.plugins">
+    <elements xsi:type="menu:Menu" xmi:id="_gcwsMenu" elementId="net.openchrom.xxd.control.supplier.temperature.ui.menu.control" label="%menu.instrumentControl">
+      <children xsi:type="menu:HandledMenuItem" xmi:id="_gcwsMenuOpen" elementId="net.openchrom.xxd.control.supplier.temperature.ui.menu.open" label="%menu.openInstrumentControl" command="_gcwsCmd"/>
+    </elements>
+  </fragments>
+  <fragments xsi:type="fragment:StringModelFragment" xmi:id="_gcwsToolbarFrag" featurename="children" parentElementId="org.eclipse.chemclipse.rcp.app.ui.toolbar.plugins">
+    <elements xsi:type="menu:HandledToolItem" xmi:id="_gcwsToolItem" elementId="net.openchrom.xxd.control.supplier.temperature.ui.toolbar.open" label="%toolbar.openInstrumentControl" command="_gcwsCmd"/>
+  </fragments>
+  <fragments xsi:type="fragment:StringModelFragment" xmi:id="_gcwsPerspFrag" featurename="children" parentElementId="org.eclipse.chemclipse.rcp.app.ui.perspectivestack.main">
+    <elements xsi:type="advanced:Perspective" xmi:id="_gcwsPersp" elementId="net.openchrom.xxd.control.supplier.temperature.ui.perspective.control" label="%perspective.instrumentControl">
+      <children xsi:type="basic:PartSashContainer" xmi:id="_gcwsSash" elementId="net.openchrom.xxd.control.supplier.temperature.ui.partsash" horizontal="true">
+        <children xsi:type="advanced:Placeholder" xmi:id="_gcwsEditorPh" elementId="net.openchrom.xxd.control.supplier.temperature.ui.placeholder.editor" containerData="4200" ref="_gcwsEditorArea"/>
+        <children xsi:type="basic:PartStack" xmi:id="_gcwsStack" elementId="net.openchrom.xxd.control.supplier.temperature.ui.partstack.control" containerData="5800">
+          <children xsi:type="advanced:Placeholder" xmi:id="_gcwsMainPh" elementId="net.openchrom.xxd.control.supplier.temperature.ui.placeholder.main" ref="_gcwsMainPart"/>
+          <children xsi:type="advanced:Placeholder" xmi:id="_gcwsDetPh" elementId="net.openchrom.xxd.control.supplier.temperature.ui.placeholder.detector" ref="_gcwsDetPart"/>
+        </children>
+      </children>
+    </elements>
+  </fragments>
+  <fragments xsi:type="fragment:StringModelFragment" xmi:id="_gcwsSharedFrag" featurename="sharedElements" parentElementId="org.eclipse.chemclipse.rcp.app.ui.trimmedwindow.main">
+    <elements xsi:type="basic:Part" xmi:id="_gcwsMainPart" elementId="net.openchrom.xxd.control.supplier.temperature.ui.part.main" contributionURI="bundleclass://net.openchrom.xxd.control.supplier.temperature.ui/net.openchrom.xxd.control.supplier.temperature.ui.parts.MainView" label="%part.mainView"/>
+    <elements xsi:type="basic:Part" xmi:id="_gcwsDetPart" elementId="net.openchrom.xxd.control.supplier.temperature.ui.part.detector" contributionURI="bundleclass://net.openchrom.xxd.control.supplier.temperature.ui/net.openchrom.xxd.control.supplier.temperature.ui.parts.DetectorView" label="%part.detectorView"/>
+  </fragments>
+</fragment:ModelFragments>

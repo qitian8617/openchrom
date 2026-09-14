@@ -1,0 +1,23 @@
+Manifest-Version: 1.0
+Automatic-Module-Name: net.openchrom.xxd.control.supplier.temperature.ui
+Bundle-ManifestVersion: 2
+Bundle-Name: GC Instrument Reverse Control
+Bundle-SymbolicName: net.openchrom.xxd.control.supplier.temperature.ui;singleton:=true
+Bundle-Version: 1.6.32.qualifier
+Bundle-Vendor: OpenChrom
+Bundle-Activator: net.openchrom.xxd.control.supplier.temperature.ui.Activator
+Bundle-Localization: OSGI-INF/l10n/bundle
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ org.eclipse.e4.core.di;bundle-version="1.2.0",
+ org.eclipse.e4.core.contexts;bundle-version="1.2.0",
+ org.eclipse.e4.ui.model.workbench;bundle-version="1.1.0",
+ org.eclipse.e4.ui.workbench;bundle-version="0.10.100",
+ org.eclipse.swt;bundle-version="3.123.0",
+ org.eclipse.jface;bundle-version="3.18.0"
+Bundle-RequiredExecutionEnvironment: JavaSE-25
+Import-Package: jakarta.annotation;version="2.1.1",
+ jakarta.inject;version="2.0.1",
+ org.osgi.service.prefs;version="1.1.0"
+Bundle-ActivationPolicy: lazy
+Export-Package: net.openchrom.xxd.control.supplier.temperature.core

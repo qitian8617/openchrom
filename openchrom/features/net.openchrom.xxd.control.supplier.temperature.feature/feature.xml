@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="net.openchrom.xxd.control.supplier.temperature.feature"
+      label="GC Instrument Reverse Control"
+      version="1.6.32.qualifier"
+      provider-name="OpenChrom"
+      plugin="net.openchrom.feature.branding"
+      license-feature="org.eclipse.license"
+      license-feature-version="2.0.2.qualifier">
+
+   <description url="http://www.openchrom.net">
+      Main reverse-control view for FID board readiness: H2/Air pressure, flame/ignite, and FID current.
+   </description>
+
+   <copyright url="http://www.openchrom.net">
+      Copyright (c) 2026 OpenChrom
+   </copyright>
+
+   <license url="%licenseURL">
+      %license
+   </license>
+
+   <plugin
+         id="net.openchrom.xxd.control.supplier.temperature.ui"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+</feature>
