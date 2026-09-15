@@ -29,6 +29,7 @@ import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.layout.FillLayout;
@@ -48,9 +49,13 @@ import net.openchrom.xxd.control.supplier.temperature.ui.communication.ColumnOve
 import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.AcquisitionPoint;
 import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.IAcquisitionListener;
 import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.RealtimeAcquisitionManager;
+import net.openchrom.xxd.control.supplier.temperature.ui.communication.FidReadiness;
+import net.openchrom.xxd.control.supplier.temperature.ui.communication.FidReadinessMonitor;
+import net.openchrom.xxd.control.supplier.temperature.ui.communication.FidReadinessSnapshot;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.GcConnectionManager;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.GcDeviceEndpoint;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.GcTcpConnection;
+import net.openchrom.xxd.control.supplier.temperature.ui.communication.IFidReadinessListener;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.IGcConnectionListener;
 import net.openchrom.xxd.control.supplier.temperature.ui.events.GcEventListModel;
 import net.openchrom.xxd.control.supplier.temperature.ui.swt.LanguageListener;
@@ -94,8 +99,10 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 
 	private final RealtimeAcquisitionManager acquisitionManager = RealtimeAcquisitionManager.getInstance();
 	private final GcConnectionManager connectionManager = GcConnectionManager.getInstance();
+	private final FidReadinessMonitor readinessMonitor = FidReadinessMonitor.getInstance();
 	private final GcEventListModel eventModel = GcEventListModel.getInstance();
 	private final IGcConnectionListener connectionListener = this::connectionStateChanged;
+	private final IFidReadinessListener readinessListener = this::onFidReadinessChanged;
 	private ChannelRow[] rows = DEFAULT_ROWS.clone();
 	private String[] rowChannelIds = ParameterSettingsStore.DEFAULT_CHANNEL_IDS.clone();
 	private Runnable openParameterSettingsHandler;
@@ -135,6 +142,21 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 	private Label tempControlLabel;
 	private Label analysisLabel;
 	private Label acquisitionStatusLabel;
+	private Label readinessTitle;
+	private Label connectionNameLabel;
+	private Label connectionValueLabel;
+	private Label h2NameLabel;
+	private Label h2ValueLabel;
+	private Label airNameLabel;
+	private Label airValueLabel;
+	private Label flameNameLabel;
+	private Label flameValueLabel;
+	private Label fidNameLabel;
+	private Label fidValueLabel;
+	private Label readinessTipLabel;
+	private Label carrierReminderLabel;
+	private Font readinessValueFont;
+	private FidReadinessSnapshot lastReadiness = FidReadinessSnapshot.DISCONNECTED;
 	private Label trendTitleLabel;
 	private Label trendStatusLabel;
 	private Canvas trendCanvas;
@@ -157,17 +179,23 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 
 		createTable();
 		createTableButtons();
+		createReadinessCard();
 		createAcquisitionStatus();
 		createControlCard();
 		createTrendCard();
 		acquisitionManager.addListener(this);
 		connectionManager.addConnectionListener(connectionListener);
+		readinessMonitor.addListener(readinessListener);
 		startLiveTempPolling();
 		addDisposeListener(e -> {
 			acquisitionManager.removeListener(this);
 			connectionManager.removeConnectionListener(connectionListener);
+			readinessMonitor.removeListener(readinessListener);
 			stopTempPolling();
 			stopLiveTempPolling();
+			if(readinessValueFont != null && !readinessValueFont.isDisposed()) {
+				readinessValueFont.dispose();
+			}
 			if(trendRecording) {
 				try {
 					flushTrendCsv();
@@ -230,6 +258,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 		syncAuxSetpointsFromCalibration();
 		pushZoneSelectQuietly();
 		pollLiveTempsQuietly();
+		readinessMonitor.requestPoll();
 	}
 
 	public void setOpenParameterSettingsHandler(Runnable handler) {
@@ -744,6 +773,122 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 		box.setText(title == null ? "" : title);
 		box.setMessage(message == null ? "" : message);
 		box.open();
+	}
+
+	private void showWarning(String title, String message) {
+
+		MessageBox box = new MessageBox(getShell(), SWT.ICON_WARNING | SWT.OK);
+		box.setText(title == null ? "" : title);
+		box.setMessage(message == null ? "" : message);
+		box.open();
+	}
+
+	private void createReadinessCard() {
+
+		Composite card = WidgetFactory.createCard(this);
+		readinessTitle = WidgetFactory.createTitle(card, FidReadiness.title(FidReadiness.Kind.DISCONNECTED, chinese));
+		readinessValueFont = UiStyles.createBoldFont(card, 11);
+
+		Composite metrics = new Composite(card, SWT.NONE);
+		metrics.setBackground(card.getBackground());
+		GridLayout metricsLayout = new GridLayout(5, true);
+		metricsLayout.marginWidth = 0;
+		metricsLayout.marginHeight = 0;
+		metricsLayout.horizontalSpacing = 8;
+		metrics.setLayout(metricsLayout);
+		metrics.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+
+		connectionNameLabel = metricHeader(metrics, chinese ? "连接" : "Link");
+		h2NameLabel = metricHeader(metrics, "H₂");
+		airNameLabel = metricHeader(metrics, chinese ? "空气" : "Air");
+		flameNameLabel = metricHeader(metrics, chinese ? "火焰" : "Flame");
+		fidNameLabel = metricHeader(metrics, "FID pA");
+
+		connectionValueLabel = metricValue(metrics);
+		h2ValueLabel = metricValue(metrics);
+		airValueLabel = metricValue(metrics);
+		flameValueLabel = metricValue(metrics);
+		fidValueLabel = metricValue(metrics);
+
+		readinessTipLabel = new Label(card, SWT.WRAP);
+		readinessTipLabel.setBackground(card.getBackground());
+		GridData tipLayout = new GridData(SWT.FILL, SWT.CENTER, true, false);
+		tipLayout.widthHint = 520;
+		readinessTipLabel.setLayoutData(tipLayout);
+
+		carrierReminderLabel = new Label(card, SWT.WRAP);
+		carrierReminderLabel.setBackground(card.getBackground());
+		carrierReminderLabel.setForeground(UiStyles.color(getDisplay(), UiColors.TEXT_SECONDARY));
+		GridData reminderLayout = new GridData(SWT.FILL, SWT.CENTER, true, false);
+		reminderLayout.widthHint = 520;
+		carrierReminderLabel.setLayoutData(reminderLayout);
+		carrierReminderLabel.setText(FidReadiness.carrierReminder(chinese) + " " + FidReadiness.pressureHint(chinese));
+
+		applyReadiness(lastReadiness);
+	}
+
+	private Label metricHeader(Composite parent, String text) {
+
+		Label label = new Label(parent, SWT.NONE);
+		label.setBackground(parent.getBackground());
+		label.setForeground(UiStyles.color(getDisplay(), UiColors.TEXT_SECONDARY));
+		label.setText(text);
+		label.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		return label;
+	}
+
+	private Label metricValue(Composite parent) {
+
+		Label label = new Label(parent, SWT.NONE);
+		label.setBackground(parent.getBackground());
+		label.setForeground(UiStyles.color(getDisplay(), UiColors.TEXT));
+		if(readinessValueFont != null) {
+			label.setFont(readinessValueFont);
+		}
+		label.setText("—");
+		label.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		return label;
+	}
+
+	private void onFidReadinessChanged(FidReadinessSnapshot snapshot) {
+
+		if(isDisposed()) {
+			return;
+		}
+		getDisplay().asyncExec(() -> applyReadiness(snapshot));
+	}
+
+	private void applyReadiness(FidReadinessSnapshot snapshot) {
+
+		if(readinessTitle == null || readinessTitle.isDisposed() || snapshot == null) {
+			return;
+		}
+		lastReadiness = snapshot;
+		FidReadiness.Kind kind = snapshot.kind();
+		RGB color = readinessColor(kind);
+		readinessTitle.setText(snapshot.title(chinese));
+		connectionValueLabel.setText(snapshot.connectionText(chinese));
+		h2ValueLabel.setText(snapshot.h2Text());
+		airValueLabel.setText(snapshot.airText());
+		flameValueLabel.setText(snapshot.flameText(chinese));
+		fidValueLabel.setText(snapshot.fidPaText());
+		readinessTipLabel.setText(snapshot.operatorTip(chinese));
+		readinessTipLabel.setForeground(UiStyles.color(getDisplay(), color));
+		connectionValueLabel.setForeground(UiStyles.color(getDisplay(), snapshot.isConnected() ? UiColors.STATUS_GREEN : UiColors.STATUS_RED));
+		flameValueLabel.setForeground(UiStyles.color(getDisplay(), color));
+		fidValueLabel.setForeground(UiStyles.color(getDisplay(), kind == FidReadiness.Kind.READY ? UiColors.PRIMARY : color));
+		h2ValueLabel.setForeground(UiStyles.color(getDisplay(), snapshot.getPressure() == null ? UiColors.TEXT_SECONDARY : UiColors.PRIMARY));
+		airValueLabel.setForeground(UiStyles.color(getDisplay(), snapshot.getPressure() == null ? UiColors.TEXT_SECONDARY : UiColors.PRIMARY));
+		updateAcquisitionButtonLabel();
+	}
+
+	private static RGB readinessColor(FidReadiness.Kind kind) {
+
+		return switch(kind) {
+			case READY -> UiColors.STATUS_GREEN;
+			case IGNITING, READING -> UiColors.STATUS_BLUE;
+			case DISCONNECTED, STATUS_READ_FAIL, FID_OFFLINE, IGNITE_FAIL, FLAME_OUT -> UiColors.STATUS_RED;
+		};
 	}
 
 	private void createAcquisitionStatus() {
@@ -1809,14 +1954,24 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 
 		if(acquisitionManager.isAcquiring()) {
 			acquisitionManager.stopAcquisition();
-		} else {
-			acquisitionManager.startAcquisition();
+			updateAcquisitionButtonLabel();
+			return;
 		}
+		FidReadinessSnapshot snapshot = readinessMonitor.getSnapshot();
+		if(!snapshot.canStartAnalysis()) {
+			applyReadiness(snapshot);
+			showWarning(FidReadiness.startBlockedTitle(chinese), snapshot.operatorTip(chinese));
+			return;
+		}
+		acquisitionManager.startAcquisition();
 		updateAcquisitionButtonLabel();
 	}
 
 	private void updateAcquisitionButtonLabel() {
 
+		if(startAnalysisButton == null || startAnalysisButton.isDisposed()) {
+			return;
+		}
 		boolean running = acquisitionManager.isAcquiring();
 		if(chinese) {
 			startAnalysisButton.setText(running ? "\u505C\u6B62" : "\u542F\u52A8");
@@ -1882,6 +2037,15 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 		tempControlLabel.setText(chinese ? "\u6E29\u5EA6\u63A7\u5236" : "Temperature Control");
 		analysisLabel.setText(chinese ? "\u5F00\u59CB\u5206\u6790" : "Start Analysis");
 		startTempButton.setText(chinese ? "\u542F\u52A8" : "Start");
+		if(connectionNameLabel != null && !connectionNameLabel.isDisposed()) {
+			connectionNameLabel.setText(chinese ? "连接" : "Link");
+			h2NameLabel.setText("H₂");
+			airNameLabel.setText(chinese ? "空气" : "Air");
+			flameNameLabel.setText(chinese ? "火焰" : "Flame");
+			fidNameLabel.setText("FID pA");
+			carrierReminderLabel.setText(FidReadiness.carrierReminder(chinese) + " " + FidReadiness.pressureHint(chinese));
+			applyReadiness(lastReadiness);
+		}
 		trendTitleLabel.setText(chinese ? "进样 / 检测器 / 柱箱 实时曲线" : "Inlet / Detector / Oven Trend");
 		startRecordButton.setText(chinese ? "开始记录" : "Start Log");
 		stopRecordButton.setText(chinese ? "停止记录" : "Stop Log");
