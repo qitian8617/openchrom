@@ -63,12 +63,13 @@ import net.openchrom.xxd.control.supplier.temperature.ui.communication.GcTcpConn
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.IFidReadinessListener;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.IGcConnectionListener;
 import net.openchrom.xxd.control.supplier.temperature.ui.events.GcEventListModel;
+import net.openchrom.xxd.control.supplier.temperature.ui.sequence.InjectionSequenceManager;
 import net.openchrom.xxd.control.supplier.temperature.ui.swt.LanguageListener;
 import net.openchrom.xxd.control.supplier.temperature.ui.swt.UiColors;
 import net.openchrom.xxd.control.supplier.temperature.ui.swt.UiStyles;
 import net.openchrom.xxd.control.supplier.temperature.ui.swt.WidgetFactory;
 
-public class MainView extends Composite implements LanguageListener, IAcquisitionListener {
+public class MainView extends Composite implements LanguageListener, IAcquisitionListener, InjectionSequenceManager.Listener {
 
 	private static final Logger logger = Logger.getLogger(MainView.class);
 	private static final long OVEN_TEMP_IO_TIMEOUT_MS = 5_000;
@@ -103,6 +104,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 	};
 
 	private final RealtimeAcquisitionManager acquisitionManager = RealtimeAcquisitionManager.getInstance();
+	private final InjectionSequenceManager sequenceManager = InjectionSequenceManager.getInstance();
 	private final GcConnectionManager connectionManager = GcConnectionManager.getInstance();
 	private final FidReadinessMonitor readinessMonitor = FidReadinessMonitor.getInstance();
 	private final GcEventListModel eventModel = GcEventListModel.getInstance();
@@ -111,6 +113,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 	private ChannelRow[] rows = DEFAULT_ROWS.clone();
 	private String[] rowChannelIds = ParameterSettingsStore.DEFAULT_CHANNEL_IDS.clone();
 	private Runnable openParameterSettingsHandler;
+	private Runnable openSequenceHandler;
 	private Supplier<String[]> channelIdReader;
 	private boolean tempControlRunning;
 	private boolean tempControlBusy;
@@ -147,6 +150,8 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 	private Label tempControlLabel;
 	private Label analysisLabel;
 	private Label acquisitionStatusLabel;
+	private Label sequenceCurrentLabel;
+	private Button openSequenceButton;
 	private String lastSavedChromatogramPath;
 	private boolean lastSavedHandedToBaijiu;
 	private Label readinessTitle;
@@ -189,14 +194,17 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 		createTableButtons();
 		createReadinessCard();
 		createAcquisitionStatus();
+		createSequenceCard();
 		createControlCard();
 		createTrendCard();
 		acquisitionManager.addListener(this);
+		sequenceManager.addListener(this);
 		connectionManager.addConnectionListener(connectionListener);
 		readinessMonitor.addListener(readinessListener);
 		startLiveTempPolling();
 		addDisposeListener(e -> {
 			acquisitionManager.removeListener(this);
+			sequenceManager.removeListener(this);
 			connectionManager.removeConnectionListener(connectionListener);
 			readinessMonitor.removeListener(readinessListener);
 			stopTempPolling();
@@ -267,11 +275,17 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 		pushZoneSelectQuietly();
 		pollLiveTempsQuietly();
 		readinessMonitor.requestPoll();
+		refreshSequenceStrip();
 	}
 
 	public void setOpenParameterSettingsHandler(Runnable handler) {
 
 		this.openParameterSettingsHandler = handler;
+	}
+
+	public void setOpenSequenceHandler(Runnable handler) {
+
+		this.openSequenceHandler = handler;
 	}
 
 	public void setChannelIdReader(Supplier<String[]> reader) {
@@ -938,6 +952,49 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 		acquisitionStatusLabel.setForeground(UiStyles.color(getDisplay(), UiColors.TEXT_SECONDARY));
 		acquisitionStatusLabel.setText(idleStatusText());
 		acquisitionStatusLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+	}
+
+	private void createSequenceCard() {
+
+		Composite card = WidgetFactory.createCard(this);
+		Composite row = new Composite(card, SWT.NONE);
+		row.setBackground(card.getBackground());
+		row.setLayout(new GridLayout(2, false));
+		row.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		sequenceCurrentLabel = new Label(row, SWT.WRAP);
+		sequenceCurrentLabel.setBackground(card.getBackground());
+		sequenceCurrentLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		openSequenceButton = WidgetFactory.createSecondaryButton(row, chinese ? "打开序列" : "Open sequence");
+		openSequenceButton.addListener(SWT.Selection, e -> {
+			if(openSequenceHandler != null) {
+				openSequenceHandler.run();
+			}
+		});
+		refreshSequenceStrip();
+	}
+
+	@Override
+	public void onSequenceChanged() {
+
+		if(isDisposed()) {
+			return;
+		}
+		getDisplay().asyncExec(() -> {
+			if(!isDisposed()) {
+				refreshSequenceStrip();
+			}
+		});
+	}
+
+	private void refreshSequenceStrip() {
+
+		if(sequenceCurrentLabel == null || sequenceCurrentLabel.isDisposed()) {
+			return;
+		}
+		sequenceCurrentLabel.setText(sequenceManager.currentSummary(chinese));
+		if(openSequenceButton != null && !openSequenceButton.isDisposed()) {
+			openSequenceButton.setText(chinese ? "打开序列" : "Open sequence");
+		}
 	}
 
 	private void createControlCard() {
@@ -2135,5 +2192,6 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 			trendCanvas.redraw();
 		}
 		updateAcquisitionButtonLabel();
+		refreshSequenceStrip();
 	}
 }

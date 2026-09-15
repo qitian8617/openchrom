@@ -15,6 +15,7 @@ public enum PanelView {
 	AUX_PID,
 	DETECTOR,
 	EVENTS,
+	SEQUENCE,
 	STOPWATCH,
 	SETTINGS
 }
