@@ -110,6 +110,8 @@ public class BaijiuHandoffBridge_1_Test {
 		assertEquals("白酒分析", BaijiuHandoffMessages.buttonLabel(true));
 		assertEquals("Baijiu Analysis", BaijiuHandoffMessages.buttonLabel(false));
 		assertTrue(BaijiuHandoffMessages.dialogHint(true).contains("白酒工作台"));
+		assertTrue(BaijiuHandoffMessages.autoOpenLabel(true).contains("白酒工作台"));
+		assertEquals("关闭", BaijiuHandoffMessages.closeLabel(true));
 		assertTrue(AcquisitionMessages.saveSuccessStatus("/tmp/a.ocb", true, true).contains("白酒工作台"));
 	}
 

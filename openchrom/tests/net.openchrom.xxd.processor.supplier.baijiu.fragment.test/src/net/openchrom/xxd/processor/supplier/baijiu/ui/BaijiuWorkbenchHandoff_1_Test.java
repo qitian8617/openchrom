@@ -10,6 +10,7 @@
 package net.openchrom.xxd.processor.supplier.baijiu.ui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -62,7 +63,29 @@ public class BaijiuWorkbenchHandoff_1_Test {
 		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui.BaijiuWorkbenchHandoff", BaijiuWorkbenchHandoff.TYPE_NAME);
 		assertEquals("openFile", BaijiuWorkbenchHandoff.OPEN_FILE_METHOD);
 		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui", BaijiuWorkbenchHandoff.BUNDLE_ID);
-		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui.part.workbench", BaijiuWorkbenchHandoff.PART_ID);
-		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui.perspective.workbench", OpenBaijiuPerspectiveHandler.PERSPECTIVE_ID);
+		assertEquals(BaijiuPerspectiveIds.PART_ID, BaijiuWorkbenchHandoff.PART_ID);
+		assertEquals(BaijiuPerspectiveIds.PERSPECTIVE_ID, OpenBaijiuPerspectiveHandler.PERSPECTIVE_ID);
+		assertEquals(BaijiuPerspectiveIds.PERSPECTIVE_STACK_ID, OpenBaijiuPerspectiveHandler.PERSPECTIVE_STACK_ID);
+	}
+
+	@Test
+	public void perspectiveMatcherAcceptsE4IdAndLocalizedLabels() {
+
+		assertTrue(BaijiuPerspectiveIds.matches(BaijiuPerspectiveIds.PERSPECTIVE_ID, null));
+		assertTrue(BaijiuPerspectiveIds.matches("net.openchrom.xxd.processor.supplier.baijiu.ui.perspective.workbench", "other"));
+		assertTrue(BaijiuPerspectiveIds.matches("custom.id", "白酒工作台"));
+		assertTrue(BaijiuPerspectiveIds.matches(null, "Baijiu Workbench"));
+		assertTrue(BaijiuPerspectiveIds.matches("net.openchrom.xxd.processor.supplier.baijiu.ui.perspective.branded", ""));
+		assertTrue(OpenBaijiuPerspectiveHandler.isBaijiuPerspective(OpenBaijiuPerspectiveHandler.PERSPECTIVE_ID, null));
+	}
+
+	@Test
+	public void perspectiveMatcherRejectsUnrelatedViews() {
+
+		assertFalse(BaijiuPerspectiveIds.matches("org.eclipse.ui.resourcePerspective", "Resource"));
+		assertFalse(BaijiuPerspectiveIds.matches(null, "白酒分析"));
+		assertFalse(BaijiuPerspectiveIds.matches("", ""));
+		assertFalse(BaijiuPerspectiveIds.matches(null, null));
+		assertFalse(OpenBaijiuPerspectiveHandler.isBaijiuPerspective(null, "白酒分析"));
 	}
 }
