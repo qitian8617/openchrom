@@ -27,6 +27,7 @@ public final class BaijiuHandoffBridge {
 	public static final String BUNDLE_ID = BaijiuHandoffMessages.BUNDLE_ID;
 	public static final String HANDOFF_TYPE = "net.openchrom.xxd.processor.supplier.baijiu.ui.BaijiuWorkbenchHandoff";
 	public static final String OPEN_FILE_METHOD = "openFile";
+	public static final String OPEN_SEQUENCE_METHOD = "openSequence";
 
 	private BaijiuHandoffBridge() {
 	}
@@ -90,6 +91,32 @@ public final class BaijiuHandoffBridge {
 			return BaijiuHandoffOutcome.failed(error);
 		} catch(Throwable t) {
 			logger.warn("Baijiu workbench handoff failed", t);
+			String detail = t.getCause() != null && t.getCause().getMessage() != null ? t.getCause().getMessage() : t.getMessage();
+			return BaijiuHandoffOutcome.failed(detail);
+		}
+	}
+
+	/**
+	 * Switch to the Baijiu workbench and open the injection-sequence editor.
+	 * Reverse-control does not host a full sequence page. Never throws.
+	 */
+	public static BaijiuHandoffOutcome openSequence() {
+
+		if(!isPluginPresent()) {
+			return BaijiuHandoffOutcome.missingPlugin();
+		}
+		try {
+			Bundle bundle = requireBundle();
+			Class<?> type = bundle.loadClass(HANDOFF_TYPE);
+			Method method = type.getMethod(OPEN_SEQUENCE_METHOD);
+			Object raw = method.invoke(null);
+			String error = raw instanceof String ? (String)raw : "";
+			if(error == null || error.isBlank()) {
+				return BaijiuHandoffOutcome.opened("");
+			}
+			return BaijiuHandoffOutcome.failed(error);
+		} catch(Throwable t) {
+			logger.warn("Baijiu sequence editor handoff failed", t);
 			String detail = t.getCause() != null && t.getCause().getMessage() != null ? t.getCause().getMessage() : t.getMessage();
 			return BaijiuHandoffOutcome.failed(detail);
 		}

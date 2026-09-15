@@ -8,6 +8,7 @@
     <elements xsi:type="commands:Command" xmi:id="_baijiuReportCmd" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.command.report" commandName="%command.baijiuReport"/>
     <elements xsi:type="commands:Command" xmi:id="_baijiuWizardCmd" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.command.wizard" commandName="%command.baijiuWizard"/>
     <elements xsi:type="commands:Command" xmi:id="_baijiuBatchCmd" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.command.batch" commandName="%command.baijiuBatch"/>
+    <elements xsi:type="commands:Command" xmi:id="_baijiuSeqCmd" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.command.sequence" commandName="%command.baijiuSequence"/>
     <elements xsi:type="commands:Command" xmi:id="_baijiuPerspCmd" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.command.perspective" commandName="%command.baijiuPerspective"/>
   </fragments>
   <fragments xsi:type="fragment:StringModelFragment" xmi:id="_baijiuHdlFrag" featurename="handlers" parentElementId="org.eclipse.chemclipse.rcp.ide.application">
@@ -17,6 +18,7 @@
     <elements xsi:type="commands:Handler" xmi:id="_baijiuReportHdl" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.handler.report" contributionURI="bundleclass://net.openchrom.xxd.processor.supplier.baijiu.ui/net.openchrom.xxd.processor.supplier.baijiu.ui.handlers.OpenBaijiuReportHandler" command="_baijiuReportCmd"/>
     <elements xsi:type="commands:Handler" xmi:id="_baijiuWizardHdl" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.handler.wizard" contributionURI="bundleclass://net.openchrom.xxd.processor.supplier.baijiu.ui/net.openchrom.xxd.processor.supplier.baijiu.ui.handlers.OpenBaijiuWizardHandler" command="_baijiuWizardCmd"/>
     <elements xsi:type="commands:Handler" xmi:id="_baijiuBatchHdl" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.handler.batch" contributionURI="bundleclass://net.openchrom.xxd.processor.supplier.baijiu.ui/net.openchrom.xxd.processor.supplier.baijiu.ui.handlers.OpenBaijiuBatchHandler" command="_baijiuBatchCmd"/>
+    <elements xsi:type="commands:Handler" xmi:id="_baijiuSeqHdl" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.handler.sequence" contributionURI="bundleclass://net.openchrom.xxd.processor.supplier.baijiu.ui/net.openchrom.xxd.processor.supplier.baijiu.ui.handlers.OpenBaijiuSequenceHandler" command="_baijiuSeqCmd"/>
     <elements xsi:type="commands:Handler" xmi:id="_baijiuPerspHdl" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.handler.perspective" contributionURI="bundleclass://net.openchrom.xxd.processor.supplier.baijiu.ui/net.openchrom.xxd.processor.supplier.baijiu.ui.handlers.OpenBaijiuPerspectiveHandler" command="_baijiuPerspCmd"/>
   </fragments>
   <fragments xsi:type="fragment:StringModelFragment" xmi:id="_baijiuMenuFrag" featurename="children" parentElementId="org.eclipse.chemclipse.rcp.app.ui.menu.plugins">
@@ -26,6 +28,7 @@
       <children xsi:type="menu:HandledMenuItem" xmi:id="_baijiuMenuItem" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.menu.open" label="%menu.openBaijiuAnalysis" command="_baijiuCmd"/>
       <children xsi:type="menu:HandledMenuItem" xmi:id="_baijiuMenuWizard" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.menu.wizard" label="%menu.baijiuWizard" command="_baijiuWizardCmd"/>
       <children xsi:type="menu:HandledMenuItem" xmi:id="_baijiuMenuBatch" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.menu.batch" label="%menu.baijiuBatch" command="_baijiuBatchCmd"/>
+      <children xsi:type="menu:HandledMenuItem" xmi:id="_baijiuMenuSeq" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.menu.sequence" label="%menu.baijiuSequence" command="_baijiuSeqCmd"/>
       <children xsi:type="menu:HandledMenuItem" xmi:id="_baijiuMenuReport" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.menu.report" label="%menu.baijiuReport" command="_baijiuReportCmd"/>
       <children xsi:type="menu:HandledMenuItem" xmi:id="_baijiuMenuPersp" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.menu.perspective" label="%menu.baijiuPerspective" command="_baijiuPerspCmd"/>
     </elements>

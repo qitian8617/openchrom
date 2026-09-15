@@ -15,7 +15,15 @@ public enum PanelView {
 	AUX_PID,
 	DETECTOR,
 	EVENTS,
-	SEQUENCE,
 	STOPWATCH,
-	SETTINGS
+	SETTINGS;
+
+	/**
+	 * Bottom-bar pages on reverse-control. Sequence editing lives on the Baijiu
+	 * workbench, not here. {@link #AUX_PID} is a debug page, not a nav item.
+	 */
+	public static PanelView[] navigationViews() {
+
+		return new PanelView[] {MAIN, COLUMN_OVEN, DETECTOR, EVENTS, STOPWATCH, SETTINGS};
+	}
 }

@@ -21,12 +21,14 @@ import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService.PartState;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 
 import net.openchrom.xxd.processor.supplier.baijiu.ui.handlers.OpenBaijiuChromatogramHandler;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.handlers.OpenBaijiuPerspectiveHandler;
+import net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuSequenceShell;
 
 /**
  * Programmatic entry used by the GC reverse-control plugin after a successful
@@ -40,6 +42,7 @@ public final class BaijiuWorkbenchHandoff {
 	public static final String FEATURE_ID = "net.openchrom.xxd.processor.supplier.baijiu.feature";
 	public static final String TYPE_NAME = "net.openchrom.xxd.processor.supplier.baijiu.ui.BaijiuWorkbenchHandoff";
 	public static final String OPEN_FILE_METHOD = "openFile";
+	public static final String OPEN_SEQUENCE_METHOD = "openSequence";
 	public static final String PART_ID = BaijiuPerspectiveIds.PART_ID;
 
 	private BaijiuWorkbenchHandoff() {
@@ -87,6 +90,24 @@ public final class BaijiuWorkbenchHandoff {
 		return openFileOnUi(file);
 	}
 
+	/**
+	 * Switch to the Baijiu workbench and open the injection-sequence editor.
+	 * Safe to call off the UI thread. Empty string means the editor opened.
+	 */
+	public static String openSequence() {
+
+		Display display = Display.getDefault();
+		if(display == null || display.isDisposed()) {
+			return "\u65e0\u6cd5\u6253\u5f00\u8fdb\u6837\u5e8f\u5217\uff1a\u6ca1\u6709\u7528\u6237\u754c\u9762\u3002";
+		}
+		if(display.getThread() != Thread.currentThread()) {
+			final String[] error = new String[] {""};
+			display.syncExec(() -> error[0] = openSequenceOnUi());
+			return error[0] == null ? "" : error[0];
+		}
+		return openSequenceOnUi();
+	}
+
 	private static String openFileOnUi(File file) {
 
 		boolean perspectiveOk = OpenBaijiuPerspectiveHandler.showPerspective();
@@ -100,6 +121,14 @@ public final class BaijiuWorkbenchHandoff {
 			return "\u8272\u8c31\u56fe\u5df2\u6253\u5f00\uff0c\u4f46\u65e0\u6cd5\u5207\u6362\u767d\u9152\u5de5\u4f5c\u53f0\u89c6\u56fe\u3002\u8bf7\u5728\u300c\u7a97\u53e3 \u2192 \u89c6\u56fe\u300d\u4e2d\u9009\u62e9\u300c\u767d\u9152\u5de5\u4f5c\u53f0\u300d\u3002";
 		}
 		return "\u65e0\u6cd5\u5207\u6362\u767d\u9152\u5de5\u4f5c\u53f0\uff0c\u4e5f\u672a\u80fd\u6253\u5f00\u8272\u8c31\u56fe\u3002\u8bf7\u5b89\u88c5/\u542f\u7528\u300c\u767d\u9152\u5206\u6790\u300d\u529f\u80fd\uff08" + FEATURE_ID + "\uff09\u3002";
+	}
+
+	private static String openSequenceOnUi() {
+
+		OpenBaijiuPerspectiveHandler.showPerspective();
+		showWorkbenchPart();
+		Shell parent = Display.getDefault().getActiveShell();
+		return BaijiuSequenceShell.open(parent);
 	}
 
 	private static boolean showWorkbenchPart() {

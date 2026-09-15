@@ -1,14 +1,16 @@
 # GC-FID injection sequence (pilot queue)
 
-A **simple injection queue** for the reverse-control panel: Blank / Mix-standard (混标) / QC / Sample×N. It tracks intended needles and status. It does **not** drive an autosampler.
+A **simple injection queue** for the Baijiu workbench: Blank / Mix-standard (混标) / QC / Sample×N. It tracks intended needles and status. It does **not** drive an autosampler.
+
+The shared model still lives in the reverse-control plugin so **开始分析** on Main can mark running / done / failed and advance. The full editor is a CDS/lab-workflow concern, not an instrument-control page.
 
 ## Where it lives
 
-- Nav tab **序列 / Seq** on the temperature (GC reverse-control) panel.
-- Main shows the current row next to Start Analysis, with **打开序列**.
+- **白酒工作台** action **进样序列** (also **插件 → 白酒工作台 → 进样序列**): build, edit, reorder, skip, retry, save/load JSON.
+- Reverse-control **Main** shows a compact read-only **当前针** strip (type / id / name / status) and **在白酒工作台打开序列**. There is **no** **序列** navigation tab on the GC panel.
 - Baijiu **简单批量** is unchanged: quantitative matrix on already-saved `.ocb` files (checklist item 8 territory).
 
-No third reverse-control plugin.
+No third reverse-control plugin. Reverse-control does not hard-require Baijiu; Baijiu optionally sees the sequence API exported from `temperature.ui`.
 
 ## Default folder
 
@@ -25,11 +27,11 @@ The working queue auto-saves as `current.json` in that folder. **保存序列…
 ## Operator steps (manual inject)
 
 1. Heat inlet / detector / oven. Ignite FID. Wait until Main shows **FID 就绪**.
-2. Open **序列**. Click **填入典型队列** and set 样品数 (for example 3) → rows: 空白, 混标, QC, 样品×N. Or add rows one by one: **+ 空白 / + 混标 / + QC / + 样品**. Edit 编号 / 名称 / 备注, **保存本行**. Reorder with **上移 / 下移**. **设为当前** points at the next needle.
+2. Open **白酒工作台 → 进样序列**. Click **填入典型队列** and set 样品数 (for example 3) → rows: 空白, 混标, QC, 样品×N. Or add rows one by one: **+ 空白 / + 混标 / + QC / + 样品**. Edit 编号 / 名称 / 备注, **保存本行**. Reorder with **上移 / 下移**. **设为当前** points at the next needle.
 3. Optional: **保存序列…** to keep a named JSON next to other batches.
-4. Inject the **current** vial (▶ row). Main → **开始分析 → 启动**. The current row becomes **运行中**.
+4. Switch to **气相色谱控制台** Main. The strip shows the current vial. Inject that vial (▶ row). Main → **开始分析 → 启动**. The current row becomes **运行中**.
 5. **停止** or wait for device `ACQ_DONE`. On a successful save, the row becomes **已完成**, the chromatogram path is stored, and the pointer advances to the next **待进样**. The usual Baijiu handoff dialog is unchanged.
-6. Repeat inject → Start Analysis for 混标, QC, then each 样品. **跳过** unused rows; **重试** a **失败** or **已跳过** row (clears the file link and makes it current).
+6. Repeat inject → Start Analysis for 混标, QC, then each 样品. In the Baijiu sequence editor, **跳过** unused rows; **重试** a **失败** or **已跳过** row (clears the file link and makes it current).
 7. An empty sequence does **not** block Start Analysis.
 
 ## Status

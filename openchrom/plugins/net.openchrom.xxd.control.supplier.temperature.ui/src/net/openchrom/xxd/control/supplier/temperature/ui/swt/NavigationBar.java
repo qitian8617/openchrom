@@ -23,10 +23,8 @@ import org.eclipse.swt.widgets.Label;
 
 public class NavigationBar extends Composite implements LanguageListener {
 
-	private static final PanelView[] NAV_VIEWS = {
-			PanelView.MAIN, PanelView.COLUMN_OVEN, PanelView.DETECTOR, PanelView.EVENTS, PanelView.SEQUENCE, PanelView.STOPWATCH, PanelView.SETTINGS
-	};
-	private static final String[] ICONS = {"\u2302", "\u2668", "\u2697", "\u2630", "\u2261", "\u23F1", "\u2699"};
+	private static final PanelView[] NAV_VIEWS = PanelView.navigationViews();
+	private static final String[] ICONS = {"\u2302", "\u2668", "\u2697", "\u2630", "\u23F1", "\u2699"};
 
 	private final Consumer<PanelView> onSelect;
 	private final Map<PanelView, Composite> navItems = new EnumMap<>(PanelView.class);
@@ -97,7 +95,6 @@ public class NavigationBar extends Composite implements LanguageListener {
 				case AUX_PID -> "进样PID";
 				case DETECTOR -> "检测器";
 				case EVENTS -> "事件";
-				case SEQUENCE -> "序列";
 				case STOPWATCH -> "秒表";
 				case SETTINGS -> "设置";
 			};
@@ -108,7 +105,6 @@ public class NavigationBar extends Composite implements LanguageListener {
 			case AUX_PID -> "Aux PID";
 			case DETECTOR -> "Detector";
 			case EVENTS -> "Events";
-			case SEQUENCE -> "Seq";
 			case STOPWATCH -> "Stopwatch";
 			case SETTINGS -> "Settings";
 		};

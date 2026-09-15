@@ -25,8 +25,9 @@ import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.RealtimeAcq
 
 /**
  * Session sequence: persist under {@code ~/OpenChrom/Sequences/} and advance
- * when Main Start Analysis starts / saves. Optional — an empty queue does not
- * block acquisition.
+ * when Main Start Analysis starts / saves. The full editor lives on the Baijiu
+ * workbench; Main only shows the current vial. Optional — an empty queue does
+ * not block acquisition.
  */
 public final class InjectionSequenceManager implements IAcquisitionListener {
 

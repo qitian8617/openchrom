@@ -25,7 +25,7 @@ Emergency stop (panel may send even while PC is online; firmware must not refuse
 
 Acquisition `START_ACQ` / `STOP_ACQ` is always PC-only. Panel "Start analysis" does not send those frames.
 
-After Stop or device `ACQ_DONE`, the workstation writes an openable chromatogram (`.ocb`, XY fallback) under `~/OpenChrom/Acquisitions/` and offers **白酒分析** into the Baijiu workbench (see [GCWS-ACQUISITION-SAVE.md](GCWS-ACQUISITION-SAVE.md)). The reverse-control **序列** tab can track Blank / 混标 / QC / Sample×N for those needles (see [GCWS-SEQUENCE.md](GCWS-SEQUENCE.md)).
+After Stop or device `ACQ_DONE`, the workstation writes an openable chromatogram (`.ocb`, XY fallback) under `~/OpenChrom/Acquisitions/` and offers **白酒分析** into the Baijiu workbench (see [GCWS-ACQUISITION-SAVE.md](GCWS-ACQUISITION-SAVE.md)). Arrange Blank / 混标 / QC / Sample×N on **白酒工作台 → 进样序列**; Main only shows the current vial (see [GCWS-SEQUENCE.md](GCWS-SEQUENCE.md)).
 
 ## Handshake and write lock
 
