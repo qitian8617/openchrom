@@ -34,6 +34,7 @@ public final class BaijiuMethodSettings {
 	private double sampleVolumeMl = DEFAULT_SAMPLE_ML;
 	private double istdVolumeMl = DEFAULT_ISTD_ML;
 	private double defaultWindowMin = DEFAULT_WINDOW_MIN;
+	private double instrumentRtOffsetMin = BaijiuCatalog.DEFAULT_INSTRUMENT_RT_OFFSET_MIN;
 	private double gb2757GrainLimit100VolGL = Double.NaN;
 	private double gb2757OtherLimit100VolGL = Double.NaN;
 	private String gb2757Standard = "GB 2757";
@@ -49,15 +50,71 @@ public final class BaijiuMethodSettings {
 
 		BaijiuMethodSettings settings = new BaijiuMethodSettings();
 		BaijiuMethodIO.applyBundledDefaults(settings);
+		settings.seedFrozenLibrary();
 		settings.seedInstrumentRetentionTimes();
 		return settings;
+	}
+
+	/**
+	 * Fill omitted compound names, mix levels, and RT windows from the catalog
+	 * so a shipped {@code *.bjm} is self-contained after export.
+	 */
+	public void seedFrozenLibrary() {
+
+		for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
+			compoundNames.putIfAbsent(compound.getId(), compound.getName());
+			mixGramsPerLiter.putIfAbsent(compound.getId(), compound.getDefaultMixGramsPerLiter());
+			windowMin.putIfAbsent(compound.getId(), defaultWindowMin);
+		}
 	}
 
 	public void seedInstrumentRetentionTimes() {
 
 		for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
-			instrumentRtMin.putIfAbsent(compound.getId(), BaijiuCatalog.defaultInstrumentRtMin(compound));
+			instrumentRtMin.putIfAbsent(compound.getId(), compound.getVendorRtMin() + instrumentRtOffsetMin);
 		}
+	}
+
+	/**
+	 * Replace every plant-method field with {@code source} (used by {@code *.bjm} load / restore).
+	 */
+	public void replaceWith(BaijiuMethodSettings source) {
+
+		if(source == null || source == this) {
+			return;
+		}
+		setMethodName(source.getMethodName());
+		setColumnSummary(source.getColumnSummary());
+		setOvenProgram(source.getOvenProgram());
+		setSamplingRateHz(source.getSamplingRateHz());
+		setRunTimeMin(source.getRunTimeMin());
+		setIstdName(source.getIstdName());
+		setAromaTemplate(source.getAromaTemplate());
+		setCarrierGas(source.getCarrierGas());
+		setSplitRatio(source.getSplitRatio());
+		setInjectorTempC(source.getInjectorTempC());
+		setDetectorTempC(source.getDetectorTempC());
+		setIstdStockGramsPerLiter(source.getIstdStockGramsPerLiter());
+		setSampleVolumeMl(source.getSampleVolumeMl());
+		setIstdVolumeMl(source.getIstdVolumeMl());
+		setDefaultWindowMin(source.getDefaultWindowMin());
+		setInstrumentRtOffsetMin(source.getInstrumentRtOffsetMin());
+		setGb2757GrainLimit100VolGL(source.getGb2757GrainLimit100VolGL());
+		setGb2757OtherLimit100VolGL(source.getGb2757OtherLimit100VolGL());
+		setGb2757Standard(source.getGb2757Standard());
+		setGb2757LimitSource(source.getGb2757LimitSource());
+		replaceMap(compoundNames, source.compoundNames);
+		replaceMap(instrumentRtMin, source.instrumentRtMin);
+		replaceMap(windowMin, source.windowMin);
+		replaceMap(mixGramsPerLiter, source.mixGramsPerLiter);
+		replaceMap(responseFactors, source.responseFactors);
+		replaceMap(manualAssignmentsRtMin, source.manualAssignmentsRtMin);
+	}
+
+	private static <V> void replaceMap(Map<String, V> target, Map<String, V> source) {
+
+		target.clear();
+		target.putAll(source);
 	}
 
 	public String getMethodName() {
@@ -208,6 +265,16 @@ public final class BaijiuMethodSettings {
 	public void setDefaultWindowMin(double defaultWindowMin) {
 
 		this.defaultWindowMin = defaultWindowMin;
+	}
+
+	public double getInstrumentRtOffsetMin() {
+
+		return instrumentRtOffsetMin;
+	}
+
+	public void setInstrumentRtOffsetMin(double instrumentRtOffsetMin) {
+
+		this.instrumentRtOffsetMin = Double.isNaN(instrumentRtOffsetMin) ? BaijiuCatalog.DEFAULT_INSTRUMENT_RT_OFFSET_MIN : instrumentRtOffsetMin;
 	}
 
 	public double getGb2757GrainLimit100VolGL() {

@@ -50,7 +50,12 @@ public class BaijiuCatalog_1_Test {
 		assertEquals("17.6", properties.getProperty("istd.stock.gl"));
 		assertEquals("1.00", properties.getProperty("volume.sample.ml"));
 		assertEquals("0.10", properties.getProperty("volume.istd.ml"));
+		assertEquals(BaijiuCatalog.COLUMN_DETAILS, properties.getProperty("column.summary"));
+		assertEquals(BaijiuCatalog.ISTD_NAME, properties.getProperty("istd.name"));
+		assertEquals("0.055", properties.getProperty("instrument.rt.offset.min"));
 		BaijiuMethodSettings settings = BaijiuMethodSettings.defaultNongxiangFid();
+		assertEquals(BaijiuCatalog.COLUMN_DETAILS, settings.getColumnSummary());
+		assertEquals(BaijiuCatalog.ISTD_NAME, settings.getIstdName());
 		assertEquals(0.6d, settings.getGb2757GrainLimit100VolGL(), 1.0e-9d);
 		assertEquals(2.0d, settings.getGb2757OtherLimit100VolGL(), 1.0e-9d);
 		assertFalse(Double.isNaN(settings.getGb2757GrainLimit100VolGL()));
