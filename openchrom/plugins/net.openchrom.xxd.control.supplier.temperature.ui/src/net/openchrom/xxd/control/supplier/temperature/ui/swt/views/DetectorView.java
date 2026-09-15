@@ -31,9 +31,13 @@ import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Text;
 
 import net.openchrom.xxd.control.supplier.temperature.ui.Activator;
+import net.openchrom.xxd.control.supplier.temperature.ui.communication.FidReadiness;
+import net.openchrom.xxd.control.supplier.temperature.ui.communication.FidReadinessMonitor;
+import net.openchrom.xxd.control.supplier.temperature.ui.communication.FidReadinessSnapshot;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.GcConnectionManager;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.GcDeviceEndpoint;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.GcTcpConnection;
+import net.openchrom.xxd.control.supplier.temperature.ui.communication.IFidReadinessListener;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.IGcConnectionListener;
 import net.openchrom.xxd.control.supplier.temperature.ui.swt.LanguageListener;
 import net.openchrom.xxd.control.supplier.temperature.ui.swt.UiColors;
@@ -44,12 +48,13 @@ public class DetectorView extends Composite implements LanguageListener {
 
 	private static final Logger logger = Logger.getLogger(DetectorView.class);
 	private static final long IO_TIMEOUT_MS = 8_000;
-	private static final long POLL_MS = 1_000;
 	private static final long IGNITION_GUARD_MS = 12_000;
 	private static final long IGNITION_COOLDOWN_MS = 4_000;
 
 	private final GcConnectionManager connectionManager = GcConnectionManager.getInstance();
+	private final FidReadinessMonitor readinessMonitor = FidReadinessMonitor.getInstance();
 	private final IGcConnectionListener connectionListener = this::onConnectionChanged;
+	private final IFidReadinessListener readinessListener = this::onReadinessChanged;
 
 	private Label titleLabel;
 	private Label autoIgnitionTitle;
@@ -69,15 +74,14 @@ public class DetectorView extends Composite implements LanguageListener {
 	private boolean chinese = true;
 	private boolean applyingRemote;
 	private boolean busy;
-	private boolean pollBusy;
 	private boolean valvesOpen;
 	private boolean ignitionCommandSent;
 	private boolean ignitionBusySeen;
 	private boolean deviceIgniting;
 	private long ignitionGuardUntilMs;
 	private long ignitionCooldownUntilMs;
-	private Runnable pollRunnable;
 	private Runnable ignitionCooldownRunnable;
+	private FidReadinessSnapshot lastSnapshot = FidReadinessSnapshot.DISCONNECTED;
 
 	public DetectorView(Composite parent, int style) {
 
@@ -166,14 +170,16 @@ public class DetectorView extends Composite implements LanguageListener {
 		statusLabel = new Label(this, SWT.WRAP);
 		statusLabel.setBackground(getBackground());
 		statusLabel.setForeground(UiStyles.color(getDisplay(), UiColors.TEXT_SECONDARY));
-		statusLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		GridData statusLayout = new GridData(SWT.FILL, SWT.CENTER, true, false);
+		statusLayout.widthHint = 520;
+		statusLabel.setLayoutData(statusLayout);
 		statusLabel.setText(idleStatusText());
 
 		connectionManager.addConnectionListener(connectionListener);
-		startPolling();
+		readinessMonitor.addListener(readinessListener);
 		addDisposeListener(e -> {
 			connectionManager.removeConnectionListener(connectionListener);
-			stopPolling();
+			readinessMonitor.removeListener(readinessListener);
 			stopIgnitionCooldownTimer();
 			if(pressureValueFont != null && !pressureValueFont.isDisposed()) {
 				pressureValueFont.dispose();
@@ -184,7 +190,7 @@ public class DetectorView extends Composite implements LanguageListener {
 
 	public void onShown() {
 
-		pollStatusQuietly();
+		readinessMonitor.requestPoll();
 	}
 
 	private void addGasRow(Composite parent, int index, String value) {
@@ -352,7 +358,7 @@ public class DetectorView extends Composite implements LanguageListener {
 						return;
 					}
 					statusLabel.setText(chinese ? "点火已启动，等待火焰判定..." : "Ignition started, waiting for flame...");
-					pollStatusQuietly();
+					readinessMonitor.requestPoll();
 				});
 			} catch(Exception ex) {
 				logger.warn("FID ignite failed", ex);
@@ -410,7 +416,7 @@ public class DetectorView extends Composite implements LanguageListener {
 					}
 					setBusy(false);
 					statusLabel.setText(chinese ? "阀1、阀2已关闭" : "Valve 1 and valve 2 closed");
-					pollStatusQuietly();
+					readinessMonitor.requestPoll();
 				});
 			} catch(Exception ex) {
 				logger.warn("FID valves off failed", ex);
@@ -442,7 +448,7 @@ public class DetectorView extends Composite implements LanguageListener {
 					}
 					setBusy(false);
 					statusLabel.setText(chinese ? "阀1、阀2已打开" : "Valve 1 and valve 2 opened");
-					pollStatusQuietly();
+					readinessMonitor.requestPoll();
 				});
 			} catch(Exception ex) {
 				logger.warn("FID valves on failed", ex);
@@ -473,7 +479,8 @@ public class DetectorView extends Composite implements LanguageListener {
 		valvesOpen = status.areValvesOpen();
 		applyValveButtonChrome();
 		if(!status.isOnline()) {
-			statusLabel.setText(chinese ? "FID 板离线（RS485 无应答）" : "FID board offline (no RS485 reply)");
+			statusLabel.setText(FidReadiness.operatorTip(FidReadiness.Kind.FID_OFFLINE, chinese));
+			statusLabel.setForeground(UiStyles.color(getDisplay(), UiColors.STATUS_RED));
 			return;
 		}
 		String flame = status.isFlame() ? (chinese ? "已着火" : "Flame on") : (chinese ? "未着火" : "Flame out");
@@ -485,77 +492,68 @@ public class DetectorView extends Composite implements LanguageListener {
 			default -> chinese ? "待机" : "Idle";
 		};
 		String det = status.isDetectorValid() ? String.format(java.util.Locale.US, "%.1f°C", status.getDetectorC()) : "—";
-		statusLabel.setText((chinese ? "状态: " : "Status: ") + state
+		FidReadiness.Kind kind = FidReadiness.classify(true, status, null);
+		statusLabel.setForeground(UiStyles.color(getDisplay(), kindColor(kind)));
+		String detail = (chinese ? "状态: " : "Status: ") + state
 				+ " · " + flame
 				+ " · " + valves
 				+ (chinese ? " · 检测器 " : " · Detector ") + det
 				+ (chinese ? " · 电流 " : " · I ") + status.getCurrentPa() + " pA"
-				+ (status.isBusy() ? (chinese ? " · 加热中" : " · coil on") : ""));
-	}
-
-	private void pollStatusQuietly() {
-
-		if(!connectionManager.isConnected() || pollBusy || isDisposed() || !isVisible()) {
+				+ (status.isBusy() ? (chinese ? " · 加热中" : " · coil on") : "");
+		if(kind == FidReadiness.Kind.IGNITE_FAIL || kind == FidReadiness.Kind.FLAME_OUT) {
+			statusLabel.setText(detail + "\n" + FidReadiness.operatorTip(kind, chinese));
 			return;
 		}
-		pollBusy = true;
-		Thread.ofVirtual().name("gc-fid-status").start(() -> {
-			GcTcpConnection.FidStatus status = null;
-			GcTcpConnection.GasPressure pressure = null;
-			Exception fidError = null;
-			try {
-				status = connectionManager.readFidStatus(IO_TIMEOUT_MS);
-			} catch(Exception ex) {
-				fidError = ex;
-				logger.warn("FID status poll failed", ex);
-			}
-			try {
-				pressure = connectionManager.readGasPressure(IO_TIMEOUT_MS);
-			} catch(Exception ex) {
-				logger.warn("Gas pressure poll failed", ex);
-			}
-			final GcTcpConnection.FidStatus statusResult = status;
-			final GcTcpConnection.GasPressure pressureResult = pressure;
-			final Exception fidErrorResult = fidError;
-			getDisplay().asyncExec(() -> {
-				pollBusy = false;
-				if(isDisposed()) {
-					return;
-				}
-				if(statusResult != null) {
-					applyStatus(statusResult);
-				} else if(fidErrorResult != null && statusLabel != null) {
-					statusLabel.setText(chinese ? "读取 FID 状态失败" : "FID status read failed");
-				}
-				if(pressureResult != null) {
-					applyPressure(pressureResult);
-				}
-			});
-		});
+		statusLabel.setText(detail);
 	}
 
-	private void startPolling() {
+	private void onReadinessChanged(FidReadinessSnapshot snapshot) {
 
-		pollRunnable = () -> {
-			if(isDisposed()) {
-				return;
-			}
-			if(isVisible()) {
-				pollStatusQuietly();
-			}
-			if(!isDisposed()) {
-				getDisplay().timerExec((int)POLL_MS, pollRunnable);
-			}
-		};
-		getDisplay().timerExec(400, pollRunnable);
-	}
-
-	private void stopPolling() {
-
-		if(pollRunnable != null && !isDisposed()) {
-			getDisplay().timerExec(-1, pollRunnable);
+		if(isDisposed()) {
+			return;
 		}
-		pollRunnable = null;
+		getDisplay().asyncExec(() -> applyReadiness(snapshot));
+	}
+
+	private void applyReadiness(FidReadinessSnapshot snapshot) {
+
+		if(isDisposed() || snapshot == null) {
+			return;
+		}
+		lastSnapshot = snapshot;
+		updateButtonsEnabled();
+		if(!snapshot.isConnected()) {
+			cancelIgnition();
+			statusLabel.setText(FidReadiness.operatorTip(FidReadiness.Kind.DISCONNECTED, chinese));
+			statusLabel.setForeground(UiStyles.color(getDisplay(), UiColors.STATUS_RED));
+			resetPressureValues();
+			applyIgniteButtonChrome();
+			applyValveButtonChrome();
+			return;
+		}
+		if(snapshot.getPressure() != null) {
+			applyPressure(snapshot.getPressure());
+		} else {
+			resetPressureValues();
+		}
+		if(snapshot.getFidStatus() != null) {
+			applyStatus(snapshot.getFidStatus());
+			return;
+		}
+		if(busy) {
+			return;
+		}
+		statusLabel.setText(snapshot.operatorTip(chinese));
+		statusLabel.setForeground(UiStyles.color(getDisplay(), kindColor(snapshot.kind())));
+	}
+
+	private static org.eclipse.swt.graphics.RGB kindColor(FidReadiness.Kind kind) {
+
+		return switch(kind) {
+			case READY -> UiColors.STATUS_GREEN;
+			case IGNITING, READING -> UiColors.STATUS_BLUE;
+			case DISCONNECTED, STATUS_READ_FAIL, FID_OFFLINE, IGNITE_FAIL, FLAME_OUT -> UiColors.STATUS_RED;
+		};
 	}
 
 	private void onConnectionChanged(boolean connected, GcDeviceEndpoint endpoint) {
@@ -568,15 +566,6 @@ public class DetectorView extends Composite implements LanguageListener {
 				return;
 			}
 			updateButtonsEnabled();
-			if(connected) {
-				pollStatusQuietly();
-			} else {
-				cancelIgnition();
-				statusLabel.setText(idleStatusText());
-				resetPressureValues();
-				applyIgniteButtonChrome();
-				applyValveButtonChrome();
-			}
 		});
 	}
 
@@ -619,8 +608,8 @@ public class DetectorView extends Composite implements LanguageListener {
 		try {
 			FidGasFlowStore.save(parseGas(0), parseGas(1), parseGas(2));
 			statusLabel.setText(chinese
-					? "流量设定已保存（氢气/空气/尾吹由 EPC 执行，不经 FID 点火板）"
-					: "Flow setpoints saved (EPC, not the FID igniter board)");
+					? "流量设定已保存（本机记忆；氢气/空气/尾吹请按手动调节器执行，非 EPC 实控）"
+					: "Flow setpoints saved locally; set H₂/Air/makeup on manual regulators (not live EPC)");
 		} catch(IOException ex) {
 			showInfo(chinese ? "保存失败" : "Save failed", ex.getMessage());
 		}
@@ -802,9 +791,7 @@ public class DetectorView extends Composite implements LanguageListener {
 		}
 		applyIgniteButtonChrome();
 		applyValveButtonChrome();
-		if(!connectionManager.isConnected()) {
-			statusLabel.setText(idleStatusText());
-		}
+		applyReadiness(lastSnapshot);
 	}
 }
 
