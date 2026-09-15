@@ -331,8 +331,7 @@ public final class BaijiuMethodSettings {
 
 	public boolean hasResponseFactor(String compoundId) {
 
-		Double value = responseFactors.get(compoundId);
-		return value != null && value > 0.0d && !value.isNaN();
+		return BaijiuCalibrationGate.isValidResponseFactor(responseFactors.get(compoundId));
 	}
 
 	public double injectedIstdGramsPerLiter() {

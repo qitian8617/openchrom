@@ -95,7 +95,7 @@ public final class BaijiuPreferences {
 			String id = compound.getId();
 			overlayText(prefs, NAME + id, value -> settings.getCompoundNames().put(id, value));
 			double rf = prefs.getDouble(RF + id, Double.NaN);
-			if(!Double.isNaN(rf) && rf > 0.0d) {
+			if(BaijiuCalibrationGate.isValidResponseFactor(rf)) {
 				settings.getResponseFactors().put(id, rf);
 			}
 			double rt = prefs.getDouble(RT + id, Double.NaN);

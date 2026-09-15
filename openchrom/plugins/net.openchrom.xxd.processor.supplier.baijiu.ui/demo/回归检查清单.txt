@@ -21,9 +21,13 @@
      含样品信息、方法摘要、谱图缩略、结果表、GB 判定
      「打印 / 另存为 PDF」走系统打印对话框
      「导出 CSV / Excel(CSV)」可被 Excel 打开
+  5. 混标校正门闩
+     不先做混标校正（或甲醇 RF 为 NaN/0/超范围）时，定量被阻止，提示先「用当前谱图做校正」
+     校正有效时，演示样品仍为甲醇约 0.180 g/L、GB 2757 合格
 
 无头可测部分已写入 fragment test：
   Gb2757Judge_1_Test、BaijiuReport_1_Test、BaijiuBatchEngine_1_Test、BaijiuRegressionChecklist_1_Test
+  混标校正门闩：BaijiuCalibrationGate_1_Test、BaijiuAnalysisEngine_1_Test（缺校正/NaN RF/零内标阻止；有效校正仍定量）
   进样序列（白酒工作台编排 / 反控主界面当前针）：InjectionSequence_1_Test、InjectionSequenceIO_1_Test、InjectionSequenceManager_1_Test
 
 已知环境噪声（忽略）：LaiendeAboutHandler CNFE、CDK/inchi unresolved

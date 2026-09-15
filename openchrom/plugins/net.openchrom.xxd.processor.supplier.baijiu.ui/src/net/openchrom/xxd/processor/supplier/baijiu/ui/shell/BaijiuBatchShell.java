@@ -36,6 +36,7 @@ import org.eclipse.swt.widgets.Text;
 
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuBatchEngine;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuBatchRow;
+import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuCalibrationGate;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuCatalog;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuChromatogramFiles;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuCompound;
@@ -64,7 +65,7 @@ public final class BaijiuBatchShell {
 
 		Label hint = new Label(shell, SWT.WRAP);
 		hint.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		hint.setText("\u9009\u62e9\u591a\u4e2a .ocb\uff0c\u6309\u540c\u4e00\u5382\u65b9\u6cd5\u5b9a\u91cf\uff0c\u5f97\u5230\u6837\u54c1\u00d7\u7ec4\u5206\u6c47\u603b\u8868\u3002\u8fdb\u6837\u961f\u5217\uff08\u7a7a\u767d/\u6df7\u6807/QC/\u6837\u54c1\uff09\u5728\u767d\u9152\u5de5\u4f5c\u53f0\u300c\u8fdb\u6837\u5e8f\u5217\u300d\uff1b\u672c\u7a97\u4e0d\u505a\u81ea\u52a8\u8fdb\u6837\u5668\u6392\u7a0b\u3002\u82e5\u8c31\u56fe\u5c1a\u65e0\u5cf0\uff0c\u4f1a\u5148\u8dd1\u63a8\u8350\u79ef\u5206\u3002");
+		hint.setText("\u9009\u62e9\u591a\u4e2a .ocb\uff0c\u6309\u540c\u4e00\u5382\u65b9\u6cd5\u5b9a\u91cf\uff0c\u5f97\u5230\u6837\u54c1\u00d7\u7ec4\u5206\u6c47\u603b\u8868\u3002" + BaijiuCalibrationGate.OPERATOR_HINT + " \u8fdb\u6837\u961f\u5217\uff08\u7a7a\u767d/\u6df7\u6807/QC/\u6837\u54c1\uff09\u5728\u767d\u9152\u5de5\u4f5c\u53f0\u300c\u8fdb\u6837\u5e8f\u5217\u300d\uff1b\u672c\u7a97\u4e0d\u505a\u81ea\u52a8\u8fdb\u6837\u5668\u6392\u7a0b\u3002\u82e5\u8c31\u56fe\u5c1a\u65e0\u5cf0\uff0c\u4f1a\u5148\u8dd1\u63a8\u8350\u79ef\u5206\u3002");
 
 		Composite header = new Composite(shell, SWT.NONE);
 		header.setLayout(new GridLayout(6, false));
@@ -122,6 +123,11 @@ public final class BaijiuBatchShell {
 		run.addListener(SWT.Selection, e -> {
 			if(files.isEmpty()) {
 				warn(shell, "\u8bf7\u5148\u9009\u62e9\u591a\u4e2a .ocb \u6587\u4ef6\u3002");
+				return;
+			}
+			String calibrationBlock = BaijiuCalibrationGate.blockingMessage(settings);
+			if(calibrationBlock != null) {
+				warn(shell, calibrationBlock);
 				return;
 			}
 			try {
