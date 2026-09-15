@@ -30,6 +30,7 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.WorkbenchException;
 
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuTerms;
+import net.openchrom.xxd.processor.supplier.baijiu.ui.BaijiuPerspectiveIds;
 
 /**
  * Switches to the Baijiu workbench. The perspective is contributed only as an
@@ -41,9 +42,9 @@ public class OpenBaijiuPerspectiveHandler {
 
 	private static final Logger logger = Logger.getLogger(OpenBaijiuPerspectiveHandler.class);
 
-	public static final String PERSPECTIVE_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.perspective.workbench";
-	public static final String PERSPECTIVE_STACK_ID = "org.eclipse.chemclipse.rcp.app.ui.perspectivestack.main";
-	public static final String LABEL_EN = "Baijiu Workbench";
+	public static final String PERSPECTIVE_ID = BaijiuPerspectiveIds.PERSPECTIVE_ID;
+	public static final String PERSPECTIVE_STACK_ID = BaijiuPerspectiveIds.PERSPECTIVE_STACK_ID;
+	public static final String LABEL_EN = BaijiuPerspectiveIds.LABEL_EN;
 
 	@Execute
 	public void execute(Shell shell) {
@@ -72,17 +73,7 @@ public class OpenBaijiuPerspectiveHandler {
 	 */
 	public static boolean isBaijiuPerspective(String elementId, String label) {
 
-		if(PERSPECTIVE_ID.equals(elementId)) {
-			return true;
-		}
-		if(elementId != null && elementId.startsWith("net.openchrom.xxd.processor.supplier.baijiu.ui.perspective.")) {
-			return true;
-		}
-		if(label == null || label.isBlank()) {
-			return false;
-		}
-		String trimmed = label.trim();
-		return BaijiuTerms.WORKBENCH.equals(trimmed) || LABEL_EN.equalsIgnoreCase(trimmed);
+		return BaijiuPerspectiveIds.matches(elementId, label);
 	}
 
 	private static boolean switchE4Perspective() {

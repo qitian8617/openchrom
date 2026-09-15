@@ -40,7 +40,7 @@ public final class BaijiuWorkbenchHandoff {
 	public static final String FEATURE_ID = "net.openchrom.xxd.processor.supplier.baijiu.feature";
 	public static final String TYPE_NAME = "net.openchrom.xxd.processor.supplier.baijiu.ui.BaijiuWorkbenchHandoff";
 	public static final String OPEN_FILE_METHOD = "openFile";
-	public static final String PART_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.part.workbench";
+	public static final String PART_ID = BaijiuPerspectiveIds.PART_ID;
 
 	private BaijiuWorkbenchHandoff() {
 	}
