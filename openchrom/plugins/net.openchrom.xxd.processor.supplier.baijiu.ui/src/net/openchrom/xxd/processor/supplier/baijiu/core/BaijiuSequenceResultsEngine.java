@@ -134,7 +134,7 @@ public final class BaijiuSequenceResultsEngine {
 		StringBuilder csv = new StringBuilder();
 		csv.append("序号,类型,编号,名称,状态,谱图路径");
 		for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
-			if(compound.isInternalStandard()) {
+			if(!BaijiuBatchEngine.includeBatchColumn(settings, compound)) {
 				continue;
 			}
 			csv.append(',').append(settings == null ? compound.getName() : settings.displayName(compound));
@@ -152,7 +152,7 @@ public final class BaijiuSequenceResultsEngine {
 			csv.append(',').append(quote(vial == null ? "" : vial.getStatusLabel()));
 			csv.append(',').append(quote(row.getChromatogramPath()));
 			for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
-				if(compound.isInternalStandard()) {
+				if(!BaijiuBatchEngine.includeBatchColumn(settings, compound)) {
 					continue;
 				}
 				Double value = row.concentrationOf(compound.getId());

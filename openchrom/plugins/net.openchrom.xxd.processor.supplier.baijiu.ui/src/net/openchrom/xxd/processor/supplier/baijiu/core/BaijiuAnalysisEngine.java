@@ -131,6 +131,7 @@ public final class BaijiuAnalysisEngine {
 		}
 		List<BaijiuQuantRow> rows = new ArrayList<>();
 		Double methanol = null;
+		BaijiuCompound gbTarget = settings.gb2757Compound();
 		for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
 			MatchedPeak match = matchResult.get(compound.getId());
 			double expected = settings.expectedRtMin(compound);
@@ -141,12 +142,15 @@ public final class BaijiuAnalysisEngine {
 			double area = match == null ? 0.0d : match.getArea();
 			Double concentration = null;
 			String remark;
+			boolean quantify = settings.isQuantified(compound);
 			if(compound.isInternalStandard()) {
 				concentration = cIstd;
 				remark = "\u5185\u6807";
 				if(match != null && !PeakMatcher.hasIntegratedArea(match.getPeak())) {
 					remark = "\u5185\u6807\uff08\u672a\u79ef\u5206\uff09";
 				}
+			} else if(!quantify) {
+				remark = BaijiuTerms.NOT_QUANTIFIED;
 			} else if(match == null) {
 				remark = "\u672a\u5339\u914d";
 			} else if(!PeakMatcher.hasIntegratedArea(match.getPeak())) {
@@ -163,16 +167,21 @@ public final class BaijiuAnalysisEngine {
 					remark = "\u5b9a\u91cf\u5931\u8d25";
 				}
 			}
-			if(compound.isMethanol() && concentration != null) {
+			if(settings.isGb2757Target(compound) && concentration != null) {
 				methanol = concentration;
 			}
 			rows.add(new BaijiuQuantRow(compound, peak, expected, rt, area, mix, rf, concentration, remark));
 		}
-		Gb2757Result gb2757 = Gb2757Judge.judge(methanol, sample == null ? 0.0d : sample.getAbvPercent(), sample == null ? BaijiuRawMaterial.GRAIN : sample.getRawMaterial(), settings);
+		Gb2757Result gb2757;
+		if(gbTarget == null || !settings.isQuantified(gbTarget)) {
+			gb2757 = Gb2757Judge.skipped(settings, "\u7ec4\u5206\u5e93\u672a\u52fe\u9009\u7532\u9187\u5224\u5b9a\u6216\u8be5\u7ec4\u5206\u4e0d\u5b9a\u91cf\uff0c\u5df2\u8df3\u8fc7 GB 2757\u3002", "GB 2757 skipped: methanol-judgment compound is not marked or not quantified.");
+		} else {
+			gb2757 = Gb2757Judge.judge(methanol, sample == null ? 0.0d : sample.getAbvPercent(), sample == null ? BaijiuRawMaterial.GRAIN : sample.getRawMaterial(), settings);
+		}
 		List<BaijiuQuantRow> flagged = new ArrayList<>();
 		for(BaijiuQuantRow row : rows) {
 			Boolean overLimit = null;
-			if(row.getCompound().isMethanol() && gb2757 != null && gb2757.isJudged() && gb2757.isMethanolDetected()) {
+			if(settings.isGb2757Target(row.getCompound()) && gb2757 != null && gb2757.isJudged() && gb2757.isMethanolDetected()) {
 				overLimit = !gb2757.isPassed();
 			}
 			flagged.add(row.withOverLimit(overLimit));

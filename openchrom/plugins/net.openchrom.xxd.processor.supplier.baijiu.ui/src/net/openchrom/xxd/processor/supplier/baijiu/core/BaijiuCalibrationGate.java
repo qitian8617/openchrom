@@ -19,8 +19,10 @@ import java.util.Map;
  * <p>
  * A method is valid to quantify when:
  * <ul>
- * <li>every stored response factor is finite, positive, and within sane bounds</li>
- * <li>methanol has a valid RF (required for GB 2757; missing methanol must not be treated as 未检出)</li>
+ * <li>stored response factors on quantified / GB-target compounds are finite, positive, and within sane bounds</li>
+ * <li>the GB 2757 target (catalog methanol by default) has a valid RF; missing
+ * methanol must not be treated as 未检出. Non-quantified library compounds do
+ * not relax this gate.</li>
  * </ul>
  * Mix calibration itself (ISTD found, peaks integrated) is performed by
  * {@link BaijiuAnalysisEngine#calibrate}; this gate only inspects the RF map
@@ -63,6 +65,9 @@ public final class BaijiuCalibrationGate {
 			if(compound.isInternalStandard()) {
 				continue;
 			}
+			if(!settings.isQuantified(compound) && !settings.isGb2757Target(compound)) {
+				continue;
+			}
 			if(!factors.containsKey(compound.getId())) {
 				continue;
 			}
@@ -78,10 +83,13 @@ public final class BaijiuCalibrationGate {
 					"\u65e0\u6cd5\u5b9a\u91cf\uff1a\u54cd\u5e94\u56e0\u5b50 RF \u65e0\u6548\uff08" + detail + "\uff09\u3002\u5141\u8bb8\u8303\u56f4 " + range + " \u4e14\u987b\u4e3a\u6709\u9650\u6b63\u6570\u3002\u8bf7\u91cd\u65b0\u7528\u6df7\u6807\u8c31\u56fe\u505a\u6821\u6b63\uff0c\u52ff\u4f7f\u7528\u65e0\u6548 RF \u8ba1\u7b97\u542b\u91cf\u3002", //
 					"Cannot quantify: response factor RF is invalid (" + detail + "). Allowed range " + range + ", finite and positive. Re-run mix-standard calibration; do not compute concentrations from invalid RF.");
 		}
-		BaijiuCompound methanol = BaijiuCatalog.byId(BaijiuCatalog.METHANOL_ID);
-		String methanolName = settings.displayName(methanol);
-		if(!isValidResponseFactor(settings.responseFactor(BaijiuCatalog.METHANOL_ID))) {
-			return missingCalibrationMessage(methanolName);
+		BaijiuCompound required = settings.calibrationRequiredCompound();
+		if(required == null) {
+			required = BaijiuCatalog.byId(BaijiuCatalog.METHANOL_ID);
+		}
+		String requiredName = settings.displayName(required);
+		if(!isValidResponseFactor(settings.responseFactor(required.getId()))) {
+			return missingCalibrationMessage(requiredName);
 		}
 		return null;
 	}

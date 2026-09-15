@@ -41,6 +41,8 @@ public final class BaijiuPreferences {
 	private static final String WIN = "win.";
 	private static final String NAME = "name.";
 	private static final String ASSIGN = "assign.";
+	private static final String QUANTIFY = "quantify.";
+	private static final String GB_TARGET = "gb2757.compound.";
 	private static final String SAMPLE_NO = "sample.no";
 	private static final String LIQUOR_NAME = "sample.liquor";
 	private static final String BATCH = "sample.batch";
@@ -114,7 +116,14 @@ public final class BaijiuPreferences {
 			if(!Double.isNaN(assigned) && assigned > 0.0d) {
 				settings.getManualAssignmentsRtMin().put(id, assigned);
 			}
+			if(contains(prefs, QUANTIFY + id)) {
+				settings.setQuantified(id, prefs.getBoolean(QUANTIFY + id, settings.isQuantified(compound)));
+			}
+			if(contains(prefs, GB_TARGET + id)) {
+				settings.getMethanolJudgment().put(id, Boolean.valueOf(prefs.getBoolean(GB_TARGET + id, settings.isGb2757Target(compound))));
+			}
 		}
+		settings.normalizeMethanolJudgment();
 		settings.seedInstrumentRetentionTimes();
 		return settings;
 	}
@@ -161,6 +170,8 @@ public final class BaijiuPreferences {
 			putOrRemove(prefs, MIX + id, settings.getMixGramsPerLiter().get(id));
 			putOrRemove(prefs, WIN + id, settings.getWindowMin().get(id));
 			putOrRemove(prefs, ASSIGN + id, settings.getManualAssignmentsRtMin().get(id));
+			prefs.putBoolean(QUANTIFY + id, settings.isQuantified(compound));
+			prefs.putBoolean(GB_TARGET + id, settings.isGb2757Target(compound));
 		}
 		flush(prefs);
 	}

@@ -53,11 +53,18 @@ public class BaijiuCatalog_1_Test {
 		assertEquals(BaijiuCatalog.COLUMN_DETAILS, properties.getProperty("column.summary"));
 		assertEquals(BaijiuCatalog.ISTD_NAME, properties.getProperty("istd.name"));
 		assertEquals("0.055", properties.getProperty("instrument.rt.offset.min"));
+		assertEquals("true", properties.getProperty("compound.methanol.quantify"));
+		assertEquals("true", properties.getProperty("compound.methanol.gb2757"));
+		assertEquals("false", properties.getProperty("compound.n_butyl_acetate.quantify"));
+		assertEquals("false", properties.getProperty("compound.n_butyl_acetate.gb2757"));
 		BaijiuMethodSettings settings = BaijiuMethodSettings.defaultNongxiangFid();
 		assertEquals(BaijiuCatalog.COLUMN_DETAILS, settings.getColumnSummary());
 		assertEquals(BaijiuCatalog.ISTD_NAME, settings.getIstdName());
 		assertEquals(0.6d, settings.getGb2757GrainLimit100VolGL(), 1.0e-9d);
 		assertEquals(2.0d, settings.getGb2757OtherLimit100VolGL(), 1.0e-9d);
 		assertFalse(Double.isNaN(settings.getGb2757GrainLimit100VolGL()));
+		assertTrue(settings.isQuantified(BaijiuCatalog.byId("methanol")));
+		assertFalse(settings.isQuantified(BaijiuCatalog.istd()));
+		assertTrue(settings.isGb2757Target(BaijiuCatalog.byId("methanol")));
 	}
 }

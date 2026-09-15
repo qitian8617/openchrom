@@ -93,7 +93,7 @@ public final class BaijiuBatchShell {
 		table.setLinesVisible(true);
 		addColumn(table, "\u6837\u54c1", 140);
 		for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
-			if(!compound.isInternalStandard()) {
+			if(BaijiuBatchEngine.includeBatchColumn(settings, compound)) {
 				addColumn(table, settings.displayName(compound), 80);
 			}
 		}
@@ -219,7 +219,7 @@ public final class BaijiuBatchShell {
 			int col = 0;
 			item.setText(col++, row.getSampleLabel());
 			for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
-				if(compound.isInternalStandard()) {
+				if(!BaijiuBatchEngine.includeBatchColumn(settings, compound)) {
 					continue;
 				}
 				Double value = row.concentrationOf(compound.getId());

@@ -31,7 +31,9 @@ public final class BaijiuTerms {
 	public static final String RETENTION_TIME = "\u4fdd\u7559\u65f6\u95f4";
 	public static final String PEAK_AREA = "\u5cf0\u9762\u79ef";
 	public static final String CONCENTRATION = "\u542b\u91cf";
-	public static final String OVER_LIMIT = "\u8d85\u9650";
+	public static final String NOT_QUANTIFIED = "\u4e0d\u5b9a\u91cf";
+	public static final String QUANTIFY = "\u662f\u5426\u5b9a\u91cf";
+	public static final String METHANOL_JUDGMENT = "\u662f\u5426\u7532\u9187\u5224\u5b9a";
 	public static final String SEQUENCE = "\u8fdb\u6837\u5e8f\u5217";
 	public static final String SIMPLE_BATCH = "\u7b80\u5355\u6279\u91cf";
 	public static final String BATCH_RESULTS = "\u6279\u5904\u7406\u7ed3\u679c";
@@ -51,5 +53,10 @@ public final class BaijiuTerms {
 	public static String istdMark(boolean internalStandard) {
 
 		return internalStandard ? ISTD : "\u5426";
+	}
+
+	public static String yesNo(boolean value) {
+
+		return value ? "\u662f" : "\u5426";
 	}
 }
