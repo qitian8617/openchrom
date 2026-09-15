@@ -35,6 +35,7 @@ import net.openchrom.xxd.control.supplier.temperature.ui.sequence.InjectionSeque
 import net.openchrom.xxd.control.supplier.temperature.ui.sequence.InjectionStatus;
 import net.openchrom.xxd.control.supplier.temperature.ui.sequence.InjectionType;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuTerms;
+import net.openchrom.xxd.processor.supplier.baijiu.ui.sequence.BaijiuSequenceResultsBridge;
 
 /**
  * Full injection-queue editor on the Baijiu workbench. The shared model lives
@@ -82,7 +83,7 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 		createFileRow();
 
 		hintLabel = wrapLabel(this);
-		hintLabel.setText("序列文件默认 " + manager.getDirectory() + "（可用 -D" + InjectionSequenceManager.DIRECTORY_PROPERTY + " 覆盖）。不控制自动进样器；「" + BaijiuTerms.SIMPLE_BATCH + "」仍用于已保存谱图定量。「" + BaijiuTerms.PARALLEL + "」计算两针均值与相对偏差。");
+		hintLabel.setText("序列文件默认 " + manager.getDirectory() + "（可用 -D" + InjectionSequenceManager.DIRECTORY_PROPERTY + " 覆盖）。不控制自动进样器；「" + BaijiuTerms.BATCH_RESULTS + "」按本序列已完成针汇总；「" + BaijiuTerms.SIMPLE_BATCH + "」仍用于任选已保存谱图定量。「" + BaijiuTerms.PARALLEL + "」计算两针均值与相对偏差。");
 
 		rebuildTable();
 		manager.addListener(this);
@@ -243,7 +244,7 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 	private void createFileRow() {
 
 		Composite row = new Composite(this, SWT.NONE);
-		row.setLayout(new GridLayout(3, true));
+		row.setLayout(new GridLayout(4, true));
 		row.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		Button saveButton = new Button(row, SWT.PUSH);
 		saveButton.setText("保存序列…");
@@ -257,6 +258,10 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 		parallelResultButton.setText("平行样结果…");
 		parallelResultButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		parallelResultButton.addListener(SWT.Selection, e -> openParallelResults());
+		Button batchResultButton = new Button(row, SWT.PUSH);
+		batchResultButton.setText("生成结果表");
+		batchResultButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		batchResultButton.addListener(SWT.Selection, e -> openBatchResults());
 	}
 
 	private void addTypeButton(Composite parent, InjectionType type, String text) {
@@ -397,6 +402,16 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 		File fileA = fileOf(pair[0].getChromatogramPath());
 		File fileB = fileOf(pair[1].getChromatogramPath());
 		BaijiuParallelShell.open(getShell(), fileA, fileB, pair[0].getSampleId());
+	}
+
+	private void openBatchResults() {
+
+		InjectionSequence snapshot = manager.snapshot();
+		if(snapshot.isEmpty()) {
+			warn("当前序列为空。请先填入典型队列或打开 JSON。离线演示可把已完成行的谱图路径指到 demo .ocb。\nThe sequence is empty. Fill a typical queue or open JSON. Offline: point DONE chromatogram paths at demo .ocb files.");
+			return;
+		}
+		BaijiuSequenceResultsShell.open(getShell(), BaijiuSequenceResultsBridge.fromSequence(snapshot));
 	}
 
 	private static InjectionSequenceEntry[] pairAround(InjectionSequence snapshot, int index) {

@@ -22,6 +22,7 @@ The gate runs inside `BaijiuAnalysisEngine.quantify`, so it applies to:
 - 白酒分析 → **定量并写回峰表** (warning dialog; no peak-table write, no GB 2757)
 - 三步向导 → quantify / Finish
 - 简单批量 → run is refused up front if the method fails the gate; engine also fails each row
+- 批处理结果 → DONE sequence vials still go through `quantify` (incomplete vials are listed, not quantified)
 - 预览报告 / CSV export (they quantify first)
 
 Fix: open the mix chromatogram (demo `mix-15plus-istd.ocb`) → **推荐积分** → **用当前谱图做校正** → then quantify the sample.

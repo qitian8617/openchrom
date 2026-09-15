@@ -8,7 +8,8 @@ The shared model still lives in the reverse-control plugin so **开始分析** o
 
 - **白酒工作台** action **进样序列** (also **插件 → 白酒工作台 → 进样序列**): build, edit, reorder, skip, retry, save/load JSON.
 - Reverse-control **Main** shows a compact read-only **当前针** strip (type / id / name / status) and **在白酒工作台打开序列**. There is **no** **序列** navigation tab on the GC panel.
-- Baijiu **简单批量** is unchanged: quantitative matrix on already-saved `.ocb` files (checklist item 8 territory).
+- Baijiu **简单批量** is unchanged: quantitative matrix on already-saved `.ocb` files picked by the operator.
+- Baijiu **批处理结果** (item 8) reads the **current / loaded sequence**: DONE vials with chromatogram paths are quantified; incomplete vials stay listed (see Baijiu `GCWS-BATCH-RESULTS.md`).
 
 No third reverse-control plugin. Reverse-control does not hard-require Baijiu; Baijiu optionally sees the sequence API exported from `temperature.ui`.
 
@@ -32,7 +33,7 @@ The working queue auto-saves as `current.json` in that folder. **保存序列…
 4. Switch to **气相色谱控制台** Main. The strip shows the current vial. Inject that vial (▶ row). Main → **开始分析 → 启动**. The current row becomes **运行中**.
 5. **停止** or wait for device `ACQ_DONE`. On a successful save, the row becomes **已完成**, the chromatogram path is stored, and the pointer advances to the next **待进样**. The usual Baijiu handoff dialog is unchanged.
 6. Repeat inject → Start Analysis for 混标, QC, then each 样品. In the Baijiu sequence editor, **跳过** unused rows; **重试** a **失败** or **已跳过** row (clears the file link and makes it current).
-7. An empty sequence does **not** block Start Analysis.
+7. When enough rows are **已完成** (or the queue is finished), 进样序列 **生成结果表** / 工作台 **批处理结果** summarizes every vial (see Baijiu `GCWS-BATCH-RESULTS.md`). An empty sequence does **not** block Start Analysis.
 
 ## Status
 
@@ -47,5 +48,5 @@ The working queue auto-saves as `current.json` in that folder. **保存序列…
 ## What this does not do
 
 - No autosampler robotics, vial tray, or unattended start of the next needle.
-- Mix-standard calibration gate (item 6) lives in Baijiu `quantify` (see `GCWS-CALIBRATION.md` in the Baijiu plugin). Parallel-sample mean / relative deviation (item 7) is a Baijiu workbench dialog (`GCWS-PARALLEL.md`); the sequence only marks two SAMPLE needles. No Baijiu batch result table (item 8).
+- Mix-standard calibration gate (item 6) lives in Baijiu `quantify` (see `GCWS-CALIBRATION.md` in the Baijiu plugin). Parallel-sample mean / relative deviation (item 7) is a Baijiu workbench dialog (`GCWS-PARALLEL.md`); the sequence only marks two SAMPLE needles. Sequence-driven batch results (item 8) are the Baijiu **批处理结果** table (`GCWS-BATCH-RESULTS.md`).
 - FID readiness gate and Baijiu handoff are unchanged.

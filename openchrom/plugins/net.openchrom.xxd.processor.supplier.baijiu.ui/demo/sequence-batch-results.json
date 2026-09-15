@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "name": "批处理结果离线演示（请改谱图路径）",
+  "currentIndex": 5,
+  "entries": [
+    {
+      "id": "demo-blank",
+      "type": "BLANK",
+      "sampleId": "BLK-01",
+      "sampleName": "空白",
+      "notes": "离线演示：未进样，结果表应显示跳过原因",
+      "status": "PENDING",
+      "chromatogramPath": "",
+      "parallelGroupId": ""
+    },
+    {
+      "id": "demo-mix",
+      "type": "MIX_STD",
+      "sampleId": "MIX-01",
+      "sampleName": "混标",
+      "notes": "把路径改成本机 mix-15plus-istd.ocb",
+      "status": "DONE",
+      "chromatogramPath": "E:/OpenChrom/baijiu-demo/mix-15plus-istd.ocb",
+      "parallelGroupId": ""
+    },
+    {
+      "id": "demo-qc",
+      "type": "QC",
+      "sampleId": "QC-01",
+      "sampleName": "QC",
+      "notes": "离线演示：已跳过",
+      "status": "SKIPPED",
+      "chromatogramPath": "",
+      "parallelGroupId": ""
+    },
+    {
+      "id": "demo-sample-a",
+      "type": "SAMPLE",
+      "sampleId": "LD-BJ-001",
+      "sampleName": "模拟浓香（演示）",
+      "notes": "平行针 A。把路径改成本机 sample-nongxiang.ocb",
+      "status": "DONE",
+      "chromatogramPath": "E:/OpenChrom/baijiu-demo/sample-nongxiang.ocb",
+      "parallelGroupId": "demo-parallel-ld-bj-001"
+    },
+    {
+      "id": "demo-sample-b",
+      "type": "SAMPLE",
+      "sampleId": "LD-BJ-001",
+      "sampleName": "模拟浓香（演示）",
+      "notes": "平行针 B。演示可与针 A 使用同一 .ocb",
+      "status": "DONE",
+      "chromatogramPath": "E:/OpenChrom/baijiu-demo/sample-nongxiang.ocb",
+      "parallelGroupId": "demo-parallel-ld-bj-001"
+    },
+    {
+      "id": "demo-sample-pending",
+      "type": "SAMPLE",
+      "sampleId": "LD-BJ-002",
+      "sampleName": "未进样样品",
+      "notes": "离线演示：待进样，不得从结果表消失",
+      "status": "PENDING",
+      "chromatogramPath": "",
+      "parallelGroupId": ""
+    }
+  ]
+}
