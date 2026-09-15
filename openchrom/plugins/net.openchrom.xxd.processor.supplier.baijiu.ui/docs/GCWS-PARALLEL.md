@@ -37,6 +37,7 @@ Quantification still uses `BaijiuAnalysisEngine.quantify` and the mix-standard *
 | 白酒工作台 **平行样** | Pick needle A `.ocb` and needle B `.ocb` separately (demo: choose `sample-nongxiang.ocb` twice), then **计算均值与偏差**. Methanol is labeled **甲醇（重点）**. |
 | 进样序列 **平行样结果…** | Uses the selected pair; linked chromatogram paths are passed in when both needles are 已完成. |
 | 简单批量 | After quantify, rows that share a sample id are paired. Different samples are not forced together. |
+| 批处理结果 | Sequence rows that share a parallel group / sample id get a short methanol mean / RPD note. Full UI is still **平行样**. |
 
 Uncalibrated methods fail each needle and **do not** invent parallel numbers.
 

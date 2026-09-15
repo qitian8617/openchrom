@@ -25,5 +25,7 @@ public class BaijiuTerms_Sequence_1_Test {
 		assertTrue(BaijiuTerms.GLOSSARY.contains(BaijiuTerms.SIMPLE_BATCH));
 		assertEquals("平行样", BaijiuTerms.PARALLEL);
 		assertTrue(BaijiuTerms.GLOSSARY.contains(BaijiuTerms.PARALLEL));
+		assertEquals("批处理结果", BaijiuTerms.BATCH_RESULTS);
+		assertTrue(BaijiuTerms.GLOSSARY.contains(BaijiuTerms.BATCH_RESULTS));
 	}
 }

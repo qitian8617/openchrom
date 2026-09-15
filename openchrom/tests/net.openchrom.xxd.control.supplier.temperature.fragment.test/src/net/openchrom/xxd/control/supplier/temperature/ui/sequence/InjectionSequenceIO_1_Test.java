@@ -88,4 +88,35 @@ public class InjectionSequenceIO_1_Test {
 		assertEquals("X", parsed.get(0).getSampleId());
 		assertEquals("", parsed.get(0).getParallelGroupId());
 	}
+
+	@Test
+	public void batchResultsDemoShapeKeepsDonePathsAndIncompleteRows() {
+
+		InjectionSequence parsed = InjectionSequenceIO.fromJson("""
+				{
+				  "version": 1,
+				  "name": "批处理结果离线演示",
+				  "currentIndex": 5,
+				  "entries": [
+				    {"id": "blank", "type": "BLANK", "sampleId": "BLK-01", "sampleName": "空白", "notes": "", "status": "PENDING", "chromatogramPath": "", "parallelGroupId": ""},
+				    {"id": "mix", "type": "MIX_STD", "sampleId": "MIX-01", "sampleName": "混标", "notes": "", "status": "DONE", "chromatogramPath": "E:/OpenChrom/baijiu-demo/mix-15plus-istd.ocb", "parallelGroupId": ""},
+				    {"id": "qc", "type": "QC", "sampleId": "QC-01", "sampleName": "QC", "notes": "", "status": "SKIPPED", "chromatogramPath": "", "parallelGroupId": ""},
+				    {"id": "sa", "type": "SAMPLE", "sampleId": "LD-BJ-001", "sampleName": "模拟浓香", "notes": "平行针 A", "status": "DONE", "chromatogramPath": "E:/OpenChrom/baijiu-demo/sample-nongxiang.ocb", "parallelGroupId": "g1"},
+				    {"id": "sb", "type": "SAMPLE", "sampleId": "LD-BJ-001", "sampleName": "模拟浓香", "notes": "平行针 B", "status": "DONE", "chromatogramPath": "E:/OpenChrom/baijiu-demo/sample-nongxiang.ocb", "parallelGroupId": "g1"},
+				    {"id": "pending", "type": "SAMPLE", "sampleId": "LD-BJ-002", "sampleName": "未进样样品", "notes": "", "status": "PENDING", "chromatogramPath": "", "parallelGroupId": ""}
+				  ]
+				}
+				""");
+		assertEquals(6, parsed.size());
+		assertEquals(InjectionType.BLANK, parsed.get(0).getType());
+		assertEquals(InjectionStatus.PENDING, parsed.get(0).getStatus());
+		assertEquals(InjectionStatus.DONE, parsed.get(1).getStatus());
+		assertTrue(parsed.get(1).getChromatogramPath().contains("mix-15plus-istd.ocb"));
+		assertEquals(InjectionStatus.SKIPPED, parsed.get(2).getStatus());
+		assertEquals(InjectionType.SAMPLE, parsed.get(3).getType());
+		assertEquals("LD-BJ-001", parsed.get(3).getSampleId());
+		assertEquals(parsed.get(3).getParallelGroupId(), parsed.get(4).getParallelGroupId());
+		assertEquals(InjectionStatus.PENDING, parsed.get(5).getStatus());
+		assertEquals("", parsed.get(5).getChromatogramPath());
+	}
 }

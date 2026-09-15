@@ -28,11 +28,17 @@
      进样序列「添加平行样」后同一编号两针；或工作台「平行样」两次选择 sample-nongxiang.ocb
      表中甲醇（重点）有均值与相对偏差 %；公式见 docs/GCWS-PARALLEL.md
      未校正时不会绕过门闩、不会发明含量
+  7. 批处理结果
+     进样序列「生成结果表」或工作台「批处理结果」
+     离线：打开 demo/sequence-batch-results.json（先把 chromatogramPath 改到本机 demo .ocb）
+     已完成且文件存在的行有甲醇等含量与样品 GB 2757；待进样/已跳过行仍在表中并写明原因
+     未校正时样品行无含量。简单批量（任选 .ocb）仍可用
 
 无头可测部分已写入 fragment test：
   Gb2757Judge_1_Test、BaijiuReport_1_Test、BaijiuBatchEngine_1_Test、BaijiuRegressionChecklist_1_Test
   混标校正门闩：BaijiuCalibrationGate_1_Test、BaijiuAnalysisEngine_1_Test（缺校正/NaN RF/零内标阻止；有效校正仍定量）
   进样序列（白酒工作台编排 / 反控主界面当前针）：InjectionSequence_1_Test、InjectionSequenceIO_1_Test、InjectionSequenceManager_1_Test
   平行样：BaijiuParallelEngine_1_Test（甲醇均值/相对偏差；缺校正不发明数字；批量按样品编号配对）
+  批处理结果：BaijiuSequenceResultsEngine_1_Test（未完成行保留；DONE+谱图定量；缺校正不发明含量；缺文件有说明）
 
 已知环境噪声（忽略）：LaiendeAboutHandler CNFE、CDK/inchi unresolved
