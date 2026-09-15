@@ -33,7 +33,7 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.chemclipse.converter;bundle-version="0.8.0",
  org.eclipse.jface;bundle-version="3.18.0",
  net.openchrom.xxd.control.supplier.temperature.ui;bundle-version="1.6.20";resolution:=optional
-Bundle-RequiredExecutionEnvironment: JavaSE-25
+Bundle-RequiredExecutionEnvironment: JavaSE-21
 Import-Package: jakarta.annotation;version="2.1.1",
  jakarta.inject;version="2.0.1",
  org.osgi.service.prefs;version="1.1.0"

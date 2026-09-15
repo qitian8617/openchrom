@@ -23,13 +23,19 @@ public final class InjectionSequenceEntry {
 	private String notes;
 	private InjectionStatus status;
 	private String chromatogramPath;
+	private String parallelGroupId;
 
 	public InjectionSequenceEntry(InjectionType type, String sampleId, String sampleName, String notes) {
 
-		this(UUID.randomUUID().toString(), type, sampleId, sampleName, notes, InjectionStatus.PENDING, "");
+		this(UUID.randomUUID().toString(), type, sampleId, sampleName, notes, InjectionStatus.PENDING, "", "");
 	}
 
 	public InjectionSequenceEntry(String id, InjectionType type, String sampleId, String sampleName, String notes, InjectionStatus status, String chromatogramPath) {
+
+		this(id, type, sampleId, sampleName, notes, status, chromatogramPath, "");
+	}
+
+	public InjectionSequenceEntry(String id, InjectionType type, String sampleId, String sampleName, String notes, InjectionStatus status, String chromatogramPath, String parallelGroupId) {
 
 		this.id = id == null || id.isBlank() ? UUID.randomUUID().toString() : id;
 		this.type = type == null ? InjectionType.SAMPLE : type;
@@ -38,6 +44,10 @@ public final class InjectionSequenceEntry {
 		this.notes = notes == null ? "" : notes;
 		this.status = status == null ? InjectionStatus.PENDING : status;
 		this.chromatogramPath = chromatogramPath == null ? "" : chromatogramPath;
+		this.parallelGroupId = parallelGroupId == null ? "" : parallelGroupId.trim();
+		if(this.type != InjectionType.SAMPLE) {
+			this.parallelGroupId = "";
+		}
 	}
 
 	public static InjectionSequenceEntry ofType(InjectionType type, int ordinalOneBased) {
@@ -59,6 +69,9 @@ public final class InjectionSequenceEntry {
 	public void setType(InjectionType type) {
 
 		this.type = type == null ? InjectionType.SAMPLE : type;
+		if(this.type != InjectionType.SAMPLE) {
+			this.parallelGroupId = "";
+		}
 	}
 
 	public String getSampleId() {
@@ -111,6 +124,24 @@ public final class InjectionSequenceEntry {
 		this.chromatogramPath = chromatogramPath == null ? "" : chromatogramPath;
 	}
 
+	public String getParallelGroupId() {
+
+		return parallelGroupId;
+	}
+
+	public void setParallelGroupId(String parallelGroupId) {
+
+		this.parallelGroupId = parallelGroupId == null ? "" : parallelGroupId.trim();
+		if(type != InjectionType.SAMPLE) {
+			this.parallelGroupId = "";
+		}
+	}
+
+	public boolean isParallelSample() {
+
+		return type == InjectionType.SAMPLE && !parallelGroupId.isBlank();
+	}
+
 	public String displayLabel(boolean chinese) {
 
 		String name = sampleName.isBlank() ? type.label(chinese) : sampleName;
@@ -125,6 +156,6 @@ public final class InjectionSequenceEntry {
 
 	public InjectionSequenceEntry copy() {
 
-		return new InjectionSequenceEntry(id, type, sampleId, sampleName, notes, status, chromatogramPath);
+		return new InjectionSequenceEntry(id, type, sampleId, sampleName, notes, status, chromatogramPath, parallelGroupId);
 	}
 }

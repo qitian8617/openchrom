@@ -9,6 +9,7 @@
  *******************************************************************************/
 package net.openchrom.xxd.processor.supplier.baijiu.ui.shell;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -71,7 +72,7 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 		title.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
 		subtitleLabel = wrapLabel(this);
-		subtitleLabel.setText("编排空白 → 混标 → QC → 样品×N。每针仍手动：加热 → 点火 → 进样 → 气相色谱控制台主界面开始分析。保存成功后当前行完成并前进。");
+		subtitleLabel.setText("编排空白 → 混标 → QC → 样品×N。选中样品后「添加平行样」插入第二针（同编号，类型仍为样品）。每针仍手动：加热 → 点火 → 进样 → 气相色谱控制台主界面开始分析。两针完成后可看均值与相对偏差。");
 
 		createTemplateRow();
 		createTable();
@@ -81,7 +82,7 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 		createFileRow();
 
 		hintLabel = wrapLabel(this);
-		hintLabel.setText("序列文件默认 " + manager.getDirectory() + "（可用 -D" + InjectionSequenceManager.DIRECTORY_PROPERTY + " 覆盖）。不控制自动进样器；「" + BaijiuTerms.SIMPLE_BATCH + "」仍用于已保存谱图定量。");
+		hintLabel.setText("序列文件默认 " + manager.getDirectory() + "（可用 -D" + InjectionSequenceManager.DIRECTORY_PROPERTY + " 覆盖）。不控制自动进样器；「" + BaijiuTerms.SIMPLE_BATCH + "」仍用于已保存谱图定量。「" + BaijiuTerms.PARALLEL + "」计算两针均值与相对偏差。");
 
 		rebuildTable();
 		manager.addListener(this);
@@ -134,6 +135,7 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 		addColumn("类型", 72);
 		addColumn("编号", 72);
 		addColumn("名称", 72);
+		addColumn("平行", 80);
 		addColumn("备注", 100);
 		addColumn("状态", 72);
 		addColumn("谱图", 100);
@@ -178,12 +180,16 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 	private void createAddRow() {
 
 		Composite row = new Composite(this, SWT.NONE);
-		row.setLayout(new GridLayout(5, true));
+		row.setLayout(new GridLayout(6, true));
 		row.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		addTypeButton(row, InjectionType.BLANK, "+ 空白");
 		addTypeButton(row, InjectionType.MIX_STD, "+ 混标");
 		addTypeButton(row, InjectionType.QC, "+ QC");
 		addTypeButton(row, InjectionType.SAMPLE, "+ 样品");
+		Button parallelButton = new Button(row, SWT.PUSH);
+		parallelButton.setText("添加平行样");
+		parallelButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		parallelButton.addListener(SWT.Selection, e -> addParallel());
 		Button removeButton = new Button(row, SWT.PUSH);
 		removeButton.setText("删除");
 		removeButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
@@ -237,7 +243,7 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 	private void createFileRow() {
 
 		Composite row = new Composite(this, SWT.NONE);
-		row.setLayout(new GridLayout(2, true));
+		row.setLayout(new GridLayout(3, true));
 		row.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		Button saveButton = new Button(row, SWT.PUSH);
 		saveButton.setText("保存序列…");
@@ -247,6 +253,10 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 		loadButton.setText("打开序列…");
 		loadButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		loadButton.addListener(SWT.Selection, e -> loadSequence());
+		Button parallelResultButton = new Button(row, SWT.PUSH);
+		parallelResultButton.setText("平行样结果…");
+		parallelResultButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		parallelResultButton.addListener(SWT.Selection, e -> openParallelResults());
 	}
 
 	private void addTypeButton(Composite parent, InjectionType type, String text) {
@@ -309,10 +319,11 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 			row.setText(1, entry.getType().label(true));
 			row.setText(2, entry.getSampleId());
 			row.setText(3, entry.getSampleName());
-			row.setText(4, entry.getNotes());
-			row.setText(5, entry.getStatus().label(true));
-			row.setText(6, shortPath(entry.getChromatogramPath()));
-			row.setForeground(5, display.getSystemColor(statusColor(entry.getStatus())));
+			row.setText(4, snapshot.parallelNeedleLabel(i, true));
+			row.setText(5, entry.getNotes());
+			row.setText(6, entry.getStatus().label(true));
+			row.setText(7, shortPath(entry.getChromatogramPath()));
+			row.setForeground(6, display.getSystemColor(statusColor(entry.getStatus())));
 			if(i == current) {
 				row.setForeground(0, display.getSystemColor(SWT.COLOR_DARK_BLUE));
 			}
@@ -360,6 +371,60 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 		if(!manager.updateEntry(index, type, sampleIdText.getText(), sampleNameText.getText(), notesText.getText())) {
 			warn("运行中的行不能改。");
 		}
+	}
+
+	private void addParallel() {
+
+		int index = selectedIndex();
+		if(index < 0) {
+			warn("请先选择一行样品。\nSelect a SAMPLE row first.");
+			return;
+		}
+		if(manager.addParallelOf(index) == null) {
+			warn("只能给样品行添加平行样，每组最多两针；运行中的行不能添加。\nOnly SAMPLE rows can take a parallel needle (max two). A running row cannot be changed.");
+		}
+	}
+
+	private void openParallelResults() {
+
+		InjectionSequence snapshot = manager.snapshot();
+		InjectionSequenceEntry[] pair = pairAround(snapshot, selectedIndex());
+		if(pair == null) {
+			warn("请选择已添加平行样的样品行（或两行同一编号）。两针谱图齐了可带入计算；也可在工作台「平行样」各选 .ocb。\nSelect a parallel SAMPLE pair. When both chromatograms are linked they are passed in; otherwise use Workbench → Parallel injections.");
+			BaijiuParallelShell.open(getShell());
+			return;
+		}
+		File fileA = fileOf(pair[0].getChromatogramPath());
+		File fileB = fileOf(pair[1].getChromatogramPath());
+		BaijiuParallelShell.open(getShell(), fileA, fileB, pair[0].getSampleId());
+	}
+
+	private static InjectionSequenceEntry[] pairAround(InjectionSequence snapshot, int index) {
+
+		List<InjectionSequenceEntry[]> pairs = snapshot.findParallelPairs();
+		if(pairs.isEmpty()) {
+			return null;
+		}
+		if(index >= 0) {
+			InjectionSequenceEntry selected = snapshot.get(index);
+			if(selected != null) {
+				for(InjectionSequenceEntry[] pair : pairs) {
+					if(pair[0].getId().equals(selected.getId()) || pair[1].getId().equals(selected.getId())) {
+						return pair;
+					}
+				}
+			}
+		}
+		return pairs.get(0);
+	}
+
+	private static File fileOf(String path) {
+
+		if(path == null || path.isBlank()) {
+			return null;
+		}
+		File file = new File(path);
+		return file.isFile() ? file : null;
 	}
 
 	private void saveSequence() {

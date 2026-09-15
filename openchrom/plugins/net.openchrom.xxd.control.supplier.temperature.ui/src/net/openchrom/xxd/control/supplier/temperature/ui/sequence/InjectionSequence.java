@@ -11,7 +11,10 @@ package net.openchrom.xxd.control.supplier.temperature.ui.sequence;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Ordered injection queue: Blank / Mix-standard / QC / Sample×N.
@@ -169,6 +172,107 @@ public final class InjectionSequence {
 		entry.setSampleName(sampleName);
 		entry.setNotes(notes);
 		return true;
+	}
+
+	/**
+	 * Insert a second SAMPLE needle after {@code index}, sharing sample id/name
+	 * and a {@code parallelGroupId}. Queue type stays SAMPLE so acquire/status
+	 * semantics are unchanged. At most two members per group.
+	 *
+	 * @return the new needle, or {@code null} if the row cannot take a parallel
+	 */
+	public InjectionSequenceEntry addParallelOf(int index) {
+
+		InjectionSequenceEntry source = get(index);
+		if(source == null || source.getType() != InjectionType.SAMPLE) {
+			return null;
+		}
+		if(source.getStatus() == InjectionStatus.RUNNING) {
+			return null;
+		}
+		String groupId = source.getParallelGroupId();
+		if(groupId.isBlank()) {
+			groupId = UUID.randomUUID().toString();
+			source.setParallelGroupId(groupId);
+		} else if(countInGroup(groupId) >= 2) {
+			return null;
+		}
+		if(source.getNotes().isBlank()) {
+			source.setNotes("平行针 A");
+		}
+		InjectionSequenceEntry twin = new InjectionSequenceEntry(InjectionType.SAMPLE, source.getSampleId(), source.getSampleName(), "平行针 B");
+		twin.setParallelGroupId(groupId);
+		entries.add(index + 1, twin);
+		if(currentIndex > index) {
+			currentIndex++;
+		}
+		return twin;
+	}
+
+	public String parallelNeedleLabel(int index, boolean chinese) {
+
+		InjectionSequenceEntry entry = get(index);
+		if(entry == null || !entry.isParallelSample()) {
+			return "";
+		}
+		int ordinal = 0;
+		int total = 0;
+		String groupId = entry.getParallelGroupId();
+		for(int i = 0; i < entries.size(); i++) {
+			InjectionSequenceEntry other = entries.get(i);
+			if(groupId.equals(other.getParallelGroupId())) {
+				total++;
+				if(i == index) {
+					ordinal = total;
+				}
+			}
+		}
+		if(ordinal == 1) {
+			return chinese ? "平行针 A" : "Needle A";
+		}
+		if(ordinal == 2) {
+			return chinese ? "平行针 B" : "Needle B";
+		}
+		return chinese ? "平行" : "Parallel";
+	}
+
+	/**
+	 * Two-needle SAMPLE pairs: explicit {@code parallelGroupId} first, then
+	 * leftover SAMPLE rows that share a sample id.
+	 */
+	public List<InjectionSequenceEntry[]> findParallelPairs() {
+
+		List<InjectionSequenceEntry[]> pairs = new ArrayList<>();
+		Map<String, Boolean> used = new LinkedHashMap<>();
+		Map<String, List<InjectionSequenceEntry>> byGroup = new LinkedHashMap<>();
+		for(InjectionSequenceEntry entry : entries) {
+			if(entry.getType() != InjectionType.SAMPLE || entry.getParallelGroupId().isBlank()) {
+				continue;
+			}
+			byGroup.computeIfAbsent(entry.getParallelGroupId(), key -> new ArrayList<>()).add(entry);
+		}
+		for(List<InjectionSequenceEntry> group : byGroup.values()) {
+			if(group.size() < 2) {
+				continue;
+			}
+			pairs.add(new InjectionSequenceEntry[]{group.get(0), group.get(1)});
+			used.put(group.get(0).getId(), Boolean.TRUE);
+			used.put(group.get(1).getId(), Boolean.TRUE);
+		}
+		Map<String, List<InjectionSequenceEntry>> bySample = new LinkedHashMap<>();
+		for(InjectionSequenceEntry entry : entries) {
+			if(entry.getType() != InjectionType.SAMPLE || used.containsKey(entry.getId()) || entry.getSampleId().isBlank()) {
+				continue;
+			}
+			bySample.computeIfAbsent(entry.getSampleId(), key -> new ArrayList<>()).add(entry);
+		}
+		for(List<InjectionSequenceEntry> group : bySample.values()) {
+			if(group.size() < 2) {
+				continue;
+			}
+			pairs.add(new InjectionSequenceEntry[]{group.get(0), group.get(1)});
+		}
+		return pairs;
 	}
 
 	/**
@@ -334,6 +438,20 @@ public final class InjectionSequence {
 		} else if(!inRange(currentIndex)) {
 			currentIndex = entries.size() - 1;
 		}
+	}
+
+	private int countInGroup(String groupId) {
+
+		if(groupId == null || groupId.isBlank()) {
+			return 0;
+		}
+		int count = 0;
+		for(InjectionSequenceEntry entry : entries) {
+			if(groupId.equals(entry.getParallelGroupId())) {
+				count++;
+			}
+		}
+		return count;
 	}
 
 	private int nextOrdinal(InjectionType type) {

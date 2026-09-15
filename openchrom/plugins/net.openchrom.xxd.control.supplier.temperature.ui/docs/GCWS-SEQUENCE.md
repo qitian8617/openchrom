@@ -27,7 +27,7 @@ The working queue auto-saves as `current.json` in that folder. **保存序列…
 ## Operator steps (manual inject)
 
 1. Heat inlet / detector / oven. Ignite FID. Wait until Main shows **FID 就绪**.
-2. Open **白酒工作台 → 进样序列**. Click **填入典型队列** and set 样品数 (for example 3) → rows: 空白, 混标, QC, 样品×N. Or add rows one by one: **+ 空白 / + 混标 / + QC / + 样品**. Edit 编号 / 名称 / 备注, **保存本行**. Reorder with **上移 / 下移**. **设为当前** points at the next needle.
+2. Open **白酒工作台 → 进样序列**. Click **填入典型队列** and set 样品数 (for example 3) → rows: 空白, 混标, QC, 样品×N. Or add rows one by one: **+ 空白 / + 混标 / + QC / + 样品**. Select a 样品 row and **添加平行样** to insert a second SAMPLE needle (same id/name). Edit 编号 / 名称 / 备注, **保存本行**. Reorder with **上移 / 下移**. **设为当前** points at the next needle. After both needles are saved, **平行样结果…** opens mean / relative deviation (see Baijiu `GCWS-PARALLEL.md`).
 3. Optional: **保存序列…** to keep a named JSON next to other batches.
 4. Switch to **气相色谱控制台** Main. The strip shows the current vial. Inject that vial (▶ row). Main → **开始分析 → 启动**. The current row becomes **运行中**.
 5. **停止** or wait for device `ACQ_DONE`. On a successful save, the row becomes **已完成**, the chromatogram path is stored, and the pointer advances to the next **待进样**. The usual Baijiu handoff dialog is unchanged.
@@ -47,5 +47,5 @@ The working queue auto-saves as `current.json` in that folder. **保存序列…
 ## What this does not do
 
 - No autosampler robotics, vial tray, or unattended start of the next needle.
-- Mix-standard calibration gate (item 6) lives in Baijiu `quantify` (see `GCWS-CALIBRATION.md` in the Baijiu plugin). No parallel-sample stats (item 7) or Baijiu batch result table (item 8).
+- Mix-standard calibration gate (item 6) lives in Baijiu `quantify` (see `GCWS-CALIBRATION.md` in the Baijiu plugin). Parallel-sample mean / relative deviation (item 7) is a Baijiu workbench dialog (`GCWS-PARALLEL.md`); the sequence only marks two SAMPLE needles. No Baijiu batch result table (item 8).
 - FID readiness gate and Baijiu handoff are unchanged.

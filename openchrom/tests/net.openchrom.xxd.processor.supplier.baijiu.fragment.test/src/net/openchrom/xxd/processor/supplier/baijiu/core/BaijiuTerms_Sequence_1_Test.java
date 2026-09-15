@@ -23,5 +23,7 @@ public class BaijiuTerms_Sequence_1_Test {
 		assertTrue(BaijiuTerms.GLOSSARY.contains("白酒工作台编排"));
 		assertTrue(BaijiuTerms.GLOSSARY.contains("当前针"));
 		assertTrue(BaijiuTerms.GLOSSARY.contains(BaijiuTerms.SIMPLE_BATCH));
+		assertEquals("平行样", BaijiuTerms.PARALLEL);
+		assertTrue(BaijiuTerms.GLOSSARY.contains(BaijiuTerms.PARALLEL));
 	}
 }

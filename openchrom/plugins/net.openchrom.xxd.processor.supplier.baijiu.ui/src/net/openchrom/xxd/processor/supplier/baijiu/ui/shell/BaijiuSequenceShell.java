@@ -51,7 +51,7 @@ public final class BaijiuSequenceShell {
 			Shell shell = new Shell(parent, SWT.SHELL_TRIM);
 			shell.setText(BaijiuTerms.SEQUENCE);
 			shell.setLayout(new FillLayout());
-			shell.setSize(780, 720);
+			shell.setSize(860, 760);
 			new BaijiuSequenceComposite(shell, SWT.NONE);
 			shell.addDisposeListener(e -> {
 				if(openShell == shell) {

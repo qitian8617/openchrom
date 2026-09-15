@@ -8,5 +8,5 @@ Bundle-Vendor: OpenChrom
 Fragment-Host: net.openchrom.xxd.processor.supplier.baijiu.ui;bundle-version="1.6.32"
 Import-Package: org.junit.jupiter.api;version="[6.0.0,7.0.0)",
  org.junit.jupiter.api.io;version="[6.0.0,7.0.0)"
-Bundle-RequiredExecutionEnvironment: JavaSE-25
+Bundle-RequiredExecutionEnvironment: JavaSE-21
 Require-Bundle: org.eclipse.chemclipse.csd.model;bundle-version="0.8.0"

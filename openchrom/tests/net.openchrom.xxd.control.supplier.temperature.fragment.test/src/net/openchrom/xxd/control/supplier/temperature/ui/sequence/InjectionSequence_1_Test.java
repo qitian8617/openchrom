@@ -15,6 +15,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
 public class InjectionSequence_1_Test {
@@ -158,6 +160,60 @@ public class InjectionSequence_1_Test {
 		sequence.retry(0);
 		assertTrue(sequence.updateEntry(0, InjectionType.QC, "QC-01", "质控", "ok"));
 		assertEquals(InjectionType.QC, sequence.get(0).getType());
+	}
+
+	@Test
+	public void addParallelOfSharesSampleAndGroup() {
+
+		InjectionSequence sequence = new InjectionSequence();
+		sequence.add(InjectionType.BLANK);
+		sequence.add(InjectionType.SAMPLE, "LD-BJ-001", "浓香1", "");
+		InjectionSequenceEntry twin = sequence.addParallelOf(1);
+		assertNotNull(twin);
+		assertEquals(3, sequence.size());
+		assertEquals(InjectionType.SAMPLE, sequence.get(1).getType());
+		assertEquals(InjectionType.SAMPLE, sequence.get(2).getType());
+		assertEquals("LD-BJ-001", sequence.get(2).getSampleId());
+		assertEquals("浓香1", sequence.get(2).getSampleName());
+		assertEquals(sequence.get(1).getParallelGroupId(), sequence.get(2).getParallelGroupId());
+		assertFalse(sequence.get(1).getParallelGroupId().isBlank());
+		assertEquals("平行针 A", sequence.get(1).getNotes());
+		assertEquals("平行针 B", sequence.get(2).getNotes());
+		assertEquals("平行针 A", sequence.parallelNeedleLabel(1, true));
+		assertEquals("Needle B", sequence.parallelNeedleLabel(2, false));
+		assertNull(sequence.addParallelOf(1));
+		assertNull(sequence.addParallelOf(0));
+		List<InjectionSequenceEntry[]> pairs = sequence.findParallelPairs();
+		assertEquals(1, pairs.size());
+		assertEquals("LD-BJ-001", pairs.get(0)[0].getSampleId());
+		assertEquals("LD-BJ-001", pairs.get(0)[1].getSampleId());
+	}
+
+	@Test
+	public void findParallelPairsFallsBackToSharedSampleId() {
+
+		InjectionSequence sequence = new InjectionSequence();
+		sequence.add(InjectionType.SAMPLE, "LD-BJ-001", "a", "first");
+		sequence.add(InjectionType.QC, "QC-01", "qc", "");
+		sequence.add(InjectionType.SAMPLE, "LD-BJ-001", "a", "second");
+		sequence.add(InjectionType.SAMPLE, "LD-BJ-002", "b", "");
+		List<InjectionSequenceEntry[]> pairs = sequence.findParallelPairs();
+		assertEquals(1, pairs.size());
+		assertEquals("first", pairs.get(0)[0].getNotes());
+		assertEquals("second", pairs.get(0)[1].getNotes());
+	}
+
+	@Test
+	public void addParallelOfBlockedWhileRunning() {
+
+		InjectionSequence sequence = new InjectionSequence();
+		sequence.add(InjectionType.SAMPLE, "S-01", "a", "");
+		sequence.beginCurrent();
+		assertNull(sequence.addParallelOf(0));
+		assertEquals(1, sequence.size());
+		sequence.failCurrent();
+		assertNotNull(sequence.addParallelOf(0));
+		assertEquals(2, sequence.size());
 	}
 
 	@Test
