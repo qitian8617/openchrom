@@ -24,5 +24,6 @@
 
 无头可测部分已写入 fragment test：
   Gb2757Judge_1_Test、BaijiuReport_1_Test、BaijiuBatchEngine_1_Test、BaijiuRegressionChecklist_1_Test
+  进样序列（反控）：InjectionSequence_1_Test、InjectionSequenceIO_1_Test、InjectionSequenceManager_1_Test
 
 已知环境噪声（忽略）：LaiendeAboutHandler CNFE、CDK/inchi unresolved
