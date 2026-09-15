@@ -42,10 +42,13 @@ import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuAnalysisEngine;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuAnalysisResult;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuAromaType;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuCalibrationGate;
+import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuCalibrationPoint;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuCatalog;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuCompound;
+import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuLinearFit;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuMethodIO;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuMethodSettings;
+import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuMultipointCalibration;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuPeakBounds;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuPreferences;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuQuantRow;
@@ -117,6 +120,12 @@ public final class BaijiuAnalysisShell {
 	private BaijiuCompound selectedCompound;
 	private IPeak selectedUnmatchedPeak;
 	private IPeak selectedMatchedPeak;
+	private Text mixScale;
+	private Button scaleAreas;
+	private Label mixLevelHint;
+	private Label multipointStatus;
+	private Table pointTable;
+	private Table fitTable;
 
 	private BaijiuAnalysisShell(IChromatogramSelection chromatogramSelection, EPartService partService) {
 
@@ -153,6 +162,10 @@ public final class BaijiuAnalysisShell {
 		matchTab.setText("\u5cf0\u5339\u914d");
 		matchTab.setControl(createMatchTab(tabs));
 
+		TabItem calTab = new TabItem(tabs, SWT.NONE);
+		calTab.setText("\u591a\u70b9\u6821\u6b63");
+		calTab.setControl(createMultipointTab(tabs));
+
 		Composite bottom = new Composite(shell, SWT.NONE);
 		bottom.setLayout(new GridLayout(2, false));
 		bottom.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
@@ -171,8 +184,9 @@ public final class BaijiuAnalysisShell {
 		refreshChromatogramLabel();
 		fillMethodTable();
 		fillMatchTables();
+		fillMultipointTables();
 		updateInjectedLabel();
-		setStatus("\u5df2\u52a0\u8f7d\u6d53\u9999 FID \u9ed8\u8ba4\u65b9\u6cd5\u5305\uff08XP-\u767d\u9152 C2 + \u4e59\u9178\u6b63\u4e01\u916f + 15 \u6df7\u6807\uff09\u3002" + BaijiuCalibrationGate.OPERATOR_HINT + " \u6253\u5f00\u6f14\u793a\u6df7\u6807\u540e\u53ef\u76f4\u63a5\u70b9\u300c\u63a8\u8350\u79ef\u5206\u300d\uff0c\u518d\u300c\u7528\u5f53\u524d\u8c31\u56fe\u505a\u6821\u6b63\u300d\u3002\u8bef\u6539\u540e\u53ef\u300c\u52a0\u8f7d\u9ed8\u8ba4\u6d53\u9999\u65b9\u6cd5\u5305\u300d\u3002");
+		setStatus("\u5df2\u52a0\u8f7d\u6d53\u9999 FID \u9ed8\u8ba4\u65b9\u6cd5\u5305\uff08XP-\u767d\u9152 C2 + \u4e59\u9178\u6b63\u4e01\u916f + 15 \u6df7\u6807\uff09\u3002" + BaijiuCalibrationGate.OPERATOR_HINT + " \u6253\u5f00\u6f14\u793a\u6df7\u6807\u540e\u53ef\u76f4\u63a5\u70b9\u300c\u63a8\u8350\u79ef\u5206\u300d\uff0c\u518d\u300c\u7528\u5f53\u524d\u8c31\u56fe\u505a\u6821\u6b63\u300d\u6216\u300c\u591a\u70b9\u6821\u6b63\u300d\u62df\u5408\u3002\u8bef\u6539\u540e\u53ef\u300c\u52a0\u8f7d\u9ed8\u8ba4\u6d53\u9999\u65b9\u6cd5\u5305\u300d\u3002");
 
 		shell.open();
 		Display display = parent.getDisplay();
@@ -263,7 +277,7 @@ public final class BaijiuAnalysisShell {
 		button(buttons, "\u52a0\u8f7d\u9ed8\u8ba4\u6d53\u9999\u65b9\u6cd5\u5305", e -> restoreDefaultPackage(parent.getShell()));
 		Label calibrationHint = new Label(root, SWT.WRAP);
 		calibrationHint.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		calibrationHint.setText(BaijiuCalibrationGate.OPERATOR_HINT);
+		calibrationHint.setText(BaijiuCalibrationGate.OPERATOR_HINT + " \u5355\u70b9\u4ecd\u7528\u300c\u7528\u5f53\u524d\u8c31\u56fe\u505a\u6821\u6b63\u300d\uff1b\u7532\u9187+\u4e3b\u916f\u4e5f\u53ef\u5728\u300c\u591a\u70b9\u6821\u6b63\u300d\u9875\u8bb0 \u2265 3 \u70b9\u5e76\u62df\u5408 R\u00b2\u3002");
 
 		Group gbGroup = group(root, "GB 2757 \u7532\u9187\u5224\u5b9a");
 		gbGroup.setLayout(new GridLayout(1, false));
@@ -404,6 +418,78 @@ public final class BaijiuAnalysisShell {
 		return root;
 	}
 
+	private Composite createMultipointTab(Composite parent) {
+
+		ScrolledComposite scroll = new ScrolledComposite(parent, SWT.V_SCROLL);
+		scroll.setExpandHorizontal(true);
+		scroll.setExpandVertical(true);
+		Composite root = new Composite(scroll, SWT.NONE);
+		root.setLayout(new GridLayout(1, false));
+		scroll.setContent(root);
+
+		Label hint = new Label(root, SWT.WRAP);
+		hint.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		hint.setText("\u591a\u70b9\u6df7\u6807\u6821\u6b63\uff08\u8bd5\u70b9 P1\uff09\uff1a\u7532\u9187\u3001\u4e59\u9178\u4e59\u916f\u3001\u4e73\u9178\u4e59\u916f\u3001\u5df1\u9178\u4e59\u916f\u3002\u6bcf\u9488\u58f0\u660e\u6df7\u6807\u500d\u6570\uff08\u76f8\u5bf9\u65b9\u6cd5\u6df7\u6807 g/L\uff09\uff0c\u4ece\u5f53\u524d\u8c31\u56fe\u52a0\u70b9\uff1b\u2265 3 \u70b9\u540e\u300c\u62df\u5408\u300d\u7ebf\u6027\u66f2\u7ebf\u5e76\u663e\u793a\u659c\u7387/\u622a\u8ddd/R\u00b2\u3002\u6709\u6548 RF \u5199\u5165\u65e2\u6709 RF \u8868\uff0c\u5b9a\u91cf\u4e0e\u95e8\u95ea\u4e0d\u53d8\u3002\u5176\u4f59\u7ec4\u5206\u4ecd\u7528\u300c\u7528\u5f53\u524d\u8c31\u56fe\u505a\u6821\u6b63\u300d\u5355\u70b9 RF\u3002\u79bb\u7ebf\u6f14\u793a\u53ef\u7528\u540c\u4e00\u5f20 mix-15plus-istd.ocb\uff0c\u52fe\u9009\u6309\u500d\u6570\u7f29\u653e\u5f85\u6d4b\u5cf0\u9762\u79ef\u6216\u76f4\u63a5\u300c\u6f14\u793a\u4e09\u70b9\u300d\uff08 0.5 / 1.0 / 1.5\uff09\u3002\u8be6\u89c1 docs/GCWS-MULTIPOINT.md\u3002");
+
+		Composite level = new Composite(root, SWT.NONE);
+		level.setLayout(new GridLayout(6, false));
+		level.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		mixScale = labeledText(level, "\u672c\u9488\u6df7\u6807\u500d\u6570");
+		mixScale.setText("1.0");
+		mixLevelHint = new Label(level, SWT.WRAP);
+		mixLevelHint.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 4, 1));
+		mixScale.addModifyListener(e -> updateMixLevelHint());
+		scaleAreas = new Button(level, SWT.CHECK);
+		scaleAreas.setText("\u79bb\u7ebf\u6f14\u793a\uff1a\u6309\u500d\u6570\u7f29\u653e\u5f85\u6d4b\u5cf0\u9762\u79ef\uff08\u5185\u6807\u4e0d\u53d8\uff09");
+		scaleAreas.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 6, 1));
+		updateMixLevelHint();
+
+		Composite actions = new Composite(root, SWT.NONE);
+		actions.setLayout(new GridLayout(6, false));
+		actions.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		button(actions, "\u4ece\u5f53\u524d\u8c31\u56fe\u6dfb\u52a0\u6821\u6b63\u70b9", e -> addCalibrationPoint(parent.getShell()));
+		button(actions, "\u6f14\u793a\u4e09\u70b9\uff080.5/1.0/1.5\uff09", e -> addDemoCalibrationPoints(parent.getShell()));
+		button(actions, "\u66f4\u65b0\u9009\u4e2d\u70b9\u6d53\u5ea6", e -> updateSelectedPointScale(parent.getShell()));
+		button(actions, "\u5220\u9664\u9009\u4e2d\u70b9", e -> removeSelectedPoint(parent.getShell()));
+		button(actions, "\u6e05\u7a7a\u6821\u6b63\u70b9", e -> clearCalibrationPoints(parent.getShell()));
+		button(actions, "\u62df\u5408", e -> fitMultipoint(parent.getShell()));
+
+		pointTable = new Table(root, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL);
+		GridData pointData = new GridData(SWT.FILL, SWT.FILL, true, true);
+		pointData.heightHint = 180;
+		pointTable.setLayoutData(pointData);
+		pointTable.setHeaderVisible(true);
+		pointTable.setLinesVisible(true);
+		String[] pointColumns = {"#", "\u6807\u7b7e", "\u6765\u6e90", "\u500d\u6570", "\u7532\u9187 g/L", "\u7532\u9187 \u9762\u79ef\u6bd4", "\u4e59\u9178\u4e59\u916f", "\u4e73\u9178\u4e59\u916f", "\u5df1\u9178\u4e59\u916f"};
+		int[] pointWidths = {36, 60, 220, 60, 80, 90, 90, 90, 90};
+		for(int i = 0; i < pointColumns.length; i++) {
+			TableColumn column = new TableColumn(pointTable, SWT.NONE);
+			column.setText(pointColumns[i]);
+			column.setWidth(pointWidths[i]);
+		}
+
+		fitTable = new Table(root, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL);
+		GridData fitData = new GridData(SWT.FILL, SWT.FILL, true, true);
+		fitData.heightHint = 140;
+		fitTable.setLayoutData(fitData);
+		fitTable.setHeaderVisible(true);
+		fitTable.setLinesVisible(true);
+		String[] fitColumns = {"\u7ec4\u5206", "n", "\u659c\u7387", "\u622a\u8ddd", "R\u00b2", "\u6709\u6548 RF", "\u63d0\u793a"};
+		int[] fitWidths = {110, 40, 90, 90, 80, 90, 280};
+		for(int i = 0; i < fitColumns.length; i++) {
+			TableColumn column = new TableColumn(fitTable, SWT.NONE);
+			column.setText(fitColumns[i]);
+			column.setWidth(fitWidths[i]);
+		}
+
+		multipointStatus = new Label(root, SWT.WRAP);
+		multipointStatus.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		multipointStatus.setText("x = \u542b\u91cf g/L\uff0c y = A\u5f85\u6d4b / A\u5185\u6807\u3002R\u00b2 < 0.99 \u4ec5\u63d0\u793a\uff0c\u4e0d\u963b\u6b62\u95e8\u95ea\u3002");
+
+		scroll.setMinSize(root.computeSize(SWT.DEFAULT, SWT.DEFAULT));
+		return scroll;
+	}
+
 	private void loadFields() {
 
 		BaijiuSampleInfo sample = chromatogram() == null ? new BaijiuSampleInfo() : BaijiuSampleInfo.from(chromatogram());
@@ -490,9 +576,192 @@ public final class BaijiuAnalysisShell {
 		BaijiuPreferences.saveMethod(settings);
 		fillMethodTable();
 		fillMatchTables();
+		fillMultipointTables();
 		recalculateQuiet();
 		info(shell, message);
 		setStatus(message);
+	}
+
+	private void addCalibrationPoint(Shell shell) {
+
+		collectAll();
+		double scale = parse(mixScale.getText(), 1.0d);
+		boolean demoScale = scaleAreas != null && !scaleAreas.isDisposed() && scaleAreas.getSelection();
+		String message = BaijiuMultipointCalibration.addPoint(chromatogram(), settings, scale, BaijiuMultipointCalibration.formatScaleLabel(scale), demoScale);
+		BaijiuPreferences.saveMethod(settings);
+		fillMultipointTables();
+		if(message.contains("\u5df2\u6dfb\u52a0") || message.contains("Added calibration point")) {
+			info(shell, message);
+		} else {
+			warn(shell, message);
+		}
+		setStatus(message);
+	}
+
+	private void addDemoCalibrationPoints(Shell shell) {
+
+		collectAll();
+		String message = BaijiuMultipointCalibration.addDemoPoints(chromatogram(), settings);
+		BaijiuPreferences.saveMethod(settings);
+		fillMethodTable();
+		fillMultipointTables();
+		recalculateQuiet();
+		if(message.contains("\u5df2\u62df\u5408") || message.contains("Fitted")) {
+			info(shell, message);
+		} else {
+			warn(shell, message);
+		}
+		setStatus(message);
+	}
+
+	private void updateSelectedPointScale(Shell shell) {
+
+		collectAll();
+		int index = pointTable == null || pointTable.isDisposed() ? -1 : pointTable.getSelectionIndex();
+		double scale = parse(mixScale.getText(), 1.0d);
+		String message = BaijiuMultipointCalibration.applyMixScale(settings, index, scale);
+		BaijiuPreferences.saveMethod(settings);
+		fillMultipointTables();
+		if(index < 0) {
+			warn(shell, message);
+		} else {
+			info(shell, message);
+		}
+		setStatus(message);
+	}
+
+	private void removeSelectedPoint(Shell shell) {
+
+		int index = pointTable == null || pointTable.isDisposed() ? -1 : pointTable.getSelectionIndex();
+		String message = BaijiuMultipointCalibration.removePoint(settings, index);
+		BaijiuPreferences.saveMethod(settings);
+		fillMultipointTables();
+		if(index < 0) {
+			warn(shell, message);
+		} else {
+			setStatus(message);
+		}
+	}
+
+	private void clearCalibrationPoints(Shell shell) {
+
+		MessageBox confirm = new MessageBox(shell, SWT.ICON_WARNING | SWT.OK | SWT.CANCEL);
+		confirm.setText("\u767d\u9152\u5206\u6790");
+		confirm.setMessage("\u6e05\u7a7a\u591a\u70b9\u6821\u6b63\u70b9\u4e0e\u62df\u5408\u7ed3\u679c\uff08\u4e0d\u6e05\u9664\u5df2\u5199\u5165\u7684 RF\uff09\u3002\nClear multi-point rows and fit results (does not clear stored RF).");
+		if(confirm.open() != SWT.OK) {
+			return;
+		}
+		settings.clearCalibrationTable();
+		BaijiuPreferences.saveMethod(settings);
+		fillMultipointTables();
+		setStatus("\u5df2\u6e05\u7a7a\u591a\u70b9\u6821\u6b63\u70b9\u3002");
+	}
+
+	private void fitMultipoint(Shell shell) {
+
+		collectAll();
+		String message = BaijiuMultipointCalibration.fit(settings);
+		BaijiuPreferences.saveMethod(settings);
+		fillMethodTable();
+		fillMultipointTables();
+		recalculateQuiet();
+		if(message.contains("\u5df2\u62df\u5408") || message.contains("Fitted")) {
+			info(shell, message);
+		} else {
+			warn(shell, message);
+		}
+		setStatus(message);
+	}
+
+	private void fillMultipointTables() {
+
+		if(pointTable == null || pointTable.isDisposed()) {
+			return;
+		}
+		int selected = pointTable.getSelectionIndex();
+		pointTable.removeAll();
+		int i = 0;
+		for(BaijiuCalibrationPoint point : settings.getCalibrationPoints()) {
+			TableItem item = new TableItem(pointTable, SWT.NONE);
+			item.setText(0, Integer.toString(i + 1));
+			item.setText(1, point.getLabel());
+			item.setText(2, point.getSource());
+			item.setText(3, format(point.getMixScale(), 3));
+			item.setText(4, formatFinite(point.concentrationGL(BaijiuCatalog.METHANOL_ID), 4));
+			item.setText(5, formatFinite(point.areaRatio(BaijiuCatalog.METHANOL_ID), 4));
+			item.setText(6, formatFinite(point.areaRatio("ethyl_acetate"), 4));
+			item.setText(7, formatFinite(point.areaRatio("ethyl_lactate"), 4));
+			item.setText(8, formatFinite(point.areaRatio("ethyl_hexanoate"), 4));
+			i++;
+		}
+		if(selected >= 0 && selected < pointTable.getItemCount()) {
+			pointTable.setSelection(selected);
+		}
+		fitTable.removeAll();
+		boolean anySoft = false;
+		for(BaijiuCompound compound : BaijiuMultipointCalibration.pilotCompounds()) {
+			TableItem item = new TableItem(fitTable, SWT.NONE);
+			item.setText(0, settings.displayName(compound));
+			BaijiuLinearFit fit = settings.getCalibrationFits().get(compound.getId());
+			if(fit == null || !fit.isValid()) {
+				item.setText(1, Integer.toString(countPointRatios(compound.getId())));
+				item.setText(2, "-");
+				item.setText(3, "-");
+				item.setText(4, "-");
+				item.setText(5, "-");
+				item.setText(6, countPointRatios(compound.getId()) < BaijiuLinearFit.MIN_POINTS ? "\u4e0d\u8db3 3 \u70b9" : "\u5c1a\u672a\u62df\u5408");
+				continue;
+			}
+			item.setText(1, Integer.toString(fit.getN()));
+			item.setText(2, format(fit.getSlope(), 6));
+			item.setText(3, format(fit.getIntercept(), 6));
+			item.setText(4, format(fit.getRSquared(), 6));
+			item.setText(5, format(fit.getEffectiveRf(), 4));
+			if(fit.isR2SoftWarn()) {
+				anySoft = true;
+				item.setText(6, "R\u00b2 < 0.99\uff08\u4ec5\u63d0\u793a\uff09");
+			} else {
+				item.setText(6, "");
+			}
+		}
+		if(multipointStatus != null && !multipointStatus.isDisposed()) {
+			String head = "x = \u542b\u91cf g/L\uff0c y = A\u5f85\u6d4b / A\u5185\u6807\u3002\u5df2\u8bb0 " + settings.getCalibrationPoints().size() + " \u70b9\u3002";
+			if(anySoft) {
+				head += " \u6709\u7ec4\u5206 R\u00b2 < 0.99\uff08\u8f6f\u63d0\u793a\uff0c\u4e0d\u963b\u6b62\u5b9a\u91cf\uff09\u3002";
+			}
+			multipointStatus.setText(head);
+		}
+		updateMixLevelHint();
+	}
+
+	private int countPointRatios(String compoundId) {
+
+		int n = 0;
+		for(BaijiuCalibrationPoint point : settings.getCalibrationPoints()) {
+			if(point.hasRatio(compoundId)) {
+				n++;
+			}
+		}
+		return n;
+	}
+
+	private void updateMixLevelHint() {
+
+		if(mixLevelHint == null || mixLevelHint.isDisposed()) {
+			return;
+		}
+		double scale = parse(mixScale == null || mixScale.isDisposed() ? "1" : mixScale.getText(), 1.0d);
+		BaijiuCompound methanol = BaijiuCatalog.byId(BaijiuCatalog.METHANOL_ID);
+		double grams = settings.mixGramsPerLiter(methanol) * scale;
+		mixLevelHint.setText("\u672c\u9488\u7532\u9187\u7ea6 " + format(grams, 4) + " g/L\uff08\u65b9\u6cd5\u6df7\u6807 \u00d7 \u500d\u6570\uff09");
+	}
+
+	private static String formatFinite(double value, int decimals) {
+
+		if(!Double.isFinite(value)) {
+			return "-";
+		}
+		return format(value, decimals);
 	}
 
 	private void quantify(Shell shell, boolean dialogOnError, boolean writeBack) {
@@ -652,7 +921,7 @@ public final class BaijiuAnalysisShell {
 
 		MessageBox confirm = new MessageBox(shell, SWT.ICON_WARNING | SWT.OK | SWT.CANCEL);
 		confirm.setText("\u767d\u9152\u5206\u6790");
-		confirm.setMessage("\u6062\u590d\u9ed8\u8ba4\u6d53\u9999\u65b9\u6cd5\u5305\u5c06\u8986\u76d6\u5f53\u524d\u67f1\u3001\u5185\u6807\u3001\u7ec4\u5206\u5e93\uff08RT/\u7a97\u53e3/\u662f\u5426\u5b9a\u91cf/\u662f\u5426\u7532\u9187\u5224\u5b9a\uff09\u548c\u6df7\u6807\u6d53\u5ea6\uff0c\u5e76\u6e05\u9664\u5df2\u5199\u5165\u7684 RF\u3002\u9700\u91cd\u65b0\u7528\u6df7\u6807\u505a\u6821\u6b63\u3002\nRestore the bundled \u6d53\u9999 FID package (XP-C2 + \u4e59\u9178\u6b63\u4e01\u916f + 15-mix), including quantify / GB 2757 flags. Current RF will be cleared; re-calibrate before quantifying.");
+		confirm.setMessage("\u6062\u590d\u9ed8\u8ba4\u6d53\u9999\u65b9\u6cd5\u5305\u5c06\u8986\u76d6\u5f53\u524d\u67f1\u3001\u5185\u6807\u3001\u7ec4\u5206\u5e93\uff08RT/\u7a97\u53e3/\u662f\u5426\u5b9a\u91cf/\u662f\u5426\u7532\u9187\u5224\u5b9a\uff09\u548c\u6df7\u6807\u6d53\u5ea6\uff0c\u5e76\u6e05\u9664\u5df2\u5199\u5165\u7684 RF \u4e0e\u591a\u70b9\u6821\u6b63\u70b9\u3002\u9700\u91cd\u65b0\u7528\u6df7\u6807\u505a\u6821\u6b63\u3002\nRestore the bundled \u6d53\u9999 FID package (XP-C2 + \u4e59\u9178\u6b63\u4e01\u916f + 15-mix), including quantify / GB 2757 flags. Current RF and multi-point calibration points will be cleared; re-calibrate before quantifying.");
 		if(confirm.open() != SWT.OK) {
 			return;
 		}
@@ -661,6 +930,7 @@ public final class BaijiuAnalysisShell {
 		loadFields();
 		fillMethodTable();
 		fillMatchTables();
+		fillMultipointTables();
 		updateInjectedLabel();
 		lastResult = null;
 		fillResultTable(null);
@@ -682,6 +952,7 @@ public final class BaijiuAnalysisShell {
 			loadFields();
 			fillMethodTable();
 			fillMatchTables();
+			fillMultipointTables();
 			updateInjectedLabel();
 			lastResult = null;
 			fillResultTable(null);

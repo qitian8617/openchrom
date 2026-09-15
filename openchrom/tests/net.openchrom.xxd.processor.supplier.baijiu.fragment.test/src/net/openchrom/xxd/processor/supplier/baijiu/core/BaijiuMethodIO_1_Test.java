@@ -123,6 +123,14 @@ public class BaijiuMethodIO_1_Test {
 		settings.getMixGramsPerLiter().put("methanol", 99.0d);
 		settings.getResponseFactors().put("methanol", 1.23d);
 		settings.getManualAssignmentsRtMin().put("methanol", 2.5d);
+		BaijiuCalibrationPoint leftover = new BaijiuCalibrationPoint();
+		leftover.setLabel("stale");
+		leftover.setMixScale(1.0d);
+		leftover.getConcentrationGL().put("methanol", 0.5d);
+		leftover.getArea().put("methanol", 100.0d);
+		leftover.setIstdArea(200.0d);
+		settings.getCalibrationPoints().add(leftover);
+		settings.getCalibrationFits().put("methanol", BaijiuLinearFit.stored(3, 1.0d, 0.0d, 1.0d, 1.23d));
 		assertTrue(BaijiuCalibrationGate.allowsQuantitation(settings));
 		settings.setQuantified("methanol", false);
 		settings.setGb2757Target("acetaldehyde", true);
@@ -136,6 +144,8 @@ public class BaijiuMethodIO_1_Test {
 		assertFalse(settings.isQuantified(BaijiuCatalog.istd()));
 		assertTrue(settings.isGb2757Target(BaijiuCatalog.byId("methanol")));
 		assertFalse(settings.isGb2757Target(BaijiuCatalog.byId("acetaldehyde")));
+		assertTrue(settings.getCalibrationPoints().isEmpty());
+		assertTrue(settings.getCalibrationFits().isEmpty());
 		assertFalse(BaijiuCalibrationGate.allowsQuantitation(settings));
 	}
 
@@ -175,6 +185,36 @@ public class BaijiuMethodIO_1_Test {
 		assertTrue(result.getGb2757Result().isJudged());
 	}
 
+	@Test
+	public void multipointCalibrationRoundTripsInBjm(@TempDir Path dir) throws Exception {
+
+		BaijiuMethodSettings settings = BaijiuMethodSettings.defaultNongxiangFid();
+		String demo = BaijiuMultipointCalibration.addDemoPoints(mixChromatogramWithEsters(), settings);
+		assertTrue(BaijiuCalibrationGate.allowsQuantitation(settings), demo);
+		assertEquals(3, settings.getCalibrationPoints().size());
+		double methanolRf = settings.responseFactor("methanol");
+		double methanolR2 = settings.getCalibrationFits().get("methanol").getRSquared();
+		double intercept = settings.getCalibrationFits().get("methanol").getIntercept();
+		Path file = dir.resolve("multipoint.bjm");
+		BaijiuMethodIO.save(file, settings);
+
+		BaijiuMethodSettings loaded = new BaijiuMethodSettings();
+		BaijiuMethodIO.load(file, loaded);
+		assertEquals(3, loaded.getCalibrationPoints().size());
+		assertEquals("0.5x", loaded.getCalibrationPoints().get(0).getLabel());
+		assertEquals(0.5d, loaded.getCalibrationPoints().get(0).getMixScale(), 1.0e-12d);
+		assertEquals(settings.getCalibrationPoints().get(0).concentrationGL("methanol"), loaded.getCalibrationPoints().get(0).concentrationGL("methanol"), 1.0e-9d);
+		assertEquals(settings.getCalibrationPoints().get(1).areaRatio("ethyl_hexanoate"), loaded.getCalibrationPoints().get(1).areaRatio("ethyl_hexanoate"), 1.0e-9d);
+		assertNotNull(loaded.getCalibrationFits().get("methanol"));
+		assertEquals(methanolR2, loaded.getCalibrationFits().get("methanol").getRSquared(), 1.0e-9d);
+		assertEquals(intercept, loaded.getCalibrationFits().get("methanol").getIntercept(), 1.0e-9d);
+		assertEquals(methanolRf, loaded.responseFactor("methanol"), 1.0e-9d);
+		assertTrue(loaded.hasResponseFactor("ethyl_acetate"));
+		assertTrue(BaijiuCalibrationGate.allowsQuantitation(loaded));
+		BaijiuAnalysisResult result = BaijiuAnalysisEngine.quantify(sampleChromatogram(), demoSample(), loaded);
+		assertTrue(result.isSuccess(), result.getMessage());
+	}
+
 	private static void assertFrozenNongxiangPackage(BaijiuMethodSettings settings) {
 
 		assertEquals(BaijiuCatalog.DEFAULT_METHOD_NAME, settings.getMethodName());
@@ -211,6 +251,8 @@ public class BaijiuMethodIO_1_Test {
 		assertEquals(2.718d, settings.expectedRtMin(BaijiuCatalog.byId("methanol")), 1.0e-6d);
 		assertEquals(10.382d, settings.expectedRtMin(BaijiuCatalog.istd()), 1.0e-6d);
 		assertEquals(16.934d, settings.expectedRtMin(BaijiuCatalog.byId("ethyl_hexanoate")), 1.0e-6d);
+		assertTrue(settings.getCalibrationPoints().isEmpty());
+		assertTrue(settings.getCalibrationFits().isEmpty());
 	}
 
 	private static void assertKeyFieldsEqual(BaijiuMethodSettings expected, BaijiuMethodSettings actual) {
@@ -296,6 +338,22 @@ public class BaijiuMethodIO_1_Test {
 	private static ChromatogramCSD mixChromatogram() {
 
 		return chromatogram(800.0d, 1000.0d);
+	}
+
+	private static ChromatogramCSD mixChromatogramWithEsters() {
+
+		ChromatogramCSD chromatogram = new ChromatogramCSD();
+		for(int i = 1; i <= 800; i++) {
+			ScanCSD scan = new ScanCSD(10.0f);
+			scan.setRetentionTime(i * 1000);
+			chromatogram.addScan(scan);
+		}
+		chromatogram.getPeaks().add(peak(chromatogram, 2.718d, 800.0d));
+		chromatogram.getPeaks().add(peak(chromatogram, 3.746d, 900.0d));
+		chromatogram.getPeaks().add(peak(chromatogram, 10.382d, 1000.0d));
+		chromatogram.getPeaks().add(peak(chromatogram, 15.201d, 1100.0d));
+		chromatogram.getPeaks().add(peak(chromatogram, 16.934d, 1200.0d));
+		return chromatogram;
 	}
 
 	private static ChromatogramCSD sampleChromatogram() {

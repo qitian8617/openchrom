@@ -4,7 +4,7 @@ Pilot P1: freeze a **shippable 浓香 FID plant method** — physical **XP-白�
 
 Acceptance: **XP-C2 + 乙酸正丁酯 + 15 混标，\*.bjm 导入导出**.
 
-Multi-point calibration / R² is item 11. Per-compound RT / window / quantify / GB 2757 flags are item 10 (`GCWS-COMPOUND-LIBRARY.md`). Part 11 / LIMS / full report is item 12.
+Multi-point calibration / R² is item 11 (`GCWS-MULTIPOINT.md`). Per-compound RT / window / quantify / GB 2757 flags are item 10 (`GCWS-COMPOUND-LIBRARY.md`). Part 11 / LIMS / full report is item 12.
 
 ## What is frozen
 
@@ -18,7 +18,7 @@ Multi-point calibration / R² is item 11. Per-compound RT / window / quantify / 
 | RT window | ±0.15 min default (per-compound window / quantify / GB 2757 flags: item 10) |
 | GB 2757 limits | grain 0.6 g/L and other 2.0 g/L **in the package / preferences**, not hardcoded in the judge |
 
-The frozen template does **not** include response factors. Mix-standard calibration (item 6) still writes RF; quantification still requires a valid methanol RF.
+The frozen template does **not** include response factors or multi-point calibration points. Mix-standard calibration (item 6 single-point or item 11 fit) still writes RF; quantification still requires a valid methanol RF.
 
 ## Files (keep in sync)
 
@@ -39,10 +39,10 @@ In **白酒分析**:
 |--------|---------|
 | **另存厂方法** | Export current method to UTF-8 `*.bjm` |
 | **加载厂方法** | Replace the current method with a `*.bjm` (round-trip of key fields, including RF if the file has them) |
-| **加载默认浓香方法包** | Restore XP-C2 + 乙酸正丁酯 + 15-mix from the bundled package, including quantify / GB 2757 flags. Confirms first. **Clears RF** — re-run **用当前谱图做校正** before 定量 |
+| **加载默认浓香方法包** | Restore XP-C2 + 乙酸正丁酯 + 15-mix from the bundled package, including quantify / GB 2757 flags. Confirms first. **Clears RF and multi-point points** — re-run **用当前谱图做校正** or **多点校正** before 定量 |
 | **保存方法** | Preferences only (not a file) |
 
-Restore after a bad edit: 白酒分析 → **加载默认浓香方法包** → OK. Then open the mix chromatogram → 推荐积分 → 用当前谱图做校正.
+Restore after a bad edit: 白酒分析 → **加载默认浓香方法包** → OK. Then open the mix chromatogram → 推荐积分 → 用当前谱图做校正 (or 多点校正 → 拟合).
 
 ## Round-trip
 
@@ -54,4 +54,4 @@ Restore after a bad edit: 白酒分析 → **加载默认浓香方法包** → O
 
 UTF-8 `Properties` via `BaijiuMethodIO`. No Part 11 audit trail.
 
-See demo `操作步骤.txt` section G.
+See demo `操作步骤.txt` sections G, H, and I.

@@ -33,6 +33,10 @@ public final class BaijiuAnalysisEngine {
 	private BaijiuAnalysisEngine() {
 	}
 
+	/**
+	 * Single-point mix-standard RF from the current chromatogram (legacy / 1-needle
+	 * fallback). Multi-point linear fit is {@link BaijiuMultipointCalibration}.
+	 */
 	public static String calibrate(IChromatogram chromatogram, BaijiuMethodSettings settings) {
 
 		if(chromatogram == null) {

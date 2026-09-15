@@ -27,5 +27,7 @@ public class BaijiuTerms_Sequence_1_Test {
 		assertTrue(BaijiuTerms.GLOSSARY.contains(BaijiuTerms.PARALLEL));
 		assertEquals("批处理结果", BaijiuTerms.BATCH_RESULTS);
 		assertTrue(BaijiuTerms.GLOSSARY.contains(BaijiuTerms.BATCH_RESULTS));
+		assertEquals("多点校正", BaijiuTerms.MULTIPOINT);
+		assertTrue(BaijiuTerms.GLOSSARY.contains(BaijiuTerms.MULTIPOINT));
 	}
 }

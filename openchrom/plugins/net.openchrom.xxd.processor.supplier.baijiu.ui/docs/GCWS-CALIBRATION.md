@@ -4,7 +4,7 @@ Sample quantification is **blocked** unless the loaded plant method has a valid 
 
 ## Valid calibration / valid RF
 
-Stored on the method after **用当前谱图做校正** (or loaded from `*.bjm` / preferences):
+Stored on the method after **用当前谱图做校正**, **多点校正 → 拟合**, or loaded from `*.bjm` / preferences:
 
 | Rule | Meaning |
 |------|---------|
@@ -13,7 +13,9 @@ Stored on the method after **用当前谱图做校正** (or loaded from `*.bjm` 
 | Valid RF | Finite, `> 0`, and in `[1e-4, 1e4]` |
 | Invalid RF | Missing methanol, `NaN`, `±Inf`, `≤ 0`, or out of bounds → **block** |
 
-Other mix analytes without RF stay **未校正** on the result table and do not by themselves block GB 2757. Multi-point / R² is out of scope (item 11).
+Other mix analytes without RF stay **未校正** on the result table and do not by themselves block GB 2757.
+
+**Multi-point / R² (item 11):** 白酒分析 → **多点校正** records ≥ 3 mix needles (methanol + 乙酸乙酯 / 乳酸乙酯 / 己酸乙酯), fits `y = A_a/A_ISTD` vs `x = g/L`, shows slope / intercept / R², and writes an **effective RF** into the same RF map so this gate and quantify stay unchanged. Single-point **用当前谱图做校正** remains the 1-needle fallback. See `GCWS-MULTIPOINT.md`.
 
 ## Operator paths
 
@@ -25,8 +27,8 @@ The gate runs inside `BaijiuAnalysisEngine.quantify`, so it applies to:
 - 批处理结果 → DONE sequence vials still go through `quantify` (incomplete vials are listed, not quantified)
 - 预览报告 / CSV export (they quantify first)
 
-The frozen default package (`nongxiang-fid-default.bjm`) ships **without RF**. Restoring it clears calibration. See `GCWS-METHOD-PACKAGE.md`.
+The frozen default package (`nongxiang-fid-default.bjm`) ships **without RF**. Restoring it clears RF and multi-point calibration points. See `GCWS-METHOD-PACKAGE.md`.
 
-Fix: open the mix chromatogram (demo `mix-15plus-istd.ocb`) → **推荐积分** → **用当前谱图做校正** → then quantify the sample.
+Fix: open the mix chromatogram (demo `mix-15plus-istd.ocb`) → **推荐积分** → **用当前谱图做校正** (or **多点校正** → 拟合) → then quantify the sample.
 
 See demo `操作步骤.txt`.

@@ -16,6 +16,7 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Properties;
 
 public final class BaijiuMethodIO {
@@ -40,7 +41,8 @@ public final class BaijiuMethodIO {
 
 	/**
 	 * Reset {@code settings} to the shipped nongxiang FID package (XP-C2 + n-butyl acetate + 15-mix).
-	 * Clears RF / manual assignments so plants re-calibrate after a bad edit.
+	 * Clears RF, multi-point calibration points, and manual assignments so plants
+	 * re-calibrate after a bad edit.
 	 */
 	public static void restoreBundledDefaultPackage(BaijiuMethodSettings settings) {
 
@@ -162,6 +164,9 @@ public final class BaijiuMethodIO {
 			putCompoundBoolean(settings.getMethanolJudgment(), properties, "compound." + id + ".gb2757", overwriteExisting);
 		}
 		settings.normalizeMethanolJudgment();
+		if(overwriteExisting || settings.getCalibrationPoints().isEmpty()) {
+			readCalibration(settings, properties);
+		}
 	}
 
 	public static Properties toProperties(BaijiuMethodSettings settings) {
@@ -208,7 +213,93 @@ public final class BaijiuMethodIO {
 			properties.setProperty("compound." + id + ".quantify", formatBoolean(settings.isQuantified(compound)));
 			properties.setProperty("compound." + id + ".gb2757", formatBoolean(settings.isGb2757Target(compound)));
 		}
+		writeCalibration(settings, properties);
 		return properties;
+	}
+
+	static void writeCalibration(BaijiuMethodSettings settings, Properties properties) {
+
+		if(settings == null || properties == null) {
+			return;
+		}
+		List<BaijiuCalibrationPoint> points = settings.getCalibrationPoints();
+		if(points.isEmpty() && settings.getCalibrationFits().isEmpty()) {
+			return;
+		}
+		properties.setProperty("cal.point.count", Integer.toString(points.size()));
+		for(int i = 0; i < points.size(); i++) {
+			BaijiuCalibrationPoint point = points.get(i);
+			String prefix = "cal.point." + i + ".";
+			properties.setProperty(prefix + "label", point.getLabel());
+			properties.setProperty(prefix + "source", point.getSource());
+			putSigned(properties, prefix + "scale", point.getMixScale());
+			putSigned(properties, prefix + "istd.area", point.getIstdArea());
+			for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
+				if(compound.isInternalStandard()) {
+					continue;
+				}
+				putSigned(properties, prefix + compound.getId() + ".conc", point.concentrationGL(compound.getId()));
+				putSigned(properties, prefix + compound.getId() + ".area", point.area(compound.getId()));
+			}
+		}
+		for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
+			BaijiuLinearFit fit = settings.getCalibrationFits().get(compound.getId());
+			if(fit == null) {
+				continue;
+			}
+			String prefix = "cal.fit." + compound.getId() + ".";
+			properties.setProperty(prefix + "n", Integer.toString(fit.getN()));
+			putSigned(properties, prefix + "slope", fit.getSlope());
+			putSigned(properties, prefix + "intercept", fit.getIntercept());
+			putSigned(properties, prefix + "r2", fit.getRSquared());
+			putSigned(properties, prefix + "rf", fit.getEffectiveRf());
+		}
+	}
+
+	static void readCalibration(BaijiuMethodSettings settings, Properties properties) {
+
+		if(settings == null || properties == null) {
+			return;
+		}
+		settings.clearCalibrationTable();
+		int count = parseInt(properties.getProperty("cal.point.count"), 0);
+		for(int i = 0; i < count; i++) {
+			String prefix = "cal.point." + i + ".";
+			BaijiuCalibrationPoint point = new BaijiuCalibrationPoint();
+			point.setLabel(text(properties.getProperty(prefix + "label"), "L" + (i + 1)));
+			point.setSource(text(properties.getProperty(prefix + "source"), ""));
+			point.setMixScale(parseDouble(properties.getProperty(prefix + "scale"), 1.0d));
+			point.setIstdArea(parseDouble(properties.getProperty(prefix + "istd.area"), Double.NaN));
+			for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
+				if(compound.isInternalStandard()) {
+					continue;
+				}
+				double conc = parseDouble(properties.getProperty(prefix + compound.getId() + ".conc"), Double.NaN);
+				double area = parseDouble(properties.getProperty(prefix + compound.getId() + ".area"), Double.NaN);
+				if(Double.isFinite(conc) && conc > 0.0d) {
+					point.getConcentrationGL().put(compound.getId(), conc);
+				}
+				if(Double.isFinite(area) && area > 0.0d) {
+					point.getArea().put(compound.getId(), area);
+				}
+			}
+			settings.getCalibrationPoints().add(point);
+		}
+		for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
+			String prefix = "cal.fit." + compound.getId() + ".";
+			if(!properties.containsKey(prefix + "n") && !properties.containsKey(prefix + "rf")) {
+				continue;
+			}
+			int n = parseInt(properties.getProperty(prefix + "n"), 0);
+			double slope = parseDouble(properties.getProperty(prefix + "slope"), Double.NaN);
+			double intercept = parseDouble(properties.getProperty(prefix + "intercept"), Double.NaN);
+			double r2 = parseDouble(properties.getProperty(prefix + "r2"), Double.NaN);
+			double rf = parseDouble(properties.getProperty(prefix + "rf"), Double.NaN);
+			BaijiuLinearFit fit = BaijiuLinearFit.stored(n, slope, intercept, r2, rf);
+			if(fit.isValid()) {
+				settings.getCalibrationFits().put(compound.getId(), fit);
+			}
+		}
 	}
 
 	private static void putText(java.util.function.Consumer<String> setter, Properties properties, String key, boolean overwrite, String current) {
@@ -287,6 +378,33 @@ public final class BaijiuMethodIO {
 	private static String formatBoolean(boolean value) {
 
 		return value ? "true" : "false";
+	}
+
+	private static void putSigned(Properties properties, String key, double value) {
+
+		if(Double.isFinite(value)) {
+			properties.setProperty(key, format(value));
+		}
+	}
+
+	private static String text(String value, String fallback) {
+
+		if(value == null || value.isBlank()) {
+			return fallback;
+		}
+		return value.trim();
+	}
+
+	private static int parseInt(String text, int fallback) {
+
+		if(text == null || text.isBlank()) {
+			return fallback;
+		}
+		try {
+			return Integer.parseInt(text.trim());
+		} catch(NumberFormatException e) {
+			return fallback;
+		}
 	}
 
 	private static double parseDouble(String text, double fallback) {

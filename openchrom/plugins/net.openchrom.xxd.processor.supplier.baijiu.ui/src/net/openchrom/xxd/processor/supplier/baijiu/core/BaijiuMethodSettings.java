@@ -9,7 +9,9 @@
  *******************************************************************************/
 package net.openchrom.xxd.processor.supplier.baijiu.core;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public final class BaijiuMethodSettings {
@@ -47,6 +49,8 @@ public final class BaijiuMethodSettings {
 	private final Map<String, Double> manualAssignmentsRtMin = new LinkedHashMap<>();
 	private final Map<String, Boolean> quantified = new LinkedHashMap<>();
 	private final Map<String, Boolean> methanolJudgment = new LinkedHashMap<>();
+	private final List<BaijiuCalibrationPoint> calibrationPoints = new ArrayList<>();
+	private final Map<String, BaijiuLinearFit> calibrationFits = new LinkedHashMap<>();
 
 	public static BaijiuMethodSettings defaultNongxiangFid() {
 
@@ -116,6 +120,11 @@ public final class BaijiuMethodSettings {
 		replaceMap(manualAssignmentsRtMin, source.manualAssignmentsRtMin);
 		replaceMap(quantified, source.quantified);
 		replaceMap(methanolJudgment, source.methanolJudgment);
+		calibrationPoints.clear();
+		for(BaijiuCalibrationPoint point : source.calibrationPoints) {
+			calibrationPoints.add(point.copy());
+		}
+		replaceMap(calibrationFits, source.calibrationFits);
 	}
 
 	private static <V> void replaceMap(Map<String, V> target, Map<String, V> source) {
@@ -464,6 +473,22 @@ public final class BaijiuMethodSettings {
 				methanolJudgment.put(compound.getId(), Boolean.valueOf(compound.getId().equals(target.getId())));
 			}
 		}
+	}
+
+	public List<BaijiuCalibrationPoint> getCalibrationPoints() {
+
+		return calibrationPoints;
+	}
+
+	public Map<String, BaijiuLinearFit> getCalibrationFits() {
+
+		return calibrationFits;
+	}
+
+	public void clearCalibrationTable() {
+
+		calibrationPoints.clear();
+		calibrationFits.clear();
 	}
 
 	public String displayName(BaijiuCompound compound) {
