@@ -13,9 +13,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 public class FidReadiness_1_Test {
+
+	@AfterEach
+	public void clearSkipGateProperty() {
+
+		System.clearProperty(FidReadiness.SKIP_FID_READINESS_GATE_PROPERTY);
+	}
 
 	@Test
 	public void disconnectedBlocksStartAndHasChineseTip() {
@@ -106,5 +113,34 @@ public class FidReadiness_1_Test {
 		assertEquals("12", snapshot.fidPaText());
 		assertTrue(snapshot.canStartAnalysis());
 		assertTrue(snapshot.flameText(true).contains("已着火"));
+	}
+
+	@Test
+	public void skipFidReadinessGatePropertyAllowsFlameOutWhenConnected() {
+
+		FidReadiness.Kind flameOut = FidReadiness.classify(true, Boolean.TRUE, Boolean.FALSE, Boolean.FALSE, "idle", null);
+		assertEquals(FidReadiness.Kind.FLAME_OUT, flameOut);
+		assertFalse(FidReadiness.skipFidReadinessGate());
+		assertFalse(FidReadiness.canStartAnalysis(flameOut));
+		assertFalse(FidReadiness.canStartAnalysis(FidReadiness.Kind.DISCONNECTED));
+
+		System.setProperty(FidReadiness.SKIP_FID_READINESS_GATE_PROPERTY, "true");
+		assertTrue(FidReadiness.skipFidReadinessGate());
+		assertTrue(FidReadiness.canStartAnalysis(flameOut));
+		assertTrue(FidReadiness.canStartAnalysis(FidReadiness.Kind.FID_OFFLINE));
+		assertFalse(FidReadiness.canStartAnalysis(FidReadiness.Kind.DISCONNECTED));
+		assertFalse(FidReadinessSnapshot.DISCONNECTED.canStartAnalysis());
+		assertTrue(FidReadiness.bypassWarning().contains("开发旁路"));
+		assertTrue(FidReadiness.bypassWarning().toLowerCase().contains("debug"));
+
+		GcTcpConnection.FidStatus out = new GcTcpConnection.FidStatus(true, false, false, false, false, true, true, 0, 0, 180.0f, true, "idle");
+		FidReadinessSnapshot snapshot = new FidReadinessSnapshot(true, out, null, null, null);
+		assertEquals(FidReadiness.Kind.FLAME_OUT, snapshot.kind());
+		assertTrue(snapshot.canStartAnalysis());
+
+		System.setProperty(FidReadiness.SKIP_FID_READINESS_GATE_PROPERTY, "false");
+		assertFalse(FidReadiness.skipFidReadinessGate());
+		assertFalse(FidReadiness.canStartAnalysis(flameOut));
+		assertFalse(snapshot.canStartAnalysis());
 	}
 }

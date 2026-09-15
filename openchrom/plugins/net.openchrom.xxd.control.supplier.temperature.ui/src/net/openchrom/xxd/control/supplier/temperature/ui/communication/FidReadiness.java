@@ -17,11 +17,28 @@ import java.util.Locale;
  */
 public final class FidReadiness {
 
+	/**
+	 * Developer-only JVM flag. When {@code true}, Start Analysis skips the FID
+	 * online + flame-on gate but still requires TCP connected. Default is gated.
+	 * Not for production or pilot sites. Example:
+	 * {@code -Dnet.openchrom.gcws.skipFidReadinessGate=true}
+	 */
+	public static final String SKIP_FID_READINESS_GATE_PROPERTY = "net.openchrom.gcws.skipFidReadinessGate";
+
 	public enum Kind {
 		DISCONNECTED, READING, STATUS_READ_FAIL, FID_OFFLINE, IGNITE_FAIL, IGNITING, FLAME_OUT, READY
 	}
 
 	private FidReadiness() {
+	}
+
+	/**
+	 * @return {@code true} only when {@link #SKIP_FID_READINESS_GATE_PROPERTY} is
+	 *         the string {@code true} (case-insensitive)
+	 */
+	public static boolean skipFidReadinessGate() {
+
+		return Boolean.parseBoolean(System.getProperty(SKIP_FID_READINESS_GATE_PROPERTY));
 	}
 
 	/**
@@ -62,9 +79,27 @@ public final class FidReadiness {
 		return classify(connected, Boolean.valueOf(status.isOnline()), Boolean.valueOf(status.isFlame()), Boolean.valueOf(status.isBusy()), status.getState(), fidReadError);
 	}
 
+	/**
+	 * Default: only {@link Kind#READY} (connected + FID online + flame on).
+	 * With {@link #skipFidReadinessGate()}, any connected kind is allowed;
+	 * {@link Kind#DISCONNECTED} still blocks.
+	 */
 	public static boolean canStartAnalysis(Kind kind) {
 
-		return kind == Kind.READY;
+		if(kind == Kind.READY) {
+			return true;
+		}
+		return skipFidReadinessGate() && kind != null && kind != Kind.DISCONNECTED;
+	}
+
+	/**
+	 * Bilingual DEBUG banner for the Main FID strip. Always CN and EN together so
+	 * the bypass is never silent regardless of UI language.
+	 */
+	public static String bypassWarning() {
+
+		return "【开发旁路 / DEBUG】已跳过 FID 就绪闸门（火焰未着也可开始分析）。仅用于本地验证，禁止生产或试点现场使用。"
+				+ " DEBUG: FID readiness gate bypassed — Start Analysis allowed without flame-on. Local verify only; not for production or pilot sites.";
 	}
 
 	public static boolean isIgniting(Boolean busy, String state) {

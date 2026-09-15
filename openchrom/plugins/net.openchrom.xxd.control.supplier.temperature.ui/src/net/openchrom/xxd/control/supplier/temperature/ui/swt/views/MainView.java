@@ -158,6 +158,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 	private Label fidNameLabel;
 	private Label fidValueLabel;
 	private Label readinessTipLabel;
+	private Label readinessBypassLabel;
 	private Label carrierReminderLabel;
 	private Font readinessValueFont;
 	private FidReadinessSnapshot lastReadiness = FidReadinessSnapshot.DISCONNECTED;
@@ -793,6 +794,14 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 		readinessTitle = WidgetFactory.createTitle(card, FidReadiness.title(FidReadiness.Kind.DISCONNECTED, chinese));
 		readinessValueFont = UiStyles.createBoldFont(card, 11);
 
+		readinessBypassLabel = new Label(card, SWT.WRAP);
+		readinessBypassLabel.setBackground(card.getBackground());
+		GridData bypassLayout = new GridData(SWT.FILL, SWT.CENTER, true, false);
+		bypassLayout.widthHint = 520;
+		bypassLayout.exclude = true;
+		readinessBypassLabel.setLayoutData(bypassLayout);
+		readinessBypassLabel.setVisible(false);
+
 		Composite metrics = new Composite(card, SWT.NONE);
 		metrics.setBackground(card.getBackground());
 		GridLayout metricsLayout = new GridLayout(5, true);
@@ -883,7 +892,31 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 		fidValueLabel.setForeground(UiStyles.color(getDisplay(), kind == FidReadiness.Kind.READY ? UiColors.PRIMARY : color));
 		h2ValueLabel.setForeground(UiStyles.color(getDisplay(), snapshot.getPressure() == null ? UiColors.TEXT_SECONDARY : UiColors.PRIMARY));
 		airValueLabel.setForeground(UiStyles.color(getDisplay(), snapshot.getPressure() == null ? UiColors.TEXT_SECONDARY : UiColors.PRIMARY));
+		applyBypassBanner();
 		updateAcquisitionButtonLabel();
+	}
+
+	private void applyBypassBanner() {
+
+		if(readinessBypassLabel == null || readinessBypassLabel.isDisposed()) {
+			return;
+		}
+		boolean bypass = FidReadiness.skipFidReadinessGate();
+		GridData layout = (GridData)readinessBypassLabel.getLayoutData();
+		boolean wasExcluded = layout.exclude;
+		if(bypass) {
+			readinessBypassLabel.setText(FidReadiness.bypassWarning());
+			readinessBypassLabel.setForeground(UiStyles.color(getDisplay(), UiColors.STATUS_ORANGE));
+			readinessBypassLabel.setVisible(true);
+			layout.exclude = false;
+		} else {
+			readinessBypassLabel.setText("");
+			readinessBypassLabel.setVisible(false);
+			layout.exclude = true;
+		}
+		if(wasExcluded != layout.exclude) {
+			readinessBypassLabel.getParent().layout(true, true);
+		}
 	}
 
 	private static RGB readinessColor(FidReadiness.Kind kind) {
