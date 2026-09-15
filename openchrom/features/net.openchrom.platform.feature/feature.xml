@@ -35,7 +35,10 @@
          id="net.openchrom.xxd.processor.supplier.baijiu.feature"
          version="0.0.0"/>
 
-   <includes
+      <includes
+         id="net.openchrom.xxd.control.supplier.temperature.feature"
+         version="0.0.0"/>
+<includes
          id="net.openchrom.xxd.process.supplier.templates.feature"
          version="0.0.0"/>
 

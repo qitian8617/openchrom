@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="ASCII"?>
+<fragment:ModelFragments xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:commands="http://www.eclipse.org/ui/2010/UIModel/application/commands" xmlns:fragment="http://www.eclipse.org/ui/2010/UIModel/fragment" xmlns:menu="http://www.eclipse.org/ui/2010/UIModel/application/ui/menu" xmi:id="_tempCtrlFrag001">
+  <fragments xsi:type="fragment:StringModelFragment" xmi:id="_tempCtrlCmdFrag" featurename="commands" parentElementId="org.eclipse.chemclipse.rcp.ide.application">
+    <elements xsi:type="commands:Command" xmi:id="_tempCtrlCmd" elementId="net.openchrom.xxd.control.supplier.temperature.ui.command.open" commandName="%command.openTemperatureControl"/>
+  </fragments>
+  <fragments xsi:type="fragment:StringModelFragment" xmi:id="_tempCtrlHdlFrag" featurename="handlers" parentElementId="org.eclipse.chemclipse.rcp.ide.application">
+    <elements xsi:type="commands:Handler" xmi:id="_tempCtrlHdl" elementId="net.openchrom.xxd.control.supplier.temperature.ui.handler.open" contributionURI="bundleclass://net.openchrom.xxd.control.supplier.temperature.ui/net.openchrom.xxd.control.supplier.temperature.ui.handlers.OpenTemperatureControlHandler" command="_tempCtrlCmd"/>
+  </fragments>
+  <fragments xsi:type="fragment:StringModelFragment" xmi:id="_tempCtrlMenuFrag" featurename="children" parentElementId="org.eclipse.chemclipse.rcp.app.ui.menu.plugins">
+    <elements xsi:type="menu:HandledMenuItem" xmi:id="_tempCtrlMenuItem" elementId="net.openchrom.xxd.control.supplier.temperature.ui.menu.open" label="%menu.openTemperatureControl" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/preferences.gif" command="_tempCtrlCmd"/>
+  </fragments>
+  <fragments xsi:type="fragment:StringModelFragment" xmi:id="_tempCtrlToolbarFrag" featurename="children" parentElementId="org.eclipse.chemclipse.rcp.app.ui.toolbar.plugins">
+    <elements xsi:type="menu:HandledToolItem" xmi:id="_tempCtrlToolItem" elementId="net.openchrom.xxd.control.supplier.temperature.ui.toolbar.open" label="%toolbar.openTemperatureControl" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/preferences.gif" command="_tempCtrlCmd"/>
+  </fragments>
+</fragment:ModelFragments>

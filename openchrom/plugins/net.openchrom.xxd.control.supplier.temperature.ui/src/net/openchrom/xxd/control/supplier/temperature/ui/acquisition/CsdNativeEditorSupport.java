@@ -1,0 +1,253 @@
+/*******************************************************************************
+ * Copyright (c) 2026 OpenChrom.
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package net.openchrom.xxd.control.supplier.temperature.ui.acquisition;
+
+import java.io.File;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.eclipse.chemclipse.csd.model.core.IChromatogramCSD;
+import org.eclipse.chemclipse.logging.core.Logger;
+import org.eclipse.chemclipse.support.events.IPerspectiveAndViewIds;
+import org.eclipse.chemclipse.support.ui.activator.ContextAddon;
+import org.eclipse.chemclipse.support.ui.workbench.EditorSupport;
+import org.eclipse.chemclipse.ux.extension.ui.editors.IChromatogramEditor;
+import org.eclipse.chemclipse.ux.extension.xxd.ui.editors.AbstractChromatogramEditor;
+import org.eclipse.chemclipse.ux.extension.xxd.ui.editors.ChromatogramEditorCSD;
+import org.eclipse.e4.core.contexts.IEclipseContext;
+import org.eclipse.e4.ui.model.application.MApplication;
+import org.eclipse.e4.ui.model.application.ui.MElementContainer;
+import org.eclipse.e4.ui.model.application.ui.MDirtyable;
+import org.eclipse.e4.ui.model.application.ui.MUIElement;
+import org.eclipse.e4.ui.model.application.ui.basic.MPart;
+import org.eclipse.e4.ui.model.application.ui.basic.MPartStack;
+import org.eclipse.e4.ui.model.application.ui.basic.MWindow;
+import org.eclipse.e4.ui.workbench.modeling.EModelService;
+import org.eclipse.e4.ui.workbench.modeling.EPartService;
+import org.eclipse.e4.ui.workbench.modeling.EPartService.PartState;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
+
+public final class CsdNativeEditorSupport {
+
+	private static final Logger logger = Logger.getLogger(CsdNativeEditorSupport.class);
+	private static final int MIN_SCANS_TO_OPEN = 2;
+
+	private CsdNativeEditorSupport() {
+	}
+
+	public static void openEditorAsync(IChromatogramCSD chromatogram) {
+
+		if(chromatogram == null || chromatogram.getNumberOfScans() < MIN_SCANS_TO_OPEN) {
+			return;
+		}
+		Display display = Display.getDefault();
+		if(display == null) {
+			logger.warn("Cannot open CSD editor: no SWT display");
+			return;
+		}
+		display.asyncExec(() -> openEditor(chromatogram));
+	}
+
+	public static void replaceWithFileEditorAsync(IChromatogramCSD chromatogram, File file) {
+
+		if(chromatogram == null || file == null || !file.isFile()) {
+			logger.warn("Cannot open saved CSD file: invalid input file " + file);
+			return;
+		}
+		Display display = Display.getDefault();
+		if(display == null) {
+			logger.warn("Cannot open saved CSD file: no SWT display");
+			return;
+		}
+		display.asyncExec(() -> replaceWithFileEditor(chromatogram, file));
+	}
+
+	public static void openEditor(IChromatogramCSD chromatogram) {
+
+		if(chromatogram == null || chromatogram.getNumberOfScans() < MIN_SCANS_TO_OPEN) {
+			return;
+		}
+		try {
+			EModelService modelService = ContextAddon.getModelService();
+			MApplication application = ContextAddon.getApplication();
+			EPartService partService = ContextAddon.getWindowPartService();
+			if(modelService == null || application == null || partService == null) {
+				logger.warn("Cannot open CSD editor: E4 services unavailable (modelService="
+						+ (modelService != null) + ", application=" + (application != null)
+						+ ", partService=" + (partService != null) + ")");
+				return;
+			}
+			MPartStack partStack = (MPartStack)modelService.find(IPerspectiveAndViewIds.EDITOR_PART_STACK_ID, application);
+			if(partStack == null) {
+				logger.warn("Cannot open CSD editor: editor part stack not found");
+				return;
+			}
+			MWindow window = application.getChildren().isEmpty() ? null : application.getChildren().get(0);
+			MPart part = modelService.createModelElement(MPart.class);
+			part.getTags().add(EPartService.REMOVE_ON_HIDE_TAG);
+			part.setElementId(ChromatogramEditorCSD.ID);
+			part.setContributionURI(ChromatogramEditorCSD.CONTRIBUTION_URI);
+			part.setObject(chromatogram);
+			part.setLabel(chromatogram.getName() + " [CSD]");
+			part.setIconURI(ChromatogramEditorCSD.ICON_URI);
+			part.setTooltip(AbstractChromatogramEditor.TOOLTIP);
+			part.setCloseable(true);
+			partStack.getChildren().add(part);
+			partService.showPart(part, PartState.ACTIVATE);
+			refreshEditorLayout(window, part);
+			schedulePostOpenRefresh(Display.getDefault(), chromatogram, window);
+			logger.info("Opened native CSD editor for " + chromatogram.getName());
+		} catch(Exception e) {
+			logger.warn("Failed to open native CSD editor", e);
+		}
+	}
+
+	private static void replaceWithFileEditor(IChromatogramCSD chromatogram, File file) {
+
+		try {
+			EModelService modelService = ContextAddon.getModelService();
+			MApplication application = ContextAddon.getApplication();
+			EPartService partService = ContextAddon.getWindowPartService();
+			if(modelService == null || application == null || partService == null) {
+				logger.warn("Cannot open saved CSD file: E4 services unavailable (modelService="
+						+ (modelService != null) + ", application=" + (application != null)
+						+ ", partService=" + (partService != null) + ")");
+				return;
+			}
+			MPart livePart = findOpenedPart(chromatogram);
+			if(livePart != null) {
+				clearDirty(livePart);
+				removePart(livePart);
+			}
+			MPartStack partStack = (MPartStack)modelService.find(IPerspectiveAndViewIds.EDITOR_PART_STACK_ID, application);
+			if(partStack == null) {
+				logger.warn("Cannot open saved CSD file: editor part stack not found");
+				return;
+			}
+			MWindow window = application.getChildren().isEmpty() ? null : application.getChildren().get(0);
+			MPart part = modelService.createModelElement(MPart.class);
+			part.getTags().add(EPartService.REMOVE_ON_HIDE_TAG);
+			part.setElementId(ChromatogramEditorCSD.ID);
+			part.setContributionURI(ChromatogramEditorCSD.CONTRIBUTION_URI);
+			part.setObject(createFileEditorInput(file));
+			part.setLabel(file.getName());
+			part.setIconURI(ChromatogramEditorCSD.ICON_URI);
+			part.setTooltip(AbstractChromatogramEditor.TOOLTIP);
+			part.setCloseable(true);
+			partStack.getChildren().add(part);
+			partService.showPart(part, PartState.ACTIVATE);
+			refreshEditorLayout(window, part);
+			schedulePostOpenFileRefresh(Display.getDefault(), partService, part, window);
+			logger.info("Opened saved CSD file " + file.getAbsolutePath());
+		} catch(Exception e) {
+			logger.warn("Failed to open saved CSD file", e);
+		}
+	}
+
+	private static void removePart(MPart part) {
+
+		part.setToBeRendered(false);
+		MElementContainer<MUIElement> parent = part.getParent();
+		if(parent != null) {
+			parent.getChildren().remove(part);
+		}
+	}
+
+	private static void clearDirty(MPart part) {
+
+		if(part == null) {
+			return;
+		}
+		part.setDirty(false);
+		IEclipseContext context = part.getContext();
+		if(context != null) {
+			MDirtyable dirtyable = context.get(MDirtyable.class);
+			if(dirtyable != null) {
+				dirtyable.setDirty(false);
+			}
+			clearDirty(context.get(IChromatogramEditor.class));
+			clearDirty(context.get(ChromatogramEditorCSD.class));
+		}
+		clearDirty(part.getObject());
+	}
+
+	private static void clearDirty(Object object) {
+
+		if(object instanceof MDirtyable dirtyable) {
+			dirtyable.setDirty(false);
+		}
+	}
+
+	private static Map<String, Object> createFileEditorInput(File file) {
+
+		Map<String, Object> map = new HashMap<>();
+		map.put(EditorSupport.MAP_FILE, file.getAbsolutePath());
+		map.put(EditorSupport.MAP_BATCH, false);
+		map.put(EditorSupport.MAP_HEADER_MAP, Collections.emptyMap());
+		return map;
+	}
+
+	private static void refreshEditorLayout(MWindow window, MPart part) {
+
+		if(window != null && window.getWidget() instanceof Shell shell && !shell.isDisposed()) {
+			shell.setMinimized(false);
+			shell.forceActive();
+			shell.layout(true, true);
+		}
+		if(part != null && part.getWidget() instanceof Composite composite && !composite.isDisposed()) {
+			composite.layout(true, true);
+			composite.redraw();
+		}
+	}
+
+	private static void schedulePostOpenRefresh(Display display, IChromatogramCSD chromatogram, MWindow window) {
+
+		if(display == null) {
+			return;
+		}
+		for(int delay : new int[] {100, 300, 600}) {
+			display.timerExec(delay, () -> {
+				if(display.isDisposed() || chromatogram == null || chromatogram.getNumberOfScans() < 2) {
+					return;
+				}
+				ChromatogramEditorNotifier.publishLiveUpdate(chromatogram, null);
+				MPart part = findOpenedPart(chromatogram);
+				if(part != null) {
+					refreshEditorLayout(window, part);
+				}
+			});
+		}
+	}
+
+	private static void schedulePostOpenFileRefresh(Display display, EPartService partService, MPart part, MWindow window) {
+
+		if(display == null || partService == null || part == null) {
+			return;
+		}
+		for(int delay : new int[] {300, 800, 1500, 3000}) {
+			display.timerExec(delay, () -> {
+				if(display.isDisposed()) {
+					return;
+				}
+				partService.activate(part);
+				refreshEditorLayout(window, part);
+				ChromatogramEditorNotifier.applyDisplayRange(part);
+			});
+		}
+	}
+
+	private static MPart findOpenedPart(IChromatogramCSD chromatogram) {
+
+		return ChromatogramEditorNotifier.findOpenedPart(chromatogram);
+	}
+}
