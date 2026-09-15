@@ -109,6 +109,8 @@ public final class BaijiuAnalysisShell {
 	private Text editWindow;
 	private Text editMix;
 	private Text editRf;
+	private Button editQuantify;
+	private Button editGb2757;
 	private Text peakStart;
 	private Text peakStop;
 	private Combo assignCompound;
@@ -301,7 +303,7 @@ public final class BaijiuAnalysisShell {
 		root.setLayout(new GridLayout(1, false));
 		Label hint = new Label(root, SWT.WRAP);
 		hint.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		hint.setText("\u5b9a\u7a3f\u6d53\u9999 FID \u65b9\u6cd5\u5305\uff1aXP-\u767d\u9152 C2 + \u4e59\u9178\u6b63\u4e01\u916f + 15 \u6df7\u6807\u3002\u7ec4\u5206\u540d\u79f0\u4e0e\u672c\u673a RT \u4e0e\u6f14\u793a README \u4e00\u81f4\uff08\u5382\u5546 RT + 0.055 min\uff09\u3002\u53ef\u53e6\u5b58/\u52a0\u8f7d *.bjm\uff1b\u8bef\u6539\u540e\u70b9\u300c\u52a0\u8f7d\u9ed8\u8ba4\u6d53\u9999\u65b9\u6cd5\u5305\u300d\u6062\u590d\u3002\u7532\u9187\u9650\u91cf\u6765\u81ea\u914d\u7f6e/\u504f\u597d\u8bbe\u7f6e\uff0c\u4e0d\u5199\u6b7b\u5728\u5224\u5b9a\u903b\u8f91\u4e2d\u3002");
+		hint.setText("\u5b9a\u7a3f\u6d53\u9999 FID \u65b9\u6cd5\u5305\uff1aXP-\u767d\u9152 C2 + \u4e59\u9178\u6b63\u4e01\u916f + 15 \u6df7\u6807\u3002\u53ef\u7f16\u8f91\u672c\u673a RT\u3001\u7a97\u53e3\u3001\u662f\u5426\u5b9a\u91cf\u3001\u662f\u5426\u7532\u9187\u5224\u5b9a\uff0c\u53e6\u5b58/\u52a0\u8f7d *.bjm\u3002\u4e0d\u5b9a\u91cf\u7684\u7ec4\u5206\u4ecd\u53ef\u5339\u914d\u51fa\u5cf0\uff0c\u4f46\u4e0d\u5199\u542b\u91cf\u3002\u7532\u9187\u5224\u5b9a\u6700\u591a\u52fe\u9009\u4e00\u4e2a\uff0c\u7528\u4e8e GB 2757\u3002\u9650\u91cf\u4e0d\u5199\u6b7b\u5728\u5224\u5b9a\u903b\u8f91\u4e2d\u3002");
 
 		Composite limits = new Composite(root, SWT.NONE);
 		limits.setLayout(new GridLayout(8, false));
@@ -316,8 +318,8 @@ public final class BaijiuAnalysisShell {
 		methodTable.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		methodTable.setHeaderVisible(true);
 		methodTable.setLinesVisible(true);
-		String[] columns = {"\u7ec4\u5206", "\u5382\u5546RT", "\u672c\u673aRT", "\u7a97\u53e3", "\u6df7\u6807 g/L", "RF", "\u8bf4\u660e"};
-		int[] widths = {110, 80, 80, 70, 90, 80, 280};
+		String[] columns = {"\u7ec4\u5206", "\u5382\u5546RT", "\u672c\u673aRT", "\u7a97\u53e3", BaijiuTerms.QUANTIFY, BaijiuTerms.METHANOL_JUDGMENT, "\u6df7\u6807 g/L", "RF", "\u8bf4\u660e"};
+		int[] widths = {110, 80, 80, 70, 70, 90, 90, 80, 200};
 		for(int i = 0; i < columns.length; i++) {
 			TableColumn column = new TableColumn(methodTable, SWT.NONE);
 			column.setText(columns[i]);
@@ -326,14 +328,19 @@ public final class BaijiuAnalysisShell {
 		methodTable.addListener(SWT.Selection, e -> loadSelectedCompound());
 
 		Composite editor = new Composite(root, SWT.NONE);
-		editor.setLayout(new GridLayout(12, false));
+		editor.setLayout(new GridLayout(16, false));
 		editor.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		editName = labeledText(editor, "\u7ec4\u5206\u540d");
 		editRt = labeledText(editor, "\u672c\u673aRT");
 		editWindow = labeledText(editor, "\u7a97\u53e3");
 		editMix = labeledText(editor, "\u6df7\u6807 g/L");
 		editRf = labeledText(editor, "RF");
+		editQuantify = labeledCheck(editor, BaijiuTerms.QUANTIFY);
+		editGb2757 = labeledCheck(editor, BaijiuTerms.METHANOL_JUDGMENT);
 		button(editor, "\u5e94\u7528\u9009\u4e2d\u884c", e -> applyCompoundEdit());
+		Label flagHint = new Label(root, SWT.WRAP);
+		flagHint.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		flagHint.setText("\u52fe\u9009\u300c" + BaijiuTerms.QUANTIFY + "\u300d\u624d\u5199\u542b\u91cf\uff1b\u5185\u6807\u56fa\u5b9a\u4e0d\u5b9a\u91cf\u3002\u300c" + BaijiuTerms.METHANOL_JUDGMENT + "\u300d\u6700\u591a\u4e00\u4e2a\uff0c\u9ed8\u8ba4\u4e3a\u76ee\u5f55\u7532\u9187\u3002\u70b9\u300c\u5e94\u7528\u9009\u4e2d\u884c\u300d\u540e\u53ef\u300c\u4fdd\u5b58\u65b9\u6cd5\u300d\u6216\u300c\u53e6\u5b58\u5382\u65b9\u6cd5\u300d\u3002");
 		return root;
 	}
 
@@ -645,7 +652,7 @@ public final class BaijiuAnalysisShell {
 
 		MessageBox confirm = new MessageBox(shell, SWT.ICON_WARNING | SWT.OK | SWT.CANCEL);
 		confirm.setText("\u767d\u9152\u5206\u6790");
-		confirm.setMessage("\u6062\u590d\u9ed8\u8ba4\u6d53\u9999\u65b9\u6cd5\u5305\u5c06\u8986\u76d6\u5f53\u524d\u67f1\u3001\u5185\u6807\u3001\u7ec4\u5206\u5e93\u548c\u6df7\u6807\u6d53\u5ea6\uff0c\u5e76\u6e05\u9664\u5df2\u5199\u5165\u7684 RF\u3002\u9700\u91cd\u65b0\u7528\u6df7\u6807\u505a\u6821\u6b63\u3002\nRestore the bundled \u6d53\u9999 FID package (XP-C2 + \u4e59\u9178\u6b63\u4e01\u916f + 15-mix). Current RF will be cleared; re-calibrate before quantifying.");
+		confirm.setMessage("\u6062\u590d\u9ed8\u8ba4\u6d53\u9999\u65b9\u6cd5\u5305\u5c06\u8986\u76d6\u5f53\u524d\u67f1\u3001\u5185\u6807\u3001\u7ec4\u5206\u5e93\uff08RT/\u7a97\u53e3/\u662f\u5426\u5b9a\u91cf/\u662f\u5426\u7532\u9187\u5224\u5b9a\uff09\u548c\u6df7\u6807\u6d53\u5ea6\uff0c\u5e76\u6e05\u9664\u5df2\u5199\u5165\u7684 RF\u3002\u9700\u91cd\u65b0\u7528\u6df7\u6807\u505a\u6821\u6b63\u3002\nRestore the bundled \u6d53\u9999 FID package (XP-C2 + \u4e59\u9178\u6b63\u4e01\u916f + 15-mix), including quantify / GB 2757 flags. Current RF will be cleared; re-calibrate before quantifying.");
 		if(confirm.open() != SWT.OK) {
 			return;
 		}
@@ -720,10 +727,12 @@ public final class BaijiuAnalysisShell {
 			item.setText(1, format(compound.getVendorRtMin(), 3));
 			item.setText(2, format(settings.expectedRtMin(compound), 3));
 			item.setText(3, format(settings.windowMin(compound), 3));
-			item.setText(4, compound.isInternalStandard() ? "-" : format(settings.mixGramsPerLiter(compound), 4));
+			item.setText(4, BaijiuTerms.yesNo(settings.isQuantified(compound)));
+			item.setText(5, BaijiuTerms.yesNo(settings.isGb2757Target(compound)));
+			item.setText(6, compound.isInternalStandard() ? "-" : format(settings.mixGramsPerLiter(compound), 4));
 			Double rf = settings.responseFactor(compound.getId());
-			item.setText(5, rf == null ? "-" : format(rf, 4));
-			item.setText(6, compound.getNote());
+			item.setText(7, rf == null ? "-" : format(rf, 4));
+			item.setText(8, compound.getNote());
 		}
 	}
 
@@ -786,8 +795,13 @@ public final class BaijiuAnalysisShell {
 		editMix.setText(selectedCompound.isInternalStandard() ? "" : format(settings.mixGramsPerLiter(selectedCompound), 4));
 		Double rf = settings.responseFactor(selectedCompound.getId());
 		editRf.setText(rf == null ? "" : format(rf, 4));
-		editMix.setEnabled(!selectedCompound.isInternalStandard());
-		editRf.setEnabled(!selectedCompound.isInternalStandard());
+		boolean analyte = !selectedCompound.isInternalStandard();
+		editMix.setEnabled(analyte);
+		editRf.setEnabled(analyte);
+		editQuantify.setEnabled(analyte);
+		editGb2757.setEnabled(analyte);
+		editQuantify.setSelection(settings.isQuantified(selectedCompound));
+		editGb2757.setSelection(settings.isGb2757Target(selectedCompound));
 	}
 
 	private void applyCompoundEdit() {
@@ -809,6 +823,8 @@ public final class BaijiuAnalysisShell {
 			if(BaijiuCalibrationGate.isValidResponseFactor(rf)) {
 				settings.getResponseFactors().put(selectedCompound.getId(), rf);
 			}
+			settings.setQuantified(selectedCompound.getId(), editQuantify.getSelection());
+			settings.setGb2757Target(selectedCompound.getId(), editGb2757.getSelection());
 		}
 		fillMethodTable();
 		fillMatchTables();
@@ -985,6 +1001,14 @@ public final class BaijiuAnalysisShell {
 			combo.select(0);
 		}
 		return combo;
+	}
+
+	private static Button labeledCheck(Composite parent, String title) {
+
+		Button button = new Button(parent, SWT.CHECK);
+		button.setText(title);
+		button.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
+		return button;
 	}
 
 	private static Button button(Composite parent, String title, org.eclipse.swt.widgets.Listener listener) {

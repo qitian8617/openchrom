@@ -41,6 +41,9 @@ public class BaijiuMethodIO_1_Test {
 		settings.setMethodName("plant-nongxiang-fid");
 		settings.getCompoundNames().put("methanol", "MeOH-plant");
 		settings.getInstrumentRtMin().put("methanol", 2.80d);
+		settings.getWindowMin().put("methanol", 0.22d);
+		settings.setQuantified("acetaldehyde", false);
+		settings.setGb2757Target("ethyl_acetate", true);
 		settings.setGb2757GrainLimit100VolGL(0.55d);
 		Path file = dir.resolve("plant.bjm");
 		BaijiuMethodIO.save(file, settings);
@@ -50,6 +53,13 @@ public class BaijiuMethodIO_1_Test {
 		assertEquals("plant-nongxiang-fid", loaded.getMethodName());
 		assertEquals("MeOH-plant", loaded.displayName(BaijiuCatalog.byId("methanol")));
 		assertEquals(2.80d, loaded.expectedRtMin(BaijiuCatalog.byId("methanol")), 1.0e-9d);
+		assertEquals(0.22d, loaded.windowMin(BaijiuCatalog.byId("methanol")), 1.0e-9d);
+		assertFalse(loaded.isQuantified(BaijiuCatalog.byId("acetaldehyde")));
+		assertTrue(loaded.isQuantified(BaijiuCatalog.byId("methanol")));
+		assertTrue(loaded.isGb2757Target(BaijiuCatalog.byId("ethyl_acetate")));
+		assertFalse(loaded.isGb2757Target(BaijiuCatalog.byId("methanol")));
+		assertEquals("true", BaijiuMethodIO.toProperties(loaded).getProperty("compound.ethyl_acetate.gb2757"));
+		assertEquals("false", BaijiuMethodIO.toProperties(loaded).getProperty("compound.acetaldehyde.quantify"));
 		assertEquals(0.55d, loaded.getGb2757GrainLimit100VolGL(), 1.0e-9d);
 		assertEquals(17.6d, loaded.getIstdStockGramsPerLiter(), 1.0e-9d);
 		assertEquals("GB 2757", loaded.getGb2757Standard());
@@ -114,12 +124,18 @@ public class BaijiuMethodIO_1_Test {
 		settings.getResponseFactors().put("methanol", 1.23d);
 		settings.getManualAssignmentsRtMin().put("methanol", 2.5d);
 		assertTrue(BaijiuCalibrationGate.allowsQuantitation(settings));
+		settings.setQuantified("methanol", false);
+		settings.setGb2757Target("acetaldehyde", true);
 
 		BaijiuMethodIO.restoreBundledDefaultPackage(settings);
 		assertFrozenNongxiangPackage(settings);
 		assertEquals(BaijiuCatalog.byId("methanol").getName(), settings.displayName(BaijiuCatalog.byId("methanol")));
 		assertFalse(settings.hasResponseFactor("methanol"));
 		assertTrue(settings.getManualAssignmentsRtMin().isEmpty());
+		assertTrue(settings.isQuantified(BaijiuCatalog.byId("methanol")));
+		assertFalse(settings.isQuantified(BaijiuCatalog.istd()));
+		assertTrue(settings.isGb2757Target(BaijiuCatalog.byId("methanol")));
+		assertFalse(settings.isGb2757Target(BaijiuCatalog.byId("acetaldehyde")));
 		assertFalse(BaijiuCalibrationGate.allowsQuantitation(settings));
 	}
 
@@ -180,10 +196,14 @@ public class BaijiuMethodIO_1_Test {
 			assertEquals(0.15d, settings.windowMin(compound), 1.0e-9d);
 			if(compound.isInternalStandard()) {
 				assertEquals(0.0d, settings.mixGramsPerLiter(compound), 1.0e-9d);
+				assertFalse(settings.isQuantified(compound));
+				assertFalse(settings.isGb2757Target(compound));
 			} else {
 				assertEquals(compound.getDefaultMixGramsPerLiter(), settings.mixGramsPerLiter(compound), 1.0e-9d);
+				assertTrue(settings.isQuantified(compound));
 				mixAnalytes++;
 			}
+			assertEquals(compound.isMethanol(), settings.isGb2757Target(compound), compound.getId());
 			assertFalse(settings.hasResponseFactor(compound.getId()));
 		}
 		assertEquals(15, mixAnalytes);
@@ -212,6 +232,8 @@ public class BaijiuMethodIO_1_Test {
 			assertEquals(expected.expectedRtMin(compound), actual.expectedRtMin(compound), 1.0e-9d, compound.getId());
 			assertEquals(expected.windowMin(compound), actual.windowMin(compound), 1.0e-9d, compound.getId());
 			assertEquals(expected.mixGramsPerLiter(compound), actual.mixGramsPerLiter(compound), 1.0e-9d, compound.getId());
+			assertEquals(expected.isQuantified(compound), actual.isQuantified(compound), compound.getId());
+			assertEquals(expected.isGb2757Target(compound), actual.isGb2757Target(compound), compound.getId());
 			Double expectedRf = expected.responseFactor(compound.getId());
 			Double actualRf = actual.responseFactor(compound.getId());
 			if(expectedRf == null) {
@@ -224,7 +246,7 @@ public class BaijiuMethodIO_1_Test {
 
 	private static void assertSameFrozenKeys(Properties left, Properties right) {
 
-		String[] keys = {"method.name", "column.summary", "istd.name", "instrument.rt.offset.min", "gb2757.grain.limit.100vol.gl", "gb2757.other.limit.100vol.gl", "compound.methanol.name", "compound.methanol.mix", "compound.n_butyl_acetate.name", "compound.ethyl_hexanoate.rt"};
+		String[] keys = {"method.name", "column.summary", "istd.name", "instrument.rt.offset.min", "gb2757.grain.limit.100vol.gl", "gb2757.other.limit.100vol.gl", "compound.methanol.name", "compound.methanol.mix", "compound.methanol.quantify", "compound.methanol.gb2757", "compound.n_butyl_acetate.name", "compound.n_butyl_acetate.quantify", "compound.ethyl_hexanoate.rt"};
 		for(String key : keys) {
 			assertEquals(left.getProperty(key), right.getProperty(key), key);
 		}

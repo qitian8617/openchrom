@@ -158,7 +158,10 @@ public final class BaijiuMethodIO {
 			putCompoundDouble(settings.getMixGramsPerLiter(), properties, "compound." + id + ".mix", overwriteExisting);
 			putCompoundDouble(settings.getResponseFactors(), properties, "compound." + id + ".rf", overwriteExisting);
 			putCompoundDouble(settings.getManualAssignmentsRtMin(), properties, "compound." + id + ".assigned.rt", overwriteExisting);
+			putCompoundBoolean(settings.getQuantified(), properties, "compound." + id + ".quantify", overwriteExisting);
+			putCompoundBoolean(settings.getMethanolJudgment(), properties, "compound." + id + ".gb2757", overwriteExisting);
 		}
+		settings.normalizeMethanolJudgment();
 	}
 
 	public static Properties toProperties(BaijiuMethodSettings settings) {
@@ -202,6 +205,8 @@ public final class BaijiuMethodIO {
 			putIfPresent(properties, "compound." + id + ".mix", settings.getMixGramsPerLiter().get(id));
 			putIfPresent(properties, "compound." + id + ".rf", settings.getResponseFactors().get(id));
 			putIfPresent(properties, "compound." + id + ".assigned.rt", settings.getManualAssignmentsRtMin().get(id));
+			properties.setProperty("compound." + id + ".quantify", formatBoolean(settings.isQuantified(compound)));
+			properties.setProperty("compound." + id + ".gb2757", formatBoolean(settings.isGb2757Target(compound)));
 		}
 		return properties;
 	}
@@ -242,11 +247,46 @@ public final class BaijiuMethodIO {
 		}
 	}
 
+	private static void putCompoundBoolean(java.util.Map<String, Boolean> target, Properties properties, String key, boolean overwrite) {
+
+		if(!properties.containsKey(key)) {
+			return;
+		}
+		String id = key.substring("compound.".length(), key.indexOf('.', "compound.".length()));
+		if(!overwrite && target.containsKey(id)) {
+			return;
+		}
+		Boolean value = parseBoolean(properties.getProperty(key));
+		if(value != null) {
+			target.put(id, value);
+		}
+	}
+
 	private static void putIfPresent(Properties properties, String key, Double value) {
 
 		if(value != null && !value.isNaN() && value >= 0.0d) {
 			properties.setProperty(key, format(value));
 		}
+	}
+
+	private static Boolean parseBoolean(String text) {
+
+		if(text == null || text.isBlank()) {
+			return null;
+		}
+		String value = text.trim().toLowerCase(java.util.Locale.ROOT);
+		if("true".equals(value) || "yes".equals(value) || "1".equals(value) || "\u662f".equals(value)) {
+			return Boolean.TRUE;
+		}
+		if("false".equals(value) || "no".equals(value) || "0".equals(value) || "\u5426".equals(value)) {
+			return Boolean.FALSE;
+		}
+		return null;
+	}
+
+	private static String formatBoolean(boolean value) {
+
+		return value ? "true" : "false";
 	}
 
 	private static double parseDouble(String text, double fallback) {

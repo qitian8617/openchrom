@@ -24,6 +24,16 @@ public final class Gb2757Judge {
 		return methanolGramsPerLiter * 100.0d / abvPercent;
 	}
 
+	public static Gb2757Result skipped(BaijiuMethodSettings settings, String reasonZh, String reasonEn) {
+
+		String standard = settings == null ? "GB 2757" : settings.getGb2757Standard();
+		String source = settings == null ? "" : settings.getGb2757LimitSource();
+		String chinese = reasonZh == null || reasonZh.isBlank() ? "\u7ec4\u5206\u5e93\u672a\u52fe\u9009\u7532\u9187\u5224\u5b9a\u6216\u8be5\u7ec4\u5206\u4e0d\u5b9a\u91cf\uff0c\u5df2\u8df3\u8fc7 GB 2757\u3002" : reasonZh;
+		String english = reasonEn == null || reasonEn.isBlank() ? "GB 2757 skipped: methanol-judgment compound is not marked or not quantified." : reasonEn;
+		String summary = chinese + "\n" + english;
+		return new Gb2757Result(false, false, false, 0.0d, Double.NaN, Double.NaN, 0.0d, "", standard, source, chinese, summary);
+	}
+
 	public static Gb2757Result judge(Double methanolGramsPerLiter, double abvPercent, BaijiuRawMaterial rawMaterial, BaijiuMethodSettings settings) {
 
 		BaijiuRawMaterial material = rawMaterial == null ? BaijiuRawMaterial.GRAIN : rawMaterial;

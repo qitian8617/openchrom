@@ -45,6 +45,8 @@ public final class BaijiuMethodSettings {
 	private final Map<String, Double> mixGramsPerLiter = new LinkedHashMap<>();
 	private final Map<String, Double> responseFactors = new LinkedHashMap<>();
 	private final Map<String, Double> manualAssignmentsRtMin = new LinkedHashMap<>();
+	private final Map<String, Boolean> quantified = new LinkedHashMap<>();
+	private final Map<String, Boolean> methanolJudgment = new LinkedHashMap<>();
 
 	public static BaijiuMethodSettings defaultNongxiangFid() {
 
@@ -56,8 +58,8 @@ public final class BaijiuMethodSettings {
 	}
 
 	/**
-	 * Fill omitted compound names, mix levels, and RT windows from the catalog
-	 * so a shipped {@code *.bjm} is self-contained after export.
+	 * Fill omitted compound names, mix levels, RT windows, and library flags
+	 * from the catalog so a shipped {@code *.bjm} is self-contained after export.
 	 */
 	public void seedFrozenLibrary() {
 
@@ -65,7 +67,10 @@ public final class BaijiuMethodSettings {
 			compoundNames.putIfAbsent(compound.getId(), compound.getName());
 			mixGramsPerLiter.putIfAbsent(compound.getId(), compound.getDefaultMixGramsPerLiter());
 			windowMin.putIfAbsent(compound.getId(), defaultWindowMin);
+			quantified.putIfAbsent(compound.getId(), Boolean.valueOf(!compound.isInternalStandard()));
+			methanolJudgment.putIfAbsent(compound.getId(), Boolean.valueOf(compound.isMethanol()));
 		}
+		normalizeMethanolJudgment();
 	}
 
 	public void seedInstrumentRetentionTimes() {
@@ -109,6 +114,8 @@ public final class BaijiuMethodSettings {
 		replaceMap(mixGramsPerLiter, source.mixGramsPerLiter);
 		replaceMap(responseFactors, source.responseFactors);
 		replaceMap(manualAssignmentsRtMin, source.manualAssignmentsRtMin);
+		replaceMap(quantified, source.quantified);
+		replaceMap(methanolJudgment, source.methanolJudgment);
 	}
 
 	private static <V> void replaceMap(Map<String, V> target, Map<String, V> source) {
@@ -350,6 +357,113 @@ public final class BaijiuMethodSettings {
 	public Map<String, Double> getManualAssignmentsRtMin() {
 
 		return manualAssignmentsRtMin;
+	}
+
+	public Map<String, Boolean> getQuantified() {
+
+		return quantified;
+	}
+
+	public Map<String, Boolean> getMethanolJudgment() {
+
+		return methanolJudgment;
+	}
+
+	/**
+	 * Analytes default to quantified; ISTD is never quantified.
+	 */
+	public boolean isQuantified(BaijiuCompound compound) {
+
+		if(compound == null || compound.isInternalStandard()) {
+			return false;
+		}
+		Boolean flag = quantified.get(compound.getId());
+		return flag == null ? true : flag.booleanValue();
+	}
+
+	public void setQuantified(String compoundId, boolean enabled) {
+
+		BaijiuCompound compound = BaijiuCatalog.byId(compoundId);
+		if(compound == null || compound.isInternalStandard()) {
+			if(compoundId != null && !compoundId.isBlank()) {
+				quantified.put(compoundId, Boolean.FALSE);
+			}
+			return;
+		}
+		quantified.put(compoundId, Boolean.valueOf(enabled));
+	}
+
+	/**
+	 * At most one compound may drive GB 2757. Empty / all-false means skip
+	 * judgment. Catalog methanol is the default when flags were never set.
+	 */
+	public boolean isGb2757Target(BaijiuCompound compound) {
+
+		BaijiuCompound target = gb2757Compound();
+		return compound != null && target != null && target.getId().equals(compound.getId());
+	}
+
+	public BaijiuCompound gb2757Compound() {
+
+		BaijiuCompound marked = null;
+		boolean anyFlag = false;
+		for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
+			Boolean flag = methanolJudgment.get(compound.getId());
+			if(flag != null) {
+				anyFlag = true;
+			}
+			if(Boolean.TRUE.equals(flag) && !compound.isInternalStandard()) {
+				marked = compound;
+			}
+		}
+		if(marked != null) {
+			return marked;
+		}
+		if(anyFlag) {
+			return null;
+		}
+		return BaijiuCatalog.byId(BaijiuCatalog.METHANOL_ID);
+	}
+
+	public void setGb2757Target(String compoundId, boolean enabled) {
+
+		BaijiuCompound compound = BaijiuCatalog.byId(compoundId);
+		if(compound == null || compound.isInternalStandard()) {
+			return;
+		}
+		if(enabled) {
+			for(BaijiuCompound candidate : BaijiuCatalog.compounds()) {
+				methanolJudgment.put(candidate.getId(), Boolean.valueOf(candidate.getId().equals(compoundId)));
+			}
+			return;
+		}
+		methanolJudgment.put(compoundId, Boolean.FALSE);
+	}
+
+	/**
+	 * Mix-standard gate still requires an RF for this compound (no bypass).
+	 * Uses the GB 2757 target when one is marked; otherwise catalog methanol.
+	 */
+	public BaijiuCompound calibrationRequiredCompound() {
+
+		BaijiuCompound target = gb2757Compound();
+		if(target != null) {
+			return target;
+		}
+		return BaijiuCatalog.byId(BaijiuCatalog.METHANOL_ID);
+	}
+
+	void normalizeMethanolJudgment() {
+
+		BaijiuCompound target = gb2757Compound();
+		if(target == null) {
+			return;
+		}
+		for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
+			if(methanolJudgment.containsKey(compound.getId()) || compound.getId().equals(target.getId())) {
+				methanolJudgment.put(compound.getId(), Boolean.valueOf(compound.getId().equals(target.getId())));
+			}
+		}
 	}
 
 	public String displayName(BaijiuCompound compound) {

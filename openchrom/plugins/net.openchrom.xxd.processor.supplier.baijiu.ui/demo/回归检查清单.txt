@@ -26,14 +26,18 @@
      校正有效时，演示样品仍为甲醇约 0.180 g/L、GB 2757 合格
      加载默认浓香方法包会清除 RF，不能用来绕过门闩
   6. 浓香默认方法包
-     白酒分析「加载默认浓香方法包」恢复 XP-C2 + 乙酸正丁酯 + 15 混标
-     「另存厂方法」后再「加载厂方法」，柱/内标/混标浓度/RT 一致；有 RF 时定量仍可用
+     白酒分析「加载默认浓香方法包」恢复 XP-C2 + 乙酸正丁酯 + 15 混标（含是否定量/是否甲醇判定默认）
+     「另存厂方法」后再「加载厂方法」，柱/内标/混标浓度/RT/窗宽/定量与甲醇判定标志一致；有 RF 时定量仍可用
      演示文件 demo/nongxiang-fid-default.bjm（浓香FID默认方法.bjm）
-  7. 平行样
+  7. 组分库可编辑
+     组分方法页可改本机 RT、窗口、是否定量、是否甲醇判定，保存方法/另存厂方法后往返
+     不定定量不写含量但仍匹配出峰；取消甲醇判定则跳过 GB 2757（不把缺甲醇当成未检出）
+     「加载默认浓香方法包」把四项恢复为目录默认。详见 docs/GCWS-COMPOUND-LIBRARY.md
+  8. 平行样
      进样序列「添加平行样」后同一编号两针；或工作台「平行样」两次选择 sample-nongxiang.ocb
      表中甲醇（重点）有均值与相对偏差 %；公式见 docs/GCWS-PARALLEL.md
      未校正时不会绕过门闩、不会发明含量
-  8. 批处理结果
+  9. 批处理结果
      进样序列「生成结果表」或工作台「批处理结果」
      离线：打开 demo/sequence-batch-results.json（先把 chromatogramPath 改到本机 demo .ocb）
      已完成且文件存在的行有甲醇等含量与样品 GB 2757；待进样/已跳过行仍在表中并写明原因
@@ -43,6 +47,7 @@
   Gb2757Judge_1_Test、BaijiuReport_1_Test、BaijiuBatchEngine_1_Test、BaijiuRegressionChecklist_1_Test
   混标校正门闩：BaijiuCalibrationGate_1_Test、BaijiuAnalysisEngine_1_Test（缺校正/NaN RF/零内标阻止；有效校正仍定量）
   浓香默认方法包：BaijiuMethodIO_1_Test（*.bjm 往返、bundled/demo 与目录一致、恢复默认清除 RF；校正后导出再导入仍可定量）
+  组分库可编辑：BaijiuMethodIO_1_Test / BaijiuCompoundLibrary_1_Test（RT/窗宽/定量/甲醇判定往返；不定定量不写含量；取消甲醇判定跳过 GB）
   进样序列（白酒工作台编排 / 反控主界面当前针）：InjectionSequence_1_Test、InjectionSequenceIO_1_Test、InjectionSequenceManager_1_Test
   平行样：BaijiuParallelEngine_1_Test（甲醇均值/相对偏差；缺校正不发明数字；批量按样品编号配对）
   批处理结果：BaijiuSequenceResultsEngine_1_Test（未完成行保留；DONE+谱图定量；缺校正不发明含量；缺文件有说明）

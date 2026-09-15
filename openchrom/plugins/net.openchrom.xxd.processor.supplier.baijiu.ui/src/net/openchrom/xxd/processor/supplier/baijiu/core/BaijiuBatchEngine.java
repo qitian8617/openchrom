@@ -57,7 +57,7 @@ public final class BaijiuBatchEngine {
 		StringBuilder csv = new StringBuilder();
 		csv.append("\u6837\u54c1");
 		for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
-			if(compound.isInternalStandard()) {
+			if(!includeBatchColumn(settings, compound)) {
 				continue;
 			}
 			csv.append(',').append(settings == null ? compound.getName() : settings.displayName(compound));
@@ -69,7 +69,7 @@ public final class BaijiuBatchEngine {
 		for(BaijiuBatchRow row : rows) {
 			csv.append(quote(row.getSampleLabel()));
 			for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
-				if(compound.isInternalStandard()) {
+				if(!includeBatchColumn(settings, compound)) {
 					continue;
 				}
 				Double value = row.concentrationOf(compound.getId());
@@ -82,6 +82,14 @@ public final class BaijiuBatchEngine {
 			csv.append(',').append(quote(row.getMessage())).append('\n');
 		}
 		return csv.toString();
+	}
+
+	public 	public static boolean includeBatchColumn(BaijiuMethodSettings settings, BaijiuCompound compound) {
+
+		if(compound == null || compound.isInternalStandard()) {
+			return false;
+		}
+		return settings == null || settings.isQuantified(compound);
 	}
 
 	private static BaijiuSampleInfo sampleOf(IChromatogram chromatogram, File file, BaijiuSampleInfo template) {

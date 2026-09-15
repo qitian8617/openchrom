@@ -32,6 +32,7 @@ import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 
+import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuBatchEngine;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuCalibrationGate;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuCatalog;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuCompound;
@@ -112,7 +113,7 @@ public final class BaijiuSequenceResultsShell {
 		addColumn(table, "状态", 72);
 		addColumn(table, "谱图路径", 180);
 		for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
-			if(!compound.isInternalStandard()) {
+			if(BaijiuBatchEngine.includeBatchColumn(settings, compound)) {
 				addColumn(table, settings.displayName(compound), 80);
 			}
 		}
@@ -182,14 +183,14 @@ public final class BaijiuSequenceResultsShell {
 			template.setRawMaterial(BaijiuRawMaterial.GRAIN);
 			rows.clear();
 			rows.addAll(BaijiuSequenceResultsEngine.run(source, settings, template, true));
-			fill(table, rows);
+			fill(table, rows, settings);
 			summary.setText(BaijiuSequenceResultsEngine.summary(rows));
 		} catch(RuntimeException ex) {
 			warn(shell, "生成结果表失败：" + (ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage()));
 		}
 	}
 
-	private static void fill(Table table, List<BaijiuSequenceResultRow> rows) {
+	private static void fill(Table table, List<BaijiuSequenceResultRow> rows, BaijiuMethodSettings settings) {
 
 		table.removeAll();
 		for(BaijiuSequenceResultRow row : rows) {
@@ -203,7 +204,7 @@ public final class BaijiuSequenceResultsShell {
 			item.setText(col++, vial == null ? "" : vial.getStatusLabel());
 			item.setText(col++, row.getChromatogramPath());
 			for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
-				if(compound.isInternalStandard()) {
+				if(!BaijiuBatchEngine.includeBatchColumn(settings, compound)) {
 					continue;
 				}
 				Double value = row.concentrationOf(compound.getId());

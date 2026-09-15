@@ -9,7 +9,7 @@ Stored on the method after **用当前谱图做校正** (or loaded from `*.bjm` 
 | Rule | Meaning |
 |------|---------|
 | Mix chromatogram processed | ISTD (乙酸正丁酯) matched and integrated; analyte peaks used to compute RF |
-| Required compound | **Methanol** must have a valid RF. GB 2757 must not treat missing methanol as 未检出/合格. |
+| Required compound | The **GB 2757 target** (catalog methanol by default; item 10 can retarget) must have a valid RF. Missing methanol must not be treated as 未检出/合格. Turning 是否定量 off does not bypass this gate. |
 | Valid RF | Finite, `> 0`, and in `[1e-4, 1e4]` |
 | Invalid RF | Missing methanol, `NaN`, `±Inf`, `≤ 0`, or out of bounds → **block** |
 
