@@ -170,7 +170,7 @@ public final class BaijiuAnalysisShell {
 		fillMethodTable();
 		fillMatchTables();
 		updateInjectedLabel();
-		setStatus("\u5df2\u52a0\u8f7d\u6d53\u9999 FID \u9ed8\u8ba4\u65b9\u6cd5\u3002" + BaijiuCalibrationGate.OPERATOR_HINT + " \u6253\u5f00\u6f14\u793a\u6df7\u6807\u540e\u53ef\u76f4\u63a5\u70b9\u300c\u63a8\u8350\u79ef\u5206\u300d\uff0c\u518d\u300c\u7528\u5f53\u524d\u8c31\u56fe\u505a\u6821\u6b63\u300d\u3002");
+		setStatus("\u5df2\u52a0\u8f7d\u6d53\u9999 FID \u9ed8\u8ba4\u65b9\u6cd5\u5305\uff08XP-\u767d\u9152 C2 + \u4e59\u9178\u6b63\u4e01\u916f + 15 \u6df7\u6807\uff09\u3002" + BaijiuCalibrationGate.OPERATOR_HINT + " \u6253\u5f00\u6f14\u793a\u6df7\u6807\u540e\u53ef\u76f4\u63a5\u70b9\u300c\u63a8\u8350\u79ef\u5206\u300d\uff0c\u518d\u300c\u7528\u5f53\u524d\u8c31\u56fe\u505a\u6821\u6b63\u300d\u3002\u8bef\u6539\u540e\u53ef\u300c\u52a0\u8f7d\u9ed8\u8ba4\u6d53\u9999\u65b9\u6cd5\u5305\u300d\u3002");
 
 		shell.open();
 		Display display = parent.getDisplay();
@@ -249,7 +249,7 @@ public final class BaijiuAnalysisShell {
 		istdMl.addModifyListener(e -> updateInjectedLabel());
 
 		Composite buttons = new Composite(root, SWT.NONE);
-		buttons.setLayout(new GridLayout(8, false));
+		buttons.setLayout(new GridLayout(5, false));
 		button(buttons, "\u8bfb\u53d6\u5f53\u524d\u8c31\u56fe", e -> reloadChromatogram());
 		button(buttons, "\u63a8\u8350\u79ef\u5206", e -> recommendedIntegrate(parent.getShell()));
 		button(buttons, "\u7528\u5f53\u524d\u8c31\u56fe\u505a\u6821\u6b63", e -> calibrate(parent.getShell()));
@@ -258,6 +258,7 @@ public final class BaijiuAnalysisShell {
 		button(buttons, "\u5bfc\u51fa\u7ed3\u679c CSV", e -> exportCsv(parent.getShell()));
 		button(buttons, "\u4fdd\u5b58\u65b9\u6cd5", e -> saveMethod(parent.getShell()));
 		button(buttons, "\u53e6\u5b58\u5382\u65b9\u6cd5", e -> savePlantMethod(parent.getShell()));
+		button(buttons, "\u52a0\u8f7d\u9ed8\u8ba4\u6d53\u9999\u65b9\u6cd5\u5305", e -> restoreDefaultPackage(parent.getShell()));
 		Label calibrationHint = new Label(root, SWT.WRAP);
 		calibrationHint.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		calibrationHint.setText(BaijiuCalibrationGate.OPERATOR_HINT);
@@ -300,15 +301,16 @@ public final class BaijiuAnalysisShell {
 		root.setLayout(new GridLayout(1, false));
 		Label hint = new Label(root, SWT.WRAP);
 		hint.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		hint.setText("\u7ec4\u5206\u540d\u79f0\u4e0e\u672c\u673a RT \u4e0e\u6f14\u793a README \u4e00\u81f4\uff08\u5382\u5546 RT + 0.055 min\uff09\u3002\u53ef\u7f16\u8f91\u540e\u53e6\u5b58\u4e3a\u5382\u65b9\u6cd5\u3002\u7532\u9187\u9650\u91cf\u6765\u81ea\u914d\u7f6e/\u504f\u597d\u8bbe\u7f6e\uff0c\u4e0d\u5199\u6b7b\u5728\u5224\u5b9a\u903b\u8f91\u4e2d\u3002");
+		hint.setText("\u5b9a\u7a3f\u6d53\u9999 FID \u65b9\u6cd5\u5305\uff1aXP-\u767d\u9152 C2 + \u4e59\u9178\u6b63\u4e01\u916f + 15 \u6df7\u6807\u3002\u7ec4\u5206\u540d\u79f0\u4e0e\u672c\u673a RT \u4e0e\u6f14\u793a README \u4e00\u81f4\uff08\u5382\u5546 RT + 0.055 min\uff09\u3002\u53ef\u53e6\u5b58/\u52a0\u8f7d *.bjm\uff1b\u8bef\u6539\u540e\u70b9\u300c\u52a0\u8f7d\u9ed8\u8ba4\u6d53\u9999\u65b9\u6cd5\u5305\u300d\u6062\u590d\u3002\u7532\u9187\u9650\u91cf\u6765\u81ea\u914d\u7f6e/\u504f\u597d\u8bbe\u7f6e\uff0c\u4e0d\u5199\u6b7b\u5728\u5224\u5b9a\u903b\u8f91\u4e2d\u3002");
 
 		Composite limits = new Composite(root, SWT.NONE);
-		limits.setLayout(new GridLayout(6, false));
+		limits.setLayout(new GridLayout(8, false));
 		limits.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		grainLimit = labeledText(limits, "\u7cae\u8c37\u7532\u9187\u9650\u91cf g/L\uff08100%vol\uff09");
 		otherLimit = labeledText(limits, "\u5176\u4ed6\u539f\u6599\u9650\u91cf g/L\uff08100%vol\uff09");
 		button(limits, "\u52a0\u8f7d\u5382\u65b9\u6cd5", e -> loadPlantMethod(parent.getShell()));
 		button(limits, "\u53e6\u5b58\u5382\u65b9\u6cd5", e -> savePlantMethod(parent.getShell()));
+		button(limits, "\u52a0\u8f7d\u9ed8\u8ba4\u6d53\u9999\u65b9\u6cd5\u5305", e -> restoreDefaultPackage(parent.getShell()));
 
 		methodTable = new Table(root, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL);
 		methodTable.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
@@ -624,7 +626,7 @@ public final class BaijiuAnalysisShell {
 		collectAll();
 		FileDialog dialog = new FileDialog(shell, SWT.SAVE);
 		dialog.setFilterExtensions(new String[] {BaijiuMethodIO.FILE_EXTENSION, "*.properties"});
-		dialog.setFileName("nongxiang-fid.bjm");
+		dialog.setFileName(BaijiuMethodIO.BUNDLED_PACKAGE_FILE_NAME);
 		dialog.setOverwrite(true);
 		String path = dialog.open();
 		if(path == null || path.isEmpty()) {
@@ -633,10 +635,31 @@ public final class BaijiuAnalysisShell {
 		try {
 			BaijiuMethodIO.save(Path.of(path), settings);
 			BaijiuPreferences.saveMethod(settings);
-			info(shell, "\u5df2\u53e6\u5b58\u5382\u65b9\u6cd5\uff1a" + path);
+			info(shell, "\u5df2\u53e6\u5b58\u5382\u65b9\u6cd5\uff1a" + path + "\nSaved plant method: " + path);
 		} catch(Exception e) {
 			warn(shell, "\u4fdd\u5b58\u5382\u65b9\u6cd5\u5931\u8d25\uff1a" + e.getMessage());
 		}
+	}
+
+	private void restoreDefaultPackage(Shell shell) {
+
+		MessageBox confirm = new MessageBox(shell, SWT.ICON_WARNING | SWT.OK | SWT.CANCEL);
+		confirm.setText("\u767d\u9152\u5206\u6790");
+		confirm.setMessage("\u6062\u590d\u9ed8\u8ba4\u6d53\u9999\u65b9\u6cd5\u5305\u5c06\u8986\u76d6\u5f53\u524d\u67f1\u3001\u5185\u6807\u3001\u7ec4\u5206\u5e93\u548c\u6df7\u6807\u6d53\u5ea6\uff0c\u5e76\u6e05\u9664\u5df2\u5199\u5165\u7684 RF\u3002\u9700\u91cd\u65b0\u7528\u6df7\u6807\u505a\u6821\u6b63\u3002\nRestore the bundled \u6d53\u9999 FID package (XP-C2 + \u4e59\u9178\u6b63\u4e01\u916f + 15-mix). Current RF will be cleared; re-calibrate before quantifying.");
+		if(confirm.open() != SWT.OK) {
+			return;
+		}
+		BaijiuMethodIO.restoreBundledDefaultPackage(settings);
+		BaijiuPreferences.saveMethod(settings);
+		loadFields();
+		fillMethodTable();
+		fillMatchTables();
+		updateInjectedLabel();
+		lastResult = null;
+		fillResultTable(null);
+		clearGbPanel();
+		info(shell, "\u5df2\u52a0\u8f7d\u9ed8\u8ba4\u6d53\u9999\u65b9\u6cd5\u5305\uff08XP-\u767d\u9152 C2 + \u4e59\u9178\u6b63\u4e01\u916f + 15 \u6df7\u6807\uff09\u3002\u8bf7\u91cd\u65b0\u505a\u6df7\u6807\u6821\u6b63\u540e\u518d\u5b9a\u91cf\u3002\nLoaded bundled \u6d53\u9999 FID package (XP-C2 + n-butyl acetate + 15-mix). Re-run mix-standard calibration before quantifying.");
+		setStatus("\u5df2\u6062\u590d\u9ed8\u8ba4\u6d53\u9999\u65b9\u6cd5\u5305\u3002" + BaijiuCalibrationGate.OPERATOR_HINT);
 	}
 
 	private void loadPlantMethod(Shell shell) {
@@ -653,7 +676,10 @@ public final class BaijiuAnalysisShell {
 			fillMethodTable();
 			fillMatchTables();
 			updateInjectedLabel();
-			info(shell, "\u5df2\u52a0\u8f7d\u5382\u65b9\u6cd5\uff1a" + path);
+			lastResult = null;
+			fillResultTable(null);
+			clearGbPanel();
+			info(shell, "\u5df2\u52a0\u8f7d\u5382\u65b9\u6cd5\uff1a" + path + "\nLoaded plant method: " + path);
 		} catch(Exception e) {
 			warn(shell, "\u52a0\u8f7d\u5382\u65b9\u6cd5\u5931\u8d25\uff1a" + e.getMessage());
 		}

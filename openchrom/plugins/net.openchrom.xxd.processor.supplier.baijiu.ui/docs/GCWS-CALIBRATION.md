@@ -25,6 +25,8 @@ The gate runs inside `BaijiuAnalysisEngine.quantify`, so it applies to:
 - 批处理结果 → DONE sequence vials still go through `quantify` (incomplete vials are listed, not quantified)
 - 预览报告 / CSV export (they quantify first)
 
+The frozen default package (`nongxiang-fid-default.bjm`) ships **without RF**. Restoring it clears calibration. See `GCWS-METHOD-PACKAGE.md`.
+
 Fix: open the mix chromatogram (demo `mix-15plus-istd.ocb`) → **推荐积分** → **用当前谱图做校正** → then quantify the sample.
 
 See demo `操作步骤.txt`.

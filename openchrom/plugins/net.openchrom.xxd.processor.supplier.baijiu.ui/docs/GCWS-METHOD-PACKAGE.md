@@ -1,0 +1,57 @@
+# Nongxiang FID default plant-method package (item 9)
+
+Pilot P1: freeze a **shippable 浓香 FID plant method** — physical **XP-白酒 C2** column + **乙酸正丁酯** ISTD + **15-mix** library — with reliable `*.bjm` import/export. This is productizing defaults, not a new CDS.
+
+Acceptance: **XP-C2 + 乙酸正丁酯 + 15 混标，\*.bjm 导入导出**.
+
+Multi-point calibration / R² is item 11. Per-compound editor polish is item 10. Part 11 / LIMS / full report is item 12.
+
+## What is frozen
+
+| Item | Value |
+|------|--------|
+| Method name | 浓香 FID 默认方法 |
+| Column | XP-白酒 C2, 30 m × 0.32 mm ID × 1.00 µm, MAX 250 °C, S/N 24090305 |
+| ISTD | 乙酸正丁酯, stock 17.6 g/L, spike 1.00 mL sample + 0.10 mL ISTD |
+| Library | 15 mix analytes + ISTD (16 peaks on the demo chromatograms) |
+| Instrument RT | vendor RT + **0.055 min** (demo `mix-15plus-istd.ocb` / `sample-nongxiang.ocb`) |
+| RT window | ±0.15 min default |
+| GB 2757 limits | grain 0.6 g/L and other 2.0 g/L **in the package / preferences**, not hardcoded in the judge |
+
+The frozen template does **not** include response factors. Mix-standard calibration (item 6) still writes RF; quantification still requires a valid methanol RF.
+
+## Files (keep in sync)
+
+| File | Role |
+|------|------|
+| classpath `nongxiang-fid-default.bjm` | Bundled restore source (`BaijiuMethodIO.loadBundledDefaults`) |
+| classpath `baijiu-defaults.properties` | Fallback overlay; same key fields |
+| `demo/nongxiang-fid-default.bjm` | Operator-facing copy (also `demo/浓香FID默认方法.bjm`) |
+| `BaijiuCatalog` | Structural library: ids, Chinese names, vendor RT, mix g/L |
+
+`BaijiuMethodSettings.defaultNongxiangFid()` loads the bundled package, then fills any omitted compound name / mix / window / RT from the catalog.
+
+## Operator path
+
+In **白酒分析**:
+
+| Button | Meaning |
+|--------|---------|
+| **另存厂方法** | Export current method to UTF-8 `*.bjm` |
+| **加载厂方法** | Replace the current method with a `*.bjm` (round-trip of key fields, including RF if the file has them) |
+| **加载默认浓香方法包** | Restore XP-C2 + 乙酸正丁酯 + 15-mix from the bundled package. Confirms first. **Clears RF** — re-run **用当前谱图做校正** before 定量 |
+| **保存方法** | Preferences only (not a file) |
+
+Restore after a bad edit: 白酒分析 → **加载默认浓香方法包** → OK. Then open the mix chromatogram → 推荐积分 → 用当前谱图做校正.
+
+## Round-trip
+
+1. Calibrate on `mix-15plus-istd.ocb` (or a plant mix).
+2. **另存厂方法** to e.g. `nongxiang-fid-default.bjm` or a plant-named file.
+3. Change a name / RT / mix accidentally, or **加载默认浓香方法包** to reset.
+4. **加载厂方法** the saved file.
+5. Open the sample → 推荐积分 → **定量并写回峰表**. RF from the file still satisfies the calibration gate.
+
+UTF-8 `Properties` via `BaijiuMethodIO`. No Part 11 audit trail.
+
+See demo `操作步骤.txt` section G.

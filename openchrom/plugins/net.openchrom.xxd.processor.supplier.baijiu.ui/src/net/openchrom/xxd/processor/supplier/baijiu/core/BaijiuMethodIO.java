@@ -21,6 +21,9 @@ import java.util.Properties;
 public final class BaijiuMethodIO {
 
 	public static final String FILE_EXTENSION = "*.bjm";
+	public static final String BUNDLED_PACKAGE_FILE_NAME = "nongxiang-fid-default.bjm";
+	public static final String BUNDLED_PACKAGE_RESOURCE = "nongxiang-fid-default.bjm";
+	public static final String DEMO_PACKAGE_PATH = "demo/nongxiang-fid-default.bjm";
 	private static final String DEFAULTS_RESOURCE = "baijiu-defaults.properties";
 
 	private BaijiuMethodIO() {
@@ -32,20 +35,37 @@ public final class BaijiuMethodIO {
 			return;
 		}
 		Properties properties = loadBundledDefaults();
-		apply(settings, properties, false);
+		apply(settings, properties, true);
+	}
+
+	/**
+	 * Reset {@code settings} to the shipped nongxiang FID package (XP-C2 + n-butyl acetate + 15-mix).
+	 * Clears RF / manual assignments so plants re-calibrate after a bad edit.
+	 */
+	public static void restoreBundledDefaultPackage(BaijiuMethodSettings settings) {
+
+		if(settings == null) {
+			return;
+		}
+		settings.replaceWith(BaijiuMethodSettings.defaultNongxiangFid());
 	}
 
 	public static Properties loadBundledDefaults() {
 
-		Properties properties = new Properties();
-		try(InputStream in = BaijiuMethodIO.class.getResourceAsStream(DEFAULTS_RESOURCE)) {
-			if(in != null) {
-				properties.load(new java.io.InputStreamReader(in, StandardCharsets.UTF_8));
-			}
-		} catch(IOException e) {
-			// keep empty; callers still have structural defaults
+		Properties packaged = loadResource(BUNDLED_PACKAGE_RESOURCE);
+		if(!packaged.isEmpty()) {
+			return packaged;
 		}
-		return properties;
+		return loadResource(DEFAULTS_RESOURCE);
+	}
+
+	public static Properties loadBundledPackage() {
+
+		Properties packaged = loadResource(BUNDLED_PACKAGE_RESOURCE);
+		if(!packaged.isEmpty()) {
+			return packaged;
+		}
+		return loadBundledDefaults();
 	}
 
 	public static void load(Path file, BaijiuMethodSettings settings) throws IOException {
@@ -54,16 +74,45 @@ public final class BaijiuMethodIO {
 		try(Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
 			properties.load(reader);
 		}
-		apply(settings, properties, true);
-		settings.seedInstrumentRetentionTimes();
+		replaceFromProperties(settings, properties);
+	}
+
+	public static void loadProperties(BaijiuMethodSettings settings, Properties properties) {
+
+		replaceFromProperties(settings, properties);
 	}
 
 	public static void save(Path file, BaijiuMethodSettings settings) throws IOException {
 
 		Properties properties = toProperties(settings);
 		try(Writer writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-			properties.store(writer, "Baijiu plant method");
+			properties.store(writer, "Baijiu plant method / 白酒厂方法");
 		}
+	}
+
+	private static void replaceFromProperties(BaijiuMethodSettings settings, Properties properties) {
+
+		if(settings == null || properties == null) {
+			return;
+		}
+		BaijiuMethodSettings fresh = new BaijiuMethodSettings();
+		apply(fresh, properties, true);
+		fresh.seedFrozenLibrary();
+		fresh.seedInstrumentRetentionTimes();
+		settings.replaceWith(fresh);
+	}
+
+	private static Properties loadResource(String name) {
+
+		Properties properties = new Properties();
+		try(InputStream in = BaijiuMethodIO.class.getResourceAsStream(name)) {
+			if(in != null) {
+				properties.load(new java.io.InputStreamReader(in, StandardCharsets.UTF_8));
+			}
+		} catch(IOException e) {
+			// keep empty; callers still have structural defaults
+		}
+		return properties;
 	}
 
 	public static void apply(BaijiuMethodSettings settings, Properties properties, boolean overwriteExisting) {
@@ -81,6 +130,7 @@ public final class BaijiuMethodIO {
 		putDouble(settings::setSampleVolumeMl, properties, "volume.sample.ml", overwriteExisting, settings.getSampleVolumeMl());
 		putDouble(settings::setIstdVolumeMl, properties, "volume.istd.ml", overwriteExisting, settings.getIstdVolumeMl());
 		putDouble(settings::setDefaultWindowMin, properties, "rt.window.min", overwriteExisting, settings.getDefaultWindowMin());
+		putDouble(settings::setInstrumentRtOffsetMin, properties, "instrument.rt.offset.min", overwriteExisting, settings.getInstrumentRtOffsetMin());
 		String aroma = properties.getProperty("aroma.template");
 		if(aroma != null && !aroma.isBlank() && (overwriteExisting || settings.getAromaTemplate() == BaijiuAromaType.NONG)) {
 			settings.setAromaTemplate(BaijiuAromaType.fromId(aroma));
@@ -93,7 +143,7 @@ public final class BaijiuMethodIO {
 		putDouble(settings::setGb2757OtherLimit100VolGL, properties, "gb2757.other.limit.100vol.gl", overwriteExisting || Double.isNaN(settings.getGb2757OtherLimit100VolGL()), settings.getGb2757OtherLimit100VolGL());
 		putText(settings::setGb2757Standard, properties, "gb2757.standard", overwriteExisting, settings.getGb2757Standard());
 		putText(settings::setGb2757LimitSource, properties, "gb2757.limit.source", overwriteExisting, settings.getGb2757LimitSource());
-		double offset = parseDouble(properties.getProperty("instrument.rt.offset.min"), BaijiuCatalog.DEFAULT_INSTRUMENT_RT_OFFSET_MIN);
+		double offset = settings.getInstrumentRtOffsetMin();
 		for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
 			String id = compound.getId();
 			String name = properties.getProperty("compound." + id + ".name");
@@ -127,6 +177,7 @@ public final class BaijiuMethodIO {
 		properties.setProperty("volume.sample.ml", format(settings.getSampleVolumeMl()));
 		properties.setProperty("volume.istd.ml", format(settings.getIstdVolumeMl()));
 		properties.setProperty("rt.window.min", format(settings.getDefaultWindowMin()));
+		properties.setProperty("instrument.rt.offset.min", format(settings.getInstrumentRtOffsetMin()));
 		properties.setProperty("aroma.template", settings.getAromaTemplate().getId());
 		properties.setProperty("gas.carrier", settings.getCarrierGas());
 		properties.setProperty("gas.split", settings.getSplitRatio());
