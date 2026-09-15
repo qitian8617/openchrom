@@ -21,6 +21,14 @@ public final class AcquisitionMessages {
 
 	public static String saveSuccessStatus(String path, boolean chinese) {
 
+		return saveSuccessStatus(path, chinese, false);
+	}
+
+	public static String saveSuccessStatus(String path, boolean chinese, boolean handedOff) {
+
+		if(handedOff) {
+			return BaijiuHandoffMessages.openedStatus(path, chinese);
+		}
 		if(path == null || path.isBlank()) {
 			return chinese ? "采集状态: 已完成并保存" : "Acquisition: saved";
 		}

@@ -54,11 +54,33 @@ public class OpenBaijiuChromatogramHandler {
 		if(selected == null || selected.isEmpty()) {
 			return true;
 		}
-		ISupplierEditorSupport support = new EditorSupportFactory(DataType.CSD, () -> context).getInstanceEditorSupport();
 		for(File file : selected) {
-			support.openEditor(file);
+			openFile(file, context);
 		}
 		return true;
+	}
+
+	/**
+	 * Opens one CSD chromatogram in the editor without a file dialog.
+	 * Used by post-acquisition handoff into the Baijiu workbench.
+	 *
+	 * @return true if the editor support accepted the file
+	 */
+	public static boolean openFile(File file, IEclipseContext context) {
+
+		if(file == null || !file.isFile() || context == null) {
+			return false;
+		}
+		try {
+			ISupplierEditorSupport support = new EditorSupportFactory(DataType.CSD, () -> context).getInstanceEditorSupport();
+			if(support == null) {
+				return false;
+			}
+			support.openEditor(file);
+			return true;
+		} catch(RuntimeException | LinkageError e) {
+			return false;
+		}
 	}
 
 	private void openViaFileDialog(Shell shell, IEclipseContext context) {
@@ -70,13 +92,16 @@ public class OpenBaijiuChromatogramHandler {
 			return;
 		}
 		try {
-			ISupplierEditorSupport support = context == null ? null : new EditorSupportFactory(DataType.CSD, () -> context).getInstanceEditorSupport();
-			if(support == null) {
+			if(context == null) {
 				info(shell, "\u8bf7\u6539\u7528\u4e3b\u83dc\u5355\u300c\u6587\u4ef6 \u2192 \u6253\u5f00 CSD \u6587\u4ef6\u300d\u6253\u5f00\u8c31\u56fe\u3002");
 				return;
 			}
+			boolean opened = false;
 			for(String name : dialog.getFileNames()) {
-				support.openEditor(new File(dialog.getFilterPath(), name));
+				opened |= openFile(new File(dialog.getFilterPath(), name), context);
+			}
+			if(!opened) {
+				info(shell, "\u8bf7\u6539\u7528\u4e3b\u83dc\u5355\u300c\u6587\u4ef6 \u2192 \u6253\u5f00 CSD \u6587\u4ef6\u300d\u6253\u5f00\u8c31\u56fe\u3002");
 			}
 		} catch(RuntimeException e) {
 			info(shell, "\u8bf7\u6539\u7528\u4e3b\u83dc\u5355\u300c\u6587\u4ef6 \u2192 \u6253\u5f00 CSD \u6587\u4ef6\u300d\u6253\u5f00\u8c31\u56fe\u3002\n" + (e.getMessage() == null ? "" : e.getMessage()));
