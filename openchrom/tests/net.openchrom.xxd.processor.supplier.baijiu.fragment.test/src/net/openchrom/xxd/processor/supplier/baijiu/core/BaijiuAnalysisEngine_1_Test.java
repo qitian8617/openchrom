@@ -60,6 +60,77 @@ public class BaijiuAnalysisEngine_1_Test {
 		assertTrue(result.getMessage().contains("\u6ca1\u6709\u5cf0") || result.getMessage().contains("\u63a8\u8350\u79ef\u5206"));
 	}
 
+	@Test
+	public void quantifyBlocksWithoutMixCalibration() {
+
+		BaijiuMethodSettings settings = BaijiuMethodSettings.defaultNongxiangFid();
+		ChromatogramCSD chromatogram = sampleChromatogram(180.0d, 1600.0d);
+		BaijiuAnalysisResult result = BaijiuAnalysisEngine.quantify(chromatogram, demoSample(), settings);
+		assertFalse(result.isSuccess(), result.getMessage());
+		assertTrue(result.getRows().isEmpty());
+		assertTrue(result.getGb2757Result() == null);
+		assertTrue(result.getMessage().contains("\u65e0\u6cd5\u5b9a\u91cf"));
+		assertTrue(result.getMessage().contains("\u6df7\u6807\u6821\u6b63"));
+		assertTrue(result.getMessage().contains("\u672a\u6821\u6b63"));
+		assertTrue(result.getMessage().contains("Cannot quantify"));
+		BaijiuAnalysisEngine.applyToChromatogram(chromatogram, result, demoSample());
+		assertTrue(chromatogram.getHeaderData(BaijiuHeaderKeys.GB2757) == null || chromatogram.getHeaderData(BaijiuHeaderKeys.GB2757).isEmpty());
+	}
+
+	@Test
+	public void quantifyBlocksWhenMethanolRfIsNaN() {
+
+		BaijiuMethodSettings settings = BaijiuMethodSettings.defaultNongxiangFid();
+		settings.getResponseFactors().put("methanol", Double.NaN);
+		BaijiuAnalysisResult result = BaijiuAnalysisEngine.quantify(sampleChromatogram(180.0d, 1600.0d), demoSample(), settings);
+		assertFalse(result.isSuccess());
+		assertTrue(result.getRows().isEmpty());
+		assertTrue(result.getMessage().contains("RF \u65e0\u6548") || result.getMessage().contains("invalid"));
+		assertTrue(result.getMessage().contains("Cannot quantify"));
+	}
+
+	@Test
+	public void quantifyBlocksWhenSampleIstdAreaIsZero() {
+
+		BaijiuMethodSettings settings = BaijiuMethodSettings.defaultNongxiangFid();
+		settings.getResponseFactors().put("methanol", 1.0d);
+		BaijiuAnalysisResult result = BaijiuAnalysisEngine.quantify(sampleChromatogram(180.0d, 0.0d), demoSample(), settings);
+		assertFalse(result.isSuccess());
+		assertTrue(result.getMessage().contains("\u5185\u6807") && (result.getMessage().contains("0") || result.getMessage().contains("\u79ef\u5206")), result.getMessage());
+	}
+
+	@Test
+	public void calibrateThenQuantifyAllowsSample() {
+
+		BaijiuMethodSettings settings = BaijiuMethodSettings.defaultNongxiangFid();
+		ChromatogramCSD mix = sampleChromatogram(800.0d, 1000.0d);
+		String calibrated = BaijiuAnalysisEngine.calibrate(mix, settings);
+		assertTrue(calibrated.contains("RF"), calibrated);
+		assertTrue(BaijiuCalibrationGate.allowsQuantitation(settings), calibrated);
+		BaijiuAnalysisResult result = BaijiuAnalysisEngine.quantify(sampleChromatogram(180.0d, 1600.0d), demoSample(), settings);
+		assertTrue(result.isSuccess(), result.getMessage());
+		assertNotNull(row(result, "methanol").getConcentrationGL());
+		assertTrue(result.getGb2757Result().isJudged());
+	}
+
+	private static BaijiuSampleInfo demoSample() {
+
+		BaijiuSampleInfo sample = new BaijiuSampleInfo();
+		sample.setSampleNo("LD-BJ-001");
+		sample.setAbvPercent(52.0d);
+		sample.setRawMaterial(BaijiuRawMaterial.GRAIN);
+		return sample;
+	}
+
+	private static ChromatogramCSD sampleChromatogram(double methanolArea, double istdArea) {
+
+		ChromatogramCSD chromatogram = new ChromatogramCSD();
+		addScans(chromatogram);
+		chromatogram.getPeaks().add(peak(chromatogram, 2.718d, methanolArea));
+		chromatogram.getPeaks().add(peak(chromatogram, 10.382d, istdArea));
+		return chromatogram;
+	}
+
 	private static BaijiuQuantRow row(BaijiuAnalysisResult result, String id) {
 
 		for(BaijiuQuantRow row : result.getRows()) {

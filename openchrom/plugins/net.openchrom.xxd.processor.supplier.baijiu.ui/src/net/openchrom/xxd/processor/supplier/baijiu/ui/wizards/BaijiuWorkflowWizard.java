@@ -17,6 +17,7 @@ import org.eclipse.swt.widgets.Shell;
 
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuAnalysisEngine;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuAnalysisResult;
+import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuCalibrationGate;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuMethodSettings;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuPreferences;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuRecommendedIntegration;
@@ -67,10 +68,17 @@ public class BaijiuWorkflowWizard extends Wizard {
 		quantify();
 		BaijiuPreferences.saveMethod(settings);
 		BaijiuPreferences.saveSampleDefaults(sample);
-		if(result != null && result.isSuccess() && getShell() != null) {
+		if(result == null || !result.isSuccess()) {
+			String message = result == null ? BaijiuCalibrationGate.OPERATOR_HINT : result.getMessage();
+			if(getContainer() != null && getContainer().getCurrentPage() != null) {
+				getContainer().getCurrentPage().setErrorMessage(message);
+			}
+			return false;
+		}
+		if(getShell() != null) {
 			BaijiuReportShell.open(getShell(), sample, settings, result);
 		}
-		return result != null && result.isSuccess();
+		return true;
 	}
 
 	public BaijiuMethodSettings getSettings() {

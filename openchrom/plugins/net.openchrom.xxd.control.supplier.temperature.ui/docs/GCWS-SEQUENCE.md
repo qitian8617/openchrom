@@ -47,5 +47,5 @@ The working queue auto-saves as `current.json` in that folder. **保存序列…
 ## What this does not do
 
 - No autosampler robotics, vial tray, or unattended start of the next needle.
-- No calibration gate (item 6), parallel-sample stats (item 7), or Baijiu batch result table (item 8).
+- Mix-standard calibration gate (item 6) lives in Baijiu `quantify` (see `GCWS-CALIBRATION.md` in the Baijiu plugin). No parallel-sample stats (item 7) or Baijiu batch result table (item 8).
 - FID readiness gate and Baijiu handoff are unchanged.

@@ -76,9 +76,11 @@ public final class BaijiuAnalysisEngine {
 				continue;
 			}
 			double rf = InternalStandardMath.responseFactor(mix, cIstd, istd.getArea(), match.getArea());
-			if(rf > 0.0d) {
+			if(BaijiuCalibrationGate.isValidResponseFactor(rf)) {
 				settings.getResponseFactors().put(compound.getId(), rf);
 				calibrated++;
+			} else {
+				missing.add(settings.displayName(compound) + "(RF\u65e0\u6548)");
 			}
 		}
 		if(calibrated == 0) {
@@ -110,6 +112,10 @@ public final class BaijiuAnalysisEngine {
 		}
 		if(sample != null && sample.hasBlockingErrors()) {
 			return BaijiuAnalysisResult.failure(String.join(" ", sample.validate()));
+		}
+		String calibrationBlock = BaijiuCalibrationGate.blockingMessage(settings);
+		if(calibrationBlock != null) {
+			return BaijiuAnalysisResult.failure(calibrationBlock);
 		}
 		PeakMatchResult matchResult = PeakMatcher.matchDetailed(peaks, settings);
 		MatchedPeak istd = matchResult.get(BaijiuCatalog.ISTD_ID);
@@ -145,7 +151,7 @@ public final class BaijiuAnalysisEngine {
 				remark = "\u672a\u5339\u914d";
 			} else if(!PeakMatcher.hasIntegratedArea(match.getPeak())) {
 				remark = "\u672a\u79ef\u5206";
-			} else if(rf == null || rf <= 0.0d || rf.isNaN()) {
+			} else if(!BaijiuCalibrationGate.isValidResponseFactor(rf)) {
 				remark = "\u672a\u6821\u6b63";
 				warnings.add(settings.displayName(compound) + "\u5c1a\u672a\u6821\u6b63");
 			} else {

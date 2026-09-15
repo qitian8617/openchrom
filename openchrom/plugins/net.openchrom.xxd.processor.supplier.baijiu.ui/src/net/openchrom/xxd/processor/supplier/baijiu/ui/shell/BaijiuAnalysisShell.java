@@ -41,6 +41,7 @@ import org.eclipse.swt.widgets.Text;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuAnalysisEngine;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuAnalysisResult;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuAromaType;
+import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuCalibrationGate;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuCatalog;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuCompound;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuMethodIO;
@@ -169,7 +170,7 @@ public final class BaijiuAnalysisShell {
 		fillMethodTable();
 		fillMatchTables();
 		updateInjectedLabel();
-		setStatus("\u5df2\u52a0\u8f7d\u6d53\u9999 FID \u9ed8\u8ba4\u65b9\u6cd5\u3002\u6253\u5f00\u6f14\u793a\u6df7\u6807\u540e\u53ef\u76f4\u63a5\u70b9\u300c\u63a8\u8350\u79ef\u5206\u300d\uff0c\u518d\u6821\u6b63\u6216\u5b9a\u91cf\u3002");
+		setStatus("\u5df2\u52a0\u8f7d\u6d53\u9999 FID \u9ed8\u8ba4\u65b9\u6cd5\u3002" + BaijiuCalibrationGate.OPERATOR_HINT + " \u6253\u5f00\u6f14\u793a\u6df7\u6807\u540e\u53ef\u76f4\u63a5\u70b9\u300c\u63a8\u8350\u79ef\u5206\u300d\uff0c\u518d\u300c\u7528\u5f53\u524d\u8c31\u56fe\u505a\u6821\u6b63\u300d\u3002");
 
 		shell.open();
 		Display display = parent.getDisplay();
@@ -257,6 +258,9 @@ public final class BaijiuAnalysisShell {
 		button(buttons, "\u5bfc\u51fa\u7ed3\u679c CSV", e -> exportCsv(parent.getShell()));
 		button(buttons, "\u4fdd\u5b58\u65b9\u6cd5", e -> saveMethod(parent.getShell()));
 		button(buttons, "\u53e6\u5b58\u5382\u65b9\u6cd5", e -> savePlantMethod(parent.getShell()));
+		Label calibrationHint = new Label(root, SWT.WRAP);
+		calibrationHint.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		calibrationHint.setText(BaijiuCalibrationGate.OPERATOR_HINT);
 
 		Group gbGroup = group(root, "GB 2757 \u7532\u9187\u5224\u5b9a");
 		gbGroup.setLayout(new GridLayout(1, false));
@@ -776,7 +780,7 @@ public final class BaijiuAnalysisShell {
 		if(!selectedCompound.isInternalStandard()) {
 			settings.getMixGramsPerLiter().put(selectedCompound.getId(), parse(editMix.getText(), settings.mixGramsPerLiter(selectedCompound)));
 			double rf = parse(editRf.getText(), Double.NaN);
-			if(rf > 0.0d) {
+			if(BaijiuCalibrationGate.isValidResponseFactor(rf)) {
 				settings.getResponseFactors().put(selectedCompound.getId(), rf);
 			}
 		}

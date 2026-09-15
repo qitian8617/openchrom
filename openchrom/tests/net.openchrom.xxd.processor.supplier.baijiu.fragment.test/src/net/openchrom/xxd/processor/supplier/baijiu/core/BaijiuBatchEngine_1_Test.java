@@ -10,6 +10,7 @@
 package net.openchrom.xxd.processor.supplier.baijiu.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -46,6 +47,22 @@ public class BaijiuBatchEngine_1_Test {
 		assertTrue(csv.contains("\u7532\u9187"));
 		assertTrue(csv.contains("0.1800"));
 		assertTrue(csv.contains("GB 2757"));
+	}
+
+	@Test
+	public void missingCalibrationBlocksBatchRow() {
+
+		BaijiuMethodSettings settings = BaijiuMethodSettings.defaultNongxiangFid();
+		ChromatogramCSD chromatogram = chromatogram("LD-A", 180.0d);
+		BaijiuSampleInfo template = new BaijiuSampleInfo();
+		template.setAbvPercent(52.0d);
+		template.setRawMaterial(BaijiuRawMaterial.GRAIN);
+		List<BaijiuBatchRow> rows = BaijiuBatchEngine.run(List.of(chromatogram), settings, template, false);
+		assertEquals(1, rows.size());
+		assertFalse(rows.get(0).isSuccess());
+		assertTrue(rows.get(0).getMessage().contains("\u6df7\u6807\u6821\u6b63") || rows.get(0).getMessage().contains("\u672a\u6821\u6b63"), rows.get(0).getMessage());
+		assertTrue(rows.get(0).getMessage().contains("Cannot quantify"));
+		assertTrue(BaijiuBatchEngine.toMatrixCsv(rows, settings).contains("\u65e0\u6cd5\u5b9a\u91cf") || BaijiuBatchEngine.toMatrixCsv(rows, settings).contains("\u672a\u6821\u6b63"));
 	}
 
 	private static ChromatogramCSD chromatogram(String name, double methanolArea) {
