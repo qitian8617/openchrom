@@ -10,11 +10,14 @@
 package net.openchrom.xxd.processor.supplier.baijiu.ui;
 
 import java.io.File;
+import java.util.List;
 
 import org.eclipse.chemclipse.support.ui.activator.ContextAddon;
 import org.eclipse.e4.core.contexts.IEclipseContext;
 import org.eclipse.e4.ui.model.application.MApplication;
+import org.eclipse.e4.ui.model.application.ui.MUIElement;
 import org.eclipse.e4.ui.model.application.ui.basic.MPart;
+import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService.PartState;
 import org.eclipse.swt.widgets.Display;
@@ -87,10 +90,10 @@ public final class BaijiuWorkbenchHandoff {
 	private static String openFileOnUi(File file) {
 
 		boolean perspectiveOk = OpenBaijiuPerspectiveHandler.showPerspective();
-		showWorkbenchPart();
+		boolean partOk = showWorkbenchPart();
 		IEclipseContext context = resolveContext();
 		boolean editorOk = OpenBaijiuChromatogramHandler.openFile(file, context);
-		if(perspectiveOk) {
+		if(perspectiveOk || partOk) {
 			return "";
 		}
 		if(editorOk) {
@@ -99,22 +102,68 @@ public final class BaijiuWorkbenchHandoff {
 		return "\u65e0\u6cd5\u5207\u6362\u767d\u9152\u5de5\u4f5c\u53f0\uff0c\u4e5f\u672a\u80fd\u6253\u5f00\u8272\u8c31\u56fe\u3002\u8bf7\u5b89\u88c5/\u542f\u7528\u300c\u767d\u9152\u5206\u6790\u300d\u529f\u80fd\uff08" + FEATURE_ID + "\uff09\u3002";
 	}
 
-	private static void showWorkbenchPart() {
+	private static boolean showWorkbenchPart() {
+
+		try {
+			EPartService partService = resolvePartService();
+			if(partService == null) {
+				return false;
+			}
+			MPart part = partService.findPart(PART_ID);
+			if(part == null) {
+				part = findSharedPart();
+			}
+			if(part == null) {
+				return false;
+			}
+			partService.showPart(part, PartState.ACTIVATE);
+			return true;
+		} catch(RuntimeException | LinkageError e) {
+			return false;
+		}
+	}
+
+	private static EPartService resolvePartService() {
 
 		try {
 			EPartService partService = ContextAddon.getWindowPartService();
-			if(partService == null) {
-				return;
-			}
-			MPart part = partService.findPart(PART_ID);
-			if(part != null) {
-				partService.showPart(part, PartState.VISIBLE);
+			if(partService != null) {
+				return partService;
 			}
 		} catch(RuntimeException | LinkageError e) {
-			/*
-			 * Perspective switch is enough; the shared editor area already holds the file.
-			 */
+			// fall through
 		}
+		try {
+			MApplication application = ContextAddon.getApplication();
+			if(application != null && application.getContext() != null) {
+				return application.getContext().get(EPartService.class);
+			}
+		} catch(RuntimeException | LinkageError e) {
+			return null;
+		}
+		return null;
+	}
+
+	private static MPart findSharedPart() {
+
+		try {
+			EModelService modelService = ContextAddon.getModelService();
+			MApplication application = ContextAddon.getApplication();
+			if(modelService == null || application == null) {
+				return null;
+			}
+			MUIElement element = modelService.find(PART_ID, application);
+			if(element instanceof MPart part) {
+				return part;
+			}
+			List<MPart> parts = modelService.findElements(application, PART_ID, MPart.class, null);
+			if(parts != null && !parts.isEmpty()) {
+				return parts.get(0);
+			}
+		} catch(RuntimeException | LinkageError e) {
+			return null;
+		}
+		return null;
 	}
 
 	private static IEclipseContext resolveContext() {

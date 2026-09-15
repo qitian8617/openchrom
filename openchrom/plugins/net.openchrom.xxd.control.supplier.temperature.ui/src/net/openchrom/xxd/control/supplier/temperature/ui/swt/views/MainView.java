@@ -51,7 +51,6 @@ import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.Acquisition
 import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.AcquisitionMessages;
 import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.AcquisitionPoint;
 import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.AcquisitionSaveResult;
-import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.BaijiuHandoffMessages;
 import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.BaijiuHandoffOutcome;
 import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.IAcquisitionListener;
 import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.RealtimeAcquisitionManager;
@@ -143,7 +142,6 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 	private Button readButton;
 	private Button startTempButton;
 	private Button startAnalysisButton;
-	private Button baijiuHandoffButton;
 	private Button startRecordButton;
 	private Button stopRecordButton;
 	private Label tempControlLabel;
@@ -968,7 +966,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 
 		Composite analysisRow = new Composite(card, SWT.NONE);
 		analysisRow.setBackground(card.getBackground());
-		analysisRow.setLayout(new GridLayout(3, false));
+		analysisRow.setLayout(new GridLayout(2, false));
 		analysisRow.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
 		analysisLabel = new Label(analysisRow, SWT.NONE);
@@ -978,10 +976,6 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 
 		startAnalysisButton = WidgetFactory.createPrimaryButton(analysisRow, chinese ? "\u542F\u52A8" : "Start");
 		startAnalysisButton.addListener(SWT.Selection, e -> toggleAcquisition());
-
-		baijiuHandoffButton = WidgetFactory.createSecondaryButton(analysisRow, BaijiuHandoffMessages.buttonLabel(chinese));
-		baijiuHandoffButton.setEnabled(false);
-		baijiuHandoffButton.addListener(SWT.Selection, e -> openLastSavedInBaijiu());
 	}
 
 	private void createTrendCard() {
@@ -2038,7 +2032,6 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 			if(!isDisposed()) {
 				lastSavedChromatogramPath = null;
 				lastSavedHandedToBaijiu = false;
-				updateBaijiuHandoffButton();
 				acquisitionStatusLabel.setText(chinese ? "\u91C7\u96C6\u72B6\u6001: \u91C7\u96C6\u4E2D..." : "Acquisition: Running");
 				updateAcquisitionButtonLabel();
 			}
@@ -2073,7 +2066,6 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 			String path = file == null ? "" : file.getAbsolutePath();
 			lastSavedChromatogramPath = path;
 			lastSavedHandedToBaijiu = false;
-			updateBaijiuHandoffButton();
 			acquisitionStatusLabel.setText(AcquisitionMessages.saveSuccessStatus(path, chinese));
 			updateAcquisitionButtonLabel();
 			boolean editorOpened = getDisplay() != null && !getDisplay().isDisposed();
@@ -2095,7 +2087,6 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 			}
 			lastSavedChromatogramPath = null;
 			lastSavedHandedToBaijiu = false;
-			updateBaijiuHandoffButton();
 			acquisitionStatusLabel.setText(AcquisitionMessages.failedStatus(reason, chinese));
 			updateAcquisitionButtonLabel();
 			showWarning(reason != null && reason.contains("保存失败") ? AcquisitionMessages.saveFailedTitle(chinese) : AcquisitionMessages.failedTitle(chinese), reason == null || reason.isBlank() ? AcquisitionMessages.saveFailedDialog(null, 0, null) : reason);
@@ -2115,9 +2106,6 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 		readButton.setText(chinese ? "\u8BFB\u53D6" : "Read");
 		tempControlLabel.setText(chinese ? "\u6E29\u5EA6\u63A7\u5236" : "Temperature Control");
 		analysisLabel.setText(chinese ? "\u5F00\u59CB\u5206\u6790" : "Start Analysis");
-		if(baijiuHandoffButton != null && !baijiuHandoffButton.isDisposed()) {
-			baijiuHandoffButton.setText(BaijiuHandoffMessages.buttonLabel(chinese));
-		}
 		startTempButton.setText(chinese ? "\u542F\u52A8" : "Start");
 		if(connectionNameLabel != null && !connectionNameLabel.isDisposed()) {
 			connectionNameLabel.setText(chinese ? "连接" : "Link");
@@ -2147,27 +2135,5 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 			trendCanvas.redraw();
 		}
 		updateAcquisitionButtonLabel();
-		updateBaijiuHandoffButton();
-	}
-
-	private void openLastSavedInBaijiu() {
-
-		if(lastSavedChromatogramPath == null || lastSavedChromatogramPath.isBlank()) {
-			showWarning(BaijiuHandoffMessages.buttonLabel(chinese), chinese ? "还没有已保存的色谱图。" : "No saved chromatogram yet.");
-			return;
-		}
-		BaijiuHandoffOutcome outcome = AcquisitionHandoffUi.openNow(getShell(), new File(lastSavedChromatogramPath), chinese);
-		if(outcome != null && outcome.isOpened()) {
-			lastSavedHandedToBaijiu = true;
-			acquisitionStatusLabel.setText(AcquisitionMessages.saveSuccessStatus(lastSavedChromatogramPath, chinese, true));
-		}
-	}
-
-	private void updateBaijiuHandoffButton() {
-
-		if(baijiuHandoffButton == null || baijiuHandoffButton.isDisposed()) {
-			return;
-		}
-		baijiuHandoffButton.setEnabled(lastSavedChromatogramPath != null && !lastSavedChromatogramPath.isBlank());
 	}
 }

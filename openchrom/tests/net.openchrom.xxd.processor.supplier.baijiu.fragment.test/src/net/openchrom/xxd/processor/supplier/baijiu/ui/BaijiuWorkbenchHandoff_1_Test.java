@@ -10,6 +10,7 @@
 package net.openchrom.xxd.processor.supplier.baijiu.ui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -64,5 +65,25 @@ public class BaijiuWorkbenchHandoff_1_Test {
 		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui", BaijiuWorkbenchHandoff.BUNDLE_ID);
 		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui.part.workbench", BaijiuWorkbenchHandoff.PART_ID);
 		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui.perspective.workbench", OpenBaijiuPerspectiveHandler.PERSPECTIVE_ID);
+		assertEquals("org.eclipse.chemclipse.rcp.app.ui.perspectivestack.main", OpenBaijiuPerspectiveHandler.PERSPECTIVE_STACK_ID);
+	}
+
+	@Test
+	public void perspectiveMatcherAcceptsE4IdAndLocalizedLabels() {
+
+		assertTrue(OpenBaijiuPerspectiveHandler.isBaijiuPerspective(OpenBaijiuPerspectiveHandler.PERSPECTIVE_ID, null));
+		assertTrue(OpenBaijiuPerspectiveHandler.isBaijiuPerspective("net.openchrom.xxd.processor.supplier.baijiu.ui.perspective.workbench", "other"));
+		assertTrue(OpenBaijiuPerspectiveHandler.isBaijiuPerspective("custom.id", "白酒工作台"));
+		assertTrue(OpenBaijiuPerspectiveHandler.isBaijiuPerspective(null, "Baijiu Workbench"));
+		assertTrue(OpenBaijiuPerspectiveHandler.isBaijiuPerspective("net.openchrom.xxd.processor.supplier.baijiu.ui.perspective.branded", ""));
+	}
+
+	@Test
+	public void perspectiveMatcherRejectsUnrelatedViews() {
+
+		assertFalse(OpenBaijiuPerspectiveHandler.isBaijiuPerspective("org.eclipse.ui.resourcePerspective", "Resource"));
+		assertFalse(OpenBaijiuPerspectiveHandler.isBaijiuPerspective(null, "白酒分析"));
+		assertFalse(OpenBaijiuPerspectiveHandler.isBaijiuPerspective("", ""));
+		assertFalse(OpenBaijiuPerspectiveHandler.isBaijiuPerspective(null, null));
 	}
 }
