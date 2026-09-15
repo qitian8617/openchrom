@@ -13,6 +13,7 @@ import org.eclipse.chemclipse.model.core.IChromatogram;
 import org.eclipse.chemclipse.model.selection.IChromatogramSelection;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.jface.wizard.Wizard;
+import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.widgets.Shell;
 
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuAnalysisEngine;
@@ -70,8 +71,8 @@ public class BaijiuWorkflowWizard extends Wizard {
 		BaijiuPreferences.saveSampleDefaults(sample);
 		if(result == null || !result.isSuccess()) {
 			String message = result == null ? BaijiuCalibrationGate.OPERATOR_HINT : result.getMessage();
-			if(getContainer() != null && getContainer().getCurrentPage() != null) {
-				getContainer().getCurrentPage().setErrorMessage(message);
+			if(getContainer() != null && getContainer().getCurrentPage() instanceof WizardPage wizardPage) {
+				wizardPage.setErrorMessage(message);
 			}
 			return false;
 		}
