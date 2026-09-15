@@ -25,15 +25,45 @@ public class OpenBaijiuPerspectiveHandler {
 	@Execute
 	public void execute(Shell shell) {
 
-		IWorkbench workbench = PlatformUI.getWorkbench();
-		IWorkbenchWindow window = workbench.getActiveWorkbenchWindow();
-		try {
-			workbench.showPerspective(PERSPECTIVE_ID, window);
-		} catch(WorkbenchException e) {
-			MessageBox box = new MessageBox(shell, SWT.ICON_WARNING);
-			box.setText("\u767d\u9152\u5de5\u4f5c\u53f0");
-			box.setMessage("\u65e0\u6cd5\u5207\u6362\u89c6\u56fe\uff1a" + e.getMessage() + "\u3002\u8bf7\u5728\u300c\u7a97\u53e3 \u2192 \u89c6\u56fe\u300d\u4e2d\u9009\u62e9\u300c\u767d\u9152\u5de5\u4f5c\u53f0\u300d\u3002");
-			box.open();
+		if(!showPerspective()) {
+			warn(shell, "\u65e0\u6cd5\u5207\u6362\u89c6\u56fe\u3002\u8bf7\u5728\u300c\u7a97\u53e3 \u2192 \u89c6\u56fe\u300d\u4e2d\u9009\u62e9\u300c\u767d\u9152\u5de5\u4f5c\u53f0\u300d\u3002");
 		}
+	}
+
+	/**
+	 * Switches to the Baijiu workbench perspective. Returns false when the
+	 * workbench cannot show it (missing fragment, no window). Does not throw
+	 * and does not open a dialog — callers decide how to tell the operator.
+	 */
+	public static boolean showPerspective() {
+
+		try {
+			if(!PlatformUI.isWorkbenchRunning()) {
+				return false;
+			}
+			IWorkbench workbench = PlatformUI.getWorkbench();
+			IWorkbenchWindow window = workbench.getActiveWorkbenchWindow();
+			if(window == null && workbench.getWorkbenchWindowCount() > 0) {
+				window = workbench.getWorkbenchWindows()[0];
+			}
+			if(window == null) {
+				return false;
+			}
+			workbench.showPerspective(PERSPECTIVE_ID, window);
+			return true;
+		} catch(WorkbenchException | RuntimeException | LinkageError e) {
+			return false;
+		}
+	}
+
+	private static void warn(Shell shell, String message) {
+
+		if(shell == null || shell.isDisposed()) {
+			return;
+		}
+		MessageBox box = new MessageBox(shell, SWT.ICON_WARNING);
+		box.setText("\u767d\u9152\u5de5\u4f5c\u53f0");
+		box.setMessage(message);
+		box.open();
 	}
 }

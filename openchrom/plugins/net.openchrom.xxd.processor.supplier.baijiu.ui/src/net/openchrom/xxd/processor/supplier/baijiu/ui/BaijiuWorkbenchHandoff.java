@@ -1,0 +1,148 @@
+/*******************************************************************************
+ * Copyright (c) 2026 OpenChrom.
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package net.openchrom.xxd.processor.supplier.baijiu.ui;
+
+import java.io.File;
+
+import org.eclipse.chemclipse.support.ui.activator.ContextAddon;
+import org.eclipse.e4.core.contexts.IEclipseContext;
+import org.eclipse.e4.ui.model.application.MApplication;
+import org.eclipse.e4.ui.model.application.ui.basic.MPart;
+import org.eclipse.e4.ui.workbench.modeling.EPartService;
+import org.eclipse.e4.ui.workbench.modeling.EPartService.PartState;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.IWorkbenchWindow;
+import org.eclipse.ui.PlatformUI;
+
+import net.openchrom.xxd.processor.supplier.baijiu.ui.handlers.OpenBaijiuChromatogramHandler;
+import net.openchrom.xxd.processor.supplier.baijiu.ui.handlers.OpenBaijiuPerspectiveHandler;
+
+/**
+ * Programmatic entry used by the GC reverse-control plugin after a successful
+ * acquisition save. Opens the Baijiu workbench perspective and the saved CSD
+ * file. Invoked via OSGi {@code Bundle#loadClass} so reverse-control does not
+ * hard-require this bundle.
+ */
+public final class BaijiuWorkbenchHandoff {
+
+	public static final String BUNDLE_ID = Activator.PLUGIN_ID;
+	public static final String FEATURE_ID = "net.openchrom.xxd.processor.supplier.baijiu.feature";
+	public static final String TYPE_NAME = "net.openchrom.xxd.processor.supplier.baijiu.ui.BaijiuWorkbenchHandoff";
+	public static final String OPEN_FILE_METHOD = "openFile";
+	public static final String PART_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.part.workbench";
+
+	private BaijiuWorkbenchHandoff() {
+	}
+
+	/**
+	 * Headless file check. Empty string means the path is usable; otherwise a
+	 * Chinese operator message.
+	 */
+	public static String validateFile(File file) {
+
+		if(file == null) {
+			return "\u6ca1\u6709\u8272\u8c31\u56fe\u6587\u4ef6\uff0c\u65e0\u6cd5\u4ea4\u767d\u9152\u5de5\u4f5c\u53f0\u3002";
+		}
+		if(!file.isFile()) {
+			return "\u8272\u8c31\u56fe\u6587\u4ef6\u4e0d\u5b58\u5728\uff1a" + file.getAbsolutePath();
+		}
+		if(file.length() <= 0L) {
+			return "\u8272\u8c31\u56fe\u6587\u4ef6\u4e3a\u7a7a\uff1a" + file.getAbsolutePath();
+		}
+		return "";
+	}
+
+	/**
+	 * Switch to the Baijiu workbench and open {@code file} in the CSD editor.
+	 * Safe to call off the UI thread (marshals with {@code syncExec}).
+	 *
+	 * @return empty string on success; otherwise a Chinese operator message
+	 */
+	public static String openFile(File file) {
+
+		String invalid = validateFile(file);
+		if(!invalid.isEmpty()) {
+			return invalid;
+		}
+		Display display = Display.getDefault();
+		if(display == null || display.isDisposed()) {
+			return "\u65e0\u6cd5\u6253\u5f00\u767d\u9152\u5de5\u4f5c\u53f0\uff1a\u6ca1\u6709\u7528\u6237\u754c\u9762\u3002";
+		}
+		if(display.getThread() != Thread.currentThread()) {
+			final String[] error = new String[] {""};
+			display.syncExec(() -> error[0] = openFileOnUi(file));
+			return error[0] == null ? "" : error[0];
+		}
+		return openFileOnUi(file);
+	}
+
+	private static String openFileOnUi(File file) {
+
+		boolean perspectiveOk = OpenBaijiuPerspectiveHandler.showPerspective();
+		showWorkbenchPart();
+		IEclipseContext context = resolveContext();
+		boolean editorOk = OpenBaijiuChromatogramHandler.openFile(file, context);
+		if(perspectiveOk) {
+			return "";
+		}
+		if(editorOk) {
+			return "\u8272\u8c31\u56fe\u5df2\u6253\u5f00\uff0c\u4f46\u65e0\u6cd5\u5207\u6362\u767d\u9152\u5de5\u4f5c\u53f0\u89c6\u56fe\u3002\u8bf7\u5728\u300c\u7a97\u53e3 \u2192 \u89c6\u56fe\u300d\u4e2d\u9009\u62e9\u300c\u767d\u9152\u5de5\u4f5c\u53f0\u300d\u3002";
+		}
+		return "\u65e0\u6cd5\u5207\u6362\u767d\u9152\u5de5\u4f5c\u53f0\uff0c\u4e5f\u672a\u80fd\u6253\u5f00\u8272\u8c31\u56fe\u3002\u8bf7\u5b89\u88c5/\u542f\u7528\u300c\u767d\u9152\u5206\u6790\u300d\u529f\u80fd\uff08" + FEATURE_ID + "\uff09\u3002";
+	}
+
+	private static void showWorkbenchPart() {
+
+		try {
+			EPartService partService = ContextAddon.getWindowPartService();
+			if(partService == null) {
+				return;
+			}
+			MPart part = partService.findPart(PART_ID);
+			if(part != null) {
+				partService.showPart(part, PartState.VISIBLE);
+			}
+		} catch(RuntimeException | LinkageError e) {
+			/*
+			 * Perspective switch is enough; the shared editor area already holds the file.
+			 */
+		}
+	}
+
+	private static IEclipseContext resolveContext() {
+
+		try {
+			MApplication application = ContextAddon.getApplication();
+			if(application != null && application.getContext() != null) {
+				return application.getContext();
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// fall through
+		}
+		try {
+			if(!PlatformUI.isWorkbenchRunning()) {
+				return null;
+			}
+			IWorkbench workbench = PlatformUI.getWorkbench();
+			IEclipseContext context = workbench.getService(IEclipseContext.class);
+			if(context != null) {
+				return context;
+			}
+			IWorkbenchWindow window = workbench.getActiveWorkbenchWindow();
+			if(window != null) {
+				return window.getService(IEclipseContext.class);
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// fall through
+		}
+		return null;
+	}
+}
