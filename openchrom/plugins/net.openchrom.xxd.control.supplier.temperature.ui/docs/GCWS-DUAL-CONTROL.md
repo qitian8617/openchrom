@@ -25,6 +25,8 @@ Emergency stop (panel may send even while PC is online; firmware must not refuse
 
 Acquisition `START_ACQ` / `STOP_ACQ` is always PC-only. Panel "Start analysis" does not send those frames.
 
+After Stop or device `ACQ_DONE`, the workstation writes an openable chromatogram (`.ocb`, XY fallback) under `~/OpenChrom/Acquisitions/` (see [GCWS-ACQUISITION-SAVE.md](GCWS-ACQUISITION-SAVE.md)).
+
 ## Handshake and write lock
 
 | Command | Takes write lock? |

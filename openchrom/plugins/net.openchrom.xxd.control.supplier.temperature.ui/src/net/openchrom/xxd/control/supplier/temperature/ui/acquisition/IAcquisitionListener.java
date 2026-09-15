@@ -9,6 +9,8 @@
  *******************************************************************************/
 package net.openchrom.xxd.control.supplier.temperature.ui.acquisition;
 
+import java.io.File;
+
 import org.eclipse.chemclipse.csd.model.core.IChromatogramCSD;
 
 @FunctionalInterface
@@ -20,6 +22,9 @@ public interface IAcquisitionListener {
 	}
 
 	default void onAcquisitionCompleted(IChromatogramCSD chromatogram) {
+	}
+
+	default void onAcquisitionSaved(File file, IChromatogramCSD chromatogram, AcquisitionSaveResult result) {
 	}
 
 	default void onAcquisitionFailed(String reason, Throwable throwable) {

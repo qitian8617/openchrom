@@ -9,6 +9,7 @@
  *******************************************************************************/
 package net.openchrom.xxd.control.supplier.temperature.ui.swt.views;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -46,7 +47,9 @@ import org.eclipse.swt.widgets.TableItem;
 
 import net.openchrom.xxd.control.supplier.temperature.ui.Activator;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.ColumnOvenProgram;
+import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.AcquisitionMessages;
 import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.AcquisitionPoint;
+import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.AcquisitionSaveResult;
 import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.IAcquisitionListener;
 import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.RealtimeAcquisitionManager;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.FidReadiness;
@@ -142,6 +145,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 	private Label tempControlLabel;
 	private Label analysisLabel;
 	private Label acquisitionStatusLabel;
+	private String lastSavedChromatogramPath;
 	private Label readinessTitle;
 	private Label connectionNameLabel;
 	private Label connectionValueLabel;
@@ -893,7 +897,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 
 	private void createAcquisitionStatus() {
 
-		acquisitionStatusLabel = new Label(this, SWT.NONE);
+		acquisitionStatusLabel = new Label(this, SWT.WRAP);
 		acquisitionStatusLabel.setBackground(getBackground());
 		acquisitionStatusLabel.setForeground(UiStyles.color(getDisplay(), UiColors.TEXT_SECONDARY));
 		acquisitionStatusLabel.setText(idleStatusText());
@@ -1990,6 +1994,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 
 		getDisplay().asyncExec(() -> {
 			if(!isDisposed()) {
+				lastSavedChromatogramPath = null;
 				acquisitionStatusLabel.setText(chinese ? "\u91C7\u96C6\u72B6\u6001: \u91C7\u96C6\u4E2D..." : "Acquisition: Running");
 				updateAcquisitionButtonLabel();
 			}
@@ -2006,9 +2011,28 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 
 		getDisplay().asyncExec(() -> {
 			if(!isDisposed()) {
-				acquisitionStatusLabel.setText(chinese ? "\u91C7\u96C6\u72B6\u6001: \u5B8C\u6210\uFF0C\u5DF2\u81EA\u52A8\u5904\u7406" : "Acquisition: Completed, auto processing done");
+				if(lastSavedChromatogramPath == null) {
+					acquisitionStatusLabel.setText(chinese ? "\u91C7\u96C6\u72B6\u6001: \u5B8C\u6210" : "Acquisition: Completed");
+				}
 				updateAcquisitionButtonLabel();
 			}
+		});
+	}
+
+	@Override
+	public void onAcquisitionSaved(File file, IChromatogramCSD chromatogram, AcquisitionSaveResult result) {
+
+		getDisplay().asyncExec(() -> {
+			if(isDisposed()) {
+				return;
+			}
+			String path = file == null ? "" : file.getAbsolutePath();
+			lastSavedChromatogramPath = path;
+			acquisitionStatusLabel.setText(AcquisitionMessages.saveSuccessStatus(path, chinese));
+			updateAcquisitionButtonLabel();
+			boolean editorOpened = getDisplay() != null && !getDisplay().isDisposed();
+			boolean xyFallback = result != null && result.getFormat() == AcquisitionSaveResult.Format.XY;
+			showInfo(AcquisitionMessages.saveSuccessTitle(chinese), AcquisitionMessages.saveSuccessDialog(path, editorOpened, chinese, xyFallback));
 		});
 	}
 
@@ -2016,10 +2040,13 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 	public void onAcquisitionFailed(String reason, Throwable throwable) {
 
 		getDisplay().asyncExec(() -> {
-			if(!isDisposed()) {
-				acquisitionStatusLabel.setText(chinese ? "\u91C7\u96C6\u5931\u8D25: " + reason : "Acquisition failed: " + reason);
-				updateAcquisitionButtonLabel();
+			if(isDisposed()) {
+				return;
 			}
+			lastSavedChromatogramPath = null;
+			acquisitionStatusLabel.setText(AcquisitionMessages.failedStatus(reason, chinese));
+			updateAcquisitionButtonLabel();
+			showWarning(reason != null && reason.contains("保存失败") ? AcquisitionMessages.saveFailedTitle(chinese) : AcquisitionMessages.failedTitle(chinese), reason == null || reason.isBlank() ? AcquisitionMessages.saveFailedDialog(null, 0, null) : reason);
 		});
 	}
 
@@ -2051,7 +2078,11 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 		stopRecordButton.setText(chinese ? "停止记录" : "Stop Log");
 		updateTempControlButtonLabel();
 		updateTempControlButtonEnabled();
-		if(!acquisitionManager.isAcquiring()) {
+		if(acquisitionManager.isAcquiring()) {
+			acquisitionStatusLabel.setText(chinese ? "\u91C7\u96C6\u72B6\u6001: \u91C7\u96C6\u4E2D..." : "Acquisition: Running");
+		} else if(lastSavedChromatogramPath != null) {
+			acquisitionStatusLabel.setText(AcquisitionMessages.saveSuccessStatus(lastSavedChromatogramPath, chinese));
+		} else {
 			acquisitionStatusLabel.setText(idleStatusText());
 		}
 		if(!trendRecording) {

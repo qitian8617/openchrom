@@ -10,11 +10,6 @@
 package net.openchrom.xxd.control.supplier.temperature.ui.acquisition;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.ConcurrentModificationException;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -23,18 +18,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.chemclipse.chromatogram.csd.peak.detector.supplier.firstderivative.core.PeakDetectorCSD;
 import org.eclipse.chemclipse.chromatogram.csd.peak.detector.supplier.firstderivative.settings.PeakDetectorSettingsCSD;
 import org.eclipse.chemclipse.chromatogram.peak.detector.model.Threshold;
-import org.eclipse.chemclipse.csd.converter.chromatogram.ChromatogramConverterCSD;
 import org.eclipse.chemclipse.csd.model.core.IChromatogramCSD;
-import org.eclipse.chemclipse.csd.model.core.IScanCSD;
 import org.eclipse.chemclipse.csd.model.core.selection.ChromatogramSelectionCSD;
 import org.eclipse.chemclipse.csd.model.core.selection.IChromatogramSelectionCSD;
-import org.eclipse.chemclipse.csd.model.implementation.ChromatogramCSD;
-import org.eclipse.chemclipse.csd.model.implementation.ScanCSD;
 import org.eclipse.chemclipse.logging.core.Logger;
 import org.eclipse.chemclipse.model.support.ChromatogramSupport;
 import org.eclipse.chemclipse.processing.core.IProcessingMessage;
 import org.eclipse.chemclipse.processing.core.IProcessingInfo;
-import org.eclipse.chemclipse.xxd.converter.supplier.ocx.settings.Format;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.swt.widgets.Display;
 
@@ -54,9 +44,6 @@ public final class RealtimeAcquisitionManager {
 	private static final int DEFAULT_SAMPLE_INTERVAL_MS = 100;
 	private static final int EDITOR_REFRESH_INTERVAL_MS = 66;
 	private static final float AUTO_PEAK_MIN_SPAN = 5f;
-	private static final DateTimeFormatter FILE_TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
-	private static final String ACQUISITION_DIRECTORY = "Acquisitions";
-	private static final String CSD_EXPORT_CONVERTER_ID = Format.CONVERTER_ID_CHROMATOGRAM;
 
 	private final GcConnectionManager connectionManager = GcConnectionManager.getInstance();
 	private final List<IAcquisitionListener> listeners = new CopyOnWriteArrayList<>();
@@ -108,10 +95,10 @@ public final class RealtimeAcquisitionManager {
 			return;
 		}
 		if(!connectionManager.isConnected()) {
-			notifyFailed("GC not connected", null);
+			notifyFailed(AcquisitionMessages.startFailedNotConnected(true) + " / " + AcquisitionMessages.startFailedNotConnected(false), null);
 			return;
 		}
-		chromatogram = createChromatogram();
+		chromatogram = AcquisitionChromatogramStore.createChromatogram();
 		points = 0;
 		expectedBatchSequence = 0;
 		nativeEditorOpened = false;
@@ -129,7 +116,7 @@ public final class RealtimeAcquisitionManager {
 				logger.warn("Failed to send START_ACQ frame", e);
 				stopAcquisitionQuietly();
 				String detail = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
-				notifyFailed("Failed to start acquisition: " + detail, e);
+				notifyFailed(AcquisitionMessages.startFailed(detail, true) + " / " + AcquisitionMessages.startFailed(detail, false), e);
 			}
 		});
 	}
@@ -148,13 +135,7 @@ public final class RealtimeAcquisitionManager {
 				logger.warn("Failed to send STOP_ACQ frame", e);
 			}
 		});
-		if(chromatogram != null) {
-			if(points > 2) {
-				finishAndProcess(chromatogram);
-			} else {
-				saveOpenAndComplete(chromatogram);
-			}
-		}
+		finishRun();
 	}
 
 	private synchronized void stopAcquisitionQuietly() {
@@ -239,7 +220,6 @@ public final class RealtimeAcquisitionManager {
 		String reason = frame.getPayload().length == 0 ? "Device error" : new String(frame.getPayload());
 		logger.warn("Device error frame: " + reason);
 		stopAcquisition();
-		notifyFailed(reason, null);
 	}
 
 	private synchronized void appendPoint(AcquisitionPoint point) {
@@ -247,10 +227,8 @@ public final class RealtimeAcquisitionManager {
 		if(chromatogram == null) {
 			return;
 		}
-		IScanCSD scan = new ScanCSD(normalizeSignal(point.signal()));
-		scan.setRetentionTime(point.retentionTimeMs());
 		synchronized(chromatogram) {
-			chromatogram.addScan(scan);
+			AcquisitionChromatogramStore.appendPoint(chromatogram, point);
 			points++;
 		}
 		if(!nativeEditorOpened && points >= 2) {
@@ -262,15 +240,20 @@ public final class RealtimeAcquisitionManager {
 		}
 	}
 
-	private float normalizeSignal(float signal) {
+	private void finishRun() {
 
-		if(!Float.isFinite(signal) || signal < 0f) {
-			return 0f;
+		IChromatogramCSD current = chromatogram;
+		if(current == null) {
+			notifyFailed(AcquisitionMessages.noDataReason(true) + " / " + AcquisitionMessages.noDataReason(false), null);
+			return;
 		}
-		return signal;
+		if(points > 2) {
+			autoProcess(current);
+		}
+		saveOpenAndComplete(current);
 	}
 
-	private void finishAndProcess(IChromatogramCSD current) {
+	private void autoProcess(IChromatogramCSD current) {
 
 		try {
 			ChromatogramSupport.calculateScanIntervalAndDelay(current);
@@ -295,10 +278,7 @@ public final class RealtimeAcquisitionManager {
 			}
 			ChromatogramEditorNotifier.publishFinalUpdate(current);
 		} catch(Exception e) {
-			logger.warn("Auto-processing failed", e);
-			notifyFailed("Auto processing failed", e);
-		} finally {
-			saveOpenAndComplete(current);
+			logger.warn("Auto-processing failed; chromatogram will still be saved", e);
 		}
 	}
 
@@ -325,61 +305,24 @@ public final class RealtimeAcquisitionManager {
 
 	private void saveOpenAndComplete(IChromatogramCSD current) {
 
-		try {
-			File file = saveAcquisition(current);
-			logger.info("Saved acquisition data to " + file.getAbsolutePath());
+		AcquisitionSaveResult result = AcquisitionChromatogramStore.save(current);
+		if(result.isSuccess()) {
+			File file = result.getFile();
+			logger.info("Saved acquisition data to " + file.getAbsolutePath() + " (" + result.getFormat() + ")");
 			ChromatogramEditorNotifier.publishFinalUpdate(current);
-		} catch(Exception e) {
-			logger.warn("Failed to save acquisition data", e);
-			notifyFailed("Failed to save acquisition data: " + e.getMessage(), e);
-		} finally {
+			CsdNativeEditorSupport.replaceWithFileEditor(current, file);
+			notifySaved(file, current, result);
 			notifyCompleted(current);
+			return;
 		}
-	}
-
-	private File saveAcquisition(IChromatogramCSD current) throws IOException {
-
-		if(current == null || current.getNumberOfScans() < 1) {
-			throw new IOException("No acquisition data available.");
+		ChromatogramEditorNotifier.publishFinalUpdate(current);
+		if(points >= 2 && !nativeEditorOpened) {
+			nativeEditorOpened = true;
+			CsdNativeEditorSupport.openEditorAsync(current);
 		}
-		ChromatogramSupport.calculateScanIntervalAndDelay(current);
-		current.setConverterId(CSD_EXPORT_CONVERTER_ID);
-		File file = createAcquisitionFile(current);
-		IProcessingInfo<File> processingInfo = ChromatogramConverterCSD.getInstance().convert(file, current, CSD_EXPORT_CONVERTER_ID, new NullProgressMonitor());
-		if(processingInfo == null || processingInfo.hasErrorMessages()) {
-			throw new IOException("CSD export failed.");
-		}
-		File savedFile = processingInfo.getProcessingResult();
-		return savedFile != null ? savedFile : file;
-	}
-
-	private File createAcquisitionFile(IChromatogramCSD current) throws IOException {
-
-		Path directory = Path.of(System.getProperty("user.home"), "OpenChrom", ACQUISITION_DIRECTORY);
-		Files.createDirectories(directory);
-		String baseName = sanitizeFileName(current.getDataName());
-		if(baseName.isBlank()) {
-			baseName = "Acquisition";
-		}
-		String timestamp = LocalDateTime.now().format(FILE_TIMESTAMP_FORMAT);
-		return directory.resolve(baseName + "_" + timestamp + ".ocb").toFile();
-	}
-
-	private String sanitizeFileName(String text) {
-
-		if(text == null) {
-			return "";
-		}
-		return text.replaceAll("[\\\\/:*?\"<>|]", "_").trim();
-	}
-
-	private static IChromatogramCSD createChromatogram() {
-
-		ChromatogramCSD csd = new ChromatogramCSD();
-		csd.setConverterId(CSD_EXPORT_CONVERTER_ID);
-		csd.setSampleName("Vegetable Pesticide Residue (GC-FID)");
-		csd.setDataName("Vegetable Pesticide Residue (GC-FID)");
-		return csd;
+		String reason = AcquisitionMessages.saveFailedDialog(result.getReason(), result.getPoints(), result.emergencyPath());
+		logger.warn("Failed to save acquisition data: " + result.getReason());
+		notifyFailed(reason, null);
 	}
 
 	private void notifyStarted(IChromatogramCSD csd) {
@@ -393,6 +336,13 @@ public final class RealtimeAcquisitionManager {
 
 		for(IAcquisitionListener listener : listeners) {
 			listener.onAcquisitionCompleted(csd);
+		}
+	}
+
+	private void notifySaved(File file, IChromatogramCSD csd, AcquisitionSaveResult result) {
+
+		for(IAcquisitionListener listener : listeners) {
+			listener.onAcquisitionSaved(file, csd, result);
 		}
 	}
 
