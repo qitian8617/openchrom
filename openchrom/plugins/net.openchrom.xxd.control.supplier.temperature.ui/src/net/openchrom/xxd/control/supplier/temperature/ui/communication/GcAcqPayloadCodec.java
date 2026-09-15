@@ -27,6 +27,26 @@ public final class GcAcqPayloadCodec {
 		return ByteBuffer.allocate(2).order(ByteOrder.LITTLE_ENDIAN).putShort((short)sampleIntervalMs).array();
 	}
 
+	public static byte[] encodeDataBatch(int batchSequence, List<GcAcqSample> samples) {
+
+		if(samples == null) {
+			throw new IllegalArgumentException("ACQ_DATA samples required");
+		}
+		ByteBuffer buffer = ByteBuffer.allocate(BATCH_HEADER_BYTES + samples.size() * SAMPLE_BYTES).order(ByteOrder.LITTLE_ENDIAN);
+		buffer.putInt(batchSequence);
+		buffer.putShort((short)samples.size());
+		for(GcAcqSample sample : samples) {
+			buffer.putInt(Math.max(0, sample.retentionTimeMs()));
+			buffer.putFloat(sample.signal());
+		}
+		return buffer.array();
+	}
+
+	public static byte[] encodeDone(int totalSamples, int lastBatchSequence) {
+
+		return ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putInt(totalSamples).putInt(lastBatchSequence).array();
+	}
+
 	public static GcAcqBatch decodeDataBatch(byte[] payload) {
 
 		if(payload.length < BATCH_HEADER_BYTES) {

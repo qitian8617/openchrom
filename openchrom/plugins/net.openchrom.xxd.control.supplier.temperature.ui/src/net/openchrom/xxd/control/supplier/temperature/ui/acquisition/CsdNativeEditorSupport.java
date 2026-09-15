@@ -60,16 +60,36 @@ public final class CsdNativeEditorSupport {
 
 	public static void replaceWithFileEditorAsync(IChromatogramCSD chromatogram, File file) {
 
-		if(chromatogram == null || file == null || !file.isFile()) {
-			logger.warn("Cannot open saved CSD file: invalid input file " + file);
-			return;
-		}
 		Display display = Display.getDefault();
 		if(display == null) {
 			logger.warn("Cannot open saved CSD file: no SWT display");
 			return;
 		}
 		display.asyncExec(() -> replaceWithFileEditor(chromatogram, file));
+	}
+
+	/**
+	 * Opens the saved chromatogram file. When already on the UI thread the
+	 * live in-memory editor is kept until the file editor is shown.
+	 *
+	 * @return true if the file editor was shown on this call
+	 */
+	public static boolean replaceWithFileEditor(IChromatogramCSD chromatogram, File file) {
+
+		if(chromatogram == null || file == null || !file.isFile()) {
+			logger.warn("Cannot open saved CSD file: invalid input file " + file);
+			return false;
+		}
+		Display display = Display.getDefault();
+		if(display == null) {
+			logger.warn("Cannot open saved CSD file: no SWT display");
+			return false;
+		}
+		if(display.getThread() != Thread.currentThread()) {
+			display.asyncExec(() -> replaceWithFileEditorOnUi(chromatogram, file));
+			return false;
+		}
+		return replaceWithFileEditorOnUi(chromatogram, file);
 	}
 
 	public static void openEditor(IChromatogramCSD chromatogram) {
@@ -112,7 +132,7 @@ public final class CsdNativeEditorSupport {
 		}
 	}
 
-	private static void replaceWithFileEditor(IChromatogramCSD chromatogram, File file) {
+	private static boolean replaceWithFileEditorOnUi(IChromatogramCSD chromatogram, File file) {
 
 		try {
 			EModelService modelService = ContextAddon.getModelService();
@@ -122,18 +142,14 @@ public final class CsdNativeEditorSupport {
 				logger.warn("Cannot open saved CSD file: E4 services unavailable (modelService="
 						+ (modelService != null) + ", application=" + (application != null)
 						+ ", partService=" + (partService != null) + ")");
-				return;
-			}
-			MPart livePart = findOpenedPart(chromatogram);
-			if(livePart != null) {
-				clearDirty(livePart);
-				removePart(livePart);
+				return false;
 			}
 			MPartStack partStack = (MPartStack)modelService.find(IPerspectiveAndViewIds.EDITOR_PART_STACK_ID, application);
 			if(partStack == null) {
 				logger.warn("Cannot open saved CSD file: editor part stack not found");
-				return;
+				return false;
 			}
+			MPart livePart = findOpenedPart(chromatogram);
 			MWindow window = application.getChildren().isEmpty() ? null : application.getChildren().get(0);
 			MPart part = modelService.createModelElement(MPart.class);
 			part.getTags().add(EPartService.REMOVE_ON_HIDE_TAG);
@@ -146,11 +162,17 @@ public final class CsdNativeEditorSupport {
 			part.setCloseable(true);
 			partStack.getChildren().add(part);
 			partService.showPart(part, PartState.ACTIVATE);
+			if(livePart != null && livePart != part) {
+				clearDirty(livePart);
+				removePart(livePart);
+			}
 			refreshEditorLayout(window, part);
 			schedulePostOpenFileRefresh(Display.getDefault(), partService, part, window);
 			logger.info("Opened saved CSD file " + file.getAbsolutePath());
+			return true;
 		} catch(Exception e) {
 			logger.warn("Failed to open saved CSD file", e);
+			return false;
 		}
 	}
 
