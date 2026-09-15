@@ -75,6 +75,7 @@ public class BaijiuHandoffBridge_1_Test {
 		assertEquals(file.toAbsolutePath().toString(), outcome.getPath());
 		assertEquals(BaijiuHandoffBridge.HANDOFF_TYPE, "net.openchrom.xxd.processor.supplier.baijiu.ui.BaijiuWorkbenchHandoff");
 		assertEquals(BaijiuHandoffBridge.OPEN_FILE_METHOD, "openFile");
+		assertEquals(BaijiuHandoffBridge.OPEN_SEQUENCE_METHOD, "openSequence");
 		assertEquals(BaijiuHandoffBridge.BUNDLE_ID, "net.openchrom.xxd.processor.supplier.baijiu.ui");
 	}
 
@@ -102,6 +103,9 @@ public class BaijiuHandoffBridge_1_Test {
 		BaijiuHandoffOutcome opened = BaijiuHandoffBridge.open(file.toFile());
 		assertFalse(opened.isOpened());
 		assertTrue(opened.getKind() == BaijiuHandoffOutcome.Kind.MISSING_PLUGIN || opened.getKind() == BaijiuHandoffOutcome.Kind.FAILED);
+		BaijiuHandoffOutcome sequence = BaijiuHandoffBridge.openSequence();
+		assertFalse(sequence.isOpened());
+		assertTrue(sequence.getKind() == BaijiuHandoffOutcome.Kind.MISSING_PLUGIN || sequence.getKind() == BaijiuHandoffOutcome.Kind.FAILED);
 	}
 
 	@Test
@@ -112,6 +116,8 @@ public class BaijiuHandoffBridge_1_Test {
 		assertTrue(BaijiuHandoffMessages.dialogHint(true).contains("白酒工作台"));
 		assertTrue(BaijiuHandoffMessages.autoOpenLabel(true).contains("白酒工作台"));
 		assertEquals("关闭", BaijiuHandoffMessages.closeLabel(true));
+		assertEquals("在白酒工作台打开序列", BaijiuHandoffMessages.openSequenceLabel(true));
+		assertEquals("Open sequence in Baijiu", BaijiuHandoffMessages.openSequenceLabel(false));
 		assertTrue(AcquisitionMessages.saveSuccessStatus("/tmp/a.ocb", true, true).contains("白酒工作台"));
 	}
 

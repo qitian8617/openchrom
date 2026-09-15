@@ -62,6 +62,7 @@ public class BaijiuWorkbenchHandoff_1_Test {
 
 		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui.BaijiuWorkbenchHandoff", BaijiuWorkbenchHandoff.TYPE_NAME);
 		assertEquals("openFile", BaijiuWorkbenchHandoff.OPEN_FILE_METHOD);
+		assertEquals("openSequence", BaijiuWorkbenchHandoff.OPEN_SEQUENCE_METHOD);
 		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui", BaijiuWorkbenchHandoff.BUNDLE_ID);
 		assertEquals(BaijiuPerspectiveIds.PART_ID, BaijiuWorkbenchHandoff.PART_ID);
 		assertEquals(BaijiuPerspectiveIds.PERSPECTIVE_ID, OpenBaijiuPerspectiveHandler.PERSPECTIVE_ID);

@@ -56,7 +56,6 @@ import net.openchrom.xxd.control.supplier.temperature.ui.swt.views.ColumnOvenVie
 import net.openchrom.xxd.control.supplier.temperature.ui.swt.views.DetectorView;
 import net.openchrom.xxd.control.supplier.temperature.ui.swt.views.EventsView;
 import net.openchrom.xxd.control.supplier.temperature.ui.swt.views.MainView;
-import net.openchrom.xxd.control.supplier.temperature.ui.swt.views.SequenceView;
 import net.openchrom.xxd.control.supplier.temperature.ui.swt.views.SettingsView;
 import net.openchrom.xxd.control.supplier.temperature.ui.swt.views.StopwatchView;
 
@@ -101,13 +100,11 @@ public class TemperatureControlPanel extends Composite implements LanguageListen
 		registerPage(PanelView.COLUMN_OVEN, pageParent -> new ColumnOvenView(pageParent, SWT.NONE));
 		registerPage(PanelView.DETECTOR, pageParent -> new DetectorView(pageParent, SWT.NONE));
 		registerPage(PanelView.EVENTS, pageParent -> new EventsView(pageParent, SWT.NONE));
-		registerPage(PanelView.SEQUENCE, pageParent -> new SequenceView(pageParent, SWT.NONE));
 		registerPage(PanelView.STOPWATCH, pageParent -> new StopwatchView(pageParent, SWT.NONE));
 		registerPage(PanelView.SETTINGS, pageParent -> new SettingsView(pageParent, SWT.NONE));
 
 		if(pageContents.get(PanelView.MAIN) instanceof MainView mainView) {
 			mainView.setOpenParameterSettingsHandler(this::openParameterSettings);
-			mainView.setOpenSequenceHandler(() -> showView(PanelView.SEQUENCE));
 			mainView.setChannelIdReader(this::parameterSettingsChannelIds);
 		}
 
@@ -195,8 +192,6 @@ public class TemperatureControlPanel extends Composite implements LanguageListen
 				ovenView.onShown();
 			} else if(content instanceof DetectorView detectorView) {
 				detectorView.onShown();
-			} else if(content instanceof SequenceView sequenceView) {
-				sequenceView.onShown();
 			}
 			adjustPageScroll(view);
 		});

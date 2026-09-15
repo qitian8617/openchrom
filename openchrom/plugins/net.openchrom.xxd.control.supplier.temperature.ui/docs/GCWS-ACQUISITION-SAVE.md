@@ -2,7 +2,7 @@
 
 After **one** needle/run, the workstation writes a chromatogram that OpenChrom can open, then offers a one-click (or optional automatic) handoff into the **Baijiu analysis workbench**.
 
-A short **injection sequence** (空白 / 混标 / QC / 样品×N) can sit on the reverse-control **序列** tab so the operator knows which vial is current. See [GCWS-SEQUENCE.md](GCWS-SEQUENCE.md). Heat / ignite / inject stay manual.
+A short **injection sequence** (空白 / 混标 / QC / 样品×N) is arranged on the **白酒工作台** so Main can show which vial is current. See [GCWS-SEQUENCE.md](GCWS-SEQUENCE.md). Heat / ignite / inject stay manual.
 
 ## Default location
 
@@ -18,7 +18,7 @@ Files are named `GC-FID_yyyyMMdd_HHmmss.ocb` (ChemClipse OpenChrom binary). If t
 
 ## Operator steps (manual inject)
 
-1. Heat inlet / detector / oven as usual. Ignite FID on **Detector**. Wait until Main shows **FID 就绪**. (Local verify only: if the flame will not light, see **Developer-only: skip FID readiness gate** below.) Optional: on **序列**, build Blank → 混标 → QC → 样品×N so Main shows the current vial.
+1. Heat inlet / detector / oven as usual. Ignite FID on **Detector**. Wait until Main shows **FID 就绪**. (Local verify only: if the flame will not light, see **Developer-only: skip FID readiness gate** below.) Optional: on **白酒工作台 → 进样序列**, build Blank → 混标 → QC → 样品×N so Main shows the current vial.
 2. Inject the sample (the current sequence row, if any).
 3. Main → **开始分析 → 启动** (Start Analysis → Start). The live CSD editor opens after the second point. If a sequence row is pending, it becomes **运行中**.
 4. When the run should end: **停止** (Stop), or wait for the device `ACQ_DONE`.
@@ -61,6 +61,6 @@ There is no operator checkbox. Do not use this flag on production or pilot works
 
 ## What this does not do
 
-- No unattended autosampler robotics (heat / ignite / inject stay manual). The **序列** tab is a status queue only — [GCWS-SEQUENCE.md](GCWS-SEQUENCE.md).
+- No unattended autosampler robotics (heat / ignite / inject stay manual). The **进样序列** editor is a status queue on the Baijiu workbench — [GCWS-SEQUENCE.md](GCWS-SEQUENCE.md). Reverse-control Main only shows the current vial.
 - No second reverse-control plugin.
 - No GB 2757 or installer changes.

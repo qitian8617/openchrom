@@ -51,6 +51,8 @@ import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.Acquisition
 import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.AcquisitionMessages;
 import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.AcquisitionPoint;
 import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.AcquisitionSaveResult;
+import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.BaijiuHandoffBridge;
+import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.BaijiuHandoffMessages;
 import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.BaijiuHandoffOutcome;
 import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.IAcquisitionListener;
 import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.RealtimeAcquisitionManager;
@@ -113,7 +115,6 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 	private ChannelRow[] rows = DEFAULT_ROWS.clone();
 	private String[] rowChannelIds = ParameterSettingsStore.DEFAULT_CHANNEL_IDS.clone();
 	private Runnable openParameterSettingsHandler;
-	private Runnable openSequenceHandler;
 	private Supplier<String[]> channelIdReader;
 	private boolean tempControlRunning;
 	private boolean tempControlBusy;
@@ -281,11 +282,6 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 	public void setOpenParameterSettingsHandler(Runnable handler) {
 
 		this.openParameterSettingsHandler = handler;
-	}
-
-	public void setOpenSequenceHandler(Runnable handler) {
-
-		this.openSequenceHandler = handler;
 	}
 
 	public void setChannelIdReader(Supplier<String[]> reader) {
@@ -964,12 +960,8 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 		sequenceCurrentLabel = new Label(row, SWT.WRAP);
 		sequenceCurrentLabel.setBackground(card.getBackground());
 		sequenceCurrentLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		openSequenceButton = WidgetFactory.createSecondaryButton(row, chinese ? "打开序列" : "Open sequence");
-		openSequenceButton.addListener(SWT.Selection, e -> {
-			if(openSequenceHandler != null) {
-				openSequenceHandler.run();
-			}
-		});
+		openSequenceButton = WidgetFactory.createSecondaryButton(row, BaijiuHandoffMessages.openSequenceLabel(chinese));
+		openSequenceButton.addListener(SWT.Selection, e -> openSequenceInBaijiu());
 		refreshSequenceStrip();
 	}
 
@@ -993,8 +985,17 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 		}
 		sequenceCurrentLabel.setText(sequenceManager.currentSummary(chinese));
 		if(openSequenceButton != null && !openSequenceButton.isDisposed()) {
-			openSequenceButton.setText(chinese ? "打开序列" : "Open sequence");
+			openSequenceButton.setText(BaijiuHandoffMessages.openSequenceLabel(chinese));
 		}
+	}
+
+	private void openSequenceInBaijiu() {
+
+		BaijiuHandoffOutcome outcome = BaijiuHandoffBridge.openSequence();
+		if(outcome.isOpened()) {
+			return;
+		}
+		showWarning(BaijiuHandoffMessages.openSequenceLabel(chinese), outcome.message(chinese));
 	}
 
 	private void createControlCard() {

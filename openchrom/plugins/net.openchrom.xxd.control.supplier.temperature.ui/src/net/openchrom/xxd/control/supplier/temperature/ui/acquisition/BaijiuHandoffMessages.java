@@ -48,6 +48,11 @@ public final class BaijiuHandoffMessages {
 		return "Baijiu analysis is not installed or not enabled. Install/enable the Baijiu Analysis feature (" + FEATURE_ID + "), then retry. Reverse-control is unchanged.";
 	}
 
+	public static String openSequenceLabel(boolean chinese) {
+
+		return chinese ? "在白酒工作台打开序列" : "Open sequence in Baijiu";
+	}
+
 	public static String pluginMissingBilingual() {
 
 		return pluginMissing(true) + "\n" + pluginMissing(false);
