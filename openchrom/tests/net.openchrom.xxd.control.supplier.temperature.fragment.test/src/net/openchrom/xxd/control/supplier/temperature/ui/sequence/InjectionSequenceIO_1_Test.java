@@ -10,6 +10,7 @@
 package net.openchrom.xxd.control.supplier.temperature.ui.sequence;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -46,12 +47,22 @@ public class InjectionSequenceIO_1_Test {
 		assertEquals(sequence.get(0).getChromatogramPath(), loaded.get(0).getChromatogramPath());
 		assertEquals("line1\nquote \"x\"", loaded.get(3).getNotes());
 		assertEquals(InjectionType.SAMPLE, loaded.get(4).getType());
+		assertEquals("", loaded.get(4).getParallelGroupId());
+
+		sequence.addParallelOf(3);
+		String withParallel = InjectionSequenceIO.toJson(sequence);
+		assertTrue(withParallel.contains("\"parallelGroupId\""));
+		InjectionSequence loadedParallel = InjectionSequenceIO.fromJson(withParallel);
+		assertEquals(6, loadedParallel.size());
+		assertEquals(loadedParallel.get(3).getParallelGroupId(), loadedParallel.get(4).getParallelGroupId());
+		assertFalse(loadedParallel.get(3).getParallelGroupId().isBlank());
+		assertEquals("平行针 B", loadedParallel.get(4).getNotes());
 
 		Path file = tempDir.resolve("batch.json");
 		InjectionSequenceIO.save(sequence, file);
 		assertTrue(Files.size(file) > 0L);
 		InjectionSequence fromFile = InjectionSequenceIO.load(file);
-		assertEquals(5, fromFile.size());
+		assertEquals(6, fromFile.size());
 		assertEquals(InjectionType.MIX_STD, fromFile.get(1).getType());
 		assertEquals(1, fromFile.getCurrentIndex());
 	}
@@ -75,5 +86,6 @@ public class InjectionSequenceIO_1_Test {
 		assertEquals(InjectionType.SAMPLE, parsed.get(0).getType());
 		assertEquals(InjectionStatus.PENDING, parsed.get(0).getStatus());
 		assertEquals("X", parsed.get(0).getSampleId());
+		assertEquals("", parsed.get(0).getParallelGroupId());
 	}
 }

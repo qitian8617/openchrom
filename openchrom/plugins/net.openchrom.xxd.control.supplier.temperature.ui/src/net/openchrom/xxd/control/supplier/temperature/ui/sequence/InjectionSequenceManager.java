@@ -177,6 +177,16 @@ public final class InjectionSequenceManager implements IAcquisitionListener {
 		return updated;
 	}
 
+	public synchronized InjectionSequenceEntry addParallelOf(int index) {
+
+		InjectionSequenceEntry entry = sequence.addParallelOf(index);
+		if(entry != null) {
+			persistAndFire();
+			return entry.copy();
+		}
+		return null;
+	}
+
 	public synchronized void fillTypical(int sampleCount) {
 
 		sequence.fillTypical(sampleCount);

@@ -41,9 +41,12 @@ import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuCatalog;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuChromatogramFiles;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuCompound;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuMethodSettings;
+import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuParallelEngine;
+import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuParallelResult;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuPreferences;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuRawMaterial;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuSampleInfo;
+import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuTerms;
 
 public final class BaijiuBatchShell {
 
@@ -61,11 +64,11 @@ public final class BaijiuBatchShell {
 		Shell shell = new Shell(parent, SWT.SHELL_TRIM | SWT.APPLICATION_MODAL);
 		shell.setText("\u767d\u9152\u7b80\u5355\u6279\u91cf");
 		shell.setLayout(new GridLayout(1, false));
-		shell.setSize(1100, 720);
+		shell.setSize(1100, 820);
 
 		Label hint = new Label(shell, SWT.WRAP);
 		hint.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		hint.setText("\u9009\u62e9\u591a\u4e2a .ocb\uff0c\u6309\u540c\u4e00\u5382\u65b9\u6cd5\u5b9a\u91cf\uff0c\u5f97\u5230\u6837\u54c1\u00d7\u7ec4\u5206\u6c47\u603b\u8868\u3002" + BaijiuCalibrationGate.OPERATOR_HINT + " \u8fdb\u6837\u961f\u5217\uff08\u7a7a\u767d/\u6df7\u6807/QC/\u6837\u54c1\uff09\u5728\u767d\u9152\u5de5\u4f5c\u53f0\u300c\u8fdb\u6837\u5e8f\u5217\u300d\uff1b\u672c\u7a97\u4e0d\u505a\u81ea\u52a8\u8fdb\u6837\u5668\u6392\u7a0b\u3002\u82e5\u8c31\u56fe\u5c1a\u65e0\u5cf0\uff0c\u4f1a\u5148\u8dd1\u63a8\u8350\u79ef\u5206\u3002");
+		hint.setText("\u9009\u62e9\u591a\u4e2a .ocb\uff0c\u6309\u540c\u4e00\u5382\u65b9\u6cd5\u5b9a\u91cf\uff0c\u5f97\u5230\u6837\u54c1\u00d7\u7ec4\u5206\u6c47\u603b\u8868\u3002" + BaijiuCalibrationGate.OPERATOR_HINT + " \u76f8\u540c\u6837\u54c1\u7f16\u53f7\u7684\u4e24\u884c\u4f5c\u4e3a" + BaijiuTerms.PARALLEL + "\uff08\u5747\u503c\u4e0e\u76f8\u5bf9\u504f\u5dee\uff09\u3002\u8fdb\u6837\u961f\u5217\uff08\u7a7a\u767d/\u6df7\u6807/QC/\u6837\u54c1\uff09\u5728\u767d\u9152\u5de5\u4f5c\u53f0\u300c\u8fdb\u6837\u5e8f\u5217\u300d\uff1b\u672c\u7a97\u4e0d\u505a\u81ea\u52a8\u8fdb\u6837\u5668\u6392\u7a0b\u3002\u82e5\u8c31\u56fe\u5c1a\u65e0\u5cf0\uff0c\u4f1a\u5148\u8dd1\u63a8\u8350\u79ef\u5206\u3002");
 
 		Composite header = new Composite(shell, SWT.NONE);
 		header.setLayout(new GridLayout(6, false));
@@ -96,6 +99,21 @@ public final class BaijiuBatchShell {
 		}
 		addColumn(table, "GB 2757", 80);
 		addColumn(table, "\u8bf4\u660e", 240);
+
+		Label parallelTitle = new Label(shell, SWT.NONE);
+		parallelTitle.setText(BaijiuTerms.PARALLEL + " \u2014 " + BaijiuParallelEngine.FORMULA_ZH);
+		parallelTitle.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		Label parallelHint = new Label(shell, SWT.WRAP);
+		parallelHint.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		parallelHint.setText("\u76f8\u540c\u6837\u54c1\u7f16\u53f7\u7684\u4e24\u884c\u4f1a\u914d\u5bf9\u3002\u6f14\u793a\u53ef\u590d\u5236 sample-nongxiang.ocb\uff0c\u6216\u7528\u5de5\u4f5c\u53f0\u300c" + BaijiuTerms.PARALLEL + "\u300d\u5404\u9009\u9488 A/B\u3002");
+
+		Table parallelTable = new Table(shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
+		GridData parallelData = new GridData(SWT.FILL, SWT.FILL, true, true);
+		parallelData.heightHint = 160;
+		parallelTable.setLayoutData(parallelData);
+		parallelTable.setHeaderVisible(true);
+		parallelTable.setLinesVisible(true);
+		BaijiuParallelShell.addBatchColumns(parallelTable);
 
 		Composite buttons = new Composite(shell, SWT.NONE);
 		buttons.setLayout(new GridLayout(5, false));
@@ -141,6 +159,13 @@ public final class BaijiuBatchShell {
 				rows.clear();
 				rows.addAll(BaijiuBatchEngine.run(chromatograms, settings, template, true));
 				fill(table, rows, settings);
+				List<BaijiuParallelResult> parallels = BaijiuParallelEngine.comparePairs(rows);
+				BaijiuParallelShell.fillBatchPairs(parallelTable, parallels, settings);
+				if(parallels.isEmpty()) {
+					parallelHint.setText("\u672a\u8bc6\u522b\u5e73\u884c\u5bf9\uff1a\u76f8\u540c\u6837\u54c1\u7f16\u53f7\u7684\u4e24\u884c\u624d\u4f1a\u6210\u5bf9\u3002\u6f14\u793a\u53ef\u590d\u5236 sample-nongxiang.ocb\uff0c\u6216\u6253\u5f00\u5de5\u4f5c\u53f0\u300c" + BaijiuTerms.PARALLEL + "\u300d\u5404\u9009\u9488 A/B\u3002");
+				} else {
+					parallelHint.setText("\u5df2\u6309\u6837\u54c1\u7f16\u53f7\u914d\u5bf9 " + parallels.size() + " \u7ec4" + BaijiuTerms.PARALLEL + "\u3002\u7532\u9187\u6807\u4e3a\u300c\u91cd\u70b9\u300d\u3002" + BaijiuParallelEngine.FORMULA_ZH);
+				}
 			} catch(RuntimeException ex) {
 				warn(shell, "\u6279\u91cf\u5931\u8d25\uff1a" + (ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage()));
 			}
