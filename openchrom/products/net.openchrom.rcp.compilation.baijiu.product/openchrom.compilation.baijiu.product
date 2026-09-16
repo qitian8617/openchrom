@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?pde version="3.5"?>
+
+<product name="白酒 FID 工作站" uid="net.openchrom.rcp.compilation.baijiu.product.id" id="net.openchrom.rcp.compilation.baijiu.ui.product" application="org.eclipse.chemclipse.rcp.app.ui.org.eclipse.chemclipse.rcp.application" version="1.6.32.qualifier" type="features" includeLaunchers="true" autoIncludeRequirements="true">
+
+   <aboutInfo>
+      <image path="/net.openchrom.rcp.compilation.baijiu.ui/icons/about_250x330.png"/>
+      <text>
+         %aboutPlaceholder
+      </text>
+   </aboutInfo>
+
+   <configIni use="default">
+   </configIni>
+
+   <launcherArgs>
+      <programArgs>-clearPersistedState
+      </programArgs>
+      <vmArgs>-Dapplication.name=白酒 FID 工作站
+-Dapplication.version=1.6.0
+-Dapplication.perspective=net.openchrom.xxd.processor.supplier.baijiu.ui.perspective.workbench
+-Dopenchrom.update=false
+-Dosgi.nl=zh_CN
+-Declipse.log.level=WARNING
+-Declipse.platform.mergeTrust=true
+-Dosgi.instance.area=@user.home/BaijiuFID
+-Dosgi.user.area=@user.home/.baijiu-fid
+-Dorg.eclipse.update.reconcile=false
+-Dorg.eclipse.help.webapp.experimental.ui=true
+-Djdk.xml.entityExpansionLimit=0
+-Djdk.xml.totalEntitySizeLimit=0
+-Djdk.xml.maxGeneralEntitySizeLimit=0
+-Djdk.xml.maxParameterEntitySizeLimit=0
+-XX:+UseG1GC
+-XX:+UseStringDeduplication
+--enable-native-access=ALL-UNNAMED
+      </vmArgs>
+      <vmArgsMac>-XstartOnFirstThread
+      </vmArgsMac>
+   </launcherArgs>
+
+   <windowImages i16="/net.openchrom.rcp.compilation.baijiu.ui/icons/logo_16x16.png" i32="/net.openchrom.rcp.compilation.baijiu.ui/icons/logo_32x32.png" i48="/net.openchrom.rcp.compilation.baijiu.ui/icons/logo_48x48.png" i64="/net.openchrom.rcp.compilation.baijiu.ui/icons/logo_64x64.png" i128="/net.openchrom.rcp.compilation.baijiu.ui/icons/logo_128x128.png"/>
+
+   <splash
+      location="net.openchrom.rcp.compilation.baijiu.ui" />
+   <launcher name="baijiu-fid">
+      <linux icon="icons/linux/Icon.xpm"/>
+      <macosx icon="icons/mac/Icon.icns"/>
+      <win useIco="true">
+         <ico path="icons/windows/Icon.ico"/>
+         <bmp/>
+      </win>
+   </launcher>
+
+   <vm>
+   </vm>
+
+   <license>
+        <url>https://www.openchrom.net</url>
+        <text>
+   Copyright (c) 2026 OpenChrom.
+
+All rights reserved. This program and the accompanying materials
+are made available under the terms of the Eclipse Public License v2.0
+which accompanies this distribution, and is available at
+http://www.eclipse.org/legal/epl-v20.html
+
+Dedicated Baijiu FID plant shell on the OpenChrom / ChemClipse kernel.
+         </text>
+   </license>
+
+   <plugins>
+   </plugins>
+
+   <features>
+      <feature id="net.openchrom.rcp.compilation.baijiu.feature"/>
+      <feature id="org.eclipse.justj.openjdk.hotspot.jre.full.stripped" installMode="root"/>
+   </features>
+
+   <configurations>
+      <plugin id="org.apache.felix.scr" autoStart="true" startLevel="2" />
+      <plugin id="org.eclipse.core.runtime" autoStart="true" startLevel="4" />
+      <plugin id="org.eclipse.equinox.common" autoStart="true" startLevel="2" />
+      <plugin id="org.eclipse.equinox.simpleconfigurator" autoStart="true" startLevel="1" />
+      <property name="org.eclipse.update.reconcile" value="false" />
+      <property name="osgi.requiredJavaVersion" value="25" />
+      <property name="sun.awt.xembedserver" value="true" />
+   </configurations>
+
+   <preferencesInfo>
+      <targetfile overwrite="false"/>
+   </preferencesInfo>
+
+   <cssInfo>
+   </cssInfo>
+
+</product>

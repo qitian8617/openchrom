@@ -4,6 +4,8 @@
 
 不必阅读工程 PR 历史。演示点击清单（A–K）仍在 `demo/操作步骤.txt`；现场验收（真混标 / 合格 / 不合格）见 [白酒FID试点演示与验收脚本.md](白酒FID试点演示与验收脚本.md)（节 **M**）。本文把日常路径收在一起。工程师深读见文末 [技术文档索引](#技术文档索引)。
 
+**目标操作员界面**是专用壳 **白酒 FID 工作站**（方案 B）。社区版 OpenChrom **现阶段仍支持**（帮助 → 安装新软件）。架构：[白酒FID专用壳架构.md](白酒FID专用壳架构.md)。
+
 英文入口（仅指针，不是第二本手册）：[GCWS-OPERATOR-MANUAL.md](GCWS-OPERATOR-MANUAL.md)。
 
 ---
@@ -11,7 +13,7 @@
 ## 目录
 
 1. [产品范围与不做事项](#1-产品范围与不做事项)
-2. [开箱与安装](#2-开箱与安装)
+2. [开箱与安装](#2-开箱与安装)（专用壳优先，社区版仍可用）
 3. [导入许可](#3-导入许可)
 4. [日常开机与气 / 火 / 信号](#4-日常开机与气--火--信号)
 5. [采集落盘与进入白酒工作台](#5-采集落盘与进入白酒工作台)
@@ -35,7 +37,7 @@
 | 白酒分析、定量、报告 | **插件 → 白酒工作台**（或 **窗口 → 视图 → 白酒工作台**） |
 | 气相色谱控制台（反控主界面） | 主界面气/火/信号、**开始分析**、采集落盘 |
 
-白酒分析插件 `baijiu.ui` 与反控 `temperature.ui` 均为 **JavaSE-21**。不要把运行环境升到 JavaSE-25。
+白酒分析插件 `baijiu.ui` 与反控 `temperature.ui` 均为 **JavaSE-21**（**不要**把这两个插件的 BREE 升到 JavaSE-25）。专用壳 / 社区 OpenChrom 1.6.32 **启动**时 ChemClipse 内核需要 **Java 25** 运行时；Java 25 可以跑 21 的插件。
 
 **本试点做：**
 
@@ -52,19 +54,24 @@
 - 不控制自动进样器；热机、点火、进样仍手动
 - 白酒分析窗里的气路文字是提醒，**软件不控仪器气路**（「气路由人工作，软件不控制仪器。」）
 - 无加密狗、无在线激活服务器
-- 不重编整个 OpenChrom 社区产品；厂里在已有社区版上 **帮助 → 安装新软件**
+- 不重写峰检测 / 不 Electron / 无 Part 11。社区产品仍保留。新厂机优先跑 **白酒 FID 工作站** 专用壳；已有社区版仍可用 **帮助 → 安装新软件**
 
 ---
 
 ## 2. 开箱与安装
 
-### 2.1 厂里已有什么
+### 2.1 两种安装车（专用壳是目标）
 
-厂机上应已能运行 **OpenChrom 社区版**（**帮助 → 关于**）。本试点是往这台机器上加功能，不是另装一套完整工作站。
+| 车 | 何时用 | 厂里看到什么 |
+|----|--------|----------------|
+| **白酒 FID 工作站（专用壳，目标操作员 UI）** | 新机器、新试点桌面 | 窗口标题 **白酒 FID 工作站**，启动即 **白酒工作台**，顶栏有 **白酒** 菜单 |
+| **社区版 OpenChrom + 安装新软件** | 厂机上已经在跑社区版 | 帮助 → 关于仍写 OpenChrom；再装 Baijiu FID Pilot。**现阶段仍支持** |
+
+专用壳 **不是** 再实现一套积分/定量，内核仍是 OpenChrom / ChemClipse。架构见 [白酒FID专用壳架构.md](白酒FID专用壳架构.md)。工程师 Run / Export：[产品 README](../../../products/net.openchrom.rcp.compilation.baijiu.product/README.txt) 与 [GCWS-INSTALL.md](GCWS-INSTALL.md)。
+
+### 2.2 安装（厂里已有社区版）
 
 工程师交给厂里的通常是一个文件夹（也可打成 zip / U 盘），例如 `D:\baijiu-fid-pilot-site`。里面是 p2 元数据。分类名：**白酒 FID 试点 / Baijiu FID Pilot**。勾选安装 **Baijiu FID Pilot（白酒FID试点）** 即可同时得到白酒分析 + 气相反控。
-
-### 2.2 安装（厂里）
 
 1. **帮助 → 安装新软件… → 添加… → 本地…**
 2. 选 U 盘/文件夹里的站点目录（或解压后的 `repository`）
@@ -78,14 +85,21 @@
 
 若 **安装新软件** 被策略拦住，工程师可用 dropins 应急（见 [GCWS-INSTALL.md](GCWS-INSTALL.md)）。厂里优先走 p2，方便以后升级替换。
 
-### 2.3 工程师如何导出（厂里一般不做）
+### 2.3 工程师如何导出
 
-已能编译 `baijiu.ui` 的 Eclipse（JavaSE-21）：
+**A. 专用壳产品（优先给新厂机）**
+
+已能编译 `baijiu.ui` 的 Eclipse。打开  
+`openchrom/products/net.openchrom.rcp.compilation.baijiu.product/openchrom.compilation.baijiu.product`  
+→ **Run As → Eclipse Application** 本机看窗口标题；或 **Export Eclipse Product** 到例如 `D:\baijiu-fid-workstation`（内含 JustJ **Java 25**，不要只用 JRE 21 去导）。  
+`baijiu.ui` 工程 Execution Environment 必须仍是 **JavaSE-21**。
+
+**B. 社区版插件站点（已有 OpenChrom 时）**
 
 **文件 → 导出 → Plug-in Development → Deployable Features**  
 勾选 **Baijiu FID Pilot (白酒FID试点)** → 目录例如 `D:\baijiu-fid-pilot-site` → 生成仓库元数据。
 
-不必重编整个 community 产品。细节与 Tycho 命令见 [GCWS-INSTALL.md](GCWS-INSTALL.md)。
+社区 `.product` **不要删、不要改成白酒壳**。细节见 [GCWS-INSTALL.md](GCWS-INSTALL.md)。
 
 ---
 
@@ -399,7 +413,7 @@ Android 面板与电脑可同时连 F407，但 **PC 在线时面板只读 + 急�
 
 ### 11.2 推荐验收（离线，点击尽量少）
 
-在已安装 **Baijiu FID Pilot** 的社区版上：
+在 **白酒 FID 工作站** 专用壳，或已安装 **Baijiu FID Pilot** 的社区版上：
 
 1. **插件 → 白酒工作台 → 许可 / 版本…** → 导入 `demo/sample-pilot.bjlic` → 状态 **有效**
 2. **文件 → 打开 CSD 文件** → 混标 `.ocb` → **完成**
@@ -507,8 +521,8 @@ Android 面板与电脑可同时连 F407，但 **PC 在线时面板只读 + 急�
 
 ### Java / BREE
 
-- 白酒分析与反控均为 **JavaSE-21**。启动脚本 / 快捷方式应指向 JDK 21。
-- **不要**把 BREE 或运行时升到 JavaSE-25 来「跟上版本」。
+- **插件编译**：白酒分析、反控、专用壳 branding 均为 **JavaSE-21**。**不要**把 `baijiu.ui` 的 BREE 升到 JavaSE-25。
+- **产品启动**：专用壳与社区 OpenChrom 1.6.32 的 ChemClipse 内核要求 **Java 25**（JustJ / `osgi.requiredJavaVersion=25`）。快捷方式指向产品自带 JRE 即可，不要为了「手册写过 21」去换 JRE 21 启动整个 RCP。
 - 关于页若出现 `LaiendeAboutHandler` ClassNotFound，属已知环境噪声，可忽略；与白酒试点无关。
 - CDK / inchi unresolved 同样可忽略。
 
@@ -555,8 +569,9 @@ Android 面板与电脑可同时连 F407，但 **PC 在线时面板只读 + 急�
 
 | 文档 | 内容 |
 |------|------|
+| [白酒FID专用壳架构.md](白酒FID专用壳架构.md) | 方案 B：壳 vs 内核、复用插件、Phase 1–3、非目标 |
 | [白酒FID试点演示与验收脚本.md](白酒FID试点演示与验收脚本.md) | 现场项 16：真混标 / 合格 / 不合格（+ 软件演示） |
-| [GCWS-INSTALL.md](GCWS-INSTALL.md) | 导出 Deployable Features、p2、dropins、许可格式 |
+| [GCWS-INSTALL.md](GCWS-INSTALL.md) | 专用壳产品 **或** 社区版 Install New Software、许可格式 |
 | [GCWS-CALIBRATION.md](GCWS-CALIBRATION.md) | 混标 RF 门禁规则 |
 | [GCWS-MULTIPOINT.md](GCWS-MULTIPOINT.md) | 多点坐标、有效 RF、R² |
 | [GCWS-REPORT.md](GCWS-REPORT.md) | 报告字段与 CSV 列 |

@@ -2,9 +2,12 @@
 
 **Plant operators:** start with the Chinese handbook [白酒FID试点操作手册.md](白酒FID试点操作手册.md) (unbox → report + FAQ). This file is the engineer export/install detail. English pointer: [GCWS-OPERATOR-MANUAL.md](GCWS-OPERATOR-MANUAL.md).
 
-Pilot P1: make the Baijiu FID workstation **exportable/installable** onto an OpenChrom community build the plant already runs, and add a **simple offline license** suitable for selling a pilot. This is not a rewrite of the community `.product`, not NSIS/Inno for all of OpenChrom, not a hardware dongle, not an activation server, and not Part 11.
+Two install vehicles (both kept):
 
-Acceptance: **本机导出验证** — an engineer on a Windows workstation can export an installable artifact, install it, enter a sample license, and open 白酒分析.
+1. **Dedicated product (target operator UI, 方案 B Phase 1):** `openchrom.compilation.baijiu.product` — window title **白酒 FID 工作站**, starts on 白酒工作台. See [白酒FID专用壳架构.md](白酒FID专用壳架构.md) and `products/net.openchrom.rcp.compilation.baijiu.product/README.txt`.
+2. **Install New Software into community OpenChrom** (still supported): export `baijiu.pilot.feature` as below. This is not a rewrite of the community `.product`, not NSIS/Inno for all of OpenChrom, not a hardware dongle, not an activation server, and not Part 11.
+
+Acceptance: **本机导出验证** — an engineer on a Windows workstation can **either** Run/Export the dedicated product **or** export the pilot feature, install it, enter a sample license, and open 白酒分析.
 
 ## What is shipped
 
@@ -13,9 +16,10 @@ Acceptance: **本机导出验证** — an engineer on a Windows workstation can 
 | Pilot feature (install this) | `net.openchrom.xxd.processor.supplier.baijiu.pilot.feature` **1.6.32.qualifier** | Includes 白酒分析 + 反控 |
 | Baijiu analysis | `net.openchrom.xxd.processor.supplier.baijiu.feature` → plugin `net.openchrom.xxd.processor.supplier.baijiu.ui` | 白酒工作台 / 定量 / 报告 |
 | Reverse-control | `net.openchrom.xxd.control.supplier.temperature.feature` → `net.openchrom.xxd.control.supplier.temperature.ui` | 气相色谱控制台, FID 就绪, 进样当前针 |
-| p2 category / site | `openchrom/sites/baijiu-fid-pilot` | Eclipse Export / Tycho repository |
+| p2 category / site | `openchrom/sites/baijiu-fid-pilot` | Eclipse Export / Tycho repository (community path) |
+| Dedicated product | `net.openchrom.rcp.compilation.baijiu.product` | Preferred new-plant UI; includes ChemClipse kernel + pilot feature |
 
-The community product already **includes** both features via `net.openchrom.platform.feature`. This item is for **adding them to a plant machine that already has OpenChrom**, without rebuilding the whole product every time.
+The community product already **includes** both analysis features via `net.openchrom.platform.feature`. The p2 site is for **adding them to a plant machine that already has OpenChrom**, without rebuilding the whole community product every time. New desktops should run the dedicated shell instead of living in the community research UI.
 
 `temperature.ui` is **required for 反控**. The wrapping **Baijiu FID Pilot** feature installs both. If only `baijiu.feature` is installed, 白酒分析 still opens chromatograms; the Main GC panel / sequence current-vial is missing until temperature.ui is present (`Require-Bundle` is optional, no plugin cycle).
 
@@ -46,7 +50,25 @@ Optional license file path:
 
 Default drop-in file: `%USERPROFILE%\OpenChrom\licenses\baijiu-fid.bjlic`
 
-## A. Export on the engineer Windows workstation (no full product rebuild)
+## A0. Dedicated product (preferred for a new plant PC)
+
+Need the OpenChrom PDE workspace that already compiles `baijiu.ui` (**JavaSE-21** Execution Environment — do not bump BREE to 25). Launch JDK is **Java 25** (ChemClipse kernel / JustJ).
+
+1. Import `openchrom/` plug-ins, features, products. Set the OpenChrom target platform.
+2. Open `products/net.openchrom.rcp.compilation.baijiu.product/openchrom.compilation.baijiu.product`.
+3. **Run As → Eclipse Application** from that `.product` (do not reuse the community launch config).
+4. **Export Eclipse Product** to e.g. `D:\baijiu-fid-workstation`. Launcher `baijiu-fid.exe`. Bundled JRE is Java 25.
+5. License drop-in is still `%USERPROFILE%\OpenChrom\licenses\baijiu-fid.bjlic`.
+
+Tycho (heavy):
+
+```
+mvn -f releng/net.openchrom.aggregator/pom.xml -pl products/net.openchrom.rcp.compilation.baijiu.product -am package -Pci
+```
+
+Do **not** delete or retarget `openchrom.compilation.community.product`.
+
+## A. Export p2 site on the engineer Windows workstation (community install path)
 
 Need the OpenChrom PDE workspace that already compiles `baijiu.ui` (JavaSE-21).
 
@@ -120,7 +142,8 @@ After a valid license, continue demo `操作步骤.txt` **A–J** (method packag
 
 ## D. Engineer verify list (本机导出验证)
 
-- [ ] Export Deployable Features of **Baijiu FID Pilot** to a folder (or Tycho `sites/baijiu-fid-pilot/target/repository`)
+- [ ] **Dedicated product:** Run As / Export `openchrom.compilation.baijiu.product`; title 白酒 FID 工作站; starts on 白酒工作台; `baijiu.ui` still JavaSE-21
+- [ ] **Community path:** Export Deployable Features of **Baijiu FID Pilot** to a folder (or Tycho `sites/baijiu-fid-pilot/target/repository`)
 - [ ] On a community OpenChrom, Install New Software from that folder; restart
 - [ ] About / Installation Details shows feature **1.6.32.*** qualifier
 - [ ] 插件 → 白酒工作台 opens; reverse-control Main is present if temperature.ui installed
@@ -145,8 +168,8 @@ key=BAIJIU-XXXXXXXX-XXXXXXXX
 
 ## Out of scope
 
-- Rewriting `openchrom.compilation.community.product` / NSIS Windows installer for all of OpenChrom
+- Rewriting or removing `openchrom.compilation.community.product` / NSIS Windows installer for all of OpenChrom (the dedicated Baijiu product is a **sibling**)
 - Hardware dongle / online license server / Part 11 audit
 - Changing mix-standard gate, multipoint, or report fields (items 6 / 11 / 12)
 
-See demo `操作步骤.txt` section **K**. Plant handbook: `白酒FID试点操作手册.md` (section **L**).
+See demo `操作步骤.txt` section **K**. Plant handbook: `白酒FID试点操作手册.md` (section **L**). Dedicated shell: `白酒FID专用壳架构.md` and product `README.txt`.

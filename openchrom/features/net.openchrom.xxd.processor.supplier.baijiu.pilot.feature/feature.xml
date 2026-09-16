@@ -9,8 +9,8 @@
       license-feature-version="2.0.2.qualifier">
 
    <description url="http://www.openchrom.net">
-      安装到现有 OpenChrom 社区版上的白酒 FID 试点功能：白酒分析 + 气相反控（temperature.ui）。
-      Baijiu FID pilot for an existing OpenChrom community install: 白酒分析 plus GC reverse-control (temperature.ui).
+      白酒 FID 试点功能（白酒分析 + 气相反控）。可装进社区版，或由专用壳产品「白酒 FID 工作站」直接包含。
+      Baijiu FID pilot (白酒分析 + temperature.ui). Install into community OpenChrom, or run the dedicated 白酒 FID 工作站 product which already includes this feature.
    </description>
 
    <copyright url="http://www.openchrom.net">

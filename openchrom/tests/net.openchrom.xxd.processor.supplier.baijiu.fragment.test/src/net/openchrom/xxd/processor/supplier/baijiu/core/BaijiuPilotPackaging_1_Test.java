@@ -118,6 +118,69 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(Files.readString(stub, StandardCharsets.UTF_8).contains("\u767d\u9152FID\u8bd5\u70b9\u6f14\u793a\u4e0e\u9a8c\u6536\u811a\u672c.md"));
 	}
 
+	@Test
+	public void dedicatedBaijiuProductSitsBesideCommunity() throws Exception {
+
+		Path product = locate("openchrom/products/net.openchrom.rcp.compilation.baijiu.product/openchrom.compilation.baijiu.product", "products/net.openchrom.rcp.compilation.baijiu.product/openchrom.compilation.baijiu.product");
+		assertNotNull(product, "dedicated Baijiu .product should exist");
+		String xml = Files.readString(product, StandardCharsets.UTF_8);
+		assertTrue(xml.contains("\u767d\u9152 FID \u5de5\u4f5c\u7ad9"), xml);
+		assertTrue(xml.contains("net.openchrom.rcp.compilation.baijiu.ui.product"), xml);
+		assertTrue(xml.contains("net.openchrom.rcp.compilation.baijiu.feature"), xml);
+		assertTrue(xml.contains("application.perspective=net.openchrom.xxd.processor.supplier.baijiu.ui.perspective.workbench"), xml);
+		assertTrue(xml.contains("osgi.nl=zh_CN"), xml);
+		assertTrue(xml.contains("org.eclipse.justj.openjdk.hotspot.jre.full.stripped"), xml);
+
+		Path community = locate("openchrom/products/net.openchrom.rcp.compilation.community.product/openchrom.compilation.community.product", "products/net.openchrom.rcp.compilation.community.product/openchrom.compilation.community.product");
+		assertNotNull(community, "community product must remain");
+		assertTrue(Files.readString(community, StandardCharsets.UTF_8).contains("OpenChrom (Hillenkamp)"));
+
+		Path feature = locate("openchrom/features/net.openchrom.rcp.compilation.baijiu.feature/feature.xml", "features/net.openchrom.rcp.compilation.baijiu.feature/feature.xml");
+		assertNotNull(feature);
+		String featureXml = Files.readString(feature, StandardCharsets.UTF_8);
+		assertTrue(featureXml.contains("org.eclipse.chemclipse.rcp.compilation.community.feature"), featureXml);
+		assertTrue(featureXml.contains("net.openchrom.xxd.processor.supplier.baijiu.pilot.feature"), featureXml);
+		assertTrue(featureXml.contains("net.openchrom.rcp.compilation.baijiu.ui"), featureXml);
+
+		Path branding = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/META-INF/MANIFEST.MF", "plugins/net.openchrom.rcp.compilation.baijiu.ui/META-INF/MANIFEST.MF");
+		assertNotNull(branding);
+		assertTrue(Files.readString(branding, StandardCharsets.UTF_8).contains("JavaSE-21"));
+
+		Path baijiu = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/META-INF/MANIFEST.MF", "plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/META-INF/MANIFEST.MF");
+		assertNotNull(baijiu);
+		String bree = Files.readString(baijiu, StandardCharsets.UTF_8);
+		assertTrue(bree.contains("JavaSE-21"), bree);
+		assertTrue(!bree.contains("JavaSE-25"), bree);
+
+		Path arch = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/docs/\u767d\u9152FID\u4e13\u7528\u58f3\u67b6\u6784.md", "docs/\u767d\u9152FID\u4e13\u7528\u58f3\u67b6\u6784.md");
+		assertNotNull(arch, "Chinese architecture doc");
+		String archText = Files.readString(arch, StandardCharsets.UTF_8);
+		assertTrue(archText.contains("\u58f3 vs \u5185\u6838") || archText.contains("\u58f3 vs"), archText);
+		assertTrue(archText.contains("baijiu.ui"), archText);
+		assertTrue(archText.contains("temperature.ui"), archText);
+		assertTrue(archText.contains("Phase 1"), archText);
+		assertTrue(archText.contains("Electron"), archText);
+		assertTrue(archText.contains("Part 11"), archText);
+		assertTrue(archText.contains("JavaSE-21"), archText);
+
+		Path manual = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/docs/\u767d\u9152FID\u8bd5\u70b9\u64cd\u4f5c\u624b\u518c.md", "docs/\u767d\u9152FID\u8bd5\u70b9\u64cd\u4f5c\u624b\u518c.md");
+		assertNotNull(manual);
+		String manualText = Files.readString(manual, StandardCharsets.UTF_8);
+		assertTrue(manualText.contains("\u767d\u9152FID\u4e13\u7528\u58f3\u67b6\u6784.md"), manualText);
+		assertTrue(manualText.contains("\u76ee\u6807\u64cd\u4f5c\u5458\u754c\u9762"), manualText);
+
+		Path readme = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/demo/README.txt", "demo/README.txt");
+		assertNotNull(readme);
+		String readmeText = Files.readString(readme, StandardCharsets.UTF_8);
+		assertTrue(readmeText.contains("\u767d\u9152FID\u4e13\u7528\u58f3\u67b6\u6784.md"), readmeText);
+		Path steps = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/demo/\u64cd\u4f5c\u6b65\u9aa4.txt", "demo/\u64cd\u4f5c\u6b65\u9aa4.txt");
+		assertNotNull(steps);
+		assertTrue(Files.readString(steps, StandardCharsets.UTF_8).contains("N. \u4e13\u7528\u58f3\u4ea7\u54c1"));
+		Path site = locate("openchrom/sites/baijiu-fid-pilot/README.txt", "sites/baijiu-fid-pilot/README.txt");
+		assertNotNull(site);
+		assertTrue(Files.readString(site, StandardCharsets.UTF_8).contains("Dedicated product"));
+	}
+
 	private static Path locate(String... relative) {
 
 		Path start = Path.of(System.getProperty("user.dir")).toAbsolutePath();
