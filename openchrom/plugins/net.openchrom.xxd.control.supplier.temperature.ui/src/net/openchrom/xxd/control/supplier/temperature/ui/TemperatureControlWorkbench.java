@@ -78,8 +78,11 @@ public final class TemperatureControlWorkbench {
 
 	static MPlaceholder findPlaceholder(EModelService modelService, MApplication application, MPart part) {
 
-		if(part != null && part.getCurSharedRef() instanceof MPlaceholder current) {
-			return current;
+		if(part != null) {
+			MPlaceholder current = part.getCurSharedRef();
+			if(current != null) {
+				return current;
+			}
 		}
 		List<MPlaceholder> placeholders = modelService.findElements(application, null, MPlaceholder.class, null);
 		if(placeholders == null) {
