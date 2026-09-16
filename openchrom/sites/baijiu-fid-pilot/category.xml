@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <site>
    <description url="http://www.openchrom.net">
-      白酒 FID 试点更新站点：安装到厂里已有的 OpenChrom 社区版，无需每次从源码重编整个产品。
-      Baijiu FID pilot update site for an existing OpenChrom community build. Does not rebuild the whole product.
+      白酒 FID 试点更新站点。新厂机优先用专用壳产品「白酒 FID 工作站」；本站点用于已有 OpenChrom 社区版（仍支持）。
+      Baijiu FID pilot update site. Prefer the dedicated 白酒 FID 工作站 product for new PCs; this site still installs onto community OpenChrom.
    </description>
    <feature id="net.openchrom.xxd.processor.supplier.baijiu.pilot.feature" version="1.6.32.qualifier">
       <category name="net.openchrom.baijiu.fid.pilot"/>

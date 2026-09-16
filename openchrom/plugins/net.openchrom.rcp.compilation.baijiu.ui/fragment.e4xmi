@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="ASCII"?>
+<fragment:ModelFragments xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:application="http://www.eclipse.org/ui/2010/UIModel/application" xmlns:commands="http://www.eclipse.org/ui/2010/UIModel/application/commands" xmlns:fragment="http://www.eclipse.org/ui/2010/UIModel/fragment" xmlns:menu="http://www.eclipse.org/ui/2010/UIModel/application/ui/menu" xmi:id="_baijiuShellFrag">
+  <imports xsi:type="commands:Command" xmi:id="_impChrom" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.command.openChromatogram"/>
+  <imports xsi:type="commands:Command" xmi:id="_impInt" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.command.integrate"/>
+  <imports xsi:type="commands:Command" xmi:id="_impOpen" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.command.open"/>
+  <imports xsi:type="commands:Command" xmi:id="_impReport" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.command.report"/>
+  <imports xsi:type="commands:Command" xmi:id="_impPersp" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.command.perspective"/>
+  <imports xsi:type="commands:Command" xmi:id="_impLic" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.command.license"/>
+  <imports xsi:type="commands:Command" xmi:id="_impTemp" elementId="net.openchrom.xxd.control.supplier.temperature.ui.command.open"/>
+  <fragments xsi:type="fragment:StringModelFragment" xmi:id="_baijiuShellAddonFrag" featurename="addons" parentElementId="org.eclipse.chemclipse.rcp.ide.application">
+    <elements xsi:type="application:Addon" xmi:id="_baijiuShellAddon" elementId="net.openchrom.rcp.compilation.baijiu.ui.addon.shell" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuShellAddon"/>
+  </fragments>
+  <fragments xsi:type="fragment:StringModelFragment" xmi:id="_baijiuTopMenuFrag" featurename="children" parentElementId="org.eclipse.chemclipse.rcp.app.ui.menu.main" positionInList="index:1">
+    <elements xsi:type="menu:Menu" xmi:id="_baijiuTopMenu" elementId="net.openchrom.rcp.compilation.baijiu.ui.menu.baijiu" label="%menu.baijiu">
+      <children xsi:type="menu:HandledMenuItem" xmi:id="_baijiuTopChrom" elementId="net.openchrom.rcp.compilation.baijiu.ui.menu.openChromatogram" label="%menu.openChromatogram" command="_impChrom"/>
+      <children xsi:type="menu:HandledMenuItem" xmi:id="_baijiuTopInt" elementId="net.openchrom.rcp.compilation.baijiu.ui.menu.integrate" label="%menu.integrate" command="_impInt"/>
+      <children xsi:type="menu:HandledMenuItem" xmi:id="_baijiuTopOpen" elementId="net.openchrom.rcp.compilation.baijiu.ui.menu.analysis" label="%menu.analysis" command="_impOpen"/>
+      <children xsi:type="menu:HandledMenuItem" xmi:id="_baijiuTopReport" elementId="net.openchrom.rcp.compilation.baijiu.ui.menu.report" label="%menu.report" command="_impReport"/>
+      <children xsi:type="menu:HandledMenuItem" xmi:id="_baijiuTopTemp" elementId="net.openchrom.rcp.compilation.baijiu.ui.menu.gcControl" label="%menu.gcControl" command="_impTemp"/>
+      <children xsi:type="menu:HandledMenuItem" xmi:id="_baijiuTopPersp" elementId="net.openchrom.rcp.compilation.baijiu.ui.menu.perspective" label="%menu.perspective" command="_impPersp"/>
+      <children xsi:type="menu:HandledMenuItem" xmi:id="_baijiuTopLic" elementId="net.openchrom.rcp.compilation.baijiu.ui.menu.license" label="%menu.license" command="_impLic"/>
+    </elements>
+  </fragments>
+</fragment:ModelFragments>

@@ -3,14 +3,18 @@
 厂里操作员请先读 docs/白酒FID试点操作手册.md（开箱到报告与常见故障）。本文只覆盖安装/许可。
 
 1. 工程师导出
-   Eclipse：文件 → 导出 → Deployable Features
+   优先（新厂机）：打开 products/.../openchrom.compilation.baijiu.product
+   → Run As Eclipse Application 或 Export Product（JustJ Java 25 启动；baijiu.ui 仍 JavaSE-21）
+   已有社区版：Eclipse：文件 → 导出 → Deployable Features
    勾选「Baijiu FID Pilot (白酒FID试点)」到一个文件夹（如 D:\baijiu-fid-pilot-site）
-   不必重编整个 OpenChrom 社区产品。详见 docs/GCWS-INSTALL.md
+   详见 docs/GCWS-INSTALL.md、docs/白酒FID专用壳架构.md
 
-2. 厂里安装（已有 OpenChrom 社区版）
-   帮助 → 安装新软件 → 添加 → 本地 → 上述文件夹
+2. 厂里安装
+   专用壳：运行导出的 baijiu-fid.exe，窗口标题「白酒 FID 工作站」。
+   已有 OpenChrom 社区版：帮助 → 安装新软件 → 添加 → 本地 → 上述文件夹
    选「白酒 FID 试点」→ 安装 → 重启
-   帮助 → 关于 → Installation Details 应看到 1.6.32.* 
+   帮助 → 关于 → Installation Details 应看到 1.6.32.*
+   社区路径现阶段仍支持；专用壳是目标操作员 UI。 
 
 3. 打开白酒分析
    插件 → 白酒工作台（或 窗口 → 视角 → 白酒工作台）

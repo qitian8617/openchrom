@@ -10,7 +10,7 @@
 
 ## 1. 目的
 
-让厂工程师 / 验收人在 **一台已安装 Baijiu FID Pilot 的社区版** 上，按同一套预期把三条路径各跑一遍，并留下通过/不通过记录：
+让厂工程师 / 验收人在 **白酒 FID 工作站专用壳或已安装 Baijiu FID Pilot 的社区版** 上，按同一套预期把三条路径各跑一遍，并留下通过/不通过记录：
 
 | 路径 | 要证明什么 |
 |------|------------|
@@ -61,7 +61,7 @@ Java 运行时保持 **JavaSE-21**。
 
 验收开始前全部勾上（或缺的项改走脚本 A / 记入备注）：
 
-- [ ] OpenChrom 社区版可运行；**帮助 → 关于 → Installation Details** 有 **Baijiu FID Pilot（白酒FID试点）** **1.6.32.***
+- [ ] **白酒 FID 工作站** 专用壳可运行（窗口标题），**或** OpenChrom 社区版可运行且 **帮助 → 关于 → Installation Details** 有 **Baijiu FID Pilot（白酒FID试点）** **1.6.32.***
 - [ ] **插件 → 白酒工作台** 能打开
 - [ ] 已导入许可：`demo/sample-pilot.bjlic` 或厂方 `*.bjlic`，状态 **许可：有效**
 - [ ] 演示谱图本机可打开（无真机时必须）：`mix-15plus-istd.ocb`（或 `白酒混标_15组分加内标.ocb`）、`sample-nongxiang.ocb`（或 `白酒样品_浓香模拟.ocb`），例如 `E:\OpenChrom\baijiu-demo\`

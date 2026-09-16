@@ -1,6 +1,7 @@
 厂里操作员请先读插件 docs/白酒FID试点操作手册.md（开箱 → 安装/许可 → 开机采集 → 校正定量 → 报告 → 常见故障）。
+**目标操作员界面**是专用壳「白酒 FID 工作站」（docs/白酒FID专用壳架构.md）；社区 OpenChrom + 安装新软件现阶段仍支持。
 现场验收（真混标 / 合格 / 不合格）：docs/白酒FID试点演示与验收脚本.md（操作步骤节 M；打印勾选 demo/验收勾选表.txt）。
-英文仅指针：docs/GCWS-OPERATOR-MANUAL.md。下面 A–K 是演示点击原文，不是第二本手册（厂里入口见节 L / M）。
+英文仅指针：docs/GCWS-OPERATOR-MANUAL.md。下面 A–K 是演示点击原文，不是第二本手册（厂里入口见节 L / M；专用壳见节 N）。
 
 白酒分析演示数据（模拟 FID 谱图，非实机进样）
 
@@ -20,6 +21,7 @@
   试点许可演示：demo/sample-pilot.bjlic（见 操作步骤.txt 节 K / 手册第 3 节 / docs/GCWS-INSTALL.md）
   厂里操作手册：docs/白酒FID试点操作手册.md（节 L）
   现场验收脚本：docs/白酒FID试点演示与验收脚本.md（节 M；勾选表 demo/验收勾选表.txt）
+  专用壳（目标 UI）：docs/白酒FID专用壳架构.md（节 N；产品 README）
   仅演示不合格：demo/仅演示-不合格限量.txt（合格后再把粮谷限量临时改为 0.30，然后改回 0.6）
 
 操作步骤
@@ -150,5 +152,10 @@ M. 现场演示与验收脚本（试点清单项 16）
   仅演示不合格短步骤：demo/仅演示-不合格限量.txt
   工程回归仍用 demo/回归检查清单.txt，不要当成现场验收。
   项 15（驻场家数）不在本仓库范围。
+
+N. 专用壳（方案 B，目标操作员 UI）
+  docs/白酒FID专用壳架构.md
+  产品：openchrom/products/net.openchrom.rcp.compilation.baijiu.product
+  社区安装路径（节 K）仍支持；专用壳是新厂机主界面。
 
 说明：本数据只供软件流程演示，不代表真实酒样，也不声明执行 GB 5009.266。

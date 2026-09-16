@@ -1,8 +1,16 @@
 Baijiu FID pilot p2 category / update site
 ==========================================
 
-Install onto an existing OpenChrom community build. Do not rebuild the whole
-community product for every plant drop.
+Two vehicles:
+
+1. **Dedicated product (target operator UI):**
+   products/net.openchrom.rcp.compilation.baijiu.product
+   Window title 白酒 FID 工作站. Architecture:
+   plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/docs/白酒FID专用壳架构.md
+
+2. **This p2 site** — install onto an existing OpenChrom community build.
+   Community UI remains supported. Do not rebuild/replace the community
+   product for every plant drop.
 
 Feature: net.openchrom.xxd.processor.supplier.baijiu.pilot.feature
   includes 白酒分析 + temperature.ui reverse-control
