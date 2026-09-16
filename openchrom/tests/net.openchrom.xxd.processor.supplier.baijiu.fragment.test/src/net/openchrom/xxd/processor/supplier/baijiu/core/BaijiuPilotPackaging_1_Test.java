@@ -124,7 +124,12 @@ public class BaijiuPilotPackaging_1_Test {
 		Path product = locate("openchrom/products/net.openchrom.rcp.compilation.baijiu.product/openchrom.compilation.baijiu.product", "products/net.openchrom.rcp.compilation.baijiu.product/openchrom.compilation.baijiu.product");
 		assertNotNull(product, "dedicated Baijiu .product should exist");
 		String xml = Files.readString(product, StandardCharsets.UTF_8);
-		assertTrue(xml.contains("\u767d\u9152 FID \u5de5\u4f5c\u7ad9"), xml);
+		assertTrue(xml.contains("name=\"\u767d\u9152 FID \u5de5\u4f5c\u7ad9\""), xml);
+		assertTrue(xml.contains("-Dapplication.name=\u767d\u9152FID\u5de5\u4f5c\u7ad9"), xml);
+		assertTrue(!xml.contains("-Dapplication.name=\u767d\u9152 FID"), xml);
+		assertLauncherArgsHaveNoUnquotedSpaces(xml, "vmArgs");
+		assertLauncherArgsHaveNoUnquotedSpaces(xml, "programArgs");
+		assertLauncherArgsHaveNoUnquotedSpaces(xml, "vmArgsMac");
 		assertTrue(xml.contains("net.openchrom.rcp.compilation.baijiu.ui.product"), xml);
 		assertTrue(xml.contains("net.openchrom.rcp.compilation.baijiu.feature"), xml);
 		assertTrue(xml.contains("application.perspective=net.openchrom.xxd.processor.supplier.baijiu.ui.perspective.workbench"), xml);
@@ -189,6 +194,30 @@ public class BaijiuPilotPackaging_1_Test {
 		Path site = locate("openchrom/sites/baijiu-fid-pilot/README.txt", "sites/baijiu-fid-pilot/README.txt");
 		assertNotNull(site);
 		assertTrue(Files.readString(site, StandardCharsets.UTF_8).contains("Dedicated product"));
+	}
+
+	/**
+	 * PDE copies {@code <vmArgs>}/{@code <programArgs>} into the Eclipse
+	 * Application launch config by splitting on whitespace. An unquoted space
+	 * in {@code -Dapplication.name} makes HotSpot treat {@code FID} as the
+	 * main class ({@code ClassNotFoundException: FID}).
+	 */
+	private static void assertLauncherArgsHaveNoUnquotedSpaces(String productXml, String tag) {
+
+		String open = "<" + tag + ">";
+		String close = "</" + tag + ">";
+		int start = productXml.indexOf(open);
+		assertTrue(start >= 0, "missing <" + tag + "> in .product");
+		int end = productXml.indexOf(close, start + open.length());
+		assertTrue(end > start, "missing </" + tag + "> in .product");
+		String body = productXml.substring(start + open.length(), end);
+		for(String line : body.split("\\R")) {
+			String token = line.trim();
+			if(token.isEmpty()) {
+				continue;
+			}
+			assertTrue(!token.contains(" ") && !token.contains("\t"), "unquoted space in <" + tag + ">: " + token);
+		}
 	}
 
 	private static Path locate(String... relative) {

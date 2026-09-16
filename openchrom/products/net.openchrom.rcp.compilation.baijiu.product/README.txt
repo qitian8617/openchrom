@@ -36,6 +36,7 @@ Run As → Eclipse Application (Windows engineer)
 5. Program args already include -clearPersistedState.
    VM args already set -Dapplication.perspective=...baijiu...perspective.workbench
    and -Dosgi.nl=zh_CN.
+   Note: -Dapplication.name=白酒FID工作站 has no spaces so PDE/Windows does not treat FID as the main class (ClassNotFoundException: FID); window title stays 「白酒 FID 工作站」 via product name / shell chrome.
 6. Expect window title 白酒 FID 工作站, start on 白酒工作台,
    top menu 白酒, File → 打开 CSD 文件 still there.
 
