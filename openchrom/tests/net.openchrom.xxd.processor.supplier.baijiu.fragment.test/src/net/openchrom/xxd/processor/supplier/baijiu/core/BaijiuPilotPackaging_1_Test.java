@@ -83,6 +83,41 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(Files.readString(steps, StandardCharsets.UTF_8).contains("L. \u5382\u91cc\u64cd\u4f5c\u624b\u518c"));
 	}
 
+	@Test
+	public void chineseAcceptanceScriptCoversMixPassAndFail() throws Exception {
+
+		Path script = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/docs/\u767d\u9152FID\u8bd5\u70b9\u6f14\u793a\u4e0e\u9a8c\u6536\u811a\u672c.md", "docs/\u767d\u9152FID\u8bd5\u70b9\u6f14\u793a\u4e0e\u9a8c\u6536\u811a\u672c.md");
+		assertNotNull(script, "plant Chinese acceptance script should exist");
+		String text = Files.readString(script, StandardCharsets.UTF_8);
+		assertTrue(text.contains("\u771f\u6df7\u6807"), text);
+		assertTrue(text.contains("\u5408\u683c"), text);
+		assertTrue(text.contains("\u4e0d\u5408\u683c"), text);
+		assertTrue(text.contains("\u4ec5\u6f14\u793a"), text);
+		assertTrue(text.contains("0.30"), text);
+		assertTrue(text.contains("JavaSE-21"), text);
+		assertTrue(text.contains("GB 5009.266"), text);
+		assertTrue(text.contains("\u7b7e\u5b57") || text.contains("\u7ed3\u8bba"), text);
+		assertTrue(text.contains("\u811a\u672c A") || text.contains("\u8f6f\u4ef6\u6f14\u793a"), text);
+		assertTrue(text.contains("\u811a\u672c B") || text.contains("\u771f\u673a"), text);
+		Path ticks = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/demo/\u9a8c\u6536\u52fe\u9009\u8868.txt", "demo/\u9a8c\u6536\u52fe\u9009\u8868.txt");
+		assertNotNull(ticks, "printable acceptance tick list should exist");
+		String tickText = Files.readString(ticks, StandardCharsets.UTF_8);
+		assertTrue(tickText.contains("\u771f\u6df7\u6807"), tickText);
+		assertTrue(tickText.contains("\u4e0d\u5408\u683c"), tickText);
+		Path failNote = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/demo/\u4ec5\u6f14\u793a-\u4e0d\u5408\u683c\u9650\u91cf.txt", "demo/\u4ec5\u6f14\u793a-\u4e0d\u5408\u683c\u9650\u91cf.txt");
+		assertNotNull(failNote, "software-only fail-demo note should exist");
+		assertTrue(Files.readString(failNote, StandardCharsets.UTF_8).contains("0.30"));
+		Path steps = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/demo/\u64cd\u4f5c\u6b65\u9aa4.txt", "demo/\u64cd\u4f5c\u6b65\u9aa4.txt");
+		assertNotNull(steps);
+		assertTrue(Files.readString(steps, StandardCharsets.UTF_8).contains("M. \u73b0\u573a\u6f14\u793a\u4e0e\u9a8c\u6536\u811a\u672c"));
+		Path readme = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/demo/README.txt", "demo/README.txt");
+		assertNotNull(readme);
+		assertTrue(Files.readString(readme, StandardCharsets.UTF_8).contains("\u767d\u9152FID\u8bd5\u70b9\u6f14\u793a\u4e0e\u9a8c\u6536\u811a\u672c.md"));
+		Path stub = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/docs/GCWS-OPERATOR-MANUAL.md", "docs/GCWS-OPERATOR-MANUAL.md");
+		assertNotNull(stub);
+		assertTrue(Files.readString(stub, StandardCharsets.UTF_8).contains("\u767d\u9152FID\u8bd5\u70b9\u6f14\u793a\u4e0e\u9a8c\u6536\u811a\u672c.md"));
+	}
+
 	private static Path locate(String... relative) {
 
 		Path start = Path.of(System.getProperty("user.dir")).toAbsolutePath();

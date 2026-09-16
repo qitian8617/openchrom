@@ -23,4 +23,4 @@
 
 5. 演示方法包
    demo/nongxiang-fid-default.bjm（浓香FID默认方法.bjm）
-   然后按 操作步骤.txt A–J（多点=I，报告=J，安装/许可=K；厂里手册=L）
+   然后按 操作步骤.txt A–J（多点=I，报告=J，安装/许可=K；厂里手册=L；现场验收=M）

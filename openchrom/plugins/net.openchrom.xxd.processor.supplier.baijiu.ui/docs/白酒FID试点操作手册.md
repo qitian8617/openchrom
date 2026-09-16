@@ -2,7 +2,7 @@
 
 厂里操作员用这一份：**开箱 → 安装/许可 → 开机采集 → 白酒分析校正定量 → 报告 → 常见故障**。
 
-不必阅读工程 PR 历史。演示点击清单（A–K）仍在 `demo/操作步骤.txt`；本文把它们收成日常路径。工程师深读见文末 [技术文档索引](#技术文档索引)。
+不必阅读工程 PR 历史。演示点击清单（A–K）仍在 `demo/操作步骤.txt`；现场验收（真混标 / 合格 / 不合格）见 [白酒FID试点演示与验收脚本.md](白酒FID试点演示与验收脚本.md)（节 **M**）。本文把日常路径收在一起。工程师深读见文末 [技术文档索引](#技术文档索引)。
 
 英文入口（仅指针，不是第二本手册）：[GCWS-OPERATOR-MANUAL.md](GCWS-OPERATOR-MANUAL.md)。
 
@@ -381,8 +381,10 @@ Android 面板与电脑可同时连 F407，但 **PC 在线时面板只读 + 急�
 | `demo/nongxiang-fid-default.bjm`、`demo/浓香FID默认方法.bjm` | 定稿浓香方法包（无 RF） |
 | `demo/sample-pilot.bjlic` | 试点演示许可 |
 | `demo/sequence-batch-results.json` | 离线批处理结果；须改谱图路径 |
-| `demo/操作步骤.txt` | A–K 点击清单；**L** 指向本手册 |
-| `demo/安装说明.txt`、`demo/回归检查清单.txt` | 短说明与勾选 |
+| `demo/操作步骤.txt` | A–K 点击清单；**L** 指向本手册；**M** 指向现场验收脚本 |
+| `demo/安装说明.txt`、`demo/回归检查清单.txt` | 短说明与工程回归勾选 |
+| `demo/验收勾选表.txt` | 项 16 一页纸勾选（现场，不是回归） |
+| `demo/仅演示-不合格限量.txt` | 软件不合格：临时粮谷限量 0.30（仅演示） |
 
 色谱图 **不在 git**（体积大）。请放到本机，例如 `E:\OpenChrom\baijiu-demo\`：
 
@@ -410,7 +412,16 @@ Android 面板与电脑可同时连 F407，但 **PC 在线时面板只读 + 急�
 
 可选加一针：**平行样** 两次选同样品；或批处理结果打开改过路径的演示 JSON。
 
-完整勾选见 `demo/回归检查清单.txt`。
+完整勾选见 `demo/回归检查清单.txt`（工程回归）。
+
+现场验收（试点清单 **项 16**：真混标 / 真样品合格 / 真样品不合格各一遍，无真机走软件演示）不要用上面这条最短路径代替，请打开：
+
+**[白酒FID试点演示与验收脚本.md](白酒FID试点演示与验收脚本.md)**
+
+- 脚本 A：无真机；合格后临时把粮谷限量改为 0.30 做出 **仅演示** 不合格，然后必须改回 0.6（出厂默认不变）
+- 脚本 B：真混标一针 + 合格一针 + 真超标样一针
+- 打印勾选：`demo/验收勾选表.txt`
+- 清单 **项 15**（驻场家数）不在本文范围
 
 ### 11.3 本机预期 RT 与样品理论含量
 
@@ -544,6 +555,7 @@ Android 面板与电脑可同时连 F407，但 **PC 在线时面板只读 + 急�
 
 | 文档 | 内容 |
 |------|------|
+| [白酒FID试点演示与验收脚本.md](白酒FID试点演示与验收脚本.md) | 现场项 16：真混标 / 合格 / 不合格（+ 软件演示） |
 | [GCWS-INSTALL.md](GCWS-INSTALL.md) | 导出 Deployable Features、p2、dropins、许可格式 |
 | [GCWS-CALIBRATION.md](GCWS-CALIBRATION.md) | 混标 RF 门禁规则 |
 | [GCWS-MULTIPOINT.md](GCWS-MULTIPOINT.md) | 多点坐标、有效 RF、R² |
@@ -556,4 +568,4 @@ Android 面板与电脑可同时连 F407，但 **PC 在线时面板只读 + 急�
 | [GCWS-SEQUENCE.md](../../net.openchrom.xxd.control.supplier.temperature.ui/docs/GCWS-SEQUENCE.md) | 进样序列状态机 |
 | [GCWS-DUAL-CONTROL.md](../../net.openchrom.xxd.control.supplier.temperature.ui/docs/GCWS-DUAL-CONTROL.md) | PC / 面板双控 |
 
-演示点击原文：`demo/操作步骤.txt`（A 混标，B 定量，…，I 多点，J 报告，K 安装/许可，**L 本手册**）。
+演示点击原文：`demo/操作步骤.txt`（A 混标，B 定量，…，I 多点，J 报告，K 安装/许可，**L 本手册**，**M 现场验收脚本**）。

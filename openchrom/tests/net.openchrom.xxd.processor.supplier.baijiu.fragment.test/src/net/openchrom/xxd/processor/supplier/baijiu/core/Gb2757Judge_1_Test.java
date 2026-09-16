@@ -45,6 +45,25 @@ public class Gb2757Judge_1_Test {
 	}
 
 	@Test
+	public void demoFailLimitMarksBundledMethanolUnqualifiedWithoutChangingDefaults() {
+
+		BaijiuMethodSettings lowered = BaijiuMethodSettings.defaultNongxiangFid();
+		assertEquals(0.6d, lowered.getGb2757GrainLimit100VolGL(), 1.0e-9d);
+		lowered.setGb2757GrainLimit100VolGL(0.30d);
+		Gb2757Result failed = Gb2757Judge.judge(0.180d, 52.0d, BaijiuRawMaterial.GRAIN, lowered);
+		assertTrue(failed.isJudged());
+		assertFalse(failed.isPassed());
+		assertEquals("\u4e0d\u5408\u683c", failed.getVerdictLabel());
+		assertEquals(0.30d, failed.getLimit100GL(), 1.0e-9d);
+		assertEquals(0.3461538d, failed.getMethanol100GL(), 1.0e-4d);
+
+		Gb2757Result restored = Gb2757Judge.judge(0.180d, 52.0d, BaijiuRawMaterial.GRAIN, BaijiuMethodSettings.defaultNongxiangFid());
+		assertTrue(restored.isPassed());
+		assertEquals("\u5408\u683c", restored.getVerdictLabel());
+		assertEquals(0.6d, restored.getLimit100GL(), 1.0e-9d);
+	}
+
+	@Test
 	public void missingLimitStaysUnjudged() {
 
 		BaijiuMethodSettings settings = new BaijiuMethodSettings();
