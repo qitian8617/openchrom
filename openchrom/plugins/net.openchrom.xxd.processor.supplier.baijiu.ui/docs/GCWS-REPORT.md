@@ -1,5 +1,7 @@
 # Baijiu FID analysis report (item 12 · 报告定稿)
 
+Plant operators: Chinese handbook [白酒FID试点操作手册.md](白酒FID试点操作手册.md) §9. This file lists report fields.
+
 Pilot P1: after a **successful quantify**, a plant operator can **preview**, **print / save as PDF**, and **export CSV / Excel(CSV)** a sellable report. This polishes the existing HTML + CSV path. It is not Part 11, not LIMS, and not a claim of GB 5009.266.
 
 Acceptance: **样品 / 方法 / 结果 / GB2757 / 谱图缩略 / 操作者与时间**.

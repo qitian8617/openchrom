@@ -1,5 +1,7 @@
 # Mix-standard calibration gate (item 6)
 
+Plant operators: Chinese handbook [白酒FID试点操作手册.md](白酒FID试点操作手册.md) §7. This file is the RF-gate spec.
+
 Sample quantification is **blocked** unless the loaded plant method has a valid mix-standard calibration. There is no warn-and-continue override.
 
 ## Valid calibration / valid RF

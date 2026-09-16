@@ -1,5 +1,7 @@
 # Multi-point mix-standard calibration + R² (item 11)
 
+Plant operators: Chinese handbook [白酒FID试点操作手册.md](白酒FID试点操作手册.md) §7.3 (demo section I). This file is the fit/RF spec.
+
 Pilot P1: **≥ 3 points**, starting with **methanol + 2–3 main esters** (乙酸乙酯, 乳酸乙酯, 己酸乙酯). Other catalog analytes keep the existing **single-point RF** button.
 
 ## Axes

@@ -1,5 +1,7 @@
 # Baijiu FID install / upgrade + simple license (item 13)
 
+**Plant operators:** start with the Chinese handbook [白酒FID试点操作手册.md](白酒FID试点操作手册.md) (unbox → report + FAQ). This file is the engineer export/install detail. English pointer: [GCWS-OPERATOR-MANUAL.md](GCWS-OPERATOR-MANUAL.md).
+
 Pilot P1: make the Baijiu FID workstation **exportable/installable** onto an OpenChrom community build the plant already runs, and add a **simple offline license** suitable for selling a pilot. This is not a rewrite of the community `.product`, not NSIS/Inno for all of OpenChrom, not a hardware dongle, not an activation server, and not Part 11.
 
 Acceptance: **本机导出验证** — an engineer on a Windows workstation can export an installable artifact, install it, enter a sample license, and open 白酒分析.
@@ -147,4 +149,4 @@ key=BAIJIU-XXXXXXXX-XXXXXXXX
 - Hardware dongle / online license server / Part 11 audit
 - Changing mix-standard gate, multipoint, or report fields (items 6 / 11 / 12)
 
-See demo `操作步骤.txt` section **K**.
+See demo `操作步骤.txt` section **K**. Plant handbook: `白酒FID试点操作手册.md` (section **L**).

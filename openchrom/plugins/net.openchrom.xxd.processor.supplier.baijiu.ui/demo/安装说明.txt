@@ -1,5 +1,7 @@
 白酒 FID 试点 — 安装与许可（短说明）
 
+厂里操作员请先读 docs/白酒FID试点操作手册.md（开箱到报告与常见故障）。本文只覆盖安装/许可。
+
 1. 工程师导出
    Eclipse：文件 → 导出 → Deployable Features
    勾选「Baijiu FID Pilot (白酒FID试点)」到一个文件夹（如 D:\baijiu-fid-pilot-site）
@@ -21,4 +23,4 @@
 
 5. 演示方法包
    demo/nongxiang-fid-default.bjm（浓香FID默认方法.bjm）
-   然后按 操作步骤.txt A–J（多点=I，报告=J，安装/许可=K）
+   然后按 操作步骤.txt A–J（多点=I，报告=J，安装/许可=K；厂里手册=L）

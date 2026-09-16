@@ -1,3 +1,6 @@
+厂里操作员请先读插件 docs/白酒FID试点操作手册.md（开箱 → 安装/许可 → 开机采集 → 校正定量 → 报告 → 常见故障）。
+英文仅指针：docs/GCWS-OPERATOR-MANUAL.md。下面 A–K 是演示点击原文，不是第二本手册（厂里入口见节 L）。
+
 白酒分析演示数据（模拟 FID 谱图，非实机进样）
 
 文件位置：E:\OpenChrom\baijiu-demo\
@@ -13,7 +16,8 @@
   柱：XP-白酒 C2，30 m × 0.32 mm × 1.00 μm
   采样：20 Hz，0–19 min，共 16 个峰
   定稿方法包：demo/nongxiang-fid-default.bjm（浓香FID默认方法.bjm）
-  试点许可演示：demo/sample-pilot.bjlic（见 操作步骤.txt 节 K / docs/GCWS-INSTALL.md）
+  试点许可演示：demo/sample-pilot.bjlic（见 操作步骤.txt 节 K / 手册第 3 节 / docs/GCWS-INSTALL.md）
+  厂里操作手册：docs/白酒FID试点操作手册.md（节 L）
 
 操作步骤
 
@@ -129,5 +133,10 @@ C. Week 2 白酒工作台（可选）
     打开色谱图对象 → 推荐积分 → 白酒分析 → 定量 → GB 2757 → 报告
   只要工作站里已经有一张打开的 FID（CSD）色谱图，白酒分析读的就是这张图，
   与文件来自演示目录还是实机采集无关。
+  带反控的开机/点火/采集落盘见手册第 4–5 节（气相色谱控制台主界面）。
+
+L. 厂里操作手册（开箱到报告）
+  插件 docs/白酒FID试点操作手册.md
+  日常路径、门禁文案与常见故障以手册为准；本 README 的 A–K 与 操作步骤.txt 仍作演示点击清单。
 
 说明：本数据只供软件流程演示，不代表真实酒样，也不声明执行 GB 5009.266。

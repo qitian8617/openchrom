@@ -1,5 +1,7 @@
 # GC-FID injection sequence (pilot queue)
 
+Plant operators (Chinese): [白酒FID试点操作手册.md](../../net.openchrom.xxd.processor.supplier.baijiu.ui/docs/白酒FID试点操作手册.md) §10.
+
 A **simple injection queue** for the Baijiu workbench: Blank / Mix-standard (混标) / QC / Sample×N. It tracks intended needles and status. It does **not** drive an autosampler.
 
 The shared model still lives in the reverse-control plugin so **开始分析** on Main can mark running / done / failed and advance. The full editor is a CDS/lab-workflow concern, not an instrument-control page.

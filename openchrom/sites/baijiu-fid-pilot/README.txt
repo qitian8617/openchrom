@@ -15,3 +15,5 @@ Eclipse: File → Export → Deployable Features → Baijiu FID Pilot
 
 Plant: Help → Install New Software → Local → this folder.
 License: demo/sample-pilot.bjlic on the Baijiu workbench.
+Operator handbook (Chinese):
+  plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/docs/白酒FID试点操作手册.md
