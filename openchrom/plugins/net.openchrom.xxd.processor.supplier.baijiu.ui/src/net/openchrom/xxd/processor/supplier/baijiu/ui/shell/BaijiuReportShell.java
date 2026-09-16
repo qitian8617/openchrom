@@ -28,6 +28,7 @@ import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuAnalysisResult;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuMethodSettings;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuReportExport;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuReportHtml;
+import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuReportSupport;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuSampleInfo;
 
 public final class BaijiuReportShell {
@@ -37,7 +38,8 @@ public final class BaijiuReportShell {
 
 	public static void open(Shell parent, BaijiuSampleInfo sample, BaijiuMethodSettings settings, BaijiuAnalysisResult result) {
 
-		String html = BaijiuReportHtml.render(sample, settings, result);
+		String generatedAt = BaijiuReportSupport.generatedAt();
+		String html = BaijiuReportHtml.render(sample, settings, result, generatedAt);
 		Shell shell = new Shell(parent, SWT.SHELL_TRIM | SWT.APPLICATION_MODAL);
 		shell.setText("\u767d\u9152\u5206\u6790\u62a5\u544a");
 		shell.setLayout(new GridLayout(1, false));
@@ -69,15 +71,15 @@ public final class BaijiuReportShell {
 
 		Button saveHtml = new Button(buttons, SWT.PUSH);
 		saveHtml.setText("\u4fdd\u5b58 HTML");
-		saveHtml.addListener(SWT.Selection, e -> save(shell, html, "*.html", "baijiu-report.html", false, sample, settings, result));
+		saveHtml.addListener(SWT.Selection, e -> save(shell, html, "*.html", "baijiu-report.html", SaveKind.HTML, sample, settings, result, generatedAt));
 
 		Button saveCsv = new Button(buttons, SWT.PUSH);
 		saveCsv.setText("\u5bfc\u51fa CSV");
-		saveCsv.addListener(SWT.Selection, e -> save(shell, html, "*.csv", "baijiu-results.csv", true, sample, settings, result));
+		saveCsv.addListener(SWT.Selection, e -> save(shell, html, "*.csv", "baijiu-results.csv", SaveKind.CSV, sample, settings, result, generatedAt));
 
 		Button saveExcel = new Button(buttons, SWT.PUSH);
 		saveExcel.setText("\u5bfc\u51fa Excel(CSV)");
-		saveExcel.addListener(SWT.Selection, e -> save(shell, html, "*.csv", "baijiu-results-excel.csv", true, sample, settings, result));
+		saveExcel.addListener(SWT.Selection, e -> save(shell, html, "*.csv", "baijiu-results-excel.csv", SaveKind.EXCEL_CSV, sample, settings, result, generatedAt));
 
 		Button close = new Button(buttons, SWT.PUSH);
 		close.setText("\u5173\u95ed");
@@ -101,7 +103,7 @@ public final class BaijiuReportShell {
 		}
 	}
 
-	private static void save(Shell shell, String html, String extension, String fileName, boolean csv, BaijiuSampleInfo sample, BaijiuMethodSettings settings, BaijiuAnalysisResult result) {
+	private static void save(Shell shell, String html, String extension, String fileName, SaveKind kind, BaijiuSampleInfo sample, BaijiuMethodSettings settings, BaijiuAnalysisResult result, String generatedAt) {
 
 		FileDialog dialog = new FileDialog(shell, SWT.SAVE);
 		dialog.setFilterExtensions(new String[] {extension});
@@ -113,16 +115,20 @@ public final class BaijiuReportShell {
 		}
 		try {
 			Path file = Path.of(path);
-			if(csv) {
-				BaijiuReportExport.writeExcelCsv(file, sample, settings, result);
-			} else {
-				BaijiuReportExport.writeHtml(file, html);
+			switch(kind) {
+				case CSV -> BaijiuReportExport.writeCsv(file, sample, settings, result, generatedAt);
+				case EXCEL_CSV -> BaijiuReportExport.writeExcelCsv(file, sample, settings, result, generatedAt);
+				case HTML -> BaijiuReportExport.writeHtml(file, html);
 			}
 		} catch(Exception e) {
 			MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
 			box.setText("\u767d\u9152\u5206\u6790");
-			box.setMessage("\u4fdd\u5b58\u5931\u8d25\uff1a" + e.getMessage());
+			box.setMessage("\u4fdd\u5b58\u5931\u8d25 / Save failed\uff1a" + e.getMessage());
 			box.open();
 		}
+	}
+
+	private enum SaveKind {
+		HTML, CSV, EXCEL_CSV
 	}
 }

@@ -4,7 +4,7 @@ Pilot P1: freeze a **shippable 浓香 FID plant method** — physical **XP-白�
 
 Acceptance: **XP-C2 + 乙酸正丁酯 + 15 混标，\*.bjm 导入导出**.
 
-Multi-point calibration / R² is item 11 (`GCWS-MULTIPOINT.md`). Per-compound RT / window / quantify / GB 2757 flags are item 10 (`GCWS-COMPOUND-LIBRARY.md`). Part 11 / LIMS / full report is item 12.
+Multi-point calibration / R² is item 11 (`GCWS-MULTIPOINT.md`). Per-compound RT / window / quantify / GB 2757 flags are item 10 (`GCWS-COMPOUND-LIBRARY.md`). Printable report is item 12 (`GCWS-REPORT.md`). Part 11 / LIMS remain out of scope.
 
 ## What is frozen
 

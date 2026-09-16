@@ -16,11 +16,15 @@
      定量后测得甲醇约 0.180 g/L
      折算 100%vol ≈ 0.3462 g/L，限量 0.6 g/L（来自厂方法/偏好，非 Java 写死）
      判定「合格」，面板同时显示测得值、折算公式、限量来源/标准版本
-  4. 报告
-     「预览/打印报告」打开 HTML
-     含样品信息、方法摘要、谱图缩略、结果表、GB 判定
+  4. 报告（定稿）
+     「预览/打印报告」打开 HTML（须先定量成功；未校正被门闩拦住）
+     含样品信息（编号/酒名/批号/香型/酒精度/原料/检测人/检测日期）、方法摘要（方法名/柱/内标/程序升温/加标）、
+     谱图缩略、结果表（组分/RT/峰面积/RF/含量 g/L/超限/备注）、GB 2757（合格/不合格/无法判定 + 折算说明）、
+     操作者与时间（检测人/检测日期/报告生成时间）
+     免责：不声明执行 GB 5009.266
      「打印 / 另存为 PDF」走系统打印对话框
-     「导出 CSV / Excel(CSV)」可被 Excel 打开
+     「导出 CSV」无 BOM、「导出 Excel(CSV)」带 BOM，列与 HTML 对齐，Excel 可打开
+     详见 docs/GCWS-REPORT.md；操作步骤节 J
   5. 混标校正门闩
      不先做混标校正（或甲醇 RF 为 NaN/0/超范围）时，定量被阻止，提示先「用当前谱图做校正」
      校正有效时，演示样品仍为甲醇约 0.180 g/L、GB 2757 合格
@@ -46,6 +50,10 @@
      白酒分析「多点校正」：演示三点（同谱图 0.5/1.0/1.5）后甲醇与主酯有 R²
      拟合写入有效 RF，样品定量与门闩仍可用；「用当前谱图做校正」单点仍可用
      公式见 docs/GCWS-MULTIPOINT.md
+  11. 报告定稿
+     定量后预览含节 J 所列字段；CSV 含检测人/检测日期/超限/GB 判定/免责声明
+     多点拟合后报告 RF 与定量所用有效 RF 一致（可有「多点拟合有效RF」备注）
+     未校正不能打开报告。JavaSE-21。无 Part 11 / LIMS / GB 5009.266 声明
 
 无头可测部分已写入 fragment test：
   Gb2757Judge_1_Test、BaijiuReport_1_Test、BaijiuBatchEngine_1_Test、BaijiuRegressionChecklist_1_Test
@@ -57,5 +65,6 @@
   批处理结果：BaijiuSequenceResultsEngine_1_Test（未完成行保留；DONE+谱图定量；缺校正不发明含量；缺文件有说明）
   多点校正：BaijiuLinearFit_1_Test、BaijiuMultipointCalibration_1_Test（≥3 点 OLS/R²；演示三点写 RF；单点仍可用）
   方法包往返含校正点：BaijiuMethodIO_1_Test（cal.point / cal.fit 持久化；恢复默认清除多点）
+  报告定稿：BaijiuReport_1_Test（样品/方法/GB/谱图/操作者与时间字段；CSV 列对齐；缺检测人从谱图补；多点有效 RF；CSV BOM）
 
 已知环境噪声（忽略）：LaiendeAboutHandler CNFE、CDK/inchi unresolved

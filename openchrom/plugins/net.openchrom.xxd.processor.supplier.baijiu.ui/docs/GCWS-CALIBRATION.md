@@ -25,7 +25,7 @@ The gate runs inside `BaijiuAnalysisEngine.quantify`, so it applies to:
 - 三步向导 → quantify / Finish
 - 简单批量 → run is refused up front if the method fails the gate; engine also fails each row
 - 批处理结果 → DONE sequence vials still go through `quantify` (incomplete vials are listed, not quantified)
-- 预览报告 / CSV export (they quantify first)
+- 预览报告 / CSV export (they quantify first; item 12 printable report is `GCWS-REPORT.md`)
 
 The frozen default package (`nongxiang-fid-default.bjm`) ships **without RF**. Restoring it clears RF and multi-point calibration points. See `GCWS-METHOD-PACKAGE.md`.
 
