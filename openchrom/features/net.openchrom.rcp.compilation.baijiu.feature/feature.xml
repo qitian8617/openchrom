@@ -33,15 +33,10 @@
          id="net.openchrom.csd.converter.supplier.cdf.feature"
          version="0.0.0"/>
 
-   <includes
-         id="net.openchrom.csd.converter.supplier.arw.feature"
-         version="0.0.0"/>
-
    <requires>
       <import feature="org.eclipse.rcp"/>
       <import feature="org.eclipse.help"/>
       <import feature="org.eclipse.license"/>
-      <import feature="org.eclipse.swtchart.feature"/>
       <import plugin="org.eclipse.e4.ui.css.swt.theme"/>
       <import plugin="org.eclipse.ui.themes"/>
    </requires>

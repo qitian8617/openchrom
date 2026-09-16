@@ -60,7 +60,7 @@
 | 试点包装 | `net.openchrom.xxd.processor.supplier.baijiu.pilot.feature` | **白酒分析 + 反控**（不要拆开装） |
 | 白酒分析 | → `baijiu.feature` → `baijiu.ui` | 工作台、推荐积分、混标/多点、定量、GB 2757、报告、许可、序列/平行样 |
 | 反控 | → `temperature.feature` → `temperature.ui` | 气/火/信号、FID 就绪、开始分析、采集落盘、进样当前针 |
-| CSD 转换 | `csd.converter.cdf` / `csd.converter.arw` | 额外 FID 交换格式；`.ocb` 已在内核 |
+| CSD 转换 | `csd.converter.cdf` | 额外 FID 交换格式（NetCDF）；`.ocb` 已在 ChemClipse 内核。不直接 include `arw.feature`（厂 PDE 工作区常未导入该特性工程） |
 | 壳 branding | `net.openchrom.rcp.compilation.baijiu.ui` | 中文产品、默认视角、菜单裁剪 |
 
 **不** 把下列研究向 OpenChrom 特性打进专用壳（它们仍在社区产品 `platform.feature` 里）：
