@@ -140,11 +140,21 @@ public class BaijiuPilotPackaging_1_Test {
 		String featureXml = Files.readString(feature, StandardCharsets.UTF_8);
 		assertTrue(featureXml.contains("org.eclipse.chemclipse.rcp.compilation.community.feature"), featureXml);
 		assertTrue(featureXml.contains("net.openchrom.xxd.processor.supplier.baijiu.pilot.feature"), featureXml);
+		assertTrue(featureXml.contains("net.openchrom.csd.converter.supplier.cdf.feature"), featureXml);
 		assertTrue(featureXml.contains("net.openchrom.rcp.compilation.baijiu.ui"), featureXml);
+		assertTrue(!featureXml.contains("net.openchrom.csd.converter.supplier.arw.feature"), featureXml);
+		assertTrue(!featureXml.contains("org.eclipse.swtchart.feature"), featureXml);
 
 		Path branding = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/META-INF/MANIFEST.MF", "plugins/net.openchrom.rcp.compilation.baijiu.ui/META-INF/MANIFEST.MF");
 		assertNotNull(branding);
-		assertTrue(Files.readString(branding, StandardCharsets.UTF_8).contains("JavaSE-21"));
+		String brandingMf = Files.readString(branding, StandardCharsets.UTF_8);
+		assertTrue(brandingMf.contains("JavaSE-21"), brandingMf);
+		assertTrue(brandingMf.contains("org.eclipse.e4.core.contexts"), brandingMf);
+		assertTrue(!brandingMf.contains("JavaSE-25"), brandingMf);
+
+		Path fragmentBuild = locate("openchrom/tests/net.openchrom.rcp.compilation.baijiu.fragment.test/build.properties", "tests/net.openchrom.rcp.compilation.baijiu.fragment.test/build.properties");
+		assertNotNull(fragmentBuild);
+		assertTrue(Files.readString(fragmentBuild, StandardCharsets.UTF_8).contains("jre.compilation.profile = JavaSE-21"));
 
 		Path baijiu = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/META-INF/MANIFEST.MF", "plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/META-INF/MANIFEST.MF");
 		assertNotNull(baijiu);
