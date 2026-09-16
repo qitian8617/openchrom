@@ -27,8 +27,9 @@ import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 
 /**
- * After ChemClipse fragments attach, hide research chrome and select 白酒工作台.
- * Does not depend on baijiu.ui Java types (soft; no plugin cycle).
+ * After ChemClipse fragments attach, hide research chrome, select 白酒工作台,
+ * and keep the reverse-control part visible in that layout. Does not depend
+ * on baijiu.ui / temperature.ui Java types (soft; no plugin cycle).
  */
 public class BaijiuShellAddon {
 
@@ -78,6 +79,7 @@ public class BaijiuShellAddon {
 				element.setToBeRendered(false);
 			}
 		}
+		revealPlantParts(application, modelService);
 	}
 
 	static void selectBaijiuPerspective(MApplication application, EModelService modelService) {
@@ -85,6 +87,7 @@ public class BaijiuShellAddon {
 		if(application == null || modelService == null) {
 			return;
 		}
+		revealPlantParts(application, modelService);
 		MUIElement found = modelService.find(BaijiuShellChrome.PERSPECTIVE_ID, application);
 		if(!(found instanceof MPerspective perspective)) {
 			return;
@@ -103,7 +106,29 @@ public class BaijiuShellAddon {
 				}
 			}
 		} catch(RuntimeException | LinkageError e) {
-			// stack selection above is enough for Phase 1
+			// stack selection above is enough
 		}
+	}
+
+	static void revealPlantParts(MApplication application, EModelService modelService) {
+
+		if(application == null || modelService == null) {
+			return;
+		}
+		show(modelService.find(BaijiuShellChrome.PERSPECTIVE_ID, application));
+		show(modelService.find(BaijiuShellChrome.GC_PERSPECTIVE_ID, application));
+		show(modelService.find(BaijiuShellChrome.GC_CONTROL_PART_ID, application));
+		show(modelService.find(BaijiuShellChrome.GC_CONTROL_PLACEHOLDER_ID, application));
+		show(modelService.find(BaijiuShellChrome.BAIJIU_MENU_ID, application));
+		show(modelService.find(BaijiuShellChrome.PLANT_TOOLBAR_ID, application));
+	}
+
+	private static void show(MUIElement element) {
+
+		if(element == null) {
+			return;
+		}
+		element.setVisible(true);
+		element.setToBeRendered(true);
 	}
 }

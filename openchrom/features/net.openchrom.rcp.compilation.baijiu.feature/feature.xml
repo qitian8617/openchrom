@@ -9,8 +9,8 @@
       license-feature-version="2.0.2.qualifier">
 
    <description url="http://www.openchrom.net">
-      白酒 FID 专用壳 Phase 1：自有 RCP 产品 + ChemClipse/OpenChrom 内核 + 现有白酒分析/反控插件。
-      Dedicated Baijiu FID plant shell (Phase 1 scaffold). Reuses ChemClipse/OpenChrom kernel and existing baijiu.ui + temperature.ui. Does not replace the community product.
+      白酒 FID 专用壳 Phase 2：厂用主界面（白酒工作台 + 反控 Part、菜单裁剪、布局可记）。
+      Dedicated Baijiu FID plant shell (Phase 2 layout). Reuses ChemClipse/OpenChrom kernel and existing baijiu.ui + temperature.ui. Does not replace the community product.
    </description>
 
    <copyright url="http://www.openchrom.net">
