@@ -9,6 +9,8 @@
  *******************************************************************************/
 package net.openchrom.xxd.processor.supplier.baijiu.core;
 
+import java.util.Properties;
+
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.osgi.service.prefs.BackingStoreException;
@@ -43,6 +45,7 @@ public final class BaijiuPreferences {
 	private static final String ASSIGN = "assign.";
 	private static final String QUANTIFY = "quantify.";
 	private static final String GB_TARGET = "gb2757.compound.";
+	private static final String CAL_TABLE = "cal.table";
 	private static final String SAMPLE_NO = "sample.no";
 	private static final String LIQUOR_NAME = "sample.liquor";
 	private static final String BATCH = "sample.batch";
@@ -124,6 +127,7 @@ public final class BaijiuPreferences {
 			}
 		}
 		settings.normalizeMethanolJudgment();
+		overlayCalibration(prefs, settings);
 		settings.seedInstrumentRetentionTimes();
 		return settings;
 	}
@@ -173,6 +177,7 @@ public final class BaijiuPreferences {
 			prefs.putBoolean(QUANTIFY + id, settings.isQuantified(compound));
 			prefs.putBoolean(GB_TARGET + id, settings.isGb2757Target(compound));
 		}
+		storeCalibration(prefs, settings);
 		flush(prefs);
 	}
 
@@ -230,6 +235,38 @@ public final class BaijiuPreferences {
 			prefs.remove(key);
 		} else {
 			prefs.putDouble(key, value);
+		}
+	}
+
+	private static void overlayCalibration(IEclipsePreferences prefs, BaijiuMethodSettings settings) {
+
+		String blob = prefs.get(CAL_TABLE, null);
+		if(blob == null || blob.isBlank()) {
+			return;
+		}
+		Properties properties = new Properties();
+		try {
+			properties.load(new java.io.StringReader(blob));
+			BaijiuMethodIO.readCalibration(settings, properties);
+		} catch(java.io.IOException e) {
+			// keep empty calibration table
+		}
+	}
+
+	private static void storeCalibration(IEclipsePreferences prefs, BaijiuMethodSettings settings) {
+
+		if(settings.getCalibrationPoints().isEmpty() && settings.getCalibrationFits().isEmpty()) {
+			prefs.remove(CAL_TABLE);
+			return;
+		}
+		Properties properties = new Properties();
+		BaijiuMethodIO.writeCalibration(settings, properties);
+		java.io.StringWriter writer = new java.io.StringWriter();
+		try {
+			properties.store(writer, "baijiu-multipoint");
+			prefs.put(CAL_TABLE, writer.toString());
+		} catch(java.io.IOException e) {
+			// keep in-memory points if prefs cannot encode them
 		}
 	}
 

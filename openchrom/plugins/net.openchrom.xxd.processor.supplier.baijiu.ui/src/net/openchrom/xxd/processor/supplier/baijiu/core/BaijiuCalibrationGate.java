@@ -25,10 +25,11 @@ import java.util.Map;
  * not relax this gate.</li>
  * </ul>
  * Mix calibration itself (ISTD found, peaks integrated) is performed by
- * {@link BaijiuAnalysisEngine#calibrate}; this gate only inspects the RF map
- * that calibrate (or a plant method) wrote. Other mix analytes without RF stay
- * 未校正 on the result table and do not block GB 2757. There is no warn-and-continue
- * override for the pilot.
+ * {@link BaijiuAnalysisEngine#calibrate} (single-point) or
+ * {@link BaijiuMultipointCalibration#fit} (linear fit, item 11); this gate only
+ * inspects the RF map that those paths (or a plant method) wrote. Other mix
+ * analytes without RF stay 未校正 on the result table and do not block GB 2757.
+ * There is no warn-and-continue override for the pilot.
  */
 public final class BaijiuCalibrationGate {
 
