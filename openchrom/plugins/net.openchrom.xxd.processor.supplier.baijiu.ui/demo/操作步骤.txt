@@ -139,6 +139,20 @@ J. 报告定稿（定量后预览 / 打印 PDF / 导出 CSV）
      列与 HTML 字段对齐（含检测人、检测日期、方法名、柱、内标、加标、超限、GB判定、免责声明）
   详见插件 docs/GCWS-REPORT.md
 
+K. 安装 / 升级包 + 简单许可（本机导出验证）
+  1. 工程师在已能编译 baijiu.ui 的 Eclipse 中：
+     文件 → 导出 → Plug-in Development → Deployable Features
+     勾选「Baijiu FID Pilot (白酒FID试点)」（含白酒分析 + 气相反控 temperature.ui）
+     目录例如 D:\baijiu-fid-pilot-site，生成 p2 元数据。不必重编整个 community 产品。
+  2. 厂里已有 OpenChrom 社区版：帮助 → 安装新软件 → 添加 → 本地 → 上述目录
+     分类「白酒 FID 试点」→ 安装 Baijiu FID Pilot → 重启
+     帮助 → 关于 → Installation Details：功能 1.6.32.* qualifier 可见
+  3. 插件 → 白酒工作台。未授权时仍可打开 .ocb 与推荐积分；定量/报告弹出中英提示，不损坏 OpenChrom 核心
+  4. 许可 / 版本… → 导入 demo/sample-pilot.bjlic（示例酒厂 / Pilot Demo / 至 2027-12-31）
+     状态须为「有效」。也可把文件放到 %USERPROFILE%\OpenChrom\licenses\baijiu-fid.bjlic
+  5. 再走 A–J。升级：导出更新 qualifier 后对同一本地站点再装一次。
+  反控需要 temperature.ui；包装功能已包含。详见 docs/GCWS-INSTALL.md
+
 本机预期 RT（min）
   组分	厂商RT	本机RT
   乙醛	2.261	2.316

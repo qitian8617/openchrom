@@ -41,6 +41,7 @@ public final class BaijiuTerms {
 	public static final String BATCH_RESULTS = "\u6279\u5904\u7406\u7ed3\u679c";
 	public static final String PARALLEL = "\u5e73\u884c\u6837";
 	public static final String REPORT = "\u62a5\u544a";
+	public static final String LICENSE = "\u8bb8\u53ef";
 	public static final String METHOD = "\u65b9\u6cd5";
 	public static final String SAMPLE = "\u6837\u54c1";
 	public static final String PASS = "\u5408\u683c";

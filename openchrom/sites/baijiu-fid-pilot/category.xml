@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <description url="http://www.openchrom.net">
+      白酒 FID 试点更新站点：安装到厂里已有的 OpenChrom 社区版，无需每次从源码重编整个产品。
+      Baijiu FID pilot update site for an existing OpenChrom community build. Does not rebuild the whole product.
+   </description>
+   <feature id="net.openchrom.xxd.processor.supplier.baijiu.pilot.feature" version="1.6.32.qualifier">
+      <category name="net.openchrom.baijiu.fid.pilot"/>
+   </feature>
+   <feature id="net.openchrom.xxd.processor.supplier.baijiu.feature" version="1.6.32.qualifier">
+      <category name="net.openchrom.baijiu.fid.pilot"/>
+   </feature>
+   <feature id="net.openchrom.xxd.control.supplier.temperature.feature" version="1.6.20.qualifier">
+      <category name="net.openchrom.baijiu.fid.pilot"/>
+   </feature>
+   <category-def name="net.openchrom.baijiu.fid.pilot" label="白酒 FID 试点 / Baijiu FID Pilot">
+      <description>
+         白酒分析工作站插件与气相反控。安装「Baijiu FID Pilot」一项即可同时得到两者。
+         Baijiu analysis plus GC reverse-control. Installing Baijiu FID Pilot pulls both features.
+      </description>
+   </category-def>
+</site>

@@ -21,6 +21,8 @@ import org.eclipse.swt.widgets.Shell;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
+import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuLicenseGate;
+import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuPluginInfo;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuTerms;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.handlers.OpenBaijiuAnalysisHandler;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.handlers.OpenBaijiuBatchHandler;
@@ -31,6 +33,7 @@ import net.openchrom.xxd.processor.supplier.baijiu.ui.handlers.OpenBaijiuSequenc
 import net.openchrom.xxd.processor.supplier.baijiu.ui.handlers.OpenBaijiuSequenceResultsHandler;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.handlers.OpenBaijiuWizardHandler;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.handlers.RunBaijiuIntegrationHandler;
+import net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuLicenseShell;
 
 public class BaijiuWorkbenchPart {
 
@@ -61,6 +64,16 @@ public class BaijiuWorkbenchPart {
 		button(parent, BaijiuTerms.SIMPLE_BATCH, e -> new OpenBaijiuBatchHandler().execute(shell));
 		button(parent, BaijiuTerms.PARALLEL, e -> new OpenBaijiuParallelHandler().execute(shell));
 		button(parent, "\u9884\u89c8\u62a5\u544a", e -> new OpenBaijiuReportHandler().execute(shell, partService));
+
+		Label license = new Label(parent, SWT.WRAP);
+		license.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		license.setText(BaijiuLicenseGate.statusLine() + "\n\u63d2\u4ef6 " + BaijiuPluginInfo.bundleVersion());
+		button(parent, BaijiuTerms.LICENSE + " / \u7248\u672c\u2026", e -> {
+			BaijiuLicenseShell.open(shell);
+			if(!license.isDisposed()) {
+				license.setText(BaijiuLicenseGate.statusLine() + "\n\u63d2\u4ef6 " + BaijiuPluginInfo.bundleVersion());
+			}
+		});
 
 		Label glossary = new Label(parent, SWT.WRAP);
 		glossary.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));

@@ -147,6 +147,9 @@ public final class BaijiuBatchShell {
 				warn(shell, "\u8bf7\u5148\u9009\u62e9\u591a\u4e2a .ocb \u6587\u4ef6\u3002");
 				return;
 			}
+			if(BaijiuLicenseShell.blockQuantify(shell)) {
+				return;
+			}
 			String calibrationBlock = BaijiuCalibrationGate.blockingMessage(settings);
 			if(calibrationBlock != null) {
 				warn(shell, calibrationBlock);

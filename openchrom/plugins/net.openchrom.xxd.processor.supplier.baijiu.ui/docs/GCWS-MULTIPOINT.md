@@ -57,5 +57,5 @@ Points, mix scale, source path/label, areas, concentrations, and fit (n, slope, 
 ## Scope / non-goals
 
 - Pilot UI/fit: methanol + 乙酸乙酯 + 乳酸乙酯 + 己酸乙酯 only.
-- No Part 11 / LIMS. Printable report is item 12 (`GCWS-REPORT.md`); it shows the RF actually used (effective RF after fit).
+- No Part 11 / LIMS. Printable report is item 12 (`GCWS-REPORT.md`); it shows the RF actually used (effective RF after fit). Install/license is item 13 (`GCWS-INSTALL.md`).
 - No hard R² fail line unless a plant preference already defines one (none does).

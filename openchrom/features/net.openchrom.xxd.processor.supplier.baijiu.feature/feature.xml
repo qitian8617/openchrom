@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
       id="net.openchrom.xxd.processor.supplier.baijiu.feature"
-      label="Baijiu Analysis"
+      label="Baijiu Analysis (白酒分析)"
       version="1.6.32.qualifier"
       provider-name="OpenChrom"
       plugin="net.openchrom.feature.branding"
@@ -9,6 +9,7 @@
       license-feature-version="2.0.2.qualifier">
 
    <description url="http://www.openchrom.net">
+      白酒 FID 色谱峰识别、内标定量与 GB 2757 甲醇判定（试点工作站插件）。
       Liquor chromatogram peak identification, ISTD quantitation and GB 2757 methanol judgement for the workstation.
    </description>
 

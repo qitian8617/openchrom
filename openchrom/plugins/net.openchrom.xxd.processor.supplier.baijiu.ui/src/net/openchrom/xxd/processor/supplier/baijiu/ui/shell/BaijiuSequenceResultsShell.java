@@ -36,6 +36,7 @@ import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuBatchEngine;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuCalibrationGate;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuCatalog;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuCompound;
+import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuLicenseGate;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuMethodSettings;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuPreferences;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuRawMaterial;
@@ -161,7 +162,7 @@ public final class BaijiuSequenceResultsShell {
 		close.addListener(SWT.Selection, e -> shell.close());
 
 		shell.open();
-		if(runImmediately && !source.isEmpty()) {
+		if(runImmediately && !source.isEmpty() && BaijiuLicenseGate.allowsQuantifyAndReport()) {
 			runTable(shell, source, settings, template, abv, rows, table, summary);
 		}
 		Display display = shell.getDisplay();
@@ -176,6 +177,9 @@ public final class BaijiuSequenceResultsShell {
 
 		if(source.isEmpty()) {
 			warn(shell, "当前序列为空。请先在进样序列中编排，或打开带谱图路径的序列 JSON。\nThe injection sequence is empty. Build it on the workbench, or open a sequence JSON with chromatogram paths.");
+			return;
+		}
+		if(BaijiuLicenseShell.blockQuantify(shell)) {
 			return;
 		}
 		try {

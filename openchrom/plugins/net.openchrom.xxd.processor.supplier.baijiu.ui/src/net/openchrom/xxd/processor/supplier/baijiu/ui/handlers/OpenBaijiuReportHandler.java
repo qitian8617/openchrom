@@ -25,6 +25,7 @@ import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuMethodSettings;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuPreferences;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuSampleInfo;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.ChromatogramBridge;
+import net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuLicenseShell;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuReportShell;
 
 public class OpenBaijiuReportHandler {
@@ -32,6 +33,9 @@ public class OpenBaijiuReportHandler {
 	@Execute
 	public void execute(@Active Shell shell, @Optional EPartService partService) {
 
+		if(BaijiuLicenseShell.blockQuantify(shell)) {
+			return;
+		}
 		IChromatogramSelection selection = ChromatogramBridge.resolve(partService);
 		IChromatogram chromatogram = selection == null ? null : selection.getChromatogram();
 		BaijiuMethodSettings settings = BaijiuPreferences.loadMethod();

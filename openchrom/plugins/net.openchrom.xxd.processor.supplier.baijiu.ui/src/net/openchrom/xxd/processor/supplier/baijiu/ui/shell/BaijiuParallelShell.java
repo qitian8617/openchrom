@@ -154,6 +154,9 @@ public final class BaijiuParallelShell {
 				warn(shell, "请先为针 A 和针 B 各选一个 .ocb（演示可两次选择 sample-nongxiang.ocb）。\nChoose a chromatogram for needle A and needle B (the demo file may be used twice).");
 				return;
 			}
+			if(BaijiuLicenseShell.blockQuantify(shell)) {
+				return;
+			}
 			String calibrationBlock = BaijiuCalibrationGate.blockingMessage(settings);
 			if(calibrationBlock != null) {
 				warn(shell, calibrationBlock);

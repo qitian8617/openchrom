@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>net.openchrom</groupId>
+    <artifactId>master</artifactId>
+    <version>1.6.32-SNAPSHOT</version>
+    <relativePath>../..</relativePath>
+  </parent>
+  <artifactId>openchrom.baijiu-fid-pilot.repository</artifactId>
+  <packaging>eclipse-repository</packaging>
+  <name>Baijiu FID Pilot p2 repository</name>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.eclipse.tycho</groupId>
+        <artifactId>tycho-p2-repository-plugin</artifactId>
+        <configuration>
+          <includeAllSources>false</includeAllSources>
+          <includeAllDependencies>false</includeAllDependencies>
+          <filterProvided>false</filterProvided>
+          <skipArchive>false</skipArchive>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

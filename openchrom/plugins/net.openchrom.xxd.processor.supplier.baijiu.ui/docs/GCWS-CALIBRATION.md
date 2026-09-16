@@ -31,4 +31,4 @@ The frozen default package (`nongxiang-fid-default.bjm`) ships **without RF**. R
 
 Fix: open the mix chromatogram (demo `mix-15plus-istd.ocb`) → **推荐积分** → **用当前谱图做校正** (or **多点校正** → 拟合) → then quantify the sample.
 
-See demo `操作步骤.txt`.
+See demo `操作步骤.txt`. Install / simple license (item 13) is a separate UI gate (`GCWS-INSTALL.md`); it does not change this RF check.

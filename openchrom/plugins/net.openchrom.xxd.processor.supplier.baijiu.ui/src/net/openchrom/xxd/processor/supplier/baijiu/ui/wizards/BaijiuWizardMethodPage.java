@@ -18,6 +18,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuCalibrationGate;
+import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuLicenseGate;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuMethodSettings;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuSampleInfo;
 
@@ -47,6 +48,8 @@ public class BaijiuWizardMethodPage extends WizardPage {
 		BaijiuSampleInfo sample = wizard.getSample();
 		label(root, "\u65b9\u6cd5\uff1a" + settings.getMethodName() + "    \u67f1\uff1a" + settings.getColumnSummary());
 		label(root, "\u5185\u6807\uff1a" + settings.getIstdName() + "    \u8d2e\u5907\u6db2 " + settings.getIstdStockGramsPerLiter() + " g/L    \u52a0\u6807 " + settings.getSampleVolumeMl() + "+" + settings.getIstdVolumeMl() + " mL");
+		String license = BaijiuLicenseGate.blockingMessage();
+		label(root, license == null ? BaijiuLicenseGate.statusLine() : license);
 		String gate = BaijiuCalibrationGate.blockingMessage(settings);
 		label(root, gate == null ? BaijiuCalibrationGate.OPERATOR_HINT : gate);
 		sampleNo = field(root, "\u6837\u54c1\u7f16\u53f7", sample.getSampleNo());

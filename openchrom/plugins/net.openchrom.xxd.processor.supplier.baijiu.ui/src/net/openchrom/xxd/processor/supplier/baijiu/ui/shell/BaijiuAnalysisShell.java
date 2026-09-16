@@ -45,6 +45,7 @@ import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuCalibrationGate;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuCalibrationPoint;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuCatalog;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuCompound;
+import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuLicenseGate;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuLinearFit;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuMethodIO;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuMethodSettings;
@@ -275,9 +276,13 @@ public final class BaijiuAnalysisShell {
 		button(buttons, "\u4fdd\u5b58\u65b9\u6cd5", e -> saveMethod(parent.getShell()));
 		button(buttons, "\u53e6\u5b58\u5382\u65b9\u6cd5", e -> savePlantMethod(parent.getShell()));
 		button(buttons, "\u52a0\u8f7d\u9ed8\u8ba4\u6d53\u9999\u65b9\u6cd5\u5305", e -> restoreDefaultPackage(parent.getShell()));
+		button(buttons, "\u8bb8\u53ef / \u7248\u672c\u2026", e -> {
+			BaijiuLicenseShell.open(parent.getShell());
+			setStatus(BaijiuLicenseGate.statusLine());
+		});
 		Label calibrationHint = new Label(root, SWT.WRAP);
 		calibrationHint.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		calibrationHint.setText(BaijiuCalibrationGate.OPERATOR_HINT + " \u5355\u70b9\u4ecd\u7528\u300c\u7528\u5f53\u524d\u8c31\u56fe\u505a\u6821\u6b63\u300d\uff1b\u7532\u9187+\u4e3b\u916f\u4e5f\u53ef\u5728\u300c\u591a\u70b9\u6821\u6b63\u300d\u9875\u8bb0 \u2265 3 \u70b9\u5e76\u62df\u5408 R\u00b2\u3002");
+		calibrationHint.setText(BaijiuLicenseGate.OPERATOR_HINT + " " + BaijiuCalibrationGate.OPERATOR_HINT + " \u5355\u70b9\u4ecd\u7528\u300c\u7528\u5f53\u524d\u8c31\u56fe\u505a\u6821\u6b63\u300d\uff1b\u7532\u9187+\u4e3b\u916f\u4e5f\u53ef\u5728\u300c\u591a\u70b9\u6821\u6b63\u300d\u9875\u8bb0 \u2265 3 \u70b9\u5e76\u62df\u5408 R\u00b2\u3002");
 
 		Group gbGroup = group(root, "GB 2757 \u7532\u9187\u5224\u5b9a");
 		gbGroup.setLayout(new GridLayout(1, false));
@@ -767,6 +772,14 @@ public final class BaijiuAnalysisShell {
 	private void quantify(Shell shell, boolean dialogOnError, boolean writeBack) {
 
 		collectAll();
+		String licenseBlock = BaijiuLicenseGate.blockingMessage();
+		if(licenseBlock != null) {
+			if(dialogOnError) {
+				warn(shell, licenseBlock);
+			}
+			setStatus(licenseBlock);
+			return;
+		}
 		BaijiuSampleInfo sample = readSample();
 		if(sample.hasBlockingErrors()) {
 			String message = String.join("\n", sample.validate());
@@ -805,6 +818,10 @@ public final class BaijiuAnalysisShell {
 			fillMatchTables();
 			return;
 		}
+		if(BaijiuLicenseGate.blockingMessage() != null) {
+			fillMatchTables();
+			return;
+		}
 		if(resultTable == null || resultTable.isDisposed()) {
 			return;
 		}
@@ -813,6 +830,9 @@ public final class BaijiuAnalysisShell {
 
 	private void report(Shell shell) {
 
+		if(BaijiuLicenseShell.blockQuantify(shell)) {
+			return;
+		}
 		collectAll();
 		BaijiuSampleInfo sample = readSample();
 		BaijiuAnalysisResult result = lastResult;
@@ -830,6 +850,9 @@ public final class BaijiuAnalysisShell {
 
 	private void exportCsv(Shell shell) {
 
+		if(BaijiuLicenseShell.blockQuantify(shell)) {
+			return;
+		}
 		collectAll();
 		BaijiuSampleInfo sample = readSample();
 		BaijiuAnalysisResult result = lastResult;

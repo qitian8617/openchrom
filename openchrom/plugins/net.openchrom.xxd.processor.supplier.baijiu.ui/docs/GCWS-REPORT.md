@@ -67,4 +67,4 @@ One data row per quantified compound (Excel-friendly). Header:
 - Claiming GB 5009.266
 - Changing the mix-standard gate or multipoint fit
 
-See `GCWS-CALIBRATION.md`, `GCWS-MULTIPOINT.md`, and demo `操作步骤.txt` section **J**.
+See `GCWS-CALIBRATION.md`, `GCWS-MULTIPOINT.md`, demo `操作步骤.txt` section **J**, and install/license item 13 (`GCWS-INSTALL.md`, section **K**).
