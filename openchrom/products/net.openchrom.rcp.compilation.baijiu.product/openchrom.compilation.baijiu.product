@@ -16,7 +16,7 @@
    <launcherArgs>
       <programArgs>-clearPersistedState
       </programArgs>
-      <vmArgs>-Dapplication.name=白酒 FID 工作站
+      <vmArgs>-Dapplication.name=白酒FID工作站
 -Dapplication.version=1.6.0
 -Dapplication.perspective=net.openchrom.xxd.processor.supplier.baijiu.ui.perspective.workbench
 -Dopenchrom.update=false
