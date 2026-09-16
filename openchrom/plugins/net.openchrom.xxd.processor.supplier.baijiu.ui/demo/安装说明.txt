@@ -1,0 +1,24 @@
+白酒 FID 试点 — 安装与许可（短说明）
+
+1. 工程师导出
+   Eclipse：文件 → 导出 → Deployable Features
+   勾选「Baijiu FID Pilot (白酒FID试点)」到一个文件夹（如 D:\baijiu-fid-pilot-site）
+   不必重编整个 OpenChrom 社区产品。详见 docs/GCWS-INSTALL.md
+
+2. 厂里安装（已有 OpenChrom 社区版）
+   帮助 → 安装新软件 → 添加 → 本地 → 上述文件夹
+   选「白酒 FID 试点」→ 安装 → 重启
+   帮助 → 关于 → Installation Details 应看到 1.6.32.* 
+
+3. 打开白酒分析
+   插件 → 白酒工作台（或 窗口 → 视角 → 白酒工作台）
+   反控主界面需要同时装上 temperature.ui（试点功能已包含）
+
+4. 许可
+   白酒工作台 → 许可 / 版本… → 导入 demo/sample-pilot.bjlic
+   未授权仍可打开谱图和推荐积分；定量与报告会中英提示并停用。
+   不损坏 OpenChrom 核心。无需联网。
+
+5. 演示方法包
+   demo/nongxiang-fid-default.bjm（浓香FID默认方法.bjm）
+   然后按 操作步骤.txt A–J（多点=I，报告=J，安装/许可=K）

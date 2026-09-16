@@ -7,4 +7,12 @@
             uri="fragment.e4xmi">
       </fragment>
    </extension>
+   <extension
+         point="org.eclipse.ui.preferencePages">
+      <page
+            class="net.openchrom.xxd.processor.supplier.baijiu.ui.prefs.BaijiuLicensePreferencePage"
+            id="net.openchrom.xxd.processor.supplier.baijiu.ui.prefs.license"
+            name="%pref.baijiuLicense">
+      </page>
+   </extension>
 </plugin>

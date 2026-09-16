@@ -12,6 +12,7 @@
     <elements xsi:type="commands:Command" xmi:id="_baijiuResCmd" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.command.sequenceResults" commandName="%command.baijiuSequenceResults"/>
     <elements xsi:type="commands:Command" xmi:id="_baijiuParCmd" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.command.parallel" commandName="%command.baijiuParallel"/>
     <elements xsi:type="commands:Command" xmi:id="_baijiuPerspCmd" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.command.perspective" commandName="%command.baijiuPerspective"/>
+    <elements xsi:type="commands:Command" xmi:id="_baijiuLicCmd" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.command.license" commandName="%command.baijiuLicense"/>
   </fragments>
   <fragments xsi:type="fragment:StringModelFragment" xmi:id="_baijiuHdlFrag" featurename="handlers" parentElementId="org.eclipse.chemclipse.rcp.ide.application">
     <elements xsi:type="commands:Handler" xmi:id="_baijiuHdl" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.handler.open" contributionURI="bundleclass://net.openchrom.xxd.processor.supplier.baijiu.ui/net.openchrom.xxd.processor.supplier.baijiu.ui.handlers.OpenBaijiuAnalysisHandler" command="_baijiuCmd"/>
@@ -24,6 +25,7 @@
     <elements xsi:type="commands:Handler" xmi:id="_baijiuResHdl" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.handler.sequenceResults" contributionURI="bundleclass://net.openchrom.xxd.processor.supplier.baijiu.ui/net.openchrom.xxd.processor.supplier.baijiu.ui.handlers.OpenBaijiuSequenceResultsHandler" command="_baijiuResCmd"/>
     <elements xsi:type="commands:Handler" xmi:id="_baijiuParHdl" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.handler.parallel" contributionURI="bundleclass://net.openchrom.xxd.processor.supplier.baijiu.ui/net.openchrom.xxd.processor.supplier.baijiu.ui.handlers.OpenBaijiuParallelHandler" command="_baijiuParCmd"/>
     <elements xsi:type="commands:Handler" xmi:id="_baijiuPerspHdl" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.handler.perspective" contributionURI="bundleclass://net.openchrom.xxd.processor.supplier.baijiu.ui/net.openchrom.xxd.processor.supplier.baijiu.ui.handlers.OpenBaijiuPerspectiveHandler" command="_baijiuPerspCmd"/>
+    <elements xsi:type="commands:Handler" xmi:id="_baijiuLicHdl" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.handler.license" contributionURI="bundleclass://net.openchrom.xxd.processor.supplier.baijiu.ui/net.openchrom.xxd.processor.supplier.baijiu.ui.handlers.OpenBaijiuLicenseHandler" command="_baijiuLicCmd"/>
   </fragments>
   <fragments xsi:type="fragment:StringModelFragment" xmi:id="_baijiuMenuFrag" featurename="children" parentElementId="org.eclipse.chemclipse.rcp.app.ui.menu.plugins">
     <elements xsi:type="menu:Menu" xmi:id="_baijiuMenu" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.menu.workbench" label="%menu.baijiuWorkbench" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/peak.gif">
@@ -37,6 +39,7 @@
       <children xsi:type="menu:HandledMenuItem" xmi:id="_baijiuMenuPar" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.menu.parallel" label="%menu.baijiuParallel" command="_baijiuParCmd"/>
       <children xsi:type="menu:HandledMenuItem" xmi:id="_baijiuMenuReport" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.menu.report" label="%menu.baijiuReport" command="_baijiuReportCmd"/>
       <children xsi:type="menu:HandledMenuItem" xmi:id="_baijiuMenuPersp" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.menu.perspective" label="%menu.baijiuPerspective" command="_baijiuPerspCmd"/>
+      <children xsi:type="menu:HandledMenuItem" xmi:id="_baijiuMenuLic" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.menu.license" label="%menu.baijiuLicense" command="_baijiuLicCmd"/>
     </elements>
   </fragments>
   <fragments xsi:type="fragment:StringModelFragment" xmi:id="_baijiuToolbarFrag" featurename="children" parentElementId="org.eclipse.chemclipse.rcp.app.ui.toolbar.plugins">

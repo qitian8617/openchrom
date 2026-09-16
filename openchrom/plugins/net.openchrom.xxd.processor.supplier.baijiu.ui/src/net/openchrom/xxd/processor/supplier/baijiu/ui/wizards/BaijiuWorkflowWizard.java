@@ -19,6 +19,7 @@ import org.eclipse.swt.widgets.Shell;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuAnalysisEngine;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuAnalysisResult;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuCalibrationGate;
+import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuLicenseGate;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuMethodSettings;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuPreferences;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuRecommendedIntegration;
@@ -127,6 +128,12 @@ public class BaijiuWorkflowWizard extends Wizard {
 
 		methodPage.collect();
 		reloadChromatogram();
+		String licenseBlock = BaijiuLicenseGate.blockingMessage();
+		if(licenseBlock != null) {
+			result = BaijiuAnalysisResult.failure(licenseBlock);
+			status = licenseBlock;
+			return status;
+		}
 		result = BaijiuAnalysisEngine.quantify(chromatogram(), sample, settings);
 		status = result.getMessage();
 		if(result.isSuccess()) {

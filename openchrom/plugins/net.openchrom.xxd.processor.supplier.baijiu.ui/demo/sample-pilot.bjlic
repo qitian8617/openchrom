@@ -1,0 +1,9 @@
+# OpenChrom Baijiu FID pilot license (offline, not DRM)
+# Demo for 本机导出验证. Not a production plant license.
+# Apply: 白酒工作台 → 许可 → 导入 *.bjlic
+product=baijiu-fid-pilot
+site=示例酒厂
+customer=Pilot Demo
+issued=2026-09-16
+expires=2027-12-31
+key=BAIJIU-E6C1231A-C0B5BE3E
