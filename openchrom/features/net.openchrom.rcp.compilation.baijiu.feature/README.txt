@@ -5,7 +5,8 @@ Id: net.openchrom.rcp.compilation.baijiu.feature  1.6.32.qualifier
 
 Includes ChemClipse community compilation (kernel) + Baijiu FID Pilot
 (baijiu.ui + temperature.ui) + CSD CDF converter + this product's branding
-plug-in. Does **not** include the OpenChrom community branding product.
+plug-in. Phase 2 plant layout (workbench + reverse-control part). Does
+**not** include the OpenChrom community branding product.
 Charting (SWTChart) is transitive via the ChemClipse community feature /
 target platform — do not require `org.eclipse.swtchart.feature` here
 (PDE cannot resolve it unless that feature project is in the workspace).

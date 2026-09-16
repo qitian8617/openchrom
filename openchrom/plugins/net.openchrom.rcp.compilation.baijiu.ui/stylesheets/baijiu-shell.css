@@ -1,18 +1,24 @@
 /*******************************************************************************
- * Phase-1 dedicated Baijiu shell: hide research chrome that the Java
+ * Phase-2 dedicated Baijiu shell: hide research chrome that the Java
  * model processor also turns off. CSS is a belt; E4 visibility is the belt
- * buckle. Do not hide File / 白酒 / Help.
+ * buckle. Do not hide File / 白酒 / View / Window / Help. Chromatogram
+ * parent stays as the 峰检测/积分 escape hatch; noisy children are hidden
+ * in BaijiuShellChrome.
  *******************************************************************************/
 #org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.updates,
 #org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.updates,
 #org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.tutorials,
 #org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.quickaccess,
+#org.eclipse.chemclipse.rcp.app.ui.menu.plugins,
 #org.eclipse.chemclipse.ux.extension.msd.ui.handledmenuitem.openChromatogram,
 #org.eclipse.chemclipse.ux.extension.wsd.ui.handledmenuitem.openChromatogram,
 #org.eclipse.chemclipse.ux.extension.ui.menu.scan,
 #org.eclipse.chemclipse.ux.extension.ui.menu.peak,
 #org.eclipse.chemclipse.ux.extension.ui.menu.spectrum,
 #org.eclipse.chemclipse.ux.extension.ui.menu.process,
+#org.eclipse.chemclipse.ux.extension.ui.toolbar.operations,
+#org.eclipse.chemclipse.ux.extension.ui.perspective.welcome,
+#org.eclipse.chemclipse.ux.extension.xxd.ui.perspective.main,
 #net.openchrom.installer.ui.handledmenuitem.install.addons {
 	visibility: hidden;
 }

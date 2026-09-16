@@ -14,7 +14,7 @@
    </configIni>
 
    <launcherArgs>
-      <programArgs>-clearPersistedState
+      <programArgs>
       </programArgs>
       <vmArgs>-Dapplication.name=白酒FID工作站
 -Dapplication.version=1.6.0

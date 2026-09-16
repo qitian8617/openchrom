@@ -4,7 +4,7 @@
 
 Two install vehicles (both kept):
 
-1. **Dedicated product (target operator UI, 方案 B Phase 1):** `openchrom.compilation.baijiu.product` — window title **白酒 FID 工作站**, starts on 白酒工作台. See [白酒FID专用壳架构.md](白酒FID专用壳架构.md) and `products/net.openchrom.rcp.compilation.baijiu.product/README.txt`.
+1. **Dedicated product (target operator UI, 方案 B Phase 2):** `openchrom.compilation.baijiu.product` — window title **白酒 FID 工作站**, starts on 白酒工作台 with reverse-control as a workbench tab. See [白酒FID专用壳架构.md](白酒FID专用壳架构.md) and `products/net.openchrom.rcp.compilation.baijiu.product/README.txt`.
 2. **Install New Software into community OpenChrom** (still supported): export `baijiu.pilot.feature` as below. This is not a rewrite of the community `.product`, not NSIS/Inno for all of OpenChrom, not a hardware dongle, not an activation server, and not Part 11.
 
 Acceptance: **本机导出验证** — an engineer on a Windows workstation can **either** Run/Export the dedicated product **or** export the pilot feature, install it, enter a sample license, and open 白酒分析.
@@ -59,6 +59,13 @@ Need the OpenChrom PDE workspace that already compiles `baijiu.ui` (**JavaSE-21*
 3. **Run As → Eclipse Application** from that `.product` (do not reuse the community launch config).
 4. **Export Eclipse Product** to e.g. `D:\baijiu-fid-workstation`. Launcher `baijiu-fid.exe`. Bundled JRE is Java 25.
 5. License drop-in is still `%USERPROFILE%\OpenChrom\licenses\baijiu-fid.bjlic`.
+
+Phase 2 plant UI (dedicated product only):
+
+- Starts on **白酒工作台**. Reverse-control (**气相色谱控制台**, gas/flame/signal, FID ready, current vial) is a **tab in that perspective** (and 窗口 → 视角). Community install still opens the floating dialog.
+- Default launch **does not** pass `-clearPersistedState`. Sash / window size is remembered under `~/BaijiuFID`. Reset: **白酒 → 重置窗口布局** then restart, or add `-clearPersistedState` **once**.
+- `-Dapplication.name=白酒FID工作站` must stay **without unquoted spaces** (do not put `白酒 FID 工作站` on that VM arg — `ClassNotFoundException: FID`).
+- Processor / research chromatogram noise is hidden by id; 峰检测/积分 remain via **白酒推荐积分** or the trimmed **色谱** menu.
 
 Tycho (heavy):
 
@@ -142,7 +149,7 @@ After a valid license, continue demo `操作步骤.txt` **A–J** (method packag
 
 ## D. Engineer verify list (本机导出验证)
 
-- [ ] **Dedicated product:** Run As / Export `openchrom.compilation.baijiu.product`; title 白酒 FID 工作站; starts on 白酒工作台; `baijiu.ui` still JavaSE-21
+- [ ] **Dedicated product:** Run As / Export `openchrom.compilation.baijiu.product`; title 白酒 FID 工作站; starts on 白酒工作台 with 反控 tab; restart keeps layout; `baijiu.ui` still JavaSE-21
 - [ ] **Community path:** Export Deployable Features of **Baijiu FID Pilot** to a folder (or Tycho `sites/baijiu-fid-pilot/target/repository`)
 - [ ] On a community OpenChrom, Install New Software from that folder; restart
 - [ ] About / Installation Details shows feature **1.6.32.*** qualifier

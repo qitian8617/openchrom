@@ -19,7 +19,8 @@ import org.eclipse.e4.ui.workbench.modeling.EModelService;
 /**
  * Dedicated-product lifecycle: Chinese window title + plant default
  * perspective property. Menu hide runs from {@link BaijiuShellAddon} after
- * ChemClipse fragments are merged.
+ * ChemClipse fragments are merged. Layout persistence is prepared here
+ * before E4 loads {@code workbench.xmi}.
  */
 public class BaijiuLifeCycle {
 
@@ -27,6 +28,7 @@ public class BaijiuLifeCycle {
 	public void postContextCreate() {
 
 		System.setProperty(BaijiuShellChrome.PERSPECTIVE_PROPERTY, BaijiuShellChrome.PERSPECTIVE_ID);
+		BaijiuShellLayout.prepareWorkspace();
 	}
 
 	@ProcessAdditions

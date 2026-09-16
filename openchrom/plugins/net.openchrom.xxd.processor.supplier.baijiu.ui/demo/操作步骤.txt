@@ -220,10 +220,13 @@ M. 现场演示与验收脚本（试点清单项 16）
   未校正 / RF 无效：白酒分析、向导、简单批量、批处理结果均阻止定量，提示先做「用当前谱图做校正」或「多点校正」拟合。无「强制继续」。
   详见插件 docs/GCWS-CALIBRATION.md、docs/GCWS-MULTIPOINT.md
 
-N. 专用壳产品（方案 B / Phase 1，目标操作员 UI）
+N. 专用壳产品（方案 B / Phase 2，目标操作员 UI）
   社区版 + 安装新软件（节 K）现阶段仍支持。新厂机优先跑专用壳：
     products/net.openchrom.rcp.compilation.baijiu.product/openchrom.compilation.baijiu.product
-    窗口标题「白酒 FID 工作站」；启动视角白酒工作台；顶栏「白酒」菜单。
+    窗口标题「白酒 FID 工作站」；启动视角白酒工作台（右侧页签：白酒操作 + 气相色谱控制台）；
+    顶栏「白酒」菜单。布局会记住；重置：白酒 → 重置窗口布局，然后重启
+    （或启动参数临时加 -clearPersistedState 一次）。
+    -Dapplication.name=白酒FID工作站 不要带空格（否则 ClassNotFoundException: FID）。
   架构：docs/白酒FID专用壳架构.md
   Run As / Export / JavaSE-21 vs 启动用 Java 25：产品 README.txt、docs/GCWS-INSTALL.md 节 A0
   不要把 baijiu.ui BREE 升到 25；不要删社区 .product。

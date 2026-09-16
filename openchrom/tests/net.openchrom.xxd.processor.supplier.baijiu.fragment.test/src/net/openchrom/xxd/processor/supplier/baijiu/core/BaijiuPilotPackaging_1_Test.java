@@ -9,6 +9,7 @@
  *******************************************************************************/
 package net.openchrom.xxd.processor.supplier.baijiu.core;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -134,6 +135,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(xml.contains("net.openchrom.rcp.compilation.baijiu.feature"), xml);
 		assertTrue(xml.contains("application.perspective=net.openchrom.xxd.processor.supplier.baijiu.ui.perspective.workbench"), xml);
 		assertTrue(xml.contains("osgi.nl=zh_CN"), xml);
+		assertFalse(xml.contains("-clearPersistedState"), "Phase 2 default launch must remember layout");
 		assertTrue(xml.contains("org.eclipse.justj.openjdk.hotspot.jre.full.stripped"), xml);
 
 		Path community = locate("openchrom/products/net.openchrom.rcp.compilation.community.product/openchrom.compilation.community.product", "products/net.openchrom.rcp.compilation.community.product/openchrom.compilation.community.product");
@@ -156,6 +158,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(brandingMf.contains("JavaSE-21"), brandingMf);
 		assertTrue(brandingMf.contains("org.eclipse.e4.core.contexts"), brandingMf);
 		assertTrue(!brandingMf.contains("JavaSE-25"), brandingMf);
+		assertFalse(brandingMf.contains("net.openchrom.xxd.processor.supplier.baijiu.ui"), brandingMf);
+		assertFalse(brandingMf.contains("net.openchrom.xxd.control.supplier.temperature.ui"), brandingMf);
 
 		Path fragmentBuild = locate("openchrom/tests/net.openchrom.rcp.compilation.baijiu.fragment.test/build.properties", "tests/net.openchrom.rcp.compilation.baijiu.fragment.test/build.properties");
 		assertNotNull(fragmentBuild);
@@ -173,6 +177,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(archText.contains("\u58f3 vs \u5185\u6838") || archText.contains("\u58f3 vs"), archText);
 		assertTrue(archText.contains("baijiu.ui"), archText);
 		assertTrue(archText.contains("temperature.ui"), archText);
+		assertTrue(archText.contains("Phase 2"), archText);
 		assertTrue(archText.contains("Phase 1"), archText);
 		assertTrue(archText.contains("Electron"), archText);
 		assertTrue(archText.contains("Part 11"), archText);

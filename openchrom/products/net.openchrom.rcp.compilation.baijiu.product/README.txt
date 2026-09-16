@@ -1,4 +1,4 @@
-白酒 FID 工作站 — 专用壳产品（方案 B / Phase 1）
+白酒 FID 工作站 — 专用壳产品（方案 B / Phase 2）
 ================================================
 
 Product file: openchrom.compilation.baijiu.product
@@ -33,15 +33,27 @@ Run As → Eclipse Application (Windows engineer)
    openchrom.compilation.baijiu.product
 4. Overview → Synchronize / Launch an Eclipse application
    (or Run As → Eclipse Application from the .product file).
-5. Program args already include -clearPersistedState.
-   VM args already set -Dapplication.perspective=...baijiu...perspective.workbench
-   and -Dosgi.nl=zh_CN.
-   Note: -Dapplication.name=白酒FID工作站 has no spaces so PDE/Windows does not treat FID as the main class (ClassNotFoundException: FID); window title stays 「白酒 FID 工作站」 via product name / shell chrome.
+5. Default program args do **not** include -clearPersistedState (layout is
+   remembered under ~/BaijiuFID). VM args set
+   -Dapplication.perspective=...baijiu...perspective.workbench,
+   -Dosgi.nl=zh_CN, and -Dapplication.name=白酒FID工作站 (**no spaces** —
+   do not write 白酒 FID 工作站 here or PDE/Windows treats FID as the
+   main class: ClassNotFoundException: FID). Window title stays
+   「白酒 FID 工作站」 via product name / shell chrome.
 6. Expect window title 白酒 FID 工作站, start on 白酒工作台,
-   top menu 白酒, File → 打开 CSD 文件 still there.
+   right-hand tabs 白酒操作 + 气相色谱控制台, top menu 白酒,
+   File → 打开 CSD 文件 still there. Processor / research chromatogram
+   submenus should be hidden; 色谱 → 峰检测 / 峰积分 remain as fallback.
 
 If the launch config was created for the **community** product, create a
 **new** one from this .product — do not reuse community's product id.
+
+Reset layout
+------------
+- 白酒 → 重置窗口布局 (or 窗口 → 重置窗口布局), then restart.
+- Or add -clearPersistedState **once** to the launch / shortcut.
+- Or -Dnet.openchrom.baijiu.clearLayout=true for that start.
+Phase 2 also clears workbench.xmi once when the chrome epoch advances.
 
 Export Product (Windows)
 ------------------------
@@ -63,13 +75,12 @@ Tycho (optional, full product — heavy)
 
 Community product is unchanged:
   products/net.openchrom.rcp.compilation.community.product
+Community reverse-control stays a dialog (no dedicated-shell placeholder).
 
-Phase 1 gaps (honest)
+Phase 2 gaps (honest)
 ---------------------
-- Chromatogram research menu kept as fallback (手册：色谱 → 峰检测).
-- Welcome / Data Analysis perspectives still listed under 窗口 → 视角.
-- Reverse-control is still a dialog, not its own perspective (Phase 2).
-- -clearPersistedState every start: layout is not remembered (Phase 2).
+- Chromatogram fallback kept (手册：色谱 → 峰检测 / 峰积分); research children hidden by id.
+- Some ChemClipse perspectives may still appear if ids rename; Phase 3 to drop features.
 - MSD/WSD/NMR contributions that ChemClipse still ships are hidden by id;
   if ChemClipse renames ids, some noise can reappear until Phase 3.
 - No custom painted chromatogram canvas; no Electron; no Part 11.
@@ -78,8 +89,12 @@ Verify on the engineer PC
 -------------------------
 [ ] .product opens; Run As starts; title 白酒 FID 工作站
 [ ] Default perspective 白酒工作台 (right-hand 白酒操作)
+[ ] 气相色谱控制台 visible as a tab (and/or 窗口 → 视角)
+[ ] Restart keeps sash / window size (no forced -clearPersistedState)
+[ ] Reset via 白酒 → 重置窗口布局 then restart restores default
 [ ] 白酒 menu: 打开色谱图 / 推荐积分 / 白酒分析 / 气相色谱控制台 / 许可
-[ ] File → 打开 CSD 文件 opens demo .ocb
+[ ] Processor / 插件 top menu hidden; 色谱 research submenus trimmed
+[ ] File → 打开 CSD 文件 opens demo .ocb; 白酒分析 still works
 [ ] Help → About shows 白酒 FID 工作站
 [ ] baijiu.ui MANIFEST still JavaSE-21
-[ ] Community product file still present and launches separately
+[ ] Community product file still present and launches separately (dialog 反控)
