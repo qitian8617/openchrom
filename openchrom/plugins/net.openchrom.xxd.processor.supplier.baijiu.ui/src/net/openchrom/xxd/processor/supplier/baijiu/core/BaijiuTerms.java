@@ -32,6 +32,7 @@ public final class BaijiuTerms {
 	public static final String RETENTION_TIME = "\u4fdd\u7559\u65f6\u95f4";
 	public static final String PEAK_AREA = "\u5cf0\u9762\u79ef";
 	public static final String CONCENTRATION = "\u542b\u91cf";
+	public static final String OVER_LIMIT = "\u8d85\u9650";
 	public static final String NOT_QUANTIFIED = "\u4e0d\u5b9a\u91cf";
 	public static final String QUANTIFY = "\u662f\u5426\u5b9a\u91cf";
 	public static final String METHANOL_JUDGMENT = "\u662f\u5426\u7532\u9187\u5224\u5b9a";

@@ -84,7 +84,7 @@ public final class BaijiuBatchEngine {
 		return csv.toString();
 	}
 
-	public 	public static boolean includeBatchColumn(BaijiuMethodSettings settings, BaijiuCompound compound) {
+	public static boolean includeBatchColumn(BaijiuMethodSettings settings, BaijiuCompound compound) {
 
 		if(compound == null || compound.isInternalStandard()) {
 			return false;
