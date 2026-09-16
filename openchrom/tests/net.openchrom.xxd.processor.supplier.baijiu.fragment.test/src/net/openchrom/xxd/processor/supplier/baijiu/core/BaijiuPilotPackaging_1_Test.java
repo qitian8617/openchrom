@@ -51,6 +51,38 @@ public class BaijiuPilotPackaging_1_Test {
 		assertNotNull(locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/demo/\u5b89\u88c5\u8bf4\u660e.txt", "demo/\u5b89\u88c5\u8bf4\u660e.txt"));
 	}
 
+	@Test
+	public void chineseOperatorManualCoversUnboxToFaq() throws Exception {
+
+		Path manual = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/docs/\u767d\u9152FID\u8bd5\u70b9\u64cd\u4f5c\u624b\u518c.md", "docs/\u767d\u9152FID\u8bd5\u70b9\u64cd\u4f5c\u624b\u518c.md");
+		assertNotNull(manual, "plant Chinese operator manual should exist");
+		String text = Files.readString(manual, StandardCharsets.UTF_8);
+		assertTrue(text.contains("\u5f00\u7bb1"), text);
+		assertTrue(text.contains("\u5e2e\u52a9 \u2192 \u5b89\u88c5\u65b0\u8f6f\u4ef6"), "install path");
+		assertTrue(text.contains("sample-pilot.bjlic"), text);
+		assertTrue(text.contains("FID \u5c31\u7eea"), text);
+		assertTrue(text.contains("\u7528\u5f53\u524d\u8c31\u56fe\u505a\u6821\u6b63"), text);
+		assertTrue(text.contains("\u6f14\u793a\u4e09\u70b9"), text);
+		assertTrue(text.contains("GB 2757"), text);
+		assertTrue(text.contains("GB 5009.266"), text);
+		assertTrue(text.contains("\u9884\u89c8/\u6253\u5370\u62a5\u544a") || text.contains("\u9884\u89c8 / \u6253\u5370\u62a5\u544a"), text);
+		assertTrue(text.contains("JavaSE-21"), text);
+		assertTrue(text.contains("\u5e38\u89c1\u6545\u969c"), text);
+		assertTrue(text.contains("\u8bb8\u53ef\u65e0\u6548"), text);
+		assertTrue(text.contains("\u672a\u6821\u6b63"), text);
+		assertTrue(text.contains("\u65e0 21 CFR Part 11"), text);
+		Path stub = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/docs/GCWS-OPERATOR-MANUAL.md", "docs/GCWS-OPERATOR-MANUAL.md");
+		assertNotNull(stub, "English stub should point at the Chinese manual");
+		assertTrue(Files.readString(stub, StandardCharsets.UTF_8).contains("\u767d\u9152FID\u8bd5\u70b9\u64cd\u4f5c\u624b\u518c.md"));
+		Path readme = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/demo/README.txt", "demo/README.txt");
+		assertNotNull(readme);
+		String readmeText = Files.readString(readme, StandardCharsets.UTF_8);
+		assertTrue(readmeText.contains("\u767d\u9152FID\u8bd5\u70b9\u64cd\u4f5c\u624b\u518c.md"), readmeText);
+		Path steps = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/demo/\u64cd\u4f5c\u6b65\u9aa4.txt", "demo/\u64cd\u4f5c\u6b65\u9aa4.txt");
+		assertNotNull(steps);
+		assertTrue(Files.readString(steps, StandardCharsets.UTF_8).contains("L. \u5382\u91cc\u64cd\u4f5c\u624b\u518c"));
+	}
+
 	private static Path locate(String... relative) {
 
 		Path start = Path.of(System.getProperty("user.dir")).toAbsolutePath();

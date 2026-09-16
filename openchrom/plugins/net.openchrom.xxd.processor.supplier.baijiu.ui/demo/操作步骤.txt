@@ -1,3 +1,5 @@
+厂里操作员请先读 docs/白酒FID试点操作手册.md（开箱到报告与常见故障）。下面 A–K 是演示点击清单。
+
 白酒分析演示数据（模拟 FID 谱图，非实机进样）
 
 文件位置：E:\OpenChrom\baijiu-demo\
@@ -152,6 +154,12 @@ K. 安装 / 升级包 + 简单许可（本机导出验证）
      状态须为「有效」。也可把文件放到 %USERPROFILE%\OpenChrom\licenses\baijiu-fid.bjlic
   5. 再走 A–J。升级：导出更新 qualifier 后对同一本地站点再装一次。
   反控需要 temperature.ui；包装功能已包含。详见 docs/GCWS-INSTALL.md
+
+L. 厂里操作手册（试点清单项 14）
+  开箱 → 安装/许可 → 开机采集 → 白酒分析校正定量 → 报告 → 常见故障：
+    docs/白酒FID试点操作手册.md
+  英文仅指针：docs/GCWS-OPERATOR-MANUAL.md
+  本文件 A–K 不替代手册；GCWS-*.md 仍为工程师深读。
 
 本机预期 RT（min）
   组分	厂商RT	本机RT

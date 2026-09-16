@@ -1,5 +1,7 @@
 白酒演示回归检查清单（Week 2）
 
+厂里操作员请先读 docs/白酒FID试点操作手册.md。本清单给验收勾选，不是操作手册。
+
 演示文件（不在 git，本地 OpenChrom-week1-ws / E:\OpenChrom\baijiu-demo）
   mix-15plus-istd.ocb（或 白酒混标_15组分加内标.ocb）
   sample-nongxiang.ocb（或 白酒样品_浓香模拟.ocb）
@@ -59,6 +61,9 @@
      About / Installation Details 可见 1.6.32.*；白酒工作台能打开
      未授权：仍可打开谱图；定量/报告中英阻止。导入 demo/sample-pilot.bjlic 后状态「有效」
      操作步骤节 K。不重编整个 community 产品。无加密狗 / 在线激活 / Part 11
+  13. 中文操作手册
+     docs/白酒FID试点操作手册.md 覆盖开箱→报告与常见故障（装不上 feature、许可、未校正、峰数、RF/R²、报告、Java/BREE、FID 未就绪、谱图打不开）
+     demo/README.txt 与 操作步骤.txt 节 L 指向该手册。英文仅 docs/GCWS-OPERATOR-MANUAL.md 指针。无 GB 5009.266 / Part 11 / LIMS 声明
 
 无头可测部分已写入 fragment test：
   Gb2757Judge_1_Test、BaijiuReport_1_Test、BaijiuBatchEngine_1_Test、BaijiuRegressionChecklist_1_Test
@@ -71,6 +76,6 @@
   多点校正：BaijiuLinearFit_1_Test、BaijiuMultipointCalibration_1_Test（≥3 点 OLS/R²；演示三点写 RF；单点仍可用）
   方法包往返含校正点：BaijiuMethodIO_1_Test（cal.point / cal.fit 持久化；恢复默认清除多点）
   报告定稿：BaijiuReport_1_Test（样品/方法/GB/谱图/操作者与时间字段；CSV 列对齐；缺检测人从谱图补；多点有效 RF；CSV BOM）
-  安装/许可：BaijiuLicense_1_Test、BaijiuLicenseGate_1_Test、BaijiuPilotPackaging_1_Test（*.bjlic 解析；有效/过期/错钥；未授权阻止定量文案；demo/sample-pilot.bjlic；pilot feature + category.xml）
+  安装/许可：BaijiuLicense_1_Test、BaijiuLicenseGate_1_Test、BaijiuPilotPackaging_1_Test（*.bjlic 解析；有效/过期/错钥；未授权阻止定量文案；demo/sample-pilot.bjlic；pilot feature + category.xml；中文操作手册开箱→故障）
 
 已知环境噪声（忽略）：LaiendeAboutHandler CNFE、CDK/inchi unresolved

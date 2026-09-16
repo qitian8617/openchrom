@@ -1,5 +1,7 @@
 # GC-FID acquisition: save an openable chromatogram
 
+Plant operators (Chinese): [白酒FID试点操作手册.md](../../net.openchrom.xxd.processor.supplier.baijiu.ui/docs/白酒FID试点操作手册.md) §§4–5.
+
 After **one** needle/run, the workstation writes a chromatogram that OpenChrom can open, then offers a one-click (or optional automatic) handoff into the **Baijiu analysis workbench**.
 
 A short **injection sequence** (空白 / 混标 / QC / 样品×N) is arranged on the **白酒工作台** so Main can show which vial is current. See [GCWS-SEQUENCE.md](GCWS-SEQUENCE.md). Heat / ignite / inject stay manual.
