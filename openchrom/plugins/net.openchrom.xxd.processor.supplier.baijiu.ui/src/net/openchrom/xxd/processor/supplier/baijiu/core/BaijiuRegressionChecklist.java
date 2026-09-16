@@ -71,6 +71,18 @@ public final class BaijiuRegressionChecklist {
 			if(gb != null && !reportHtml.contains(gb.getVerdictLabel())) {
 				failures.add("\u62a5\u544a\u672a\u663e\u793a GB \u5224\u5b9a");
 			}
+			String[] required = { //
+					BaijiuReportSupport.SECTION_SAMPLE, BaijiuReportSupport.SECTION_METHOD, BaijiuReportSupport.SECTION_CHROMATOGRAM, //
+					BaijiuReportSupport.SECTION_RESULTS, BaijiuReportSupport.SECTION_OPERATOR, //
+					BaijiuReportSupport.SAMPLE_NO, BaijiuReportSupport.LIQUOR_NAME, BaijiuReportSupport.BATCH_NO, BaijiuReportSupport.AROMA, //
+					BaijiuReportSupport.ABV, BaijiuReportSupport.RAW_MATERIAL, BaijiuReportSupport.ANALYST, BaijiuReportSupport.ANALYSIS_DATE, //
+					BaijiuReportSupport.METHOD_NAME, BaijiuReportSupport.COLUMN, BaijiuReportSupport.OVEN, BaijiuReportSupport.SPIKE, //
+					BaijiuTerms.OVER_LIMIT, BaijiuReportSupport.DISCLAIMER_ZH};
+			for(String token : required) {
+				if(!reportHtml.contains(token)) {
+					failures.add("\u62a5\u544a\u7f3a\u5c11\uff1a" + token);
+				}
+			}
 		}
 		return failures;
 	}

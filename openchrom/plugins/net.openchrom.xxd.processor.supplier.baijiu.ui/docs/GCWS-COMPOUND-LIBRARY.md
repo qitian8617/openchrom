@@ -38,6 +38,6 @@ The bundled package (`nongxiang-fid-default.bjm` / `baijiu-defaults.properties`)
 - **是否甲醇判定**: `BaijiuAnalysisEngine.quantify` uses that compound's concentration for `Gb2757Judge`. Catalog `isMethanol()` is only the default.
 - Mix-standard **calibration gate** (item 6) is not bypassed: the GB 2757 target (methanol by default) still needs a valid RF before sample quant.
 
-Multi-point R² is item 11. Full report / LIMS is item 12.
+Multi-point R² is item 11. Printable report is item 12 (`GCWS-REPORT.md`). LIMS / Part 11 remain out of scope.
 
 See demo `操作步骤.txt` section H and `GCWS-METHOD-PACKAGE.md`.

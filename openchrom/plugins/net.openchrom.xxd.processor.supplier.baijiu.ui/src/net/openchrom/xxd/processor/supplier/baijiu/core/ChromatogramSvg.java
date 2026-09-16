@@ -26,7 +26,7 @@ public final class ChromatogramSvg {
 		int start = chromatogram.getStartRetentionTime();
 		int stop = chromatogram.getStopRetentionTime();
 		float maxSignal = chromatogram.getMaxSignal();
-		if(stop <= start || maxSignal <= 0.0f) {
+		if(stop <= start || !(maxSignal > 0.0f) || width < 48 || height < 36) {
 			return "";
 		}
 		int step = Math.max(1, scans / 2000);
@@ -41,8 +41,15 @@ public final class ChromatogramSvg {
 			if(scan == null) {
 				continue;
 			}
+			double signal = scan.getTotalSignal();
+			if(!Double.isFinite(signal)) {
+				continue;
+			}
 			double x = left + (scan.getRetentionTime() - start) * plotWidth / (stop - start);
-			double y = top + plotHeight - (scan.getTotalSignal() / maxSignal) * plotHeight;
+			double y = top + plotHeight - (signal / maxSignal) * plotHeight;
+			if(!Double.isFinite(x) || !Double.isFinite(y)) {
+				continue;
+			}
 			if(first) {
 				path.append("M ");
 				first = false;
@@ -51,11 +58,15 @@ public final class ChromatogramSvg {
 			}
 			path.append(format(x)).append(" ").append(format(y));
 		}
+		if(first) {
+			return "";
+		}
 		StringBuilder svg = new StringBuilder();
 		svg.append("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"").append(width).append("\" height=\"").append(height).append("\" viewBox=\"0 0 ").append(width).append(" ").append(height).append("\">");
 		svg.append("<rect x=\"0\" y=\"0\" width=\"").append(width).append("\" height=\"").append(height).append("\" fill=\"#ffffff\" stroke=\"#cccccc\"/>");
 		svg.append("<path d=\"").append(path).append("\" fill=\"none\" stroke=\"#1a5f8a\" stroke-width=\"1\"/>");
-		svg.append("<text x=\"").append(left).append("\" y=\"").append(height - 8).append("\" font-size=\"10\" fill=\"#555\">RT / min</text>");
+		svg.append("<text x=\"").append(format(left)).append("\" y=\"").append(height - 8).append("\" font-size=\"10\" fill=\"#555\">").append(format(start / 60000.0d)).append(" min</text>");
+		svg.append("<text x=\"").append(format(left + plotWidth - 48)).append("\" y=\"").append(height - 8).append("\" font-size=\"10\" fill=\"#555\">").append(format(stop / 60000.0d)).append(" min</text>");
 		svg.append("</svg>");
 		return svg.toString();
 	}

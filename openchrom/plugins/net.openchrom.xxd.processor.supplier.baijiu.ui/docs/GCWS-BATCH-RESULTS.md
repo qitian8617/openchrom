@@ -1,6 +1,6 @@
 # Sequence batch results (item 8)
 
-Pilot P0: after an injection **sequence** finishes (or when enough vials are **已完成** with linked chromatograms), operators get a **batch results summary table** — one row per sequence entry. Not a second LIMS and not the printable report (item 12).
+Pilot P0: after an injection **sequence** finishes (or when enough vials are **已完成** with linked chromatograms), operators get a **batch results summary table** — one row per sequence entry. Not a second LIMS. The per-sample printable report is item 12 (`GCWS-REPORT.md`).
 
 Acceptance: **序列结束后汇总（接真机序列）**.
 
@@ -58,7 +58,7 @@ On a real instrument, acquire-save already writes the chromatogram path when a v
 
 - Autosampler / unattended next vial
 - Part 11, LIMS
-- Full printable report (item 12)
+- Per-sample printable report (item 12, `GCWS-REPORT.md`) — this table is the sequence summary only
 - Shewhart charts
 
 See `GCWS-SEQUENCE.md`, `GCWS-CALIBRATION.md`, `GCWS-PARALLEL.md`, and demo `操作步骤.txt` section F.
