@@ -51,6 +51,10 @@ public final class BaijiuShellChrome {
 	public static final String PLANT_TOP_SASH_ID = "net.openchrom.rcp.compilation.baijiu.ui.partsash.plantTop";
 	public static final String GC_HOME_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.gcHome";
 	public static final String SEQUENCE_HOME_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.sequenceHome";
+	/**
+	 * Dead Phase-2 editor-area placeholder. Plant home is GC console +
+	 * sequence only; this id must not be restored or kept visible.
+	 */
 	public static final String PLANT_EDITOR_PLACEHOLDER_ID = "net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantEditor";
 	public static final String PERSPECTIVE_STACK_ID = "org.eclipse.chemclipse.rcp.app.ui.perspectivestack.main";
 	public static final String MAIN_WINDOW_ID = "org.eclipse.chemclipse.rcp.app.ui.trimmedwindow.main";
@@ -61,7 +65,19 @@ public final class BaijiuShellChrome {
 	public static final String PLANT_TOOLBAR_ID = "net.openchrom.rcp.compilation.baijiu.ui.toolbar.plant";
 	public static final String RESET_LAYOUT_COMMAND_ID = "net.openchrom.rcp.compilation.baijiu.ui.command.resetLayout";
 	public static final String RESEARCH_MENUS_PROPERTY = "net.openchrom.baijiu.showResearchMenus";
-	public static final int CHROME_EPOCH = 7;
+	public static final int CHROME_EPOCH = 8;
+	/**
+	 * ChemClipse Application.e4xmi Save / Save All coolbar. Stays disabled
+	 * on plant home (no editor). File menu Save is kept separately.
+	 */
+	public static final String FILE_TOOLBAR_ID = "org.eclipse.chemclipse.rcp.app.ui.toolbar.main";
+	public static final String SAVE_TOOLITEM_ID = "org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.save";
+	public static final String SAVE_ALL_TOOLITEM_ID = "org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.saveAll";
+	public static final String PERSPECTIVES_TOOLBAR_ID = "org.eclipse.chemclipse.rcp.app.ui.toolbar.perspectives";
+	public static final String PERSPECTIVE_SWITCHER_TOOLITEM_ID = "org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.perspectiveSwitcher";
+	public static final String SELECT_VIEW_TOOLITEM_ID = "org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.selectView";
+	public static final String RESET_PERSPECTIVE_TOOLITEM_ID = "org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.resetperspective";
+	public static final String ECLIPSE_MAIN_TOOLBAR_ID = "org.eclipse.ui.main.toolbar";
 
 	public static final String PROCESS_MENU_ID = "org.eclipse.chemclipse.ux.extension.ui.menu.process";
 	public static final String PLUGINS_MENU_ID = "org.eclipse.chemclipse.rcp.app.ui.menu.plugins";
@@ -88,9 +104,33 @@ public final class BaijiuShellChrome {
 	/**
 	 * Exact E4 element ids to hide on the dedicated product. File → 打开 CSD,
 	 * 白酒, 视图, 帮助 stay visible. 处理器 / 插件 / 色谱 / 窗口 stay off
-	 * unless {@link #researchMenusVisible()}.
+	 * unless {@link #researchMenusVisible()}. Classic Eclipse file coolbar
+	 * (working-set person + New/Open/Save/Print) stays off; plant toolbar
+	 * and Help About remain.
 	 */
 	public static final List<String> HIDDEN_ELEMENT_IDS = List.of( //
+			PLANT_EDITOR_PLACEHOLDER_ID, //
+			FILE_TOOLBAR_ID, //
+			SAVE_TOOLITEM_ID, //
+			SAVE_ALL_TOOLITEM_ID, //
+			PERSPECTIVES_TOOLBAR_ID, //
+			PERSPECTIVE_SWITCHER_TOOLITEM_ID, //
+			SELECT_VIEW_TOOLITEM_ID, //
+			RESET_PERSPECTIVE_TOOLITEM_ID, //
+			ECLIPSE_MAIN_TOOLBAR_ID, //
+			"org.eclipse.ui.WorkingSetActionSet", //
+			"org.eclipse.ui.actionSet.openFiles", //
+			"org.eclipse.ui.NavigateActionSet", //
+			"org.eclipse.ui.edit.text.actionSet.navigation", //
+			"org.eclipse.ui.edit.text.actionSet.annotationNavigation", //
+			"org.eclipse.ui.edit.text.actionSet.presentation", //
+			"org.eclipse.ui.workbench.file", //
+			"org.eclipse.ui.newWizard", //
+			"org.eclipse.ui.file.save", //
+			"org.eclipse.ui.file.saveAll", //
+			"org.eclipse.ui.file.print", //
+			"org.eclipse.ui.file.open", //
+			"org.eclipse.ui.openLocalFile", //
 			"org.eclipse.chemclipse.ux.extension.msd.ui.handledmenuitem.openChromatogram", //
 			"org.eclipse.chemclipse.ux.extension.wsd.ui.handledmenuitem.openChromatogram", //
 			"org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.updates", //
@@ -144,7 +184,9 @@ public final class BaijiuShellChrome {
 			"org.eclipse.chemclipse.ux.extension.wsd.", //
 			"net.openchrom.installer.", //
 			"net.openchrom.xxd.processor.supplier.tracecompare.", //
-			"net.openchrom.xxd.identifier.");
+			"net.openchrom.xxd.identifier.", //
+			"org.eclipse.ui.edit.text.actionSet.", //
+			"org.eclipse.ui.actionSet.");
 
 	/**
 	 * Ids that the documented research-menu escape hatch may reveal. Other
@@ -177,7 +219,8 @@ public final class BaijiuShellChrome {
 			"org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.saveAll", //
 			"org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.preferences", //
 			"org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.resetperspective", //
-			"org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.resetperspective", //
+			"org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.about", //
+			"org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.preferences", //
 			"org.eclipse.chemclipse.ux.extension.csd.ui.handledmenuitem.openChromatogram", //
 			"org.eclipse.chemclipse.ux.extension.ui.menu.chromatogram.integrator", //
 			BAIJIU_MENU_ID, //
@@ -196,7 +239,6 @@ public final class BaijiuShellChrome {
 			PLANT_TOP_SASH_ID, //
 			GC_HOME_STACK_ID, //
 			SEQUENCE_HOME_STACK_ID, //
-			PLANT_EDITOR_PLACEHOLDER_ID, //
 			"net.openchrom.xxd.processor.supplier.baijiu.ui.menu.workbench", //
 			"net.openchrom.xxd.control.supplier.temperature.ui.menu.open");
 
@@ -236,15 +278,18 @@ public final class BaijiuShellChrome {
 			if(KEEP_ELEMENT_IDS.contains(elementId)) {
 				return false;
 			}
+			if(researchMenusVisible() && (RESEARCH_ESCAPE_IDS.contains(elementId) || isWindowMenuId(elementId))) {
+				return false;
+			}
+			if(HIDDEN_ELEMENT_IDS.contains(elementId)) {
+				return true;
+			}
 			for(String prefix : KEEP_ID_PREFIXES) {
 				if(elementId.startsWith(prefix)) {
 					return false;
 				}
 			}
-			if(researchMenusVisible() && (RESEARCH_ESCAPE_IDS.contains(elementId) || isWindowMenuId(elementId))) {
-				return false;
-			}
-			if(HIDDEN_ELEMENT_IDS.contains(elementId) || isWindowMenuId(elementId)) {
+			if(isWindowMenuId(elementId)) {
 				return true;
 			}
 			for(String prefix : HIDDEN_ID_PREFIXES) {
