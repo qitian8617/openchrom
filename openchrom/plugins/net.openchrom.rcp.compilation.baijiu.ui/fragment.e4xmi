@@ -7,8 +7,12 @@
   <imports xsi:type="commands:Command" xmi:id="_impPersp" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.command.perspective"/>
   <imports xsi:type="commands:Command" xmi:id="_impLic" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.command.license"/>
   <imports xsi:type="commands:Command" xmi:id="_impTemp" elementId="net.openchrom.xxd.control.supplier.temperature.ui.command.open"/>
+  <imports xsi:type="commands:Command" xmi:id="_impStart" elementId="net.openchrom.xxd.control.supplier.temperature.ui.command.startAnalysis"/>
+  <imports xsi:type="commands:Command" xmi:id="_impSeq" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.command.sequence"/>
   <imports xsi:type="advanced:Area" xmi:id="_impEditor" elementId="org.eclipse.chemclipse.rcp.app.ui.editor"/>
   <imports xsi:type="basic:Part" xmi:id="_impGcPart" elementId="net.openchrom.xxd.control.supplier.temperature.ui.part.control"/>
+  <imports xsi:type="basic:Part" xmi:id="_impSeqPart" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.part.sequence"/>
+  <imports xsi:type="basic:Part" xmi:id="_impAnaPart" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.part.analysis"/>
   <fragments xsi:type="fragment:StringModelFragment" xmi:id="_baijiuShellAddonFrag" featurename="addons" parentElementId="org.eclipse.chemclipse.rcp.ide.application">
     <elements xsi:type="application:Addon" xmi:id="_baijiuShellAddon" elementId="net.openchrom.rcp.compilation.baijiu.ui.addon.shell" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuShellAddon"/>
   </fragments>
@@ -21,30 +25,53 @@
   <fragments xsi:type="fragment:StringModelFragment" xmi:id="_baijiuTopMenuFrag" featurename="children" parentElementId="org.eclipse.chemclipse.rcp.app.ui.menu.main" positionInList="index:1">
     <elements xsi:type="menu:Menu" xmi:id="_baijiuTopMenu" elementId="net.openchrom.rcp.compilation.baijiu.ui.menu.baijiu" label="%menu.baijiu">
       <children xsi:type="menu:HandledMenuItem" xmi:id="_baijiuTopChrom" elementId="net.openchrom.rcp.compilation.baijiu.ui.menu.openChromatogram" label="%menu.openChromatogram" command="_impChrom"/>
+      <children xsi:type="menu:HandledMenuItem" xmi:id="_baijiuTopStart" elementId="net.openchrom.rcp.compilation.baijiu.ui.menu.startAnalysis" label="%menu.startAnalysis" command="_impStart"/>
       <children xsi:type="menu:HandledMenuItem" xmi:id="_baijiuTopInt" elementId="net.openchrom.rcp.compilation.baijiu.ui.menu.integrate" label="%menu.integrate" command="_impInt"/>
       <children xsi:type="menu:HandledMenuItem" xmi:id="_baijiuTopOpen" elementId="net.openchrom.rcp.compilation.baijiu.ui.menu.analysis" label="%menu.analysis" command="_impOpen"/>
       <children xsi:type="menu:HandledMenuItem" xmi:id="_baijiuTopReport" elementId="net.openchrom.rcp.compilation.baijiu.ui.menu.report" label="%menu.report" command="_impReport"/>
+      <children xsi:type="menu:HandledMenuItem" xmi:id="_baijiuTopSeq" elementId="net.openchrom.rcp.compilation.baijiu.ui.menu.sequence" label="%menu.sequence" command="_impSeq"/>
       <children xsi:type="menu:HandledMenuItem" xmi:id="_baijiuTopTemp" elementId="net.openchrom.rcp.compilation.baijiu.ui.menu.gcControl" label="%menu.gcControl" command="_impTemp"/>
       <children xsi:type="menu:HandledMenuItem" xmi:id="_baijiuTopPersp" elementId="net.openchrom.rcp.compilation.baijiu.ui.menu.perspective" label="%menu.perspective" command="_impPersp"/>
       <children xsi:type="menu:HandledMenuItem" xmi:id="_baijiuTopLic" elementId="net.openchrom.rcp.compilation.baijiu.ui.menu.license" label="%menu.license" command="_impLic"/>
       <children xsi:type="menu:HandledMenuItem" xmi:id="_baijiuTopReset" elementId="net.openchrom.rcp.compilation.baijiu.ui.menu.resetLayout" label="%menu.resetLayout" command="_baijiuResetCmd"/>
     </elements>
   </fragments>
-  <fragments xsi:type="fragment:StringModelFragment" xmi:id="_baijiuWindowResetFrag" featurename="children" parentElementId="org.eclipse.chemclipse.rcp.app.ui.menu.window">
-    <elements xsi:type="menu:HandledMenuItem" xmi:id="_baijiuWindowReset" elementId="net.openchrom.rcp.compilation.baijiu.ui.menu.window.resetLayout" label="%menu.resetLayout" command="_baijiuResetCmd"/>
-  </fragments>
   <fragments xsi:type="fragment:StringModelFragment" xmi:id="_baijiuPlantToolbarFrag" featurename="children" parentElementId="org.eclipse.chemclipse.rcp.app.ui.trimbar.top" positionInList="index:0">
     <elements xsi:type="menu:ToolBar" xmi:id="_baijiuPlantToolbar" elementId="net.openchrom.rcp.compilation.baijiu.ui.toolbar.plant">
-      <children xsi:type="menu:HandledToolItem" xmi:id="_baijiuToolChrom" elementId="net.openchrom.rcp.compilation.baijiu.ui.toolbar.openChromatogram" label="%menu.openChromatogram" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/importChromatogramCSD.gif" command="_impChrom"/>
-      <children xsi:type="menu:HandledToolItem" xmi:id="_baijiuToolInt" elementId="net.openchrom.rcp.compilation.baijiu.ui.toolbar.integrate" label="%menu.integrate" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/peak.gif" command="_impInt"/>
-      <children xsi:type="menu:HandledToolItem" xmi:id="_baijiuToolOpen" elementId="net.openchrom.rcp.compilation.baijiu.ui.toolbar.analysis" label="%menu.analysis" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/peak.gif" command="_impOpen"/>
-      <children xsi:type="menu:HandledToolItem" xmi:id="_baijiuToolReport" elementId="net.openchrom.rcp.compilation.baijiu.ui.toolbar.report" label="%menu.report" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/peak.gif" command="_impReport"/>
-      <children xsi:type="menu:HandledToolItem" xmi:id="_baijiuToolTemp" elementId="net.openchrom.rcp.compilation.baijiu.ui.toolbar.gcControl" label="%menu.gcControl" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/preferences.gif" command="_impTemp"/>
-      <children xsi:type="menu:HandledToolItem" xmi:id="_baijiuToolPersp" elementId="net.openchrom.rcp.compilation.baijiu.ui.toolbar.perspective" label="%menu.perspective" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/peak.gif" command="_impPersp"/>
+      <children xsi:type="menu:HandledToolItem" xmi:id="_baijiuToolChrom" elementId="net.openchrom.rcp.compilation.baijiu.ui.toolbar.openChromatogram" label="%toolbar.openChromatogram" tooltip="%toolbar.openChromatogram" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/importChromatogramCSD.gif" command="_impChrom"/>
+      <children xsi:type="menu:HandledToolItem" xmi:id="_baijiuToolStart" elementId="net.openchrom.rcp.compilation.baijiu.ui.toolbar.startAnalysis" label="%toolbar.startAnalysis" tooltip="%toolbar.startAnalysis" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/preferences.gif" command="_impStart"/>
+      <children xsi:type="menu:HandledToolItem" xmi:id="_baijiuToolInt" elementId="net.openchrom.rcp.compilation.baijiu.ui.toolbar.integrate" label="%toolbar.integrate" tooltip="%toolbar.integrate" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/peak.gif" command="_impInt"/>
+      <children xsi:type="menu:HandledToolItem" xmi:id="_baijiuToolOpen" elementId="net.openchrom.rcp.compilation.baijiu.ui.toolbar.analysis" label="%toolbar.analysis" tooltip="%toolbar.analysis" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/peak.gif" command="_impOpen"/>
+      <children xsi:type="menu:HandledToolItem" xmi:id="_baijiuToolReport" elementId="net.openchrom.rcp.compilation.baijiu.ui.toolbar.report" label="%toolbar.report" tooltip="%toolbar.report" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/peak.gif" command="_impReport"/>
     </elements>
   </fragments>
   <fragments xsi:type="fragment:StringModelFragment" xmi:id="_baijiuGcTabFrag" featurename="children" parentElementId="net.openchrom.xxd.processor.supplier.baijiu.ui.partstack.workbench">
     <elements xsi:type="advanced:Placeholder" xmi:id="_baijiuGcPh" elementId="net.openchrom.rcp.compilation.baijiu.ui.placeholder.gcControl" ref="_impGcPart"/>
+  </fragments>
+  <fragments xsi:type="fragment:StringModelFragment" xmi:id="_baijiuPlantHomeFrag" featurename="children" parentElementId="org.eclipse.chemclipse.rcp.app.ui.perspectivestack.main" positionInList="index:0">
+    <elements xsi:type="advanced:Perspective" xmi:id="_baijiuPlantHome" elementId="net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome" label="%perspective.plantHome" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/preferences.gif">
+      <children xsi:type="basic:PartSashContainer" xmi:id="_baijiuPlantSash" elementId="net.openchrom.rcp.compilation.baijiu.ui.partsash.plantHome" horizontal="false">
+        <children xsi:type="basic:PartSashContainer" xmi:id="_baijiuPlantTop" elementId="net.openchrom.rcp.compilation.baijiu.ui.partsash.plantTop" horizontal="true" containerData="5400">
+          <children xsi:type="basic:PartStack" xmi:id="_baijiuPlantGcStack" elementId="net.openchrom.rcp.compilation.baijiu.ui.partstack.gcHome" containerData="5800">
+            <children xsi:type="advanced:Placeholder" xmi:id="_baijiuGcHomePh" elementId="net.openchrom.rcp.compilation.baijiu.ui.placeholder.gcHome" ref="_impGcPart"/>
+          </children>
+          <children xsi:type="basic:PartStack" xmi:id="_baijiuPlantSeqStack" elementId="net.openchrom.rcp.compilation.baijiu.ui.partstack.sequenceHome" containerData="4200">
+            <children xsi:type="advanced:Placeholder" xmi:id="_baijiuSeqHomePh" elementId="net.openchrom.rcp.compilation.baijiu.ui.placeholder.sequenceHome" ref="_impSeqPart"/>
+          </children>
+        </children>
+        <children xsi:type="advanced:Placeholder" xmi:id="_baijiuPlantEditorPh" elementId="net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantEditor" containerData="4600" ref="_impEditor"/>
+      </children>
+    </elements>
+  </fragments>
+  <fragments xsi:type="fragment:StringModelFragment" xmi:id="_baijiuAnalysisPerspFrag" featurename="children" parentElementId="org.eclipse.chemclipse.rcp.app.ui.perspectivestack.main">
+    <elements xsi:type="advanced:Perspective" xmi:id="_baijiuAnalysisPersp" elementId="net.openchrom.rcp.compilation.baijiu.ui.perspective.analysis" label="%perspective.analysis" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/peak.gif">
+      <children xsi:type="basic:PartSashContainer" xmi:id="_baijiuAnalysisSash" elementId="net.openchrom.rcp.compilation.baijiu.ui.partsash.analysis" horizontal="true">
+        <children xsi:type="advanced:Placeholder" xmi:id="_baijiuAnalysisEditorPh" elementId="net.openchrom.rcp.compilation.baijiu.ui.placeholder.analysisEditor" containerData="4000" ref="_impEditor"/>
+        <children xsi:type="basic:PartStack" xmi:id="_baijiuAnalysisStack" elementId="net.openchrom.rcp.compilation.baijiu.ui.partstack.analysis" containerData="6000">
+          <children xsi:type="advanced:Placeholder" xmi:id="_baijiuAnalysisPh" elementId="net.openchrom.rcp.compilation.baijiu.ui.placeholder.analysis" ref="_impAnaPart"/>
+        </children>
+      </children>
+    </elements>
   </fragments>
   <fragments xsi:type="fragment:StringModelFragment" xmi:id="_baijiuGcPerspFrag" featurename="children" parentElementId="org.eclipse.chemclipse.rcp.app.ui.perspectivestack.main">
     <elements xsi:type="advanced:Perspective" xmi:id="_baijiuGcPersp" elementId="net.openchrom.rcp.compilation.baijiu.ui.perspective.gcControl" label="%perspective.gcControl" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/preferences.gif">

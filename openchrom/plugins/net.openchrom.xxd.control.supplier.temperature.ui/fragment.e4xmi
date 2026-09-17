@@ -2,9 +2,11 @@
 <fragment:ModelFragments xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:basic="http://www.eclipse.org/ui/2010/UIModel/application/ui/basic" xmlns:commands="http://www.eclipse.org/ui/2010/UIModel/application/commands" xmlns:fragment="http://www.eclipse.org/ui/2010/UIModel/fragment" xmlns:menu="http://www.eclipse.org/ui/2010/UIModel/application/ui/menu" xmi:id="_tempCtrlFrag001">
   <fragments xsi:type="fragment:StringModelFragment" xmi:id="_tempCtrlCmdFrag" featurename="commands" parentElementId="org.eclipse.chemclipse.rcp.ide.application">
     <elements xsi:type="commands:Command" xmi:id="_tempCtrlCmd" elementId="net.openchrom.xxd.control.supplier.temperature.ui.command.open" commandName="%command.openTemperatureControl"/>
+    <elements xsi:type="commands:Command" xmi:id="_tempStartCmd" elementId="net.openchrom.xxd.control.supplier.temperature.ui.command.startAnalysis" commandName="%command.startAnalysis"/>
   </fragments>
   <fragments xsi:type="fragment:StringModelFragment" xmi:id="_tempCtrlHdlFrag" featurename="handlers" parentElementId="org.eclipse.chemclipse.rcp.ide.application">
     <elements xsi:type="commands:Handler" xmi:id="_tempCtrlHdl" elementId="net.openchrom.xxd.control.supplier.temperature.ui.handler.open" contributionURI="bundleclass://net.openchrom.xxd.control.supplier.temperature.ui/net.openchrom.xxd.control.supplier.temperature.ui.handlers.OpenTemperatureControlHandler" command="_tempCtrlCmd"/>
+    <elements xsi:type="commands:Handler" xmi:id="_tempStartHdl" elementId="net.openchrom.xxd.control.supplier.temperature.ui.handler.startAnalysis" contributionURI="bundleclass://net.openchrom.xxd.control.supplier.temperature.ui/net.openchrom.xxd.control.supplier.temperature.ui.handlers.StartAcquisitionHandler" command="_tempStartCmd"/>
   </fragments>
   <fragments xsi:type="fragment:StringModelFragment" xmi:id="_tempCtrlMenuFrag" featurename="children" parentElementId="org.eclipse.chemclipse.rcp.app.ui.menu.plugins">
     <elements xsi:type="menu:HandledMenuItem" xmi:id="_tempCtrlMenuItem" elementId="net.openchrom.xxd.control.supplier.temperature.ui.menu.open" label="%menu.openTemperatureControl" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/preferences.gif" command="_tempCtrlCmd"/>

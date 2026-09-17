@@ -54,6 +54,7 @@ import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.Acquisition
 import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.BaijiuHandoffBridge;
 import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.BaijiuHandoffMessages;
 import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.BaijiuHandoffOutcome;
+import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.AcquisitionStartGate;
 import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.IAcquisitionListener;
 import net.openchrom.xxd.control.supplier.temperature.ui.acquisition.RealtimeAcquisitionManager;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.FidReadiness;
@@ -2050,18 +2051,11 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 
 	private void toggleAcquisition() {
 
-		if(acquisitionManager.isAcquiring()) {
-			acquisitionManager.stopAcquisition();
-			updateAcquisitionButtonLabel();
-			return;
+		AcquisitionStartGate.Outcome outcome = AcquisitionStartGate.toggle(chinese);
+		if(!outcome.ok()) {
+			applyReadiness(readinessMonitor.getSnapshot());
+			showWarning(outcome.title(), outcome.message());
 		}
-		FidReadinessSnapshot snapshot = readinessMonitor.getSnapshot();
-		if(!snapshot.canStartAnalysis()) {
-			applyReadiness(snapshot);
-			showWarning(FidReadiness.startBlockedTitle(chinese), snapshot.operatorTip(chinese));
-			return;
-		}
-		acquisitionManager.startAcquisition();
 		updateAcquisitionButtonLabel();
 	}
 

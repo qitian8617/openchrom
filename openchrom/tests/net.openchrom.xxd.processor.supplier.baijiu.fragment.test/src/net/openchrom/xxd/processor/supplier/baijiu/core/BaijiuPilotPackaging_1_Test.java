@@ -133,9 +133,9 @@ public class BaijiuPilotPackaging_1_Test {
 		assertLauncherArgsHaveNoUnquotedSpaces(xml, "vmArgsMac");
 		assertTrue(xml.contains("net.openchrom.rcp.compilation.baijiu.ui.product"), xml);
 		assertTrue(xml.contains("net.openchrom.rcp.compilation.baijiu.feature"), xml);
-		assertTrue(xml.contains("application.perspective=net.openchrom.xxd.processor.supplier.baijiu.ui.perspective.workbench"), xml);
+		assertTrue(xml.contains("application.perspective=net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome"), xml);
 		assertTrue(xml.contains("osgi.nl=zh_CN"), xml);
-		assertFalse(xml.contains("-clearPersistedState"), "Phase 2 default launch must remember layout");
+		assertFalse(xml.contains("-clearPersistedState"), "Phase 3 default launch must remember layout");
 		assertTrue(xml.contains("org.eclipse.justj.openjdk.hotspot.jre.full.stripped"), xml);
 
 		Path community = locate("openchrom/products/net.openchrom.rcp.compilation.community.product/openchrom.compilation.community.product", "products/net.openchrom.rcp.compilation.community.product/openchrom.compilation.community.product");
@@ -161,6 +161,32 @@ public class BaijiuPilotPackaging_1_Test {
 		assertFalse(brandingMf.contains("net.openchrom.xxd.processor.supplier.baijiu.ui"), brandingMf);
 		assertFalse(brandingMf.contains("net.openchrom.xxd.control.supplier.temperature.ui"), brandingMf);
 
+		Path shellFragment = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/fragment.e4xmi", "plugins/net.openchrom.rcp.compilation.baijiu.ui/fragment.e4xmi");
+		assertNotNull(shellFragment);
+		String shellFrag = Files.readString(shellFragment, StandardCharsets.UTF_8);
+		assertTrue(shellFrag.contains("net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome"), shellFrag);
+		assertTrue(shellFrag.contains("net.openchrom.rcp.compilation.baijiu.ui.perspective.analysis"), shellFrag);
+		assertTrue(shellFrag.contains("net.openchrom.xxd.processor.supplier.baijiu.ui.part.sequence"), shellFrag);
+		assertTrue(shellFrag.contains("net.openchrom.xxd.control.supplier.temperature.ui.command.startAnalysis"), shellFrag);
+		assertTrue(shellFrag.contains("%toolbar.openChromatogram"), shellFrag);
+		assertTrue(shellFrag.contains("%toolbar.startAnalysis"), shellFrag);
+		assertTrue(shellFrag.contains("%toolbar.integrate"), shellFrag);
+		assertTrue(shellFrag.contains("%toolbar.analysis"), shellFrag);
+		assertTrue(shellFrag.contains("%toolbar.report"), shellFrag);
+
+		Path chrome = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellChrome.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellChrome.java");
+		assertNotNull(chrome);
+		String chromeSrc = Files.readString(chrome, StandardCharsets.UTF_8);
+		assertTrue(chromeSrc.contains("CHROME_EPOCH = 3"), chromeSrc);
+		assertTrue(chromeSrc.contains("showResearchMenus"), chromeSrc);
+
+		Path css = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/stylesheets/baijiu-shell.css", "plugins/net.openchrom.rcp.compilation.baijiu.ui/stylesheets/baijiu-shell.css");
+		assertNotNull(css);
+		String cssText = Files.readString(css, StandardCharsets.UTF_8);
+		assertTrue(cssText.contains("swt-show-text"), cssText);
+		assertFalse(cssText.contains("#org.eclipse.chemclipse.ux.extension.ui.menu.process {") || cssText.contains("#org.eclipse.chemclipse.ux.extension.ui.menu.process,"), "CSS must not hide 处理器 so the JVM escape hatch can reveal it");
+		assertFalse(cssText.contains("#org.eclipse.chemclipse.rcp.app.ui.menu.plugins {") || cssText.contains("#org.eclipse.chemclipse.rcp.app.ui.menu.plugins,"), "CSS must not hide 插件 so the JVM escape hatch can reveal it");
+
 		Path fragmentBuild = locate("openchrom/tests/net.openchrom.rcp.compilation.baijiu.fragment.test/build.properties", "tests/net.openchrom.rcp.compilation.baijiu.fragment.test/build.properties");
 		assertNotNull(fragmentBuild);
 		assertTrue(Files.readString(fragmentBuild, StandardCharsets.UTF_8).contains("jre.compilation.profile = JavaSE-21"));
@@ -177,6 +203,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(archText.contains("\u58f3 vs \u5185\u6838") || archText.contains("\u58f3 vs"), archText);
 		assertTrue(archText.contains("baijiu.ui"), archText);
 		assertTrue(archText.contains("temperature.ui"), archText);
+		assertTrue(archText.contains("Phase 3"), archText);
 		assertTrue(archText.contains("Phase 2"), archText);
 		assertTrue(archText.contains("Phase 1"), archText);
 		assertTrue(archText.contains("Electron"), archText);
@@ -188,6 +215,7 @@ public class BaijiuPilotPackaging_1_Test {
 		String manualText = Files.readString(manual, StandardCharsets.UTF_8);
 		assertTrue(manualText.contains("\u767d\u9152FID\u4e13\u7528\u58f3\u67b6\u6784.md"), manualText);
 		assertTrue(manualText.contains("\u76ee\u6807\u64cd\u4f5c\u5458\u754c\u9762"), manualText);
+		assertTrue(manualText.contains("\u5382\u5de5\u4f5c\u53f0") || manualText.contains("Phase 3"), manualText);
 
 		Path readme = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/demo/README.txt", "demo/README.txt");
 		assertNotNull(readme);

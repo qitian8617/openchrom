@@ -127,6 +127,7 @@ public final class BaijiuAnalysisShell {
 	private Label multipointStatus;
 	private Table pointTable;
 	private Table fitTable;
+	private TabFolder tabs;
 
 	private BaijiuAnalysisShell(IChromatogramSelection chromatogramSelection, EPartService partService) {
 
@@ -141,44 +142,81 @@ public final class BaijiuAnalysisShell {
 		ui.openShell(parent);
 	}
 
+	/**
+	 * Embed the same analysis UI in a workbench part (dedicated shell). No
+	 * modal loop; community still uses {@link #open(Shell, IChromatogramSelection, EPartService)}.
+	 */
+	public static void createIn(Composite parent, IChromatogramSelection chromatogramSelection, EPartService partService) {
+
+		BaijiuAnalysisShell ui = new BaijiuAnalysisShell(chromatogramSelection, partService);
+		ui.createControls(parent, false);
+	}
+
 	private void openShell(Shell parent) {
 
 		Shell shell = new Shell(parent, SWT.SHELL_TRIM | SWT.APPLICATION_MODAL);
 		shell.setText("\u767d\u9152\u5206\u6790");
 		shell.setLayout(new GridLayout(1, false));
 		shell.setSize(1180, 860);
+		createControls(shell, true);
+		shell.open();
+		Display display = parent.getDisplay();
+		while(!shell.isDisposed()) {
+			if(!display.readAndDispatch()) {
+				display.sleep();
+			}
+		}
+	}
 
-		TabFolder tabs = new TabFolder(shell, SWT.NONE);
+	private void createControls(Composite parent, boolean dialogChrome) {
+
+		Composite root = parent;
+		if(!(parent.getLayout() instanceof GridLayout)) {
+			parent.setLayout(new org.eclipse.swt.layout.FillLayout());
+			root = new Composite(parent, SWT.NONE);
+			root.setLayout(new GridLayout(1, false));
+		}
+		createWorkflowHeader(root);
+		tabs = new TabFolder(root, SWT.NONE);
 		tabs.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
 		TabItem sampleTab = new TabItem(tabs, SWT.NONE);
-		sampleTab.setText("\u6837\u54c1\u4e0e\u5b9a\u91cf");
+		sampleTab.setText("\u6837\u54c1");
 		sampleTab.setControl(createSampleTab(tabs));
 
 		TabItem methodTab = new TabItem(tabs, SWT.NONE);
 		methodTab.setText("\u7ec4\u5206\u65b9\u6cd5");
 		methodTab.setControl(createMethodTab(tabs));
 
-		TabItem matchTab = new TabItem(tabs, SWT.NONE);
-		matchTab.setText("\u5cf0\u5339\u914d");
-		matchTab.setControl(createMatchTab(tabs));
-
 		TabItem calTab = new TabItem(tabs, SWT.NONE);
-		calTab.setText("\u591a\u70b9\u6821\u6b63");
+		calTab.setText("\u6821\u6b63");
 		calTab.setControl(createMultipointTab(tabs));
 
-		Composite bottom = new Composite(shell, SWT.NONE);
+		TabItem quantTab = new TabItem(tabs, SWT.NONE);
+		quantTab.setText("\u5b9a\u91cf");
+		quantTab.setControl(createMatchTab(tabs));
+
+		TabItem reportTab = new TabItem(tabs, SWT.NONE);
+		reportTab.setText("\u62a5\u544a");
+		reportTab.setControl(createReportTab(tabs));
+
+		Composite bottom = new Composite(root, SWT.NONE);
 		bottom.setLayout(new GridLayout(2, false));
 		bottom.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		status = new Label(bottom, SWT.WRAP);
 		status.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		Button close = new Button(bottom, SWT.PUSH);
-		close.setText("\u5173\u95ed");
+		close.setText(dialogChrome ? "\u5173\u95ed" : "\u4fdd\u5b58\u65b9\u6cd5");
+		Composite saveRoot = root;
 		close.addListener(SWT.Selection, e -> {
 			collectAll();
 			BaijiuPreferences.saveMethod(settings);
 			BaijiuPreferences.saveSampleDefaults(readSample());
-			shell.close();
+			if(dialogChrome) {
+				saveRoot.getShell().close();
+			} else {
+				setStatus("\u5df2\u4fdd\u5b58\u65b9\u6cd5\u4e0e\u6837\u54c1\u9ed8\u8ba4\u3002");
+			}
 		});
 
 		loadFields();
@@ -187,15 +225,58 @@ public final class BaijiuAnalysisShell {
 		fillMatchTables();
 		fillMultipointTables();
 		updateInjectedLabel();
-		setStatus("\u5df2\u52a0\u8f7d\u6d53\u9999 FID \u9ed8\u8ba4\u65b9\u6cd5\u5305\uff08XP-\u767d\u9152 C2 + \u4e59\u9178\u6b63\u4e01\u916f + 15 \u6df7\u6807\uff09\u3002" + BaijiuCalibrationGate.OPERATOR_HINT + " \u6253\u5f00\u6f14\u793a\u6df7\u6807\u540e\u53ef\u76f4\u63a5\u70b9\u300c\u63a8\u8350\u79ef\u5206\u300d\uff0c\u518d\u300c\u7528\u5f53\u524d\u8c31\u56fe\u505a\u6821\u6b63\u300d\u6216\u300c\u591a\u70b9\u6821\u6b63\u300d\u62df\u5408\u3002\u8bef\u6539\u540e\u53ef\u300c\u52a0\u8f7d\u9ed8\u8ba4\u6d53\u9999\u65b9\u6cd5\u5305\u300d\u3002");
+		setStatus("\u8def\u5f84\uff1a\u6837\u54c1 \u2192 \u6821\u6b63 \u2192 \u5b9a\u91cf \u2192 \u62a5\u544a\u3002" + BaijiuCalibrationGate.OPERATOR_HINT + " \u6253\u5f00\u6f14\u793a\u6df7\u6807\u540e\u53ef\u76f4\u63a5\u70b9\u300c\u63a8\u8350\u79ef\u5206\u300d\uff0c\u518d\u300c\u7528\u5f53\u524d\u8c31\u56fe\u505a\u6821\u6b63\u300d\u6216\u300c\u591a\u70b9\u6821\u6b63\u300d\u62df\u5408\u3002");
+	}
 
-		shell.open();
-		Display display = parent.getDisplay();
-		while(!shell.isDisposed()) {
-			if(!display.readAndDispatch()) {
-				display.sleep();
+	private void createWorkflowHeader(Composite parent) {
+
+		Composite row = new Composite(parent, SWT.NONE);
+		row.setLayout(new GridLayout(8, false));
+		row.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		Label title = new Label(row, SWT.NONE);
+		title.setText("\u767d\u9152\u5206\u6790");
+		stepButton(row, "\u6837\u54c1", 0);
+		arrow(row);
+		stepButton(row, "\u6821\u6b63", 2);
+		arrow(row);
+		stepButton(row, "\u5b9a\u91cf", 3);
+		arrow(row);
+		stepButton(row, "\u62a5\u544a", 4);
+	}
+
+	private static void arrow(Composite parent) {
+
+		Label arrow = new Label(parent, SWT.NONE);
+		arrow.setText("\u2192");
+	}
+
+	private void stepButton(Composite parent, String text, int tabIndex) {
+
+		Button button = new Button(parent, SWT.PUSH);
+		button.setText(text);
+		button.addListener(SWT.Selection, e -> {
+			if(tabs != null && !tabs.isDisposed() && tabIndex >= 0 && tabIndex < tabs.getItemCount()) {
+				tabs.setSelection(tabIndex);
 			}
-		}
+		});
+	}
+
+	private Composite createReportTab(Composite parent) {
+
+		Composite root = new Composite(parent, SWT.NONE);
+		root.setLayout(new GridLayout(1, false));
+		Label hint = new Label(root, SWT.WRAP);
+		hint.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		hint.setText("\u6837\u54c1 \u2192 \u6821\u6b63 \u2192 \u5b9a\u91cf \u5b8c\u6210\u540e\u9884\u89c8\u62a5\u544a\u3002\u8bb8\u53ef\u95e8\u4e0e\u5b9a\u91cf\u5f15\u64ce\u4e0d\u53d8\uff1b\u672c\u9875\u53ea\u6253\u5f00\u5df2\u6709\u62a5\u544a\u7a97\u3002");
+		Composite buttons = new Composite(root, SWT.NONE);
+		buttons.setLayout(new GridLayout(3, false));
+		button(buttons, "\u9884\u89c8/\u6253\u5370\u62a5\u544a", e -> report(parent.getShell()));
+		button(buttons, "\u5bfc\u51fa\u7ed3\u679c CSV", e -> exportCsv(parent.getShell()));
+		button(buttons, "\u8bb8\u53ef / \u7248\u672c\u2026", e -> {
+			BaijiuLicenseShell.open(parent.getShell());
+			setStatus(BaijiuLicenseGate.statusLine());
+		});
+		return root;
 	}
 
 	private Composite createSampleTab(Composite parent) {
@@ -370,6 +451,9 @@ public final class BaijiuAnalysisShell {
 		Label hint = new Label(root, SWT.WRAP);
 		hint.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		hint.setText("\u4e0a\u8868\u4e3a\u671f\u671b\u7ec4\u5206\u7684\u5339\u914d\u7ed3\u679c\uff1b\u4e0b\u8868\u4e3a\u672a\u5339\u914d\u5cf0\u3002\u53ef\u5c06\u672a\u5339\u914d\u5cf0\u6307\u5b9a\u7ed9\u7ec4\u5206\uff0c\u6216\u4fee\u6539\u5cf0\u8d77\u6b62\u65f6\u95f4\u540e\u7acb\u5373\u91cd\u7b97\u5b9a\u91cf\u3002");
+		Composite quantRow = new Composite(root, SWT.NONE);
+		quantRow.setLayout(new GridLayout(2, false));
+		button(quantRow, "\u5b9a\u91cf\u5e76\u5199\u56de\u5cf0\u8868", e -> quantify(parent.getShell(), true, true));
 
 		matchTable = new Table(root, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL);
 		GridData matchData = new GridData(SWT.FILL, SWT.FILL, true, true);

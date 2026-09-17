@@ -73,7 +73,7 @@ public class BaijiuWorkbenchHandoff_1_Test {
 	public void perspectiveMatcherAcceptsE4IdAndLocalizedLabels() {
 
 		assertTrue(BaijiuPerspectiveIds.matches(BaijiuPerspectiveIds.PERSPECTIVE_ID, null));
-		assertTrue(BaijiuPerspectiveIds.matches("net.openchrom.xxd.processor.supplier.baijiu.ui.perspective.workbench", "other"));
+		assertTrue(BaijiuPerspectiveIds.matches(BaijiuPerspectiveIds.PLANT_HOME_PERSPECTIVE_ID, "other"));
 		assertTrue(BaijiuPerspectiveIds.matches("custom.id", "白酒工作台"));
 		assertTrue(BaijiuPerspectiveIds.matches(null, "Baijiu Workbench"));
 		assertTrue(BaijiuPerspectiveIds.matches("net.openchrom.xxd.processor.supplier.baijiu.ui.perspective.branded", ""));

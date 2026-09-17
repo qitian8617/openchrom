@@ -14,6 +14,7 @@ import java.util.List;
 import org.eclipse.e4.core.services.events.IEventBroker;
 import org.eclipse.e4.ui.model.application.MApplication;
 import org.eclipse.e4.ui.model.application.ui.MUIElement;
+import org.eclipse.e4.ui.model.application.ui.MUILabel;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPerspective;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPerspectiveStack;
 import org.eclipse.e4.ui.model.application.ui.basic.MWindow;
@@ -27,9 +28,10 @@ import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 
 /**
- * After ChemClipse fragments attach, hide research chrome, select 白酒工作台,
- * and keep the reverse-control part visible in that layout. Does not depend
- * on baijiu.ui / temperature.ui Java types (soft; no plugin cycle).
+ * After ChemClipse fragments attach, hide research chrome, select the plant
+ * home (status + sequence), and keep reverse-control / sequence parts
+ * visible. Does not depend on baijiu.ui / temperature.ui Java types (soft;
+ * no plugin cycle).
  */
 public class BaijiuShellAddon {
 
@@ -74,7 +76,7 @@ public class BaijiuShellAddon {
 			if(element == null) {
 				continue;
 			}
-			if(BaijiuShellChrome.shouldHide(element.getElementId())) {
+			if(BaijiuShellChrome.shouldHide(element.getElementId(), labelOf(element))) {
 				element.setVisible(false);
 				element.setToBeRendered(false);
 			}
@@ -90,7 +92,11 @@ public class BaijiuShellAddon {
 		revealPlantParts(application, modelService);
 		MUIElement found = modelService.find(BaijiuShellChrome.PERSPECTIVE_ID, application);
 		if(!(found instanceof MPerspective perspective)) {
-			return;
+			found = modelService.find(BaijiuShellChrome.WORKBENCH_PERSPECTIVE_ID, application);
+			if(!(found instanceof MPerspective fallback)) {
+				return;
+			}
+			perspective = fallback;
 		}
 		perspective.setVisible(true);
 		perspective.setToBeRendered(true);
@@ -116,11 +122,28 @@ public class BaijiuShellAddon {
 			return;
 		}
 		show(modelService.find(BaijiuShellChrome.PERSPECTIVE_ID, application));
+		show(modelService.find(BaijiuShellChrome.WORKBENCH_PERSPECTIVE_ID, application));
+		show(modelService.find(BaijiuShellChrome.ANALYSIS_PERSPECTIVE_ID, application));
 		show(modelService.find(BaijiuShellChrome.GC_PERSPECTIVE_ID, application));
 		show(modelService.find(BaijiuShellChrome.GC_CONTROL_PART_ID, application));
 		show(modelService.find(BaijiuShellChrome.GC_CONTROL_PLACEHOLDER_ID, application));
+		show(modelService.find(BaijiuShellChrome.GC_HOME_PLACEHOLDER_ID, application));
+		show(modelService.find(BaijiuShellChrome.SEQUENCE_PART_ID, application));
+		show(modelService.find(BaijiuShellChrome.ANALYSIS_PART_ID, application));
 		show(modelService.find(BaijiuShellChrome.BAIJIU_MENU_ID, application));
 		show(modelService.find(BaijiuShellChrome.PLANT_TOOLBAR_ID, application));
+	}
+
+	private static String labelOf(MUIElement element) {
+
+		if(element instanceof MUILabel labeled) {
+			String localized = labeled.getLocalizedLabel();
+			if(localized != null && !localized.isBlank()) {
+				return localized;
+			}
+			return labeled.getLabel();
+		}
+		return null;
 	}
 
 	private static void show(MUIElement element) {
