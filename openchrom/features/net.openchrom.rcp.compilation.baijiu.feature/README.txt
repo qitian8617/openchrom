@@ -11,6 +11,12 @@ Charting (SWTChart) is transitive via the ChemClipse community feature /
 target platform — do not require `org.eclipse.swtchart.feature` here
 (PDE cannot resolve it unless that feature project is in the workspace).
 
+Always includes OSGi bundle `jakarta.annotation-api` **2.1.1** (Orbit
+2026-06). ChemClipse `pcr.ui` / `xxd.ui` Import-Package range is
+`[2.1.0,3.0.0)`; SimRel 3.0.0 does **not** satisfy that exclusive upper
+bound, so do not rely on 3.0.0 alone. The target platform pins the same
+IU (`sequenceNumber` 45). Community `platform.feature` is unchanged.
+
 Used only by openchrom.compilation.baijiu.product.
 The community platform.feature is unchanged.
 

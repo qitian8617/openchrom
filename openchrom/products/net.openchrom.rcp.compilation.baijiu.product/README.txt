@@ -55,6 +55,23 @@ Run As → Eclipse Application (Windows engineer)
 If the launch config was created for the **community** product, create a
 **new** one from this .product — do not reuse community's product id.
 
+OSGi: jakarta.annotation-api 2.1.1 (not 3.0.0 alone)
+----------------------------------------------------
+Plant-home FID Parts fail to resolve when PCR/xxd.ui cannot wire
+Import-Package jakarta.annotation [2.1.0,3.0.0). Eclipse 2026-06 SimRel
+ships jakarta.annotation-api 3.0.0 (and 1.3.5); **3.0.0 is outside that
+range** (upper bound exclusive). Orbit 2026-06 still has 2.1.1 — this
+product's feature and the target platform pin that IU.
+
+After pulling: reload the target platform (sequenceNumber 45), then
+recreate / Synchronize the Eclipse Application launch from this
+.product. On an **existing** launch config that still shows
+BundleException … jakarta.annotation [2.1.0,3.0.0):
+1. Run Configuration → Plug-ins: enable **jakarta.annotation-api 2.1.1**
+   (keep it even if 3.0.0 is also listed).
+2. Add Required Plug-ins, then **Validate Plug-ins**.
+3. Prefer 2.1.1 over 3.0.0 for that import range.
+
 Reset layout
 ------------
 - 白酒 → 重置窗口布局, then restart.
@@ -119,3 +136,4 @@ Verify on the engineer PC
 [ ] License gate unchanged
 [ ] baijiu.ui MANIFEST still JavaSE-21
 [ ] Community product file still present and launches separately (dialog 反控)
+[ ] Validate Plug-ins: no unresolved jakarta.annotation; 2.1.1 is on the launch plug-in list (do not use 3.0.0 alone)

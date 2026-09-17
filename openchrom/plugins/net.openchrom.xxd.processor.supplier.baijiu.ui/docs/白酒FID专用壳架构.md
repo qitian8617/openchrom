@@ -147,6 +147,8 @@ Windows 上 **Run As → Eclipse Application** 与 **Export Product** 的逐步�
 
 默认视角：`-Dapplication.perspective=net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome`。
 
+**OSGi（厂工作台 Parts 能 resolve）：** 专用壳特性显式包含 `jakarta.annotation-api` **2.1.1**（Orbit 2026-06；目标平台 `sequenceNumber` 45 同样钉死该 IU）。ChemClipse PCR/xxd.ui 的 `Import-Package: jakarta.annotation;version="[2.1.0,3.0.0)"` **不能**用 SimRel 的 3.0.0（上界不含）。旧 Eclipse Application 启动配置若仍报该 BundleException：Plug-ins 勾选 2.1.1 → Add Required / Validate Plug-ins。本项 **不** 升 chrome epoch（不是布局变更）。
+
 ---
 
 ## 7. 两种安装车（都保留）
