@@ -21,9 +21,12 @@ import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService.PartState;
 
 /**
- * Activates shared plant-home parts by element id. Duplicates the
- * {@code BaijiuWorkbenchParts.showPart} robustness without a hard Java
- * dependency on baijiu.ui / temperature.ui (branding must stay soft).
+ * Activates plant-home parts by element id. Prefers the concrete Parts hosted
+ * in the plant-home stacks ({@code contributionURI} in the branding fragment)
+ * so rendering does not depend on cross-bundle Placeholder {@code <imports>}
+ * binding to {@code sharedElements}. Still supports shared-part / placeholder
+ * show for the workbench fallback. No Java dependency on baijiu.ui /
+ * temperature.ui (branding stays soft).
  */
 public final class BaijiuShellParts {
 
@@ -32,13 +35,15 @@ public final class BaijiuShellParts {
 	}
 
 	/**
-	 * Bind plant-home placeholders and {@code showPart(..., ACTIVATE)} reverse
-	 * control + sequence. Returns true when at least one part is shown.
+	 * {@code showPart(..., ACTIVATE)} reverse control + sequence on plant
+	 * home. Returns true when at least one part is shown.
 	 */
 	public static boolean showPlantHomeParts(MApplication application, EModelService modelService, EPartService partService) {
 
-		boolean gc = showPart(application, modelService, partService, BaijiuShellChrome.GC_CONTROL_PART_ID, BaijiuShellChrome.GC_HOME_PLACEHOLDER_ID);
-		boolean sequence = showPart(application, modelService, partService, BaijiuShellChrome.SEQUENCE_PART_ID, BaijiuShellChrome.SEQUENCE_HOME_PLACEHOLDER_ID);
+		boolean gc = showPart(application, modelService, partService, BaijiuShellChrome.GC_HOME_PART_ID, null) //
+				|| showPart(application, modelService, partService, BaijiuShellChrome.GC_CONTROL_PART_ID, BaijiuShellChrome.GC_CONTROL_PLACEHOLDER_ID);
+		boolean sequence = showPart(application, modelService, partService, BaijiuShellChrome.SEQUENCE_HOME_PART_ID, null) //
+				|| showPart(application, modelService, partService, BaijiuShellChrome.SEQUENCE_PART_ID, null);
 		return gc || sequence;
 	}
 
@@ -75,15 +80,15 @@ public final class BaijiuShellParts {
 				// older E4: showPart below is enough
 			}
 		}
+		selectInParent(part);
 		if(partService != null) {
 			try {
 				partService.showPart(part, PartState.ACTIVATE);
 				return true;
 			} catch(RuntimeException | LinkageError e) {
-				// stack selection below
+				// stack selection above
 			}
 		}
-		selectInParent(part);
 		return placeholder != null || part.getParent() != null;
 	}
 
@@ -144,12 +149,15 @@ public final class BaijiuShellParts {
 		if(element == null) {
 			return;
 		}
-		MElementContainer<MUIElement> parent = element.getParent();
-		if(parent == null) {
-			return;
+		MUIElement walk = element;
+		while(walk != null) {
+			walk.setToBeRendered(true);
+			walk.setVisible(true);
+			MElementContainer<MUIElement> parent = walk.getParent();
+			if(parent != null) {
+				parent.setSelectedElement(walk);
+			}
+			walk = parent;
 		}
-		element.setToBeRendered(true);
-		element.setVisible(true);
-		parent.setSelectedElement(element);
 	}
 }

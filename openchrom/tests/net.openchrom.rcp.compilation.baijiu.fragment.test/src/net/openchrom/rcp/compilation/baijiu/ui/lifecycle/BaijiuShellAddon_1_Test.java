@@ -19,5 +19,6 @@ public class BaijiuShellAddon_1_Test {
 		BaijiuShellAddon.applyChrome(null, null);
 		BaijiuShellAddon.selectBaijiuPerspective(null, null);
 		BaijiuShellAddon.revealPlantParts(null, null);
+		BaijiuShellAddon.hideTopWindowMenus(null, null);
 	}
 }

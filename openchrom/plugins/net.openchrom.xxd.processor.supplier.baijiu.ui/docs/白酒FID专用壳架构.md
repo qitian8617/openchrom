@@ -49,13 +49,13 @@
 
 | 谁拥有 | 例子 | Phase 3 是否改代码 |
 |--------|------|-------------------|
-| **壳** | 厂工作台视角、分析页视角、菜单/工具栏裁剪、布局 epoch=4、顶栏「白酒」 | **改** branding 插件 + `.product` |
+| **壳** | 厂工作台视角、分析页视角、菜单/工具栏裁剪、布局 epoch=5、顶栏「白酒」 | **改** branding 插件 + `.product` |
 | **内核** | 打开 CSD、谱图编辑器、峰检测扩展点 | **不改** ChemClipse；不重写 community `.product` |
 | **业务插件** | `BaijiuAnalysisEngine`、许可门、GB 2757、反控面板 | **不复制引擎**；只 **新增 Part 宿主** 与开始分析命令 |
 
 约束：
 
-- **软依赖 / 无插件环**：壳插件不 `Require-Bundle` `baijiu.ui` / `temperature.ui`；用 E4 命令 id / part id 引用。`baijiu.ui` 对 `temperature.ui` 仍是 `resolution:=optional`。
+- **软依赖 / 无插件环**：壳插件不 `Require-Bundle` `baijiu.ui` / `temperature.ui`；用 E4 命令 id / **`bundleclass://` contributionURI** / part id 引用。厂工作台 GC/序列栈放 **concrete `basic:Part`**（id `…part.control.plantHome` / `…part.sequence.plantHome`），**不再**用跨插件 Placeholder `<imports>` 去绑 `sharedElements`（真机 SWT 上 import 经常绑不上，`findPart`/`showPart` 空转，主区一片灰）。谱图编辑器仍是 Placeholder/import。`baijiu.ui` 对 `temperature.ui` 仍是 `resolution:=optional`。
 - **`baijiu.ui` / `temperature.ui` / 壳 branding 保持 JavaSE-21**。禁止把 BREE 升到 25「跟上内核」。
 - 社区产品 `openchrom.compilation.community.product` **继续存在、继续可编**。专用壳是 **并列** 产品，不是替换。
 - 社区版打开反控 / 序列 / 白酒分析仍是 **浮动对话框**（没有专用壳 placeholder 时回退）。不要把社区主界面改成厂布局。
@@ -106,7 +106,7 @@ ChemClipse **内核特性本身** 仍带 MSD/WSD/NMR 菜单贡献——Phase 3 �
 | **Phase 1** | 架构文档 + 可 Run/Export 的专用 `.product` + 中文标题 + 默认白酒工作台 + 能编译的菜单隐藏 + 顶栏「白酒」菜单 | 不 Electron、不重写峰检测、不 Part 11、不删社区产品 |
 | **Phase 2** | 继续藏处理器/研究色谱噪声；反控 Part 叠在白酒工作台 + 独立视角；厂工具条；布局可持久 | 仍不拆 ChemClipse 特性包 |
 | **Phase 3（本 PR）** | 厂工作台主屏（状态+序列）；顶栏去掉处理器/插件；白酒分析页；厂工具条五键；chrome epoch=3 | 仍不拆 ChemClipse 特性包；不强制卸载社区产品 |
-| **Phase 3 后续** | 重置布局后强制 showPart 反控/序列；隐藏「窗口」菜单；chrome epoch=4 | 仍优先修厂工作台，不默认改走白酒工作台 |
+| **Phase 3 后续** | 重置后 showPart 仍空时：厂工作台改为 **concrete Part + contributionURI**（不再只靠 Placeholder import）；顶栏按标签藏「窗口」；chrome epoch=5 | 仍优先修厂工作台，空白窗不可接受时才回退白酒工作台 |
 | **更后** | 可选：从专用壳卸 MSD/NMR 特性、自有色谱视图、Windows 安装包品牌 | 仍禁止 fork 定量/GB 2757 逻辑 |
 
 ---
@@ -167,7 +167,7 @@ Windows 上 **Run As → Eclipse Application** 与 **Export Product** 的逐步�
 
 | 情况 | 行为 |
 |------|------|
-| 第一次升到 Phase 3 chrome epoch（当前 = 3） | 自动清一次旧 `workbench.xmi`，然后记住新布局 |
+| 第一次升到 Phase 3 chrome epoch（当前 = 5） | 自动清一次旧 `workbench.xmi`，然后记住新布局 |
 | 操作员 **白酒 → 重置窗口布局** | 写标记，**下次启动**清布局 |
 | 工程师临时加启动参数 `-clearPersistedState` | 清一次（opt-in） |
 | `-Dnet.openchrom.baijiu.clearLayout=true` | 与菜单重置相同，本轮启动清一次 |
@@ -180,7 +180,7 @@ Windows 上 **Run As → Eclipse Application** 与 **Export Product** 的逐步�
 - 白酒分析页把原对话框做成 Part + 样品/校正/定量/报告页签；**组分方法**仍是支撑页签（不在四步标题里）。社区版仍是模态对话框。
 - ChemClipse 动态贡献的处理器项若改名，可能重新露出来；未知 id 故意不藏。研究菜单退路见上文 JVM 开关。
 - 窗口 → 视角里，**视图**菜单仍可能列出内核残留视角（id 对不上时）。卸 MSD/NMR 特性仍留后续。
-- 反控 Part 与社区浮动壳 **不要同时开两份**（会抢 `GcConnectionManager`）。专用壳菜单走 Part；社区走对话框。
-- 本仓 Cloud Agent 环境通常 **不能** 弹出 Windows SWT 工作站做点击验收；厂工程师按 README 在本机 PDE 验证。
+- 反控 Part 与社区浮动壳 **不要同时开两份**（会抢 `GcConnectionManager`）。专用壳菜单走 Part；社区走对话框。厂工作台用 **独立 elementId** 的 concrete Part，与 `sharedElements` 里那份反控/序列 **不是同一个实例**；日常只渲染厂工作台那一份。
+- 本仓 Cloud Agent 环境通常 **不能** 弹出 Windows SWT 工作站做点击验收；厂工程师按 README 在本机 PDE 验证。冷启动（epoch=5 会再清一次 `workbench.xmi`）后主区必须能看到反控和/或序列表，不能再是空灰。
 
 操作手册：[白酒FID试点操作手册.md](白酒FID试点操作手册.md)。验收脚本仍按项 16。

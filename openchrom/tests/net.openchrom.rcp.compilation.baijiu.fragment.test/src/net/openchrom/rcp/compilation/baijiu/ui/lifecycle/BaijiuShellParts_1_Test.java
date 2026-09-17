@@ -19,8 +19,9 @@ public class BaijiuShellParts_1_Test {
 	public void missingModelDoesNotThrow() {
 
 		assertFalse(BaijiuShellParts.showPlantHomeParts(null, null, null));
+		assertFalse(BaijiuShellParts.showPart(null, null, null, BaijiuShellChrome.GC_HOME_PART_ID));
+		assertFalse(BaijiuShellParts.showPart(null, null, null, BaijiuShellChrome.SEQUENCE_HOME_PART_ID, null));
 		assertFalse(BaijiuShellParts.showPart(null, null, null, BaijiuShellChrome.GC_CONTROL_PART_ID));
-		assertFalse(BaijiuShellParts.showPart(null, null, null, BaijiuShellChrome.SEQUENCE_PART_ID, BaijiuShellChrome.SEQUENCE_HOME_PLACEHOLDER_ID));
 		assertFalse(BaijiuShellParts.showPart(null, null, null, "", null));
 	}
 }

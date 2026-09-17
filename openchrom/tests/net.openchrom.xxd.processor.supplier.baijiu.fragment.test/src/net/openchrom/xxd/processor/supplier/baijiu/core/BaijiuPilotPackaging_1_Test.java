@@ -177,24 +177,30 @@ public class BaijiuPilotPackaging_1_Test {
 		Path chrome = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellChrome.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellChrome.java");
 		assertNotNull(chrome);
 		String chromeSrc = Files.readString(chrome, StandardCharsets.UTF_8);
-		assertTrue(chromeSrc.contains("CHROME_EPOCH = 4"), chromeSrc);
+		assertTrue(chromeSrc.contains("CHROME_EPOCH = 5"), chromeSrc);
 		assertTrue(chromeSrc.contains("showResearchMenus"), chromeSrc);
 		assertTrue(chromeSrc.contains("org.eclipse.chemclipse.rcp.app.ui.menu.window"), chromeSrc);
+		assertTrue(chromeSrc.contains("shouldHideTopMenu"), chromeSrc);
 
 		Path addon = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellAddon.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellAddon.java");
 		assertNotNull(addon);
 		String addonSrc = Files.readString(addon, StandardCharsets.UTF_8);
 		assertTrue(addonSrc.contains("showPlantHomeParts"), addonSrc);
+		assertTrue(addonSrc.contains("hideTopWindowMenus"), addonSrc);
 		Path shellParts = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellParts.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellParts.java");
 		assertNotNull(shellParts);
 		String partsSrc = Files.readString(shellParts, StandardCharsets.UTF_8);
 		assertTrue(partsSrc.contains("PartState.ACTIVATE"), partsSrc);
-		assertTrue(partsSrc.contains("setCurSharedRef"), partsSrc);
+		assertTrue(partsSrc.contains("GC_HOME_PART_ID"), partsSrc);
+		assertTrue(partsSrc.contains("SEQUENCE_HOME_PART_ID"), partsSrc);
 		assertTrue(shellFrag.contains("xsi:type=\"advanced:Placeholder\""), shellFrag);
-		assertTrue(shellFrag.contains("net.openchrom.rcp.compilation.baijiu.ui.placeholder.gcHome"), shellFrag);
-		assertTrue(shellFrag.contains("net.openchrom.rcp.compilation.baijiu.ui.placeholder.sequenceHome"), shellFrag);
-		assertFalse(shellFrag.contains("bundleclass://net.openchrom.xxd.control.supplier.temperature.ui/net.openchrom.xxd.control.supplier.temperature.ui.parts.TemperatureControlPart"), "plantHome must import shared GC part, not inline a duplicate");
-		assertFalse(shellFrag.contains("bundleclass://net.openchrom.xxd.processor.supplier.baijiu.ui/net.openchrom.xxd.processor.supplier.baijiu.ui.parts.BaijiuSequencePart"), "plantHome must import shared sequence part, not inline a duplicate");
+		assertTrue(shellFrag.contains("net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantEditor"), shellFrag);
+		assertFalse(shellFrag.contains("net.openchrom.rcp.compilation.baijiu.ui.placeholder.gcHome"), shellFrag);
+		assertFalse(shellFrag.contains("net.openchrom.rcp.compilation.baijiu.ui.placeholder.sequenceHome"), shellFrag);
+		assertTrue(shellFrag.contains("net.openchrom.xxd.control.supplier.temperature.ui.part.control.plantHome"), shellFrag);
+		assertTrue(shellFrag.contains("net.openchrom.xxd.processor.supplier.baijiu.ui.part.sequence.plantHome"), shellFrag);
+		assertTrue(shellFrag.contains("bundleclass://net.openchrom.xxd.control.supplier.temperature.ui/net.openchrom.xxd.control.supplier.temperature.ui.parts.TemperatureControlPart"), shellFrag);
+		assertTrue(shellFrag.contains("bundleclass://net.openchrom.xxd.processor.supplier.baijiu.ui/net.openchrom.xxd.processor.supplier.baijiu.ui.parts.BaijiuSequencePart"), shellFrag);
 
 		Path css = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/stylesheets/baijiu-shell.css", "plugins/net.openchrom.rcp.compilation.baijiu.ui/stylesheets/baijiu-shell.css");
 		assertNotNull(css);

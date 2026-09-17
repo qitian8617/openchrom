@@ -11,7 +11,6 @@
   <imports xsi:type="commands:Command" xmi:id="_impSeq" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.command.sequence"/>
   <imports xsi:type="advanced:Area" xmi:id="_impEditor" elementId="org.eclipse.chemclipse.rcp.app.ui.editor"/>
   <imports xsi:type="basic:Part" xmi:id="_impGcPart" elementId="net.openchrom.xxd.control.supplier.temperature.ui.part.control"/>
-  <imports xsi:type="basic:Part" xmi:id="_impSeqPart" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.part.sequence"/>
   <imports xsi:type="basic:Part" xmi:id="_impAnaPart" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.part.analysis"/>
   <fragments xsi:type="fragment:StringModelFragment" xmi:id="_baijiuShellAddonFrag" featurename="addons" parentElementId="org.eclipse.chemclipse.rcp.ide.application">
     <elements xsi:type="application:Addon" xmi:id="_baijiuShellAddon" elementId="net.openchrom.rcp.compilation.baijiu.ui.addon.shell" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuShellAddon"/>
@@ -53,10 +52,10 @@
       <children xsi:type="basic:PartSashContainer" xmi:id="_baijiuPlantSash" elementId="net.openchrom.rcp.compilation.baijiu.ui.partsash.plantHome" horizontal="false">
         <children xsi:type="basic:PartSashContainer" xmi:id="_baijiuPlantTop" elementId="net.openchrom.rcp.compilation.baijiu.ui.partsash.plantTop" horizontal="true" containerData="5400">
           <children xsi:type="basic:PartStack" xmi:id="_baijiuPlantGcStack" elementId="net.openchrom.rcp.compilation.baijiu.ui.partstack.gcHome" containerData="5800">
-            <children xsi:type="advanced:Placeholder" xmi:id="_baijiuGcHomePh" elementId="net.openchrom.rcp.compilation.baijiu.ui.placeholder.gcHome" ref="_impGcPart"/>
+            <children xsi:type="basic:Part" xmi:id="_baijiuGcHomePart" elementId="net.openchrom.xxd.control.supplier.temperature.ui.part.control.plantHome" contributionURI="bundleclass://net.openchrom.xxd.control.supplier.temperature.ui/net.openchrom.xxd.control.supplier.temperature.ui.parts.TemperatureControlPart" label="%part.gcHome" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/preferences.gif" closeable="false"/>
           </children>
           <children xsi:type="basic:PartStack" xmi:id="_baijiuPlantSeqStack" elementId="net.openchrom.rcp.compilation.baijiu.ui.partstack.sequenceHome" containerData="4200">
-            <children xsi:type="advanced:Placeholder" xmi:id="_baijiuSeqHomePh" elementId="net.openchrom.rcp.compilation.baijiu.ui.placeholder.sequenceHome" ref="_impSeqPart"/>
+            <children xsi:type="basic:Part" xmi:id="_baijiuSeqHomePart" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.part.sequence.plantHome" contributionURI="bundleclass://net.openchrom.xxd.processor.supplier.baijiu.ui/net.openchrom.xxd.processor.supplier.baijiu.ui.parts.BaijiuSequencePart" label="%part.sequenceHome" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/peak.gif" closeable="false"/>
           </children>
         </children>
         <children xsi:type="advanced:Placeholder" xmi:id="_baijiuPlantEditorPh" elementId="net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantEditor" containerData="4600" ref="_impEditor"/>
