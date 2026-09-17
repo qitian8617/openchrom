@@ -20,5 +20,6 @@ public class BaijiuShellAddon_1_Test {
 		BaijiuShellAddon.selectBaijiuPerspective(null, null);
 		BaijiuShellAddon.revealPlantParts(null, null);
 		BaijiuShellAddon.hideTopWindowMenus(null, null);
+		BaijiuShellParts.forceCreatePlantHomeGuis(null, null);
 	}
 }
