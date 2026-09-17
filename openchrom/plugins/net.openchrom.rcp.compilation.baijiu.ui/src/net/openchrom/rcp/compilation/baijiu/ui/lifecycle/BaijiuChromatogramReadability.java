@@ -119,7 +119,7 @@ public final class BaijiuChromatogramReadability {
 			} catch(BackingStoreException e) {
 				// next launch still has plugin_customization.ini defaults
 			}
-		} catch(RuntimeException | LinkageError | ExceptionInInitializerError e) {
+		} catch(RuntimeException | LinkageError e) {
 			// preferences service not ready; CSS + plugin_customization.ini still apply
 		}
 	}
@@ -136,7 +136,7 @@ public final class BaijiuChromatogramReadability {
 			}
 			putFonts(theme.getFontRegistry());
 			putColors(theme.getColorRegistry());
-		} catch(RuntimeException | LinkageError | ExceptionInInitializerError e) {
+		} catch(RuntimeException | LinkageError e) {
 			// Display / theme not ready; APP_STARTUP_COMPLETE retries
 		}
 	}
