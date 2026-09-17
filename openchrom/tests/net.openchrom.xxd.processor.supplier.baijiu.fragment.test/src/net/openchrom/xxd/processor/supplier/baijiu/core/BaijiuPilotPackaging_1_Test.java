@@ -177,7 +177,7 @@ public class BaijiuPilotPackaging_1_Test {
 		Path chrome = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellChrome.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellChrome.java");
 		assertNotNull(chrome);
 		String chromeSrc = Files.readString(chrome, StandardCharsets.UTF_8);
-		assertTrue(chromeSrc.contains("CHROME_EPOCH = 5"), chromeSrc);
+		assertTrue(chromeSrc.contains("CHROME_EPOCH = 6"), chromeSrc);
 		assertTrue(chromeSrc.contains("showResearchMenus"), chromeSrc);
 		assertTrue(chromeSrc.contains("org.eclipse.chemclipse.rcp.app.ui.menu.window"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldHideTopMenu"), chromeSrc);
@@ -186,11 +186,15 @@ public class BaijiuPilotPackaging_1_Test {
 		assertNotNull(addon);
 		String addonSrc = Files.readString(addon, StandardCharsets.UTF_8);
 		assertTrue(addonSrc.contains("showPlantHomeParts"), addonSrc);
+		assertTrue(addonSrc.contains("forceCreatePlantHomeGuis"), addonSrc);
 		assertTrue(addonSrc.contains("hideTopWindowMenus"), addonSrc);
 		Path shellParts = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellParts.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellParts.java");
 		assertNotNull(shellParts);
 		String partsSrc = Files.readString(shellParts, StandardCharsets.UTF_8);
 		assertTrue(partsSrc.contains("PartState.ACTIVATE"), partsSrc);
+		assertTrue(partsSrc.contains("IPresentationEngine"), partsSrc);
+		assertTrue(partsSrc.contains("createGui"), partsSrc);
+		assertTrue(partsSrc.contains("forceCreateGui"), partsSrc);
 		assertTrue(partsSrc.contains("GC_HOME_PART_ID"), partsSrc);
 		assertTrue(partsSrc.contains("SEQUENCE_HOME_PART_ID"), partsSrc);
 		assertTrue(shellFrag.contains("xsi:type=\"advanced:Placeholder\""), shellFrag);
@@ -201,6 +205,25 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(shellFrag.contains("net.openchrom.xxd.processor.supplier.baijiu.ui.part.sequence.plantHome"), shellFrag);
 		assertTrue(shellFrag.contains("bundleclass://net.openchrom.xxd.control.supplier.temperature.ui/net.openchrom.xxd.control.supplier.temperature.ui.parts.TemperatureControlPart"), shellFrag);
 		assertTrue(shellFrag.contains("bundleclass://net.openchrom.xxd.processor.supplier.baijiu.ui/net.openchrom.xxd.processor.supplier.baijiu.ui.parts.BaijiuSequencePart"), shellFrag);
+
+		Path gcPart = locate("openchrom/plugins/net.openchrom.xxd.control.supplier.temperature.ui/src/net/openchrom/xxd/control/supplier/temperature/ui/parts/TemperatureControlPart.java", "plugins/net.openchrom.xxd.control.supplier.temperature.ui/src/net/openchrom/xxd/control/supplier/temperature/ui/parts/TemperatureControlPart.java");
+		assertNotNull(gcPart);
+		String gcPartSrc = Files.readString(gcPart, StandardCharsets.UTF_8);
+		assertTrue(gcPartSrc.contains("catch(Throwable"), gcPartSrc);
+		assertTrue(gcPartSrc.contains("new TemperatureControlPanel"), gcPartSrc);
+		assertTrue(gcPartSrc.contains("@Inject"), gcPartSrc);
+		assertTrue(gcPartSrc.contains("@PostConstruct"), gcPartSrc);
+		assertTrue(gcPartSrc.contains("COLOR_WHITE"), gcPartSrc);
+
+		Path seqPart = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/parts/BaijiuSequencePart.java", "plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/parts/BaijiuSequencePart.java");
+		assertNotNull(seqPart);
+		String seqPartSrc = Files.readString(seqPart, StandardCharsets.UTF_8);
+		assertTrue(seqPartSrc.contains("catch(Throwable"), seqPartSrc);
+		assertTrue(seqPartSrc.contains("new BaijiuSequenceComposite"), seqPartSrc);
+		assertTrue(seqPartSrc.contains("@Inject"), seqPartSrc);
+		assertTrue(seqPartSrc.contains("@PostConstruct"), seqPartSrc);
+		assertTrue(seqPartSrc.contains("COLOR_WHITE"), seqPartSrc);
+		assertTrue(seqPartSrc.contains("missingMessage"), seqPartSrc);
 
 		Path css = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/stylesheets/baijiu-shell.css", "plugins/net.openchrom.rcp.compilation.baijiu.ui/stylesheets/baijiu-shell.css");
 		assertNotNull(css);

@@ -33,10 +33,11 @@ import jakarta.inject.Inject;
 
 /**
  * After ChemClipse fragments attach, hide research chrome, select the plant
- * home (status + sequence), and {@code showPart(..., ACTIVATE)} the concrete
- * plant-home reverse-control / sequence parts so the client is not an empty
- * gray sash after {@code -clearPersistedState}. Does not depend on
- * baijiu.ui / temperature.ui Java types (soft; no plugin cycle).
+ * home (status + sequence), {@code showPart(..., ACTIVATE)} the concrete
+ * plant-home reverse-control / sequence parts, then
+ * {@code IPresentationEngine.createGui} so the client is not an empty gray
+ * sash after {@code -clearPersistedState}. Does not depend on baijiu.ui /
+ * temperature.ui Java types (soft; no plugin cycle).
  */
 public class BaijiuShellAddon {
 
@@ -60,6 +61,7 @@ public class BaijiuShellAddon {
 				eventBroker.unsubscribe(this);
 				applyChrome(application, modelService);
 				selectBaijiuPerspective(application, modelService);
+				schedulePlantHomeRender(application, modelService);
 				scheduleWindowMenuHide(application, modelService);
 			}
 		});
@@ -110,6 +112,7 @@ public class BaijiuShellAddon {
 		boolean shown;
 		if(plantHome) {
 			shown = BaijiuShellParts.showPlantHomeParts(application, modelService, partService);
+			BaijiuShellParts.forceCreatePlantHomeGuis(application, modelService);
 		} else {
 			shown = showWorkbenchParts(application, modelService, partService);
 		}
@@ -187,6 +190,24 @@ public class BaijiuShellAddon {
 				}
 				hideWindowMenuElements(contribution.getChildren());
 			}
+		}
+	}
+
+	private static void schedulePlantHomeRender(MApplication application, EModelService modelService) {
+
+		try {
+			Display display = Display.getCurrent();
+			if(display == null || display.isDisposed()) {
+				BaijiuShellParts.forceCreatePlantHomeGuis(application, modelService);
+				return;
+			}
+			display.asyncExec(() -> {
+				if(!display.isDisposed()) {
+					BaijiuShellParts.forceCreatePlantHomeGuis(application, modelService);
+				}
+			});
+		} catch(RuntimeException | LinkageError e) {
+			BaijiuShellParts.forceCreatePlantHomeGuis(application, modelService);
 		}
 	}
 

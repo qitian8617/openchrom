@@ -11,14 +11,17 @@ package net.openchrom.rcp.compilation.baijiu.ui.lifecycle;
 
 import java.util.List;
 
+import org.eclipse.e4.core.contexts.IEclipseContext;
 import org.eclipse.e4.ui.model.application.MApplication;
 import org.eclipse.e4.ui.model.application.ui.MElementContainer;
 import org.eclipse.e4.ui.model.application.ui.MUIElement;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPlaceholder;
 import org.eclipse.e4.ui.model.application.ui.basic.MPart;
+import org.eclipse.e4.ui.workbench.IPresentationEngine;
 import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService.PartState;
+import org.eclipse.swt.widgets.Composite;
 
 /**
  * Activates plant-home parts by element id. Prefers the concrete Parts hosted
@@ -36,7 +39,9 @@ public final class BaijiuShellParts {
 
 	/**
 	 * {@code showPart(..., ACTIVATE)} reverse control + sequence on plant
-	 * home. Returns true when at least one part is shown.
+	 * home, then {@link IPresentationEngine#createGui(MUIElement)} so the
+	 * part client is not a blank tab. Returns true when at least one part
+	 * is shown.
 	 */
 	public static boolean showPlantHomeParts(MApplication application, EModelService modelService, EPartService partService) {
 
@@ -44,7 +49,52 @@ public final class BaijiuShellParts {
 				|| showPart(application, modelService, partService, BaijiuShellChrome.GC_CONTROL_PART_ID, BaijiuShellChrome.GC_CONTROL_PLACEHOLDER_ID);
 		boolean sequence = showPart(application, modelService, partService, BaijiuShellChrome.SEQUENCE_HOME_PART_ID, null) //
 				|| showPart(application, modelService, partService, BaijiuShellChrome.SEQUENCE_PART_ID, null);
+		forceCreatePlantHomeGuis(application, modelService);
 		return gc || sequence;
+	}
+
+	/**
+	 * Force the plant-home part widgets to be created. {@code showPart}
+	 * can leave a selected tab whose client Composite never ran
+	 * {@code @PostConstruct}.
+	 */
+	public static void forceCreatePlantHomeGuis(MApplication application, EModelService modelService) {
+
+		forceCreateGui(application, modelService, BaijiuShellChrome.GC_HOME_PART_ID);
+		forceCreateGui(application, modelService, BaijiuShellChrome.SEQUENCE_HOME_PART_ID);
+	}
+
+	public static boolean forceCreateGui(MApplication application, EModelService modelService, String partId) {
+
+		if(application == null || modelService == null || partId == null || partId.isBlank()) {
+			return false;
+		}
+		MPart part = findPart(modelService, application, partId);
+		if(part == null) {
+			return false;
+		}
+		part.setVisible(true);
+		part.setToBeRendered(true);
+		selectInParent(part);
+		IPresentationEngine engine = presentationEngine(application, part);
+		if(engine == null) {
+			return false;
+		}
+		try {
+			if(needsRebuild(part)) {
+				engine.removeGui(part);
+				part.setVisible(true);
+				part.setToBeRendered(true);
+				selectInParent(part);
+			}
+			Object created = engine.createGui(part);
+			if(created instanceof Composite composite && !composite.isDisposed()) {
+				composite.layout(true, true);
+			}
+			return part.getWidget() != null || part.getObject() != null;
+		} catch(RuntimeException | LinkageError e) {
+			return false;
+		}
 	}
 
 	public static boolean showPart(MApplication application, EModelService modelService, EPartService partService, String partId) {
@@ -142,6 +192,38 @@ public final class BaijiuShellParts {
 			}
 		}
 		return null;
+	}
+
+	private static boolean needsRebuild(MPart part) {
+
+		if(part.getObject() == null && part.getWidget() != null) {
+			return true;
+		}
+		if(part.getWidget() instanceof Composite composite && !composite.isDisposed()) {
+			return composite.getChildren().length == 0;
+		}
+		return false;
+	}
+
+	private static IPresentationEngine presentationEngine(MApplication application, MPart part) {
+
+		IPresentationEngine engine = fromContext(application == null ? null : application.getContext());
+		if(engine == null && part != null) {
+			engine = fromContext(part.getContext());
+		}
+		return engine;
+	}
+
+	private static IPresentationEngine fromContext(IEclipseContext context) {
+
+		if(context == null) {
+			return null;
+		}
+		try {
+			return context.get(IPresentationEngine.class);
+		} catch(RuntimeException | LinkageError e) {
+			return null;
+		}
 	}
 
 	private static void selectInParent(MUIElement element) {

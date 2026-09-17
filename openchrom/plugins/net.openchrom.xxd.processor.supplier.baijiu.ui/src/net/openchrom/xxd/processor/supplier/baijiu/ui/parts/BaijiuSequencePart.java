@@ -11,12 +11,13 @@ package net.openchrom.xxd.processor.supplier.baijiu.ui.parts;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.FillLayout;
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.inject.Inject;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.sequence.InjectionSequenceAccess;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuSequenceComposite;
 
@@ -26,26 +27,89 @@ import net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuSequenceCompos
  */
 public class BaijiuSequencePart {
 
+	private boolean created;
+
+	public BaijiuSequencePart() {
+
+	}
+
+	@Inject
+	public BaijiuSequencePart(Composite parent) {
+
+		create(parent);
+	}
+
 	@PostConstruct
 	public void create(Composite parent) {
 
-		parent.setLayout(new FillLayout());
-		if(!InjectionSequenceAccess.isAvailable()) {
-			Composite box = new Composite(parent, SWT.NONE);
-			box.setLayout(new GridLayout(1, false));
-			Label missing = new Label(box, SWT.WRAP);
-			missing.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-			missing.setText(InjectionSequenceAccess.missingMessage());
+		if(created || parent == null || parent.isDisposed()) {
+			return;
+		}
+		created = true;
+		try {
+			parent.setLayout(new FillLayout());
+			if(!InjectionSequenceAccess.isAvailable()) {
+				showMessage(parent, InjectionSequenceAccess.missingMessage());
+				return;
+			}
+			new BaijiuSequenceComposite(parent, SWT.NONE);
+			parent.layout(true, true);
+		} catch(Throwable t) {
+			showMessage(parent, formatThrowable(t));
+		}
+	}
+
+	private static void showMessage(Composite parent, String text) {
+
+		if(parent == null || parent.isDisposed()) {
 			return;
 		}
 		try {
-			new BaijiuSequenceComposite(parent, SWT.NONE);
-		} catch(LinkageError | RuntimeException e) {
-			Composite box = new Composite(parent, SWT.NONE);
-			box.setLayout(new GridLayout(1, false));
-			Label missing = new Label(box, SWT.WRAP);
-			missing.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-			missing.setText(InjectionSequenceAccess.missingMessage());
+			disposeChildren(parent);
+			parent.setLayout(new FillLayout());
+			Label label = new Label(parent, SWT.WRAP);
+			label.setText(text == null || text.isBlank() ? "进样序列不可用。" : text);
+			applyDarkReadable(parent, label);
+			parent.layout(true, true);
+		} catch(Throwable ignored) {
+			// last resort: do not crash the workbench renderer
 		}
+	}
+
+	private static void disposeChildren(Composite parent) {
+
+		Control[] children = parent.getChildren();
+		if(children == null) {
+			return;
+		}
+		for(Control child : children) {
+			if(child != null && !child.isDisposed()) {
+				child.dispose();
+			}
+		}
+	}
+
+	private static void applyDarkReadable(Composite parent, Label label) {
+
+		Display display = parent.getDisplay();
+		if(display == null || display.isDisposed()) {
+			return;
+		}
+		label.setForeground(display.getSystemColor(SWT.COLOR_WHITE));
+		label.setBackground(display.getSystemColor(SWT.COLOR_DARK_GRAY));
+		parent.setBackground(display.getSystemColor(SWT.COLOR_DARK_GRAY));
+	}
+
+	static String formatThrowable(Throwable t) {
+
+		if(t == null) {
+			return "Unknown error";
+		}
+		String type = t.getClass().getName();
+		String message = t.getMessage();
+		if(message == null || message.isBlank()) {
+			return type;
+		}
+		return type + ": " + message;
 	}
 }

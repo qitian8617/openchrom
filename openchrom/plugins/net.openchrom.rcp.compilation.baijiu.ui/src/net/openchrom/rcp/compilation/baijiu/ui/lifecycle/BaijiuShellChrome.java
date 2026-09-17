@@ -60,7 +60,7 @@ public final class BaijiuShellChrome {
 	public static final String PLANT_TOOLBAR_ID = "net.openchrom.rcp.compilation.baijiu.ui.toolbar.plant";
 	public static final String RESET_LAYOUT_COMMAND_ID = "net.openchrom.rcp.compilation.baijiu.ui.command.resetLayout";
 	public static final String RESEARCH_MENUS_PROPERTY = "net.openchrom.baijiu.showResearchMenus";
-	public static final int CHROME_EPOCH = 5;
+	public static final int CHROME_EPOCH = 6;
 
 	public static final String PROCESS_MENU_ID = "org.eclipse.chemclipse.ux.extension.ui.menu.process";
 	public static final String PLUGINS_MENU_ID = "org.eclipse.chemclipse.rcp.app.ui.menu.plugins";
