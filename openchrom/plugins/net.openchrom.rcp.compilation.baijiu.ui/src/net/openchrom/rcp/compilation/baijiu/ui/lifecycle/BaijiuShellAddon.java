@@ -18,6 +18,7 @@ import org.eclipse.e4.ui.model.application.ui.MUILabel;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPerspective;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPerspectiveStack;
 import org.eclipse.e4.ui.model.application.ui.basic.MWindow;
+import org.eclipse.e4.ui.model.application.ui.menu.MMenu;
 import org.eclipse.e4.ui.workbench.UIEvents;
 import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
@@ -29,9 +30,10 @@ import jakarta.inject.Inject;
 
 /**
  * After ChemClipse fragments attach, hide research chrome, select the plant
- * home (status + sequence), and keep reverse-control / sequence parts
- * visible. Does not depend on baijiu.ui / temperature.ui Java types (soft;
- * no plugin cycle).
+ * home (status + sequence), and {@code showPart(..., ACTIVATE)} the shared
+ * reverse-control / sequence parts so placeholders are not an empty gray
+ * client area after {@code -clearPersistedState}. Does not depend on
+ * baijiu.ui / temperature.ui Java types (soft; no plugin cycle).
  */
 public class BaijiuShellAddon {
 
@@ -76,7 +78,7 @@ public class BaijiuShellAddon {
 			if(element == null) {
 				continue;
 			}
-			if(BaijiuShellChrome.shouldHide(element.getElementId(), labelOf(element))) {
+			if(shouldHideElement(element)) {
 				element.setVisible(false);
 				element.setToBeRendered(false);
 			}
@@ -90,32 +92,28 @@ public class BaijiuShellAddon {
 			return;
 		}
 		revealPlantParts(application, modelService);
-		MUIElement found = modelService.find(BaijiuShellChrome.PERSPECTIVE_ID, application);
-		MPerspective perspective;
-		if(found instanceof MPerspective plantHome) {
-			perspective = plantHome;
+		EPartService partService = partService(application);
+		MPerspective perspective = findPerspective(application, modelService, BaijiuShellChrome.PERSPECTIVE_ID);
+		boolean plantHome = perspective != null;
+		if(perspective == null) {
+			perspective = findPerspective(application, modelService, BaijiuShellChrome.WORKBENCH_PERSPECTIVE_ID);
+		}
+		if(perspective == null) {
+			return;
+		}
+		switchTo(application, modelService, partService, perspective);
+		boolean shown;
+		if(plantHome) {
+			shown = BaijiuShellParts.showPlantHomeParts(application, modelService, partService);
 		} else {
-			found = modelService.find(BaijiuShellChrome.WORKBENCH_PERSPECTIVE_ID, application);
-			if(!(found instanceof MPerspective fallback)) {
-				return;
-			}
-			perspective = fallback;
+			shown = showWorkbenchParts(application, modelService, partService);
 		}
-		perspective.setVisible(true);
-		perspective.setToBeRendered(true);
-		MUIElement stackElement = modelService.find(BaijiuShellChrome.PERSPECTIVE_STACK_ID, application);
-		if(stackElement instanceof MPerspectiveStack stack) {
-			stack.setSelectedElement(perspective);
-		}
-		try {
-			if(application.getContext() != null) {
-				EPartService partService = application.getContext().get(EPartService.class);
-				if(partService != null) {
-					partService.switchPerspective(perspective);
-				}
+		if(!shown && plantHome) {
+			MPerspective fallback = findPerspective(application, modelService, BaijiuShellChrome.WORKBENCH_PERSPECTIVE_ID);
+			if(fallback != null && fallback != perspective) {
+				switchTo(application, modelService, partService, fallback);
+				showWorkbenchParts(application, modelService, partService);
 			}
-		} catch(RuntimeException | LinkageError e) {
-			// stack selection above is enough
 		}
 	}
 
@@ -132,9 +130,73 @@ public class BaijiuShellAddon {
 		show(modelService.find(BaijiuShellChrome.GC_CONTROL_PLACEHOLDER_ID, application));
 		show(modelService.find(BaijiuShellChrome.GC_HOME_PLACEHOLDER_ID, application));
 		show(modelService.find(BaijiuShellChrome.SEQUENCE_PART_ID, application));
+		show(modelService.find(BaijiuShellChrome.SEQUENCE_HOME_PLACEHOLDER_ID, application));
 		show(modelService.find(BaijiuShellChrome.ANALYSIS_PART_ID, application));
 		show(modelService.find(BaijiuShellChrome.BAIJIU_MENU_ID, application));
 		show(modelService.find(BaijiuShellChrome.PLANT_TOOLBAR_ID, application));
+		show(modelService.find(BaijiuShellChrome.PLANT_SASH_ID, application));
+		show(modelService.find(BaijiuShellChrome.PLANT_TOP_SASH_ID, application));
+		show(modelService.find(BaijiuShellChrome.GC_HOME_STACK_ID, application));
+		show(modelService.find(BaijiuShellChrome.SEQUENCE_HOME_STACK_ID, application));
+		show(modelService.find(BaijiuShellChrome.PLANT_EDITOR_PLACEHOLDER_ID, application));
+	}
+
+	private static boolean showWorkbenchParts(MApplication application, EModelService modelService, EPartService partService) {
+
+		boolean gc = BaijiuShellParts.showPart(application, modelService, partService, BaijiuShellChrome.GC_CONTROL_PART_ID, BaijiuShellChrome.GC_CONTROL_PLACEHOLDER_ID);
+		boolean sequence = BaijiuShellParts.showPart(application, modelService, partService, BaijiuShellChrome.SEQUENCE_PART_ID, null);
+		return gc || sequence;
+	}
+
+	private static void switchTo(MApplication application, EModelService modelService, EPartService partService, MPerspective perspective) {
+
+		perspective.setVisible(true);
+		perspective.setToBeRendered(true);
+		MUIElement stackElement = modelService.find(BaijiuShellChrome.PERSPECTIVE_STACK_ID, application);
+		if(stackElement instanceof MPerspectiveStack stack) {
+			stack.setSelectedElement(perspective);
+		}
+		if(partService != null) {
+			try {
+				partService.switchPerspective(perspective);
+			} catch(RuntimeException | LinkageError e) {
+				// stack selection above is enough
+			}
+		}
+	}
+
+	private static MPerspective findPerspective(MApplication application, EModelService modelService, String perspectiveId) {
+
+		MUIElement found = modelService.find(perspectiveId, application);
+		if(found instanceof MPerspective perspective) {
+			return perspective;
+		}
+		return null;
+	}
+
+	private static EPartService partService(MApplication application) {
+
+		if(application == null || application.getContext() == null) {
+			return null;
+		}
+		try {
+			return application.getContext().get(EPartService.class);
+		} catch(RuntimeException | LinkageError e) {
+			return null;
+		}
+	}
+
+	private static boolean shouldHideElement(MUIElement element) {
+
+		String elementId = element.getElementId();
+		String label = labelOf(element);
+		if(BaijiuShellChrome.shouldHide(elementId, label)) {
+			return true;
+		}
+		if(element instanceof MMenu && BaijiuShellChrome.isWindowMenuLabel(label) && !BaijiuShellChrome.researchMenusVisible()) {
+			return true;
+		}
+		return false;
 	}
 
 	private static String labelOf(MUIElement element) {

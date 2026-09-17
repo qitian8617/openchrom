@@ -42,8 +42,9 @@ Run As → Eclipse Application (Windows engineer)
    「白酒 FID 工作站」 via product name / shell chrome.
 6. Expect window title 白酒 FID 工作站, start on **厂工作台**:
    left reverse-control (气/火/信号/就绪 + 当前针), right 进样序列 table,
-   chromatogram editor below. Top menu 文件 / 白酒 / 视图 / 帮助
-   (no 处理器 / 插件). Plant toolbar: 打开谱图、开始分析、推荐积分、
+   chromatogram editor below (editor may be empty until a chromatogram is
+   opened). Top menu 文件 / 白酒 / 视图 / 帮助
+   (no 处理器 / 插件 / 色谱图 / 窗口). Plant toolbar: 打开谱图、开始分析、推荐积分、
    定量/白酒分析、报告. File → 打开 CSD 文件 still there.
 
 If the launch config was created for the **community** product, create a
@@ -54,7 +55,7 @@ Reset layout
 - 白酒 → 重置窗口布局, then restart.
 - Or add -clearPersistedState **once** to the launch / shortcut.
 - Or -Dnet.openchrom.baijiu.clearLayout=true for that start.
-Phase 3 also clears workbench.xmi once when the chrome epoch advances (now 3).
+Phase 3 also clears workbench.xmi once when the chrome epoch advances (now 4).
 
 Research-menu escape hatch (engineers only, not in the UI)
 ----------------------------------------------------------
@@ -99,7 +100,8 @@ Verify on the engineer PC
 -------------------------
 [ ] .product opens; Run As starts; title 白酒 FID 工作站
 [ ] Default perspective 厂工作台: status (气/火/信号/就绪) + sequence table visible
-[ ] Top bar 文件 / 白酒 / 视图 / 帮助; no 处理器 / 插件
+[ ] After 白酒 → 重置窗口布局 and relaunch: main client is NOT empty gray; reverse-control and/or sequence table still visible
+[ ] Top bar 文件 / 白酒 / 视图 / 帮助; no 处理器 / 插件 / 色谱图 / 窗口
 [ ] Toolbar: 打开谱图、开始分析、推荐积分、定量/白酒分析、报告
 [ ] 开始分析 uses the same FID gate as Main (blocks when disconnected)
 [ ] 定量/白酒分析 opens the analysis page (样品→校正→定量→报告); demo .ocb still works

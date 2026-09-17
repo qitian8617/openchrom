@@ -37,7 +37,13 @@ public final class BaijiuShellChrome {
 	public static final String GC_CONTROL_PLACEHOLDER_ID = "net.openchrom.rcp.compilation.baijiu.ui.placeholder.gcControl";
 	public static final String GC_HOME_PLACEHOLDER_ID = "net.openchrom.rcp.compilation.baijiu.ui.placeholder.gcHome";
 	public static final String SEQUENCE_PART_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.part.sequence";
+	public static final String SEQUENCE_HOME_PLACEHOLDER_ID = "net.openchrom.rcp.compilation.baijiu.ui.placeholder.sequenceHome";
 	public static final String ANALYSIS_PART_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.part.analysis";
+	public static final String PLANT_SASH_ID = "net.openchrom.rcp.compilation.baijiu.ui.partsash.plantHome";
+	public static final String PLANT_TOP_SASH_ID = "net.openchrom.rcp.compilation.baijiu.ui.partsash.plantTop";
+	public static final String GC_HOME_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.gcHome";
+	public static final String SEQUENCE_HOME_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.sequenceHome";
+	public static final String PLANT_EDITOR_PLACEHOLDER_ID = "net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantEditor";
 	public static final String PERSPECTIVE_STACK_ID = "org.eclipse.chemclipse.rcp.app.ui.perspectivestack.main";
 	public static final String MAIN_WINDOW_ID = "org.eclipse.chemclipse.rcp.app.ui.trimmedwindow.main";
 	public static final String PERSPECTIVE_PROPERTY = "application.perspective";
@@ -45,12 +51,24 @@ public final class BaijiuShellChrome {
 	public static final String PLANT_TOOLBAR_ID = "net.openchrom.rcp.compilation.baijiu.ui.toolbar.plant";
 	public static final String RESET_LAYOUT_COMMAND_ID = "net.openchrom.rcp.compilation.baijiu.ui.command.resetLayout";
 	public static final String RESEARCH_MENUS_PROPERTY = "net.openchrom.baijiu.showResearchMenus";
-	public static final int CHROME_EPOCH = 3;
+	public static final int CHROME_EPOCH = 4;
 
 	public static final String PROCESS_MENU_ID = "org.eclipse.chemclipse.ux.extension.ui.menu.process";
 	public static final String PLUGINS_MENU_ID = "org.eclipse.chemclipse.rcp.app.ui.menu.plugins";
 	public static final String CHROMATOGRAM_MENU_ID = "org.eclipse.chemclipse.ux.extension.ui.menu.chromatogram";
+	/**
+	 * ChemClipse Application.e4xmi top-level Window menu. Eclipse 3.x
+	 * compatibility often contributes a second menu whose id is just
+	 * {@code window} (no {@code .menu.} segment).
+	 */
 	public static final String WINDOW_MENU_ID = "org.eclipse.chemclipse.rcp.app.ui.menu.window";
+	public static final String ECLIPSE_WINDOW_MENU_ID = "window";
+	public static final String ECLIPSE_WINDOW_MENU_ALT_ID = "org.eclipse.ui.windowMenu";
+	public static final List<String> WINDOW_MENU_IDS = List.of( //
+			WINDOW_MENU_ID, //
+			ECLIPSE_WINDOW_MENU_ID, //
+			ECLIPSE_WINDOW_MENU_ALT_ID, //
+			"org.eclipse.ui.main.menu.window");
 	public static final String PLUGINS_TOOLBAR_ID = "org.eclipse.chemclipse.rcp.app.ui.toolbar.plugins";
 
 	/**
@@ -73,6 +91,9 @@ public final class BaijiuShellChrome {
 			PROCESS_MENU_ID, //
 			CHROMATOGRAM_MENU_ID, //
 			WINDOW_MENU_ID, //
+			ECLIPSE_WINDOW_MENU_ID, //
+			ECLIPSE_WINDOW_MENU_ALT_ID, //
+			"org.eclipse.ui.main.menu.window", //
 			"org.eclipse.chemclipse.ux.extension.ui.menu.scan", //
 			"org.eclipse.chemclipse.ux.extension.ui.menu.peak", //
 			"org.eclipse.chemclipse.ux.extension.ui.menu.spectrum", //
@@ -116,7 +137,10 @@ public final class BaijiuShellChrome {
 			PLUGINS_MENU_ID, //
 			PLUGINS_TOOLBAR_ID, //
 			CHROMATOGRAM_MENU_ID, //
-			WINDOW_MENU_ID);
+			WINDOW_MENU_ID, //
+			ECLIPSE_WINDOW_MENU_ID, //
+			ECLIPSE_WINDOW_MENU_ALT_ID, //
+			"org.eclipse.ui.main.menu.window");
 
 	/**
 	 * Never hide these, even if a prefix would match. Plant path + ChemClipse
@@ -145,7 +169,13 @@ public final class BaijiuShellChrome {
 			GC_CONTROL_PLACEHOLDER_ID, //
 			GC_HOME_PLACEHOLDER_ID, //
 			SEQUENCE_PART_ID, //
+			SEQUENCE_HOME_PLACEHOLDER_ID, //
 			ANALYSIS_PART_ID, //
+			PLANT_SASH_ID, //
+			PLANT_TOP_SASH_ID, //
+			GC_HOME_STACK_ID, //
+			SEQUENCE_HOME_STACK_ID, //
+			PLANT_EDITOR_PLACEHOLDER_ID, //
 			"net.openchrom.xxd.processor.supplier.baijiu.ui.menu.workbench", //
 			"net.openchrom.xxd.control.supplier.temperature.ui.menu.open");
 
@@ -190,10 +220,10 @@ public final class BaijiuShellChrome {
 					return false;
 				}
 			}
-			if(researchMenusVisible() && RESEARCH_ESCAPE_IDS.contains(elementId)) {
+			if(researchMenusVisible() && (RESEARCH_ESCAPE_IDS.contains(elementId) || isWindowMenuId(elementId))) {
 				return false;
 			}
-			if(HIDDEN_ELEMENT_IDS.contains(elementId)) {
+			if(HIDDEN_ELEMENT_IDS.contains(elementId) || isWindowMenuId(elementId)) {
 				return true;
 			}
 			for(String prefix : HIDDEN_ID_PREFIXES) {
@@ -208,15 +238,45 @@ public final class BaijiuShellChrome {
 		return isResearchMenuLabel(elementId, label);
 	}
 
+	static boolean isWindowMenuId(String elementId) {
+
+		if(elementId == null || elementId.isBlank()) {
+			return false;
+		}
+		if(WINDOW_MENU_IDS.contains(elementId)) {
+			return true;
+		}
+		String id = elementId.toLowerCase(Locale.ROOT);
+		return id.endsWith(".menu.window") || id.endsWith(".windowmenu");
+	}
+
+	static boolean isWindowMenuLabel(String label) {
+
+		if(label == null || label.isBlank()) {
+			return false;
+		}
+		String normalized = normalizeMenuLabel(label);
+		return "窗口".equals(normalized) || "window".equals(normalized);
+	}
+
 	static boolean isResearchMenuLabel(String elementId, String label) {
 
 		if(label == null || label.isBlank()) {
 			return false;
 		}
+		if(isWindowMenuLabel(label)) {
+			return true;
+		}
 		if(elementId != null && !elementId.contains(".menu.")) {
 			return false;
 		}
-		String normalized = label.trim().toLowerCase(Locale.ROOT);
-		return RESEARCH_LABELS.contains(normalized);
+		return RESEARCH_LABELS.contains(normalizeMenuLabel(label));
+	}
+
+	static String normalizeMenuLabel(String label) {
+
+		String trimmed = label.trim().replace("&", "");
+		trimmed = trimmed.replaceAll("(?i)\\([a-z0-9]\\)$", "").trim();
+		return trimmed.toLowerCase(Locale.ROOT);
 	}
 }
