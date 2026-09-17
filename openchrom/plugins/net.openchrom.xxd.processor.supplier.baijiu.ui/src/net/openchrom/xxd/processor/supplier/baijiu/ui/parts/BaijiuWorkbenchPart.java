@@ -10,6 +10,8 @@
 package net.openchrom.xxd.processor.supplier.baijiu.ui.parts;
 
 import org.eclipse.e4.core.contexts.IEclipseContext;
+import org.eclipse.e4.ui.model.application.MApplication;
+import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
@@ -40,6 +42,10 @@ public class BaijiuWorkbenchPart {
 	@Inject
 	private EPartService partService;
 	@Inject
+	private EModelService modelService;
+	@Inject
+	private MApplication application;
+	@Inject
 	private IEclipseContext context;
 
 	@PostConstruct
@@ -57,9 +63,9 @@ public class BaijiuWorkbenchPart {
 
 		button(parent, "\u6253\u5f00\u8272\u8c31\u56fe", e -> new OpenBaijiuChromatogramHandler().execute(shell, context));
 		button(parent, BaijiuTerms.RECOMMENDED_INTEGRATION, e -> new RunBaijiuIntegrationHandler().execute(shell, partService));
-		button(parent, BaijiuTerms.APP, e -> new OpenBaijiuAnalysisHandler().execute(shell, partService));
+		button(parent, BaijiuTerms.APP, e -> new OpenBaijiuAnalysisHandler().execute(shell, partService, application, modelService));
 		button(parent, "\u4e09\u6b65\u5411\u5bfc\uff08\u53ef\u9009\uff09", e -> new OpenBaijiuWizardHandler().execute(shell, partService));
-		button(parent, BaijiuTerms.SEQUENCE, e -> new OpenBaijiuSequenceHandler().execute(shell));
+		button(parent, BaijiuTerms.SEQUENCE, e -> new OpenBaijiuSequenceHandler().execute(shell, application, modelService, partService));
 		button(parent, BaijiuTerms.BATCH_RESULTS, e -> new OpenBaijiuSequenceResultsHandler().execute(shell));
 		button(parent, BaijiuTerms.SIMPLE_BATCH, e -> new OpenBaijiuBatchHandler().execute(shell));
 		button(parent, BaijiuTerms.PARALLEL, e -> new OpenBaijiuParallelHandler().execute(shell));
