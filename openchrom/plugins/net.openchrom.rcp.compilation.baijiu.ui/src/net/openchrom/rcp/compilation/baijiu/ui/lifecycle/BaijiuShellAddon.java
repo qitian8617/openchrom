@@ -91,7 +91,10 @@ public class BaijiuShellAddon {
 		}
 		revealPlantParts(application, modelService);
 		MUIElement found = modelService.find(BaijiuShellChrome.PERSPECTIVE_ID, application);
-		if(!(found instanceof MPerspective perspective)) {
+		MPerspective perspective;
+		if(found instanceof MPerspective plantHome) {
+			perspective = plantHome;
+		} else {
 			found = modelService.find(BaijiuShellChrome.WORKBENCH_PERSPECTIVE_ID, application);
 			if(!(found instanceof MPerspective fallback)) {
 				return;
