@@ -43,9 +43,12 @@ Run As → Eclipse Application (Windows engineer)
 6. Expect window title 白酒 FID 工作站, start on **厂工作台**:
    left reverse-control (气/火/信号/就绪 + 当前针), right 进样序列 table,
    chromatogram editor below (editor may be empty until a chromatogram is
-   opened). Plant-home stacks host **concrete Parts** with
-   contributionURI to TemperatureControlPart / BaijiuSequencePart
-   (not Placeholder imports of sharedElements). Top menu 文件 / 白酒 / 视图 / 帮助
+   opened). Plant-home stacks host **branding-bundle Parts**
+   (`BaijiuGcHomePart` / `BaijiuSequenceHomePart`) that OSGi-load
+   TemperatureControlPanel / BaijiuSequenceComposite. Do **not** point
+   contributionURI at foreign-bundle Parts (this PDE launch does not run
+   their @PostConstruct — blank gray tabs, no error Label).
+   Top menu 文件 / 白酒 / 视图 / 帮助
    (no 处理器 / 插件 / 色谱图 / 窗口). Plant toolbar: 打开谱图、开始分析、推荐积分、
    定量/白酒分析、报告. File → 打开 CSD 文件 still there.
 
@@ -57,7 +60,7 @@ Reset layout
 - 白酒 → 重置窗口布局, then restart.
 - Or add -clearPersistedState **once** to the launch / shortcut.
 - Or -Dnet.openchrom.baijiu.clearLayout=true for that start.
-Phase 3 also clears workbench.xmi once when the chrome epoch advances (now 5).
+Phase 3 also clears workbench.xmi once when the chrome epoch advances (now 7).
 
 Research-menu escape hatch (engineers only, not in the UI)
 ----------------------------------------------------------
@@ -102,8 +105,9 @@ Verify on the engineer PC
 -------------------------
 [ ] .product opens; Run As starts; title 白酒 FID 工作站
 [ ] Default perspective 厂工作台: status (气/火/信号/就绪) + sequence table visible
+    (or a readable white-on-dark error Label inside the tab — never blank gray)
 [ ] After 白酒 → 重置窗口布局 and relaunch: main client is NOT empty gray; reverse-control and/or sequence table still visible
-[ ] First launch after this PR (epoch 5) auto-clears workbench.xmi once
+[ ] First launch after this PR (epoch 7) auto-clears workbench.xmi once
 [ ] Top bar 文件 / 白酒 / 视图 / 帮助; no 处理器 / 插件 / 色谱图 / 窗口
 [ ] Toolbar: 打开谱图、开始分析、推荐积分、定量/白酒分析、报告
 [ ] 开始分析 uses the same FID gate as Main (blocks when disconnected)

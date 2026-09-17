@@ -38,13 +38,14 @@ public final class BaijiuShellChrome {
 	/**
 	 * Concrete plant-home host (not a Placeholder import of the shared
 	 * reverse-control part). Distinct id so it cannot clash with
-	 * {@link #GC_CONTROL_PART_ID} in {@code sharedElements}.
+	 * {@link #GC_CONTROL_PART_ID} in {@code sharedElements}. Contribution
+	 * classes live in this branding bundle; they OSGi-load the real panels.
 	 */
 	public static final String GC_HOME_PART_ID = "net.openchrom.xxd.control.supplier.temperature.ui.part.control.plantHome";
-	public static final String GC_HOME_CONTRIBUTION_URI = "bundleclass://net.openchrom.xxd.control.supplier.temperature.ui/net.openchrom.xxd.control.supplier.temperature.ui.parts.TemperatureControlPart";
+	public static final String GC_HOME_CONTRIBUTION_URI = "bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuGcHomePart";
 	public static final String SEQUENCE_PART_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.part.sequence";
 	public static final String SEQUENCE_HOME_PART_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.part.sequence.plantHome";
-	public static final String SEQUENCE_HOME_CONTRIBUTION_URI = "bundleclass://net.openchrom.xxd.processor.supplier.baijiu.ui/net.openchrom.xxd.processor.supplier.baijiu.ui.parts.BaijiuSequencePart";
+	public static final String SEQUENCE_HOME_CONTRIBUTION_URI = "bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuSequenceHomePart";
 	public static final String ANALYSIS_PART_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.part.analysis";
 	public static final String PLANT_SASH_ID = "net.openchrom.rcp.compilation.baijiu.ui.partsash.plantHome";
 	public static final String PLANT_TOP_SASH_ID = "net.openchrom.rcp.compilation.baijiu.ui.partsash.plantTop";
@@ -60,7 +61,7 @@ public final class BaijiuShellChrome {
 	public static final String PLANT_TOOLBAR_ID = "net.openchrom.rcp.compilation.baijiu.ui.toolbar.plant";
 	public static final String RESET_LAYOUT_COMMAND_ID = "net.openchrom.rcp.compilation.baijiu.ui.command.resetLayout";
 	public static final String RESEARCH_MENUS_PROPERTY = "net.openchrom.baijiu.showResearchMenus";
-	public static final int CHROME_EPOCH = 6;
+	public static final int CHROME_EPOCH = 7;
 
 	public static final String PROCESS_MENU_ID = "org.eclipse.chemclipse.ux.extension.ui.menu.process";
 	public static final String PLUGINS_MENU_ID = "org.eclipse.chemclipse.rcp.app.ui.menu.plugins";

@@ -32,6 +32,7 @@ public class BaijiuShellLayout_1_Test {
 		assertTrue(BaijiuShellLayout.shouldClearPersistedState(1, false));
 		assertTrue(BaijiuShellLayout.shouldClearPersistedState(4, false));
 		assertTrue(BaijiuShellLayout.shouldClearPersistedState(5, false));
+		assertTrue(BaijiuShellLayout.shouldClearPersistedState(6, false));
 		assertFalse(BaijiuShellLayout.shouldClearPersistedState(BaijiuShellChrome.CHROME_EPOCH, false));
 		assertTrue(BaijiuShellLayout.shouldClearPersistedState(BaijiuShellChrome.CHROME_EPOCH, true));
 		assertEquals("-clearPersistedState", BaijiuShellLayout.RESET_PROGRAM_ARG);

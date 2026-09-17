@@ -157,6 +157,7 @@ public class BaijiuPilotPackaging_1_Test {
 		String brandingMf = Files.readString(branding, StandardCharsets.UTF_8);
 		assertTrue(brandingMf.contains("JavaSE-21"), brandingMf);
 		assertTrue(brandingMf.contains("org.eclipse.e4.core.contexts"), brandingMf);
+		assertTrue(brandingMf.contains("org.osgi.framework"), brandingMf);
 		assertTrue(!brandingMf.contains("JavaSE-25"), brandingMf);
 		assertFalse(brandingMf.contains("net.openchrom.xxd.processor.supplier.baijiu.ui"), brandingMf);
 		assertFalse(brandingMf.contains("net.openchrom.xxd.control.supplier.temperature.ui"), brandingMf);
@@ -177,10 +178,12 @@ public class BaijiuPilotPackaging_1_Test {
 		Path chrome = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellChrome.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellChrome.java");
 		assertNotNull(chrome);
 		String chromeSrc = Files.readString(chrome, StandardCharsets.UTF_8);
-		assertTrue(chromeSrc.contains("CHROME_EPOCH = 6"), chromeSrc);
+		assertTrue(chromeSrc.contains("CHROME_EPOCH = 7"), chromeSrc);
 		assertTrue(chromeSrc.contains("showResearchMenus"), chromeSrc);
 		assertTrue(chromeSrc.contains("org.eclipse.chemclipse.rcp.app.ui.menu.window"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldHideTopMenu"), chromeSrc);
+		assertTrue(chromeSrc.contains("BaijiuGcHomePart"), chromeSrc);
+		assertTrue(chromeSrc.contains("BaijiuSequenceHomePart"), chromeSrc);
 
 		Path addon = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellAddon.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellAddon.java");
 		assertNotNull(addon);
@@ -203,8 +206,35 @@ public class BaijiuPilotPackaging_1_Test {
 		assertFalse(shellFrag.contains("net.openchrom.rcp.compilation.baijiu.ui.placeholder.sequenceHome"), shellFrag);
 		assertTrue(shellFrag.contains("net.openchrom.xxd.control.supplier.temperature.ui.part.control.plantHome"), shellFrag);
 		assertTrue(shellFrag.contains("net.openchrom.xxd.processor.supplier.baijiu.ui.part.sequence.plantHome"), shellFrag);
-		assertTrue(shellFrag.contains("bundleclass://net.openchrom.xxd.control.supplier.temperature.ui/net.openchrom.xxd.control.supplier.temperature.ui.parts.TemperatureControlPart"), shellFrag);
-		assertTrue(shellFrag.contains("bundleclass://net.openchrom.xxd.processor.supplier.baijiu.ui/net.openchrom.xxd.processor.supplier.baijiu.ui.parts.BaijiuSequencePart"), shellFrag);
+		assertTrue(shellFrag.contains("bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuGcHomePart"), shellFrag);
+		assertTrue(shellFrag.contains("bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuSequenceHomePart"), shellFrag);
+		assertFalse(shellFrag.contains("bundleclass://net.openchrom.xxd.control.supplier.temperature.ui/"), shellFrag);
+		assertFalse(shellFrag.contains("bundleclass://net.openchrom.xxd.processor.supplier.baijiu.ui/"), shellFrag);
+
+		Path homePanels = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/parts/BaijiuHomePanels.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/parts/BaijiuHomePanels.java");
+		assertNotNull(homePanels, "branding OSGi panel host");
+		String homePanelsSrc = Files.readString(homePanels, StandardCharsets.UTF_8);
+		assertTrue(homePanelsSrc.contains("loadClass"), homePanelsSrc);
+		assertTrue(homePanelsSrc.contains("Platform.getBundle"), homePanelsSrc);
+		assertTrue(homePanelsSrc.contains("FrameworkUtil"), homePanelsSrc);
+		assertTrue(homePanelsSrc.contains("TemperatureControlPanel"), homePanelsSrc);
+		assertTrue(homePanelsSrc.contains("BaijiuSequenceComposite"), homePanelsSrc);
+		assertTrue(homePanelsSrc.contains("InjectionSequenceAccess"), homePanelsSrc);
+		assertTrue(homePanelsSrc.contains("COLOR_WHITE"), homePanelsSrc);
+
+		Path gcHomePart = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/parts/BaijiuGcHomePart.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/parts/BaijiuGcHomePart.java");
+		assertNotNull(gcHomePart);
+		String gcHomeSrc = Files.readString(gcHomePart, StandardCharsets.UTF_8);
+		assertTrue(gcHomeSrc.contains("@PostConstruct"), gcHomeSrc);
+		assertTrue(gcHomeSrc.contains("createTemperaturePanel"), gcHomeSrc);
+		assertTrue(gcHomeSrc.contains("catch(Throwable"), gcHomeSrc);
+
+		Path seqHomePart = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/parts/BaijiuSequenceHomePart.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/parts/BaijiuSequenceHomePart.java");
+		assertNotNull(seqHomePart);
+		String seqHomeSrc = Files.readString(seqHomePart, StandardCharsets.UTF_8);
+		assertTrue(seqHomeSrc.contains("@PostConstruct"), seqHomeSrc);
+		assertTrue(seqHomeSrc.contains("createSequenceComposite"), seqHomeSrc);
+		assertTrue(seqHomeSrc.contains("catch(Throwable"), seqHomeSrc);
 
 		Path gcPart = locate("openchrom/plugins/net.openchrom.xxd.control.supplier.temperature.ui/src/net/openchrom/xxd/control/supplier/temperature/ui/parts/TemperatureControlPart.java", "plugins/net.openchrom.xxd.control.supplier.temperature.ui/src/net/openchrom/xxd/control/supplier/temperature/ui/parts/TemperatureControlPart.java");
 		assertNotNull(gcPart);
@@ -254,6 +284,9 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(archText.contains("Electron"), archText);
 		assertTrue(archText.contains("Part 11"), archText);
 		assertTrue(archText.contains("JavaSE-21"), archText);
+		assertTrue(archText.contains("BaijiuGcHomePart"), archText);
+		assertTrue(archText.contains("BaijiuSequenceHomePart"), archText);
+		assertTrue(archText.contains("loadClass"), archText);
 
 		Path manual = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/docs/\u767d\u9152FID\u8bd5\u70b9\u64cd\u4f5c\u624b\u518c.md", "docs/\u767d\u9152FID\u8bd5\u70b9\u64cd\u4f5c\u624b\u518c.md");
 		assertNotNull(manual);

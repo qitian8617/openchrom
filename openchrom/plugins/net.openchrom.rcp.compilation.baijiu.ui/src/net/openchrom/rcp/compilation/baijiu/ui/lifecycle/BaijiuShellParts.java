@@ -25,11 +25,13 @@ import org.eclipse.swt.widgets.Composite;
 
 /**
  * Activates plant-home parts by element id. Prefers the concrete Parts hosted
- * in the plant-home stacks ({@code contributionURI} in the branding fragment)
- * so rendering does not depend on cross-bundle Placeholder {@code <imports>}
- * binding to {@code sharedElements}. Still supports shared-part / placeholder
- * show for the workbench fallback. No Java dependency on baijiu.ui /
- * temperature.ui (branding stays soft).
+ * in the plant-home stacks ({@code contributionURI} to branding-bundle
+ * {@code BaijiuGcHomePart} / {@code BaijiuSequenceHomePart}) so
+ * {@code @PostConstruct} runs in this bundle. Those hosts OSGi-load the
+ * real SWT panels; rendering does not depend on foreign-bundle
+ * {@code contributionURI} or Placeholder {@code <imports>}. Still supports
+ * shared-part / placeholder show for the workbench fallback. No Java
+ * dependency on baijiu.ui / temperature.ui (branding stays soft).
  */
 public final class BaijiuShellParts {
 
