@@ -50,6 +50,7 @@ public class BaijiuShellAddon {
 	public void start(IEventBroker eventBroker) {
 
 		applyChrome(application, modelService);
+		BaijiuChromatogramReadability.apply();
 		if(eventBroker == null) {
 			return;
 		}
@@ -59,6 +60,7 @@ public class BaijiuShellAddon {
 			public void handleEvent(Event event) {
 
 				eventBroker.unsubscribe(this);
+				BaijiuChromatogramReadability.apply();
 				applyChrome(application, modelService);
 				selectBaijiuPerspective(application, modelService);
 				schedulePlantHomeRender(application, modelService);
