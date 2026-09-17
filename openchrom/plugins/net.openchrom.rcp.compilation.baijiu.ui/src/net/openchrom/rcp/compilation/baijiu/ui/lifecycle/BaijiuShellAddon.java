@@ -78,8 +78,11 @@ public class BaijiuShellAddon {
 		if(window instanceof MWindow trimmed) {
 			trimmed.setLabel(BaijiuShellChrome.WINDOW_TITLE);
 		}
+		dropDeadPlantEditorPlaceholder(application, modelService);
 		List<MUIElement> elements = modelService.findElements(application, null, MUIElement.class, null);
 		if(elements == null) {
+			hideTopWindowMenus(application, modelService);
+			revealPlantParts(application, modelService);
 			return;
 		}
 		for(MUIElement element : elements) {
@@ -100,6 +103,7 @@ public class BaijiuShellAddon {
 		if(application == null || modelService == null) {
 			return;
 		}
+		dropDeadPlantEditorPlaceholder(application, modelService);
 		revealPlantParts(application, modelService);
 		EPartService partService = partService(application);
 		MPerspective perspective = findPerspective(application, modelService, BaijiuShellChrome.PERSPECTIVE_ID);
@@ -149,7 +153,27 @@ public class BaijiuShellAddon {
 		show(modelService.find(BaijiuShellChrome.PLANT_TOP_SASH_ID, application));
 		show(modelService.find(BaijiuShellChrome.GC_HOME_STACK_ID, application));
 		show(modelService.find(BaijiuShellChrome.SEQUENCE_HOME_STACK_ID, application));
-		show(modelService.find(BaijiuShellChrome.PLANT_EDITOR_PLACEHOLDER_ID, application));
+	}
+
+	/**
+	 * Stale workbench.xmi may still contain the Phase-2 editor-area
+	 * placeholder. Hide + detach so Equinox cannot open the
+	 * {@code Could not create the view: ...placeholder.plantEditor} error
+	 * part, and so the sash does not reserve a blank bottom pane.
+	 */
+	static void dropDeadPlantEditorPlaceholder(MApplication application, EModelService modelService) {
+
+		if(application == null || modelService == null) {
+			return;
+		}
+		MUIElement found = modelService.find(BaijiuShellChrome.PLANT_EDITOR_PLACEHOLDER_ID, application);
+		if(found == null) {
+			return;
+		}
+		hide(found);
+		if(found.getParent() != null) {
+			found.getParent().getChildren().remove(found);
+		}
 	}
 
 	/**

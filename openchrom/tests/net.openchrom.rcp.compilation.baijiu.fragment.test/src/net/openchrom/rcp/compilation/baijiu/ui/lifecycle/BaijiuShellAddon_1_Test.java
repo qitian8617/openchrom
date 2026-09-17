@@ -19,6 +19,7 @@ public class BaijiuShellAddon_1_Test {
 		BaijiuShellAddon.applyChrome(null, null);
 		BaijiuShellAddon.selectBaijiuPerspective(null, null);
 		BaijiuShellAddon.revealPlantParts(null, null);
+		BaijiuShellAddon.dropDeadPlantEditorPlaceholder(null, null);
 		BaijiuShellAddon.hideTopWindowMenus(null, null);
 		BaijiuShellParts.forceCreatePlantHomeGuis(null, null);
 		BaijiuChromatogramReadability.applyThemeRegistries();

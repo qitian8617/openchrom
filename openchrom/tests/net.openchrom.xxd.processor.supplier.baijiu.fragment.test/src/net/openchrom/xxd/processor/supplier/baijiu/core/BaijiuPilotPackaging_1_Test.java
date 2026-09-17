@@ -193,12 +193,14 @@ public class BaijiuPilotPackaging_1_Test {
 		Path chrome = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellChrome.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellChrome.java");
 		assertNotNull(chrome);
 		String chromeSrc = Files.readString(chrome, StandardCharsets.UTF_8);
-		assertTrue(chromeSrc.contains("CHROME_EPOCH = 7"), chromeSrc);
+		assertTrue(chromeSrc.contains("CHROME_EPOCH = 8"), chromeSrc);
 		assertTrue(chromeSrc.contains("showResearchMenus"), chromeSrc);
 		assertTrue(chromeSrc.contains("org.eclipse.chemclipse.rcp.app.ui.menu.window"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldHideTopMenu"), chromeSrc);
 		assertTrue(chromeSrc.contains("BaijiuGcHomePart"), chromeSrc);
 		assertTrue(chromeSrc.contains("BaijiuSequenceHomePart"), chromeSrc);
+		assertTrue(chromeSrc.contains("FILE_TOOLBAR_ID"), chromeSrc);
+		assertTrue(chromeSrc.contains("org.eclipse.ui.WorkingSetActionSet"), chromeSrc);
 
 		Path readability = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuChromatogramReadability.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuChromatogramReadability.java");
 		assertNotNull(readability, "plant chromatogram font defaults");
@@ -226,6 +228,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(addonSrc.contains("showPlantHomeParts"), addonSrc);
 		assertTrue(addonSrc.contains("forceCreatePlantHomeGuis"), addonSrc);
 		assertTrue(addonSrc.contains("hideTopWindowMenus"), addonSrc);
+		assertTrue(addonSrc.contains("dropDeadPlantEditorPlaceholder"), addonSrc);
 		assertTrue(addonSrc.contains("BaijiuChromatogramReadability.apply"), addonSrc);
 		Path shellParts = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellParts.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellParts.java");
 		assertNotNull(shellParts);
@@ -237,7 +240,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(partsSrc.contains("GC_HOME_PART_ID"), partsSrc);
 		assertTrue(partsSrc.contains("SEQUENCE_HOME_PART_ID"), partsSrc);
 		assertTrue(shellFrag.contains("xsi:type=\"advanced:Placeholder\""), shellFrag);
-		assertTrue(shellFrag.contains("net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantEditor"), shellFrag);
+		assertFalse(shellFrag.contains("net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantEditor"), shellFrag);
 		assertFalse(shellFrag.contains("net.openchrom.rcp.compilation.baijiu.ui.placeholder.gcHome"), shellFrag);
 		assertFalse(shellFrag.contains("net.openchrom.rcp.compilation.baijiu.ui.placeholder.sequenceHome"), shellFrag);
 		assertTrue(shellFrag.contains("net.openchrom.xxd.control.supplier.temperature.ui.part.control.plantHome"), shellFrag);

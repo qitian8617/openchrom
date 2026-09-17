@@ -64,13 +64,28 @@ public class BaijiuShellChrome_1_Test {
 		assertEquals("白酒FID工作站", BaijiuShellChrome.APPLICATION_NAME_VM);
 		assertFalse(BaijiuShellChrome.APPLICATION_NAME_VM.contains(" "));
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome", BaijiuShellChrome.PERSPECTIVE_ID);
-		assertEquals(7, BaijiuShellChrome.CHROME_EPOCH);
+		assertEquals(8, BaijiuShellChrome.CHROME_EPOCH);
 		assertTrue(BaijiuShellChrome.shouldHide("window"));
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.ui.windowMenu"));
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.ui.main.menu.window"));
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.ui.window"));
 		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.GC_HOME_STACK_ID));
 		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.SEQUENCE_HOME_STACK_ID));
+		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.PLANT_EDITOR_PLACEHOLDER_ID));
+		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.FILE_TOOLBAR_ID));
+		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.SAVE_TOOLITEM_ID));
+		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.SAVE_ALL_TOOLITEM_ID));
+		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.PERSPECTIVES_TOOLBAR_ID));
+		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.RESET_PERSPECTIVE_TOOLITEM_ID));
+		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.ECLIPSE_MAIN_TOOLBAR_ID));
+		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.ui.WorkingSetActionSet"));
+		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.ui.newWizard"));
+		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.ui.file.print"));
+		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.ui.edit.text.actionSet.navigation"));
+		assertFalse(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.save"));
+		assertFalse(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.about"));
+		assertFalse(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.preferences"));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.PLANT_TOOLBAR_ID));
 	}
 
 	@Test
@@ -113,6 +128,9 @@ public class BaijiuShellChrome_1_Test {
 		assertFalse(BaijiuShellChrome.shouldHideTopMenu("window", "窗口"));
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.ui.perspective.welcome"));
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.xxd.ui.perspective.maldi"));
+		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.PLANT_EDITOR_PLACEHOLDER_ID));
+		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.FILE_TOOLBAR_ID));
+		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.SAVE_TOOLITEM_ID));
 	}
 
 	@Test
