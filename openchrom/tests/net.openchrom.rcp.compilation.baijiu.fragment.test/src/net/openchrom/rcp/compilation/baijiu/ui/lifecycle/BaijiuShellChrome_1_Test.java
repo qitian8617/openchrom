@@ -64,7 +64,7 @@ public class BaijiuShellChrome_1_Test {
 		assertEquals("白酒FID工作站", BaijiuShellChrome.APPLICATION_NAME_VM);
 		assertFalse(BaijiuShellChrome.APPLICATION_NAME_VM.contains(" "));
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome", BaijiuShellChrome.PERSPECTIVE_ID);
-		assertEquals(6, BaijiuShellChrome.CHROME_EPOCH);
+		assertEquals(7, BaijiuShellChrome.CHROME_EPOCH);
 		assertTrue(BaijiuShellChrome.shouldHide("window"));
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.ui.windowMenu"));
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.ui.main.menu.window"));
@@ -122,7 +122,9 @@ public class BaijiuShellChrome_1_Test {
 		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui.perspective.workbench", BaijiuShellChrome.WORKBENCH_PERSPECTIVE_ID);
 		assertEquals("net.openchrom.xxd.control.supplier.temperature.ui.part.control.plantHome", BaijiuShellChrome.GC_HOME_PART_ID);
 		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui.part.sequence.plantHome", BaijiuShellChrome.SEQUENCE_HOME_PART_ID);
-		assertTrue(BaijiuShellChrome.GC_HOME_CONTRIBUTION_URI.contains("TemperatureControlPart"));
-		assertTrue(BaijiuShellChrome.SEQUENCE_HOME_CONTRIBUTION_URI.contains("BaijiuSequencePart"));
+		assertTrue(BaijiuShellChrome.GC_HOME_CONTRIBUTION_URI.contains("BaijiuGcHomePart"));
+		assertTrue(BaijiuShellChrome.SEQUENCE_HOME_CONTRIBUTION_URI.contains("BaijiuSequenceHomePart"));
+		assertTrue(BaijiuShellChrome.GC_HOME_CONTRIBUTION_URI.startsWith("bundleclass://net.openchrom.rcp.compilation.baijiu.ui/"));
+		assertTrue(BaijiuShellChrome.SEQUENCE_HOME_CONTRIBUTION_URI.startsWith("bundleclass://net.openchrom.rcp.compilation.baijiu.ui/"));
 	}
 }

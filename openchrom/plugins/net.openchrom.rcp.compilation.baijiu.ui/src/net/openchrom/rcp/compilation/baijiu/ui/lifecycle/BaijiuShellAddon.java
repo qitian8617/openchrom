@@ -33,11 +33,11 @@ import jakarta.inject.Inject;
 
 /**
  * After ChemClipse fragments attach, hide research chrome, select the plant
- * home (status + sequence), {@code showPart(..., ACTIVATE)} the concrete
- * plant-home reverse-control / sequence parts, then
- * {@code IPresentationEngine.createGui} so the client is not an empty gray
- * sash after {@code -clearPersistedState}. Does not depend on baijiu.ui /
- * temperature.ui Java types (soft; no plugin cycle).
+ * home (status + sequence), {@code showPart(..., ACTIVATE)} the branding
+ * plant-home Parts, then {@code IPresentationEngine.createGui} so the client
+ * is not an empty gray sash after {@code -clearPersistedState}. Plant-home
+ * Part classes live in this bundle and OSGi-load temperature.ui / baijiu.ui
+ * panels. Does not depend on those Java types (soft; no plugin cycle).
  */
 public class BaijiuShellAddon {
 
