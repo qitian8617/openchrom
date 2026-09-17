@@ -149,8 +149,23 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(featureXml.contains("net.openchrom.xxd.processor.supplier.baijiu.pilot.feature"), featureXml);
 		assertTrue(featureXml.contains("net.openchrom.csd.converter.supplier.cdf.feature"), featureXml);
 		assertTrue(featureXml.contains("net.openchrom.rcp.compilation.baijiu.ui"), featureXml);
+		assertTrue(featureXml.contains("id=\"jakarta.annotation-api\""), featureXml);
+		assertTrue(featureXml.contains("version=\"2.1.1\""), featureXml);
 		assertTrue(!featureXml.contains("net.openchrom.csd.converter.supplier.arw.feature"), featureXml);
 		assertTrue(!featureXml.contains("org.eclipse.swtchart.feature"), featureXml);
+
+		Path target = locate("openchrom/releng/net.openchrom.targetplatform/net.openchrom.targetplatform.target", "releng/net.openchrom.targetplatform/net.openchrom.targetplatform.target");
+		assertNotNull(target, "target platform should pin jakarta.annotation-api 2.1.1");
+		String targetXml = Files.readString(target, StandardCharsets.UTF_8);
+		assertTrue(targetXml.contains("sequenceNumber=\"45\""), targetXml);
+		assertTrue(targetXml.contains("id=\"jakarta.annotation-api\" version=\"2.1.1\""), targetXml);
+
+		Path productReadme = locate("openchrom/products/net.openchrom.rcp.compilation.baijiu.product/README.txt", "products/net.openchrom.rcp.compilation.baijiu.product/README.txt");
+		assertNotNull(productReadme);
+		String productReadmeText = Files.readString(productReadme, StandardCharsets.UTF_8);
+		assertTrue(productReadmeText.contains("jakarta.annotation-api 2.1.1"), productReadmeText);
+		assertTrue(productReadmeText.contains("Validate Plug-ins"), productReadmeText);
+		assertTrue(productReadmeText.contains("[2.1.0,3.0.0)"), productReadmeText);
 
 		Path branding = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/META-INF/MANIFEST.MF", "plugins/net.openchrom.rcp.compilation.baijiu.ui/META-INF/MANIFEST.MF");
 		assertNotNull(branding);

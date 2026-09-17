@@ -56,7 +56,7 @@ Need the OpenChrom PDE workspace that already compiles `baijiu.ui` (**JavaSE-21*
 
 1. Import `openchrom/` plug-ins, features, products. Set the OpenChrom target platform.
 2. Open `products/net.openchrom.rcp.compilation.baijiu.product/openchrom.compilation.baijiu.product`.
-3. **Run As → Eclipse Application** from that `.product` (do not reuse the community launch config).
+3. **Run As → Eclipse Application** from that `.product` (do not reuse the community launch config). Reload the target platform after pull (`sequenceNumber` 45). The Baijiu feature pins `jakarta.annotation-api` **2.1.1** (Orbit) because ChemClipse PCR/xxd.ui Import-Package `[2.1.0,3.0.0)` rejects SimRel **3.0.0**. If an old launch still fails with that BundleException: Plug-ins tab → enable 2.1.1 → Add Required / Validate Plug-ins.
 4. **Export Eclipse Product** to e.g. `D:\baijiu-fid-workstation`. Launcher `baijiu-fid.exe`. Bundled JRE is Java 25.
 5. License drop-in is still `%USERPROFILE%\OpenChrom\licenses\baijiu-fid.bjlic`.
 
