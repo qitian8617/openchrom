@@ -111,6 +111,10 @@ placeholder).
 Phase 3 gaps (honest)
 ---------------------
 - Chromatogram **widget** is still ChemClipse (plot chrome inside the editor).
+  Peak-name / axis **fonts and contrast** are plant defaults on this product
+  only (`BaijiuChromatogramReadability`: Microsoft YaHei bold 13, near-black
+  axis LineColor). Community OpenChrom keeps ChemClipse 8 pt Verdana.
+  Tweak: Preferences → General → Appearance → Colors and Fonts → Charts.
 - 组分方法 remains a supporting tab on the analysis page (the four-step header
   is 样品 → 校正 → 定量 → 报告).
 - MSD/WSD/NMR contributions that ChemClipse still ships are hidden by id;
@@ -132,6 +136,10 @@ Verify on the engineer PC
 [ ] Restart keeps sash / window size (no forced -clearPersistedState)
 [ ] Reset via 白酒 → 重置窗口布局 then restart restores default
 [ ] File → 打开 CSD 文件 opens demo .ocb; report path still works
+[ ] Open the same CSD: peak names above peaks and axis text (时间 [min], 强度)
+    are clearly readable (plant default Microsoft YaHei bold 13 / near-black).
+    Cloud VMs cannot screenshot the Windows SWT product — do this on the
+    engineer PC. Further tweak: Preferences → Colors and Fonts → Charts.
 [ ] Help → About shows 白酒 FID 工作站
 [ ] License gate unchanged
 [ ] baijiu.ui MANIFEST still JavaSE-21

@@ -20,7 +20,9 @@ import org.eclipse.e4.ui.workbench.modeling.EModelService;
  * Dedicated-product lifecycle: Chinese window title + plant default
  * perspective property. Menu hide runs from {@link BaijiuShellAddon} after
  * ChemClipse fragments are merged. Layout persistence is prepared here
- * before E4 loads {@code workbench.xmi}.
+ * before E4 loads {@code workbench.xmi}. Chromatogram peak/axis fonts are
+ * planted via {@link BaijiuChromatogramReadability} so CSD labels are
+ * readable without a manual preference click.
  */
 public class BaijiuLifeCycle {
 
@@ -29,6 +31,7 @@ public class BaijiuLifeCycle {
 
 		System.setProperty(BaijiuShellChrome.PERSPECTIVE_PROPERTY, BaijiuShellChrome.PERSPECTIVE_ID);
 		BaijiuShellLayout.prepareWorkspace();
+		BaijiuChromatogramReadability.applyInstanceScope();
 	}
 
 	@ProcessAdditions
@@ -43,5 +46,6 @@ public class BaijiuLifeCycle {
 			trimmed.setLabel(BaijiuShellChrome.WINDOW_TITLE);
 		}
 		BaijiuShellAddon.applyChrome(application, modelService);
+		BaijiuChromatogramReadability.apply();
 	}
 }

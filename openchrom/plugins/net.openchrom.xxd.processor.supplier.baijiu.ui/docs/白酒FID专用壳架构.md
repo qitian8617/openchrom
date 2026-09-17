@@ -185,5 +185,6 @@ Windows 上 **Run As → Eclipse Application** 与 **Export Product** 的逐步�
 - 窗口 → 视角里，**视图**菜单仍可能列出内核残留视角（id 对不上时）。卸 MSD/NMR 特性仍留后续。
 - 反控 Part 与社区浮动壳 **不要同时开两份**（会抢 `GcConnectionManager`）。专用壳菜单走 Part；社区走对话框。厂工作台用 **独立 elementId** 的 concrete Part，与 `sharedElements` 里那份反控/序列 **不是同一个实例**；日常只渲染厂工作台那一份。
 - 本仓 Cloud Agent 环境通常 **不能** 弹出 Windows SWT 工作站做点击验收；厂工程师按 README 在本机 PDE 验证。冷启动（epoch=7 会再清一次 `workbench.xmi`）后主区必须能看到反控和/或序列表，**或页内可读错误 Label**，不能再是空灰。
+- **谱图峰标签 / 坐标轴**：ChemClipse `TargetReferenceLabelMarker` 主题默认 `Verdana-regular-8`，轴 tick 用 LineColor。厂屏上看不清时由 **专用壳** `BaijiuChromatogramReadability` + `plugin_customization.ini` + `baijiu-shell.css` 在启动时写成微软雅黑 13 磅粗体、近黑前景。不改 ChemClipse、不改社区产品。再调：首选项 → 常规 → 外观 → 颜色和字体 → Charts。
 
 操作手册：[白酒FID试点操作手册.md](白酒FID试点操作手册.md)。验收脚本仍按项 16。

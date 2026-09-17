@@ -30,3 +30,50 @@
 	font-weight: bold;
 	swt-show-text: true;
 }
+
+/*
+ * Chromatogram (CSD) plot: keep a light canvas and dark ink even if the
+ * workbench theme is e4_dark. ChemClipse ChromatogramChart uses CSS
+ * background when IChartSettings backgrounds are null.
+ */
+ChromatogramChart,
+PeakDetectorChart {
+	background-color: #FFFFFF;
+	color: #111111;
+	font-size: 13px;
+	font-weight: bold;
+	font-family: "Microsoft YaHei", "Noto Sans CJK SC", "SimHei", Verdana, sans-serif;
+}
+
+FontDefinition#org-eclipse-chemclipse-ux-extension-xxd-ui-internal-charts-TargetReferenceLabelMarker-Peak-Font,
+FontDefinition#org-eclipse-chemclipse-ux-extension-xxd-ui-internal-charts-TargetReferenceLabelMarker-Scan-Font,
+FontDefinition#org-eclipse-chemclipse-ux-extension-xxd-ui-internal-charts-LabelBounds-PeakLabelFont,
+FontDefinition#org-eclipse-chemclipse-ux-extension-xxd-ui-charts-ChromatogramChart-AxisMilliseconds-Font,
+FontDefinition#org-eclipse-chemclipse-ux-extension-xxd-ui-charts-ChromatogramChart-AxisIntensity-Font,
+FontDefinition#org-eclipse-chemclipse-ux-extension-xxd-ui-charts-ChromatogramChart-AxisRelativeIntensity-Font,
+FontDefinition#org-eclipse-chemclipse-ux-extension-xxd-ui-charts-ChromatogramChart-AxisSeconds-Font,
+FontDefinition#org-eclipse-chemclipse-ux-extension-xxd-ui-charts-ChromatogramChart-AxisMinutes-Font,
+FontDefinition#org-eclipse-chemclipse-ux-extension-xxd-ui-swt-editors-ExtendedChromatogramUI-ScanAxis-Font {
+	font-family: "Microsoft YaHei";
+	font-size: 13px;
+	font-weight: bold;
+}
+
+ColorDefinition#org-eclipse-chemclipse-ux-extension-xxd-ui-charts-ChromatogramChart-AxisMilliseconds-LineColor,
+ColorDefinition#org-eclipse-chemclipse-ux-extension-xxd-ui-charts-ChromatogramChart-AxisIntensity-LineColor,
+ColorDefinition#org-eclipse-chemclipse-ux-extension-xxd-ui-charts-ChromatogramChart-AxisRelativeIntensity-LineColor,
+ColorDefinition#org-eclipse-chemclipse-ux-extension-xxd-ui-charts-ChromatogramChart-AxisSeconds-LineColor,
+ColorDefinition#org-eclipse-chemclipse-ux-extension-xxd-ui-charts-ChromatogramChart-AxisMinutes-LineColor,
+ColorDefinition#org-eclipse-chemclipse-ux-extension-xxd-ui-swt-editors-ExtendedChromatogramUI-ScanAxis-LineColor {
+	color: #111111;
+}
+
+ColorDefinition#org-eclipse-chemclipse-ux-extension-xxd-ui-internal-charts-TargetReferenceLabelMarker-ActiveColor,
+ColorDefinition#org-eclipse-chemclipse-ux-extension-xxd-ui-internal-charts-TargetReferenceLabelMarker-IdColor {
+	color: #000000;
+}
+
+ColorDefinition#org-eclipse-chemclipse-ux-extension-xxd-ui-internal-charts-TargetReferenceLabelMarker-InactiveColor {
+	color: #202020;
+}
+

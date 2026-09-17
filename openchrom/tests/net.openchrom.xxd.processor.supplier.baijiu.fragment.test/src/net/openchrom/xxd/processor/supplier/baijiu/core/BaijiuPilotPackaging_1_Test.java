@@ -200,12 +200,33 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(chromeSrc.contains("BaijiuGcHomePart"), chromeSrc);
 		assertTrue(chromeSrc.contains("BaijiuSequenceHomePart"), chromeSrc);
 
+		Path readability = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuChromatogramReadability.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuChromatogramReadability.java");
+		assertNotNull(readability, "plant chromatogram font defaults");
+		String readabilitySrc = Files.readString(readability, StandardCharsets.UTF_8);
+		assertTrue(readabilitySrc.contains("Microsoft YaHei"), readabilitySrc);
+		assertTrue(readabilitySrc.contains("PLANT_FONT_SIZE = 13"), readabilitySrc);
+		assertTrue(readabilitySrc.contains("TargetReferenceLabelMarker"), readabilitySrc);
+		assertTrue(readabilitySrc.contains("Verdana-regular-8"), readabilitySrc);
+
+		Path customization = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/plugin_customization.ini", "plugins/net.openchrom.rcp.compilation.baijiu.ui/plugin_customization.ini");
+		assertNotNull(customization);
+		String customizationText = Files.readString(customization, StandardCharsets.UTF_8);
+		assertTrue(customizationText.contains("TargetReferenceLabelMarker.Peak.Font=Microsoft YaHei-bold-13"), customizationText);
+		assertTrue(customizationText.contains("ChromatogramChart.AxisMinutes.LineColor=17,17,17"), customizationText);
+		assertTrue(customizationText.contains("ChromatogramChart.AxisMinutes.Font=Microsoft YaHei-bold-13"), customizationText);
+
+		Path lifeCycle = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuLifeCycle.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuLifeCycle.java");
+		assertNotNull(lifeCycle);
+		String lifeCycleSrc = Files.readString(lifeCycle, StandardCharsets.UTF_8);
+		assertTrue(lifeCycleSrc.contains("BaijiuChromatogramReadability.apply"), lifeCycleSrc);
+
 		Path addon = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellAddon.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellAddon.java");
 		assertNotNull(addon);
 		String addonSrc = Files.readString(addon, StandardCharsets.UTF_8);
 		assertTrue(addonSrc.contains("showPlantHomeParts"), addonSrc);
 		assertTrue(addonSrc.contains("forceCreatePlantHomeGuis"), addonSrc);
 		assertTrue(addonSrc.contains("hideTopWindowMenus"), addonSrc);
+		assertTrue(addonSrc.contains("BaijiuChromatogramReadability.apply"), addonSrc);
 		Path shellParts = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellParts.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellParts.java");
 		assertNotNull(shellParts);
 		String partsSrc = Files.readString(shellParts, StandardCharsets.UTF_8);
@@ -274,6 +295,9 @@ public class BaijiuPilotPackaging_1_Test {
 		assertNotNull(css);
 		String cssText = Files.readString(css, StandardCharsets.UTF_8);
 		assertTrue(cssText.contains("swt-show-text"), cssText);
+		assertTrue(cssText.contains("ChromatogramChart"), cssText);
+		assertTrue(cssText.contains("TargetReferenceLabelMarker-Peak-Font"), cssText);
+		assertTrue(cssText.contains("#111111"), cssText);
 		assertFalse(cssText.contains("#org.eclipse.chemclipse.ux.extension.ui.menu.process {") || cssText.contains("#org.eclipse.chemclipse.ux.extension.ui.menu.process,"), "CSS must not hide 处理器 so the JVM escape hatch can reveal it");
 		assertFalse(cssText.contains("#org.eclipse.chemclipse.rcp.app.ui.menu.plugins {") || cssText.contains("#org.eclipse.chemclipse.rcp.app.ui.menu.plugins,"), "CSS must not hide 插件 so the JVM escape hatch can reveal it");
 
@@ -302,6 +326,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(archText.contains("BaijiuGcHomePart"), archText);
 		assertTrue(archText.contains("BaijiuSequenceHomePart"), archText);
 		assertTrue(archText.contains("loadClass"), archText);
+		assertTrue(archText.contains("BaijiuChromatogramReadability"), archText);
 
 		Path manual = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/docs/\u767d\u9152FID\u8bd5\u70b9\u64cd\u4f5c\u624b\u518c.md", "docs/\u767d\u9152FID\u8bd5\u70b9\u64cd\u4f5c\u624b\u518c.md");
 		assertNotNull(manual);
