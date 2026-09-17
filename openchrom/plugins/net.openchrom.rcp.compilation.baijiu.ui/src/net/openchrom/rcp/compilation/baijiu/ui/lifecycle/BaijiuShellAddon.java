@@ -51,6 +51,7 @@ public class BaijiuShellAddon {
 
 		applyChrome(application, modelService);
 		BaijiuChromatogramReadability.apply();
+		BaijiuShellMenus.install();
 		if(eventBroker == null) {
 			return;
 		}
@@ -61,6 +62,7 @@ public class BaijiuShellAddon {
 
 				eventBroker.unsubscribe(this);
 				BaijiuChromatogramReadability.apply();
+				BaijiuShellMenus.install();
 				applyChrome(application, modelService);
 				selectBaijiuPerspective(application, modelService);
 				schedulePlantHomeRender(application, modelService);
@@ -96,6 +98,7 @@ public class BaijiuShellAddon {
 		}
 		hideTopWindowMenus(application, modelService);
 		revealPlantParts(application, modelService);
+		tagPlantHomeSingletons(application, modelService);
 	}
 
 	static void selectBaijiuPerspective(MApplication application, EModelService modelService) {
@@ -173,6 +176,45 @@ public class BaijiuShellAddon {
 		hide(found);
 		if(found.getParent() != null) {
 			found.getParent().getChildren().remove(found);
+		}
+	}
+
+	static void tagPlantHomeSingletons(MApplication application, EModelService modelService) {
+
+		if(application == null || modelService == null) {
+			return;
+		}
+		tagNoDetach(modelService.find(BaijiuShellChrome.GC_HOME_PART_ID, application));
+		tagNoDetach(modelService.find(BaijiuShellChrome.SEQUENCE_HOME_PART_ID, application));
+		tagNoDetach(modelService.find(BaijiuShellChrome.GC_HOME_STACK_ID, application));
+		tagNoDetach(modelService.find(BaijiuShellChrome.SEQUENCE_HOME_STACK_ID, application));
+		tagNoDetach(modelService.find(BaijiuShellChrome.GC_CONTROL_PART_ID, application));
+		tagNoDetach(modelService.find(BaijiuShellChrome.SEQUENCE_PART_ID, application));
+	}
+
+	private static void tagNoDetach(MUIElement element) {
+
+		if(element == null) {
+			return;
+		}
+		addTag(element, BaijiuShellChrome.NO_MOVE_TAG);
+		addTag(element, BaijiuShellChrome.NO_DETACH_TAG);
+		addTag(element, BaijiuShellChrome.NO_CLOSE_TAG);
+	}
+
+	private static void addTag(MUIElement element, String tag) {
+
+		if(element == null || tag == null || tag.isBlank()) {
+			return;
+		}
+		try {
+			List<String> tags = element.getTags();
+			if(tags == null || tags.contains(tag)) {
+				return;
+			}
+			tags.add(tag);
+		} catch(RuntimeException | LinkageError e) {
+			// some E4 implementations expose an immutable tag list
 		}
 	}
 

@@ -18,6 +18,13 @@ package net.openchrom.xxd.control.supplier.temperature.ui;
 public final class TemperatureControlIds {
 
 	public static final String PART_ID = "net.openchrom.xxd.control.supplier.temperature.ui.part.control";
+	/**
+	 * Dedicated Baijiu plant-home host. Distinct from {@link #PART_ID} so
+	 * {@code sharedElements} cannot clash. Opening {@link #PART_ID} on the
+	 * plant product clones a second console; handlers must activate this id
+	 * instead when it is present.
+	 */
+	public static final String PLANT_HOME_PART_ID = "net.openchrom.xxd.control.supplier.temperature.ui.part.control.plantHome";
 	public static final String COMMAND_OPEN = "net.openchrom.xxd.control.supplier.temperature.ui.command.open";
 	public static final String COMMAND_START_ANALYSIS = "net.openchrom.xxd.control.supplier.temperature.ui.command.startAnalysis";
 	public static final String MENU_OPEN = "net.openchrom.xxd.control.supplier.temperature.ui.menu.open";

@@ -20,8 +20,9 @@ import java.util.Set;
  * Unknown / renamed ChemClipse ids are left visible so launch cannot brick.
  * <p>
  * Normal plant top bar: 文件 / 白酒 / 视图 / 帮助. 处理器 / 插件 / 色谱 / 窗口
- * are hidden by id. Escape hatch (documented, not in the UI):
- * {@code -Dnet.openchrom.baijiu.showResearchMenus=true}.
+ * are hidden by id. Select View / perspective switcher are hidden so the
+ * plant home GC console cannot be cloned from the view picker. Escape hatch
+ * (documented, not in the UI): {@code -Dnet.openchrom.baijiu.showResearchMenus=true}.
  */
 public final class BaijiuShellChrome {
 
@@ -65,7 +66,13 @@ public final class BaijiuShellChrome {
 	public static final String PLANT_TOOLBAR_ID = "net.openchrom.rcp.compilation.baijiu.ui.toolbar.plant";
 	public static final String RESET_LAYOUT_COMMAND_ID = "net.openchrom.rcp.compilation.baijiu.ui.command.resetLayout";
 	public static final String RESEARCH_MENUS_PROPERTY = "net.openchrom.baijiu.showResearchMenus";
-	public static final int CHROME_EPOCH = 8;
+	/**
+	 * Bump when chrome hide lists / plant-home tags change so persisted
+	 * {@code workbench.xmi} is rebuilt once. #36 used 8 (drop plantEditor,
+	 * hide File toolbar). This PR hides Select View menus, tags plant-home
+	 * singletons, and installs chart/tab filters — needs 9.
+	 */
+	public static final int CHROME_EPOCH = 9;
 	/**
 	 * ChemClipse Application.e4xmi Save / Save All coolbar. Stays disabled
 	 * on plant home (no editor). File menu Save is kept separately.
@@ -78,6 +85,13 @@ public final class BaijiuShellChrome {
 	public static final String SELECT_VIEW_TOOLITEM_ID = "org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.selectView";
 	public static final String RESET_PERSPECTIVE_TOOLITEM_ID = "org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.resetperspective";
 	public static final String ECLIPSE_MAIN_TOOLBAR_ID = "org.eclipse.ui.main.toolbar";
+	public static final String SELECT_VIEW_MENU_ID = "org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.selectView";
+	public static final String SELECT_VIEW_TOOL_ID = SELECT_VIEW_TOOLITEM_ID;
+	public static final String PERSPECTIVE_SWITCHER_MENU_ID = "org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.perspectiveSwitcher";
+	public static final String PERSPECTIVE_SWITCHER_TOOL_ID = PERSPECTIVE_SWITCHER_TOOLITEM_ID;
+	public static final String NO_MOVE_TAG = "NoMove";
+	public static final String NO_DETACH_TAG = "NoDetach";
+	public static final String NO_CLOSE_TAG = "NoClose";
 
 	public static final String PROCESS_MENU_ID = "org.eclipse.chemclipse.ux.extension.ui.menu.process";
 	public static final String PLUGINS_MENU_ID = "org.eclipse.chemclipse.rcp.app.ui.menu.plugins";
@@ -155,6 +169,14 @@ public final class BaijiuShellChrome {
 			"org.eclipse.chemclipse.ux.extension.ui.menu.scan", //
 			"org.eclipse.chemclipse.ux.extension.ui.menu.peak", //
 			"org.eclipse.chemclipse.ux.extension.ui.menu.spectrum", //
+			SELECT_VIEW_MENU_ID, //
+			PERSPECTIVE_SWITCHER_MENU_ID, //
+			"org.eclipse.ui.views.showView", //
+			"org.eclipse.ui.views.showView.other", //
+			"org.eclipse.ui.window.showViewMenu", //
+			"org.eclipse.ui.internal.introview", //
+			"org.eclipse.ui.views.PropertySheet", //
+			"org.eclipse.pde.runtime.LogView", //
 			"org.eclipse.chemclipse.ux.extension.ui.menu.chromatogram.baselinedetector", //
 			"org.eclipse.chemclipse.ux.extension.ui.menu.chromatogram.calculators", //
 			"org.eclipse.chemclipse.ux.extension.ui.menu.chromatogram.classifier", //
@@ -182,6 +204,16 @@ public final class BaijiuShellChrome {
 			"org.eclipse.chemclipse.chromatogram.vsd.", //
 			"org.eclipse.chemclipse.ux.extension.msd.", //
 			"org.eclipse.chemclipse.ux.extension.wsd.", //
+			"org.eclipse.chemclipse.ux.extension.pcr.", //
+			"org.eclipse.chemclipse.pcr.", //
+			"org.eclipse.chemclipse.ux.extension.xxd.ui.part.", //
+			"org.eclipse.chemclipse.ux.extension.xxd.ui.partdescriptor.", //
+			"org.eclipse.chemclipse.ux.extension.xxd.ui.perspective.", //
+			"org.eclipse.chemclipse.ux.extension.xxd.ui.inputpart.", //
+			"org.eclipse.ui.views.", //
+			"org.eclipse.ui.console.", //
+			"org.eclipse.ui.internal.intro", //
+			"org.eclipse.pde.runtime.", //
 			"net.openchrom.installer.", //
 			"net.openchrom.xxd.processor.supplier.tracecompare.", //
 			"net.openchrom.xxd.identifier.", //
@@ -257,6 +289,69 @@ public final class BaijiuShellChrome {
 			"插件", "plug-in", "plug-ins", "plugins", //
 			"色谱", "chromatogram", //
 			"窗口", "window");
+
+	/**
+	 * Shared reverse-control / sequence Parts that plant-home already hosts
+	 * under {@code *.plantHome} ids. Opening these from Show View clones a
+	 * second panel into the editor stack.
+	 */
+	public static final Set<String> PLANT_SINGLETON_SHARED_PART_IDS = Set.of( //
+			GC_CONTROL_PART_ID, //
+			SEQUENCE_PART_ID);
+
+	public static final Set<String> PLANT_SINGLETON_HOME_PART_IDS = Set.of( //
+			GC_HOME_PART_ID, //
+			SEQUENCE_HOME_PART_ID);
+
+	/**
+	 * SWTChart / ChemClipse chart popup items that FID plant analysis still
+	 * uses. Values are the Chinese labels to show on the dedicated product.
+	 */
+	public static final List<String[]> CHART_MENU_KEEP_TRANSLATIONS = List.of( //
+			new String[]{"Reset Chart", "重置图表"}, //
+			new String[]{"Set Chart Range", "设置图表范围"}, //
+			new String[]{"Undo Selection", "撤销选择"}, //
+			new String[]{"Redo Selection", "重做选择"}, //
+			new String[]{"Range Selection", "范围选择"}, //
+			new String[]{"Toggle Visibility", "切换可见性"}, //
+			new String[]{"User Restriction", "用户限制"}, //
+			new String[]{"Reset X-Axis", "重置 X 轴"}, //
+			new String[]{"Reset Y-Axis", "重置 Y 轴"}, //
+			new String[]{"Zoom In", "放大"}, //
+			new String[]{"Zoom Out", "缩小"});
+
+	/**
+	 * Chart popup categories / English research suppliers not used on the
+	 * factory CSD FID path. Match English or already-translated Chinese.
+	 */
+	public static final List<String> CHART_MENU_HIDE_LABELS = List.of( //
+			"chromatogram classifier", "色谱分类器", "classifier", //
+			"column parser", "noise calculator", "noise segment setter", //
+			"chromatogram export", "色谱导出", //
+			"chromatogram filter", "色谱滤波器", //
+			"chromatogram identifier", "色谱鉴定", //
+			"chromatogram calculator", "色谱计算器", "calculators", //
+			"chromatogram reports", "色谱报告", //
+			"export chart selection", //
+			"peak export", "峰导出", //
+			"peak identifier", "峰鉴定", //
+			"peak quantifier", "峰定量", //
+			"scan filter", "扫描滤波器", //
+			"scan identifier", "扫描鉴定", //
+			"mass spectrum filter", "mass spectrum identifier");
+
+	public static final List<String> PART_STACK_HIDE_LABELS = List.of( //
+			"detach", "分离", //
+			"close others", "关闭其他", //
+			"close all", "关闭全部", "全部关闭", //
+			"move", "移动", //
+			"size", "大小");
+
+	public static final List<String[]> PART_STACK_KEEP_TRANSLATIONS = List.of( //
+			new String[]{"Restore", "还原"}, //
+			new String[]{"Minimize", "最小化"}, //
+			new String[]{"Maximize", "最大化"}, //
+			new String[]{"Close", "关闭"});
 
 	private BaijiuShellChrome() {
 
@@ -400,6 +495,130 @@ public final class BaijiuShellChrome {
 			trimmed = trimmed.substring(1).trim();
 		}
 		trimmed = trimmed.replaceAll("(?i)[（(][a-z0-9][）)]$", "").trim();
+		if(trimmed.endsWith("...")) {
+			trimmed = trimmed.substring(0, trimmed.length() - 3).trim();
+		}
 		return trimmed.toLowerCase(Locale.ROOT);
+	}
+
+	public static boolean isPlantHomeSingletonPart(String elementId) {
+
+		return elementId != null && PLANT_SINGLETON_HOME_PART_IDS.contains(elementId);
+	}
+
+	public static boolean isSharedSingletonPart(String elementId) {
+
+		return elementId != null && PLANT_SINGLETON_SHARED_PART_IDS.contains(elementId);
+	}
+
+	public static String plantHomePartIdFor(String elementId) {
+
+		if(GC_CONTROL_PART_ID.equals(elementId) || GC_HOME_PART_ID.equals(elementId)) {
+			return GC_HOME_PART_ID;
+		}
+		if(SEQUENCE_PART_ID.equals(elementId) || SEQUENCE_HOME_PART_ID.equals(elementId)) {
+			return SEQUENCE_HOME_PART_ID;
+		}
+		return null;
+	}
+
+	public static boolean shouldHideChartMenuItem(String label) {
+
+		if(label == null || label.isBlank()) {
+			return false;
+		}
+		String normalized = normalizeMenuLabel(label);
+		for(String hide : CHART_MENU_HIDE_LABELS) {
+			if(menuLabelMatches(normalized, hide)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public static String translateChartMenuItem(String label) {
+
+		return translateKeepLabel(label, CHART_MENU_KEEP_TRANSLATIONS);
+	}
+
+	public static boolean shouldHidePartStackMenuItem(String label) {
+
+		if(label == null || label.isBlank()) {
+			return false;
+		}
+		String normalized = normalizeMenuLabel(label);
+		for(String hide : PART_STACK_HIDE_LABELS) {
+			if(normalized.equals(hide)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public static String translatePartStackMenuItem(String label) {
+
+		return translateKeepLabel(label, PART_STACK_KEEP_TRANSLATIONS);
+	}
+
+	static boolean menuLabelMatches(String normalized, String pattern) {
+
+		if(normalized == null || pattern == null || pattern.isBlank()) {
+			return false;
+		}
+		if(normalized.equals(pattern)) {
+			return true;
+		}
+		return pattern.length() >= 8 && normalized.contains(pattern);
+	}
+
+	static String translateKeepLabel(String label, List<String[]> translations) {
+
+		if(label == null || label.isBlank() || translations == null) {
+			return null;
+		}
+		String normalized = normalizeMenuLabel(label);
+		for(String[] pair : translations) {
+			if(pair == null || pair.length < 2) {
+				continue;
+			}
+			if(normalized.equals(pair[0].toLowerCase(Locale.ROOT))) {
+				return pair[1];
+			}
+		}
+		return null;
+	}
+
+	static boolean looksLikePartStackMenu(List<String> labels) {
+
+		if(labels == null) {
+			return false;
+		}
+		for(String label : labels) {
+			String normalized = normalizeMenuLabel(label == null ? "" : label);
+			if("detach".equals(normalized) || "close others".equals(normalized) || "close all".equals(normalized) || "分离".equals(normalized) || "关闭其他".equals(normalized)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	static boolean looksLikeChartMenu(List<String> labels) {
+
+		if(labels == null) {
+			return false;
+		}
+		for(String label : labels) {
+			if(label == null || label.isBlank()) {
+				continue;
+			}
+			String normalized = normalizeMenuLabel(label);
+			if("reset chart".equals(normalized) || "重置图表".equals(normalized) || "set chart range".equals(normalized) || "user restriction".equals(normalized) || "用户限制".equals(normalized)) {
+				return true;
+			}
+			if(shouldHideChartMenuItem(label) || translateChartMenuItem(label) != null) {
+				return true;
+			}
+		}
+		return false;
 	}
 }

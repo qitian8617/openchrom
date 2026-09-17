@@ -24,12 +24,14 @@ public class BaijiuWorkbenchParts_1_Test {
 		assertFalse(BaijiuWorkbenchParts.showSequence(null, null, null));
 		assertFalse(BaijiuWorkbenchParts.switchPerspective(null, null, null, BaijiuPerspectiveIds.ANALYSIS_PERSPECTIVE_ID));
 		assertFalse(BaijiuWorkbenchParts.showPart(null, null, null, BaijiuPerspectiveIds.SEQUENCE_PART_ID));
+		assertFalse(BaijiuWorkbenchParts.showPart(null, null, null, BaijiuPerspectiveIds.SEQUENCE_HOME_PART_ID));
 	}
 
 	@Test
 	public void dedicatedShellIdsAreStable() {
 
 		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui.part.sequence", BaijiuPerspectiveIds.SEQUENCE_PART_ID);
+		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui.part.sequence.plantHome", BaijiuPerspectiveIds.SEQUENCE_HOME_PART_ID);
 		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui.part.analysis", BaijiuPerspectiveIds.ANALYSIS_PART_ID);
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome", BaijiuPerspectiveIds.PLANT_HOME_PERSPECTIVE_ID);
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.perspective.analysis", BaijiuPerspectiveIds.ANALYSIS_PERSPECTIVE_ID);

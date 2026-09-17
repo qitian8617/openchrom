@@ -64,7 +64,7 @@ public class BaijiuShellChrome_1_Test {
 		assertEquals("白酒FID工作站", BaijiuShellChrome.APPLICATION_NAME_VM);
 		assertFalse(BaijiuShellChrome.APPLICATION_NAME_VM.contains(" "));
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome", BaijiuShellChrome.PERSPECTIVE_ID);
-		assertEquals(8, BaijiuShellChrome.CHROME_EPOCH);
+		assertEquals(9, BaijiuShellChrome.CHROME_EPOCH);
 		assertTrue(BaijiuShellChrome.shouldHide("window"));
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.ui.windowMenu"));
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.ui.main.menu.window"));
@@ -86,6 +86,26 @@ public class BaijiuShellChrome_1_Test {
 		assertFalse(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.about"));
 		assertFalse(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.preferences"));
 		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.PLANT_TOOLBAR_ID));
+		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.SELECT_VIEW_MENU_ID));
+		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.SELECT_VIEW_TOOL_ID));
+		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.PERSPECTIVE_SWITCHER_MENU_ID));
+		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.PERSPECTIVE_SWITCHER_TOOL_ID));
+		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.pcr.ui.perspective.pcr"));
+		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.xxd.ui.part.welldata"));
+		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.xxd.ui.part.platedata"));
+		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.xxd.ui.part.wellchannels"));
+		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.xxd.ui.part.peakScanListPart"));
+		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.xxd.ui.part.chromatogramOverlay"));
+		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.xxd.ui.part.dataexplorer"));
+		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.ui.internal.introview"));
+		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.ui.views.ProgressView"));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.GC_HOME_PART_ID));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.SEQUENCE_HOME_PART_ID));
+		assertEquals(BaijiuShellChrome.GC_HOME_PART_ID, BaijiuShellChrome.plantHomePartIdFor(BaijiuShellChrome.GC_CONTROL_PART_ID));
+		assertEquals(BaijiuShellChrome.SEQUENCE_HOME_PART_ID, BaijiuShellChrome.plantHomePartIdFor(BaijiuShellChrome.SEQUENCE_PART_ID));
+		assertTrue(BaijiuShellChrome.isPlantHomeSingletonPart(BaijiuShellChrome.GC_HOME_PART_ID));
+		assertTrue(BaijiuShellChrome.isSharedSingletonPart(BaijiuShellChrome.GC_CONTROL_PART_ID));
+
 	}
 
 	@Test
@@ -144,5 +164,43 @@ public class BaijiuShellChrome_1_Test {
 		assertTrue(BaijiuShellChrome.SEQUENCE_HOME_CONTRIBUTION_URI.contains("BaijiuSequenceHomePart"));
 		assertTrue(BaijiuShellChrome.GC_HOME_CONTRIBUTION_URI.startsWith("bundleclass://net.openchrom.rcp.compilation.baijiu.ui/"));
 		assertTrue(BaijiuShellChrome.SEQUENCE_HOME_CONTRIBUTION_URI.startsWith("bundleclass://net.openchrom.rcp.compilation.baijiu.ui/"));
+	}
+
+	@Test
+	public void chartAndPartStackMenusFollowPlantPolicy() {
+
+		assertTrue(BaijiuShellChrome.shouldHideChartMenuItem("Chromatogram Classifier"));
+		assertTrue(BaijiuShellChrome.shouldHideChartMenuItem("色谱分类器"));
+		assertTrue(BaijiuShellChrome.shouldHideChartMenuItem("Column Parser (Chromatogram)"));
+		assertTrue(BaijiuShellChrome.shouldHideChartMenuItem("Noise Calculator (Chromatogram)"));
+		assertTrue(BaijiuShellChrome.shouldHideChartMenuItem("Noise Segment Setter (Chromatogram)"));
+		assertTrue(BaijiuShellChrome.shouldHideChartMenuItem("Chromatogram Export"));
+		assertTrue(BaijiuShellChrome.shouldHideChartMenuItem("色谱导出"));
+		assertFalse(BaijiuShellChrome.shouldHideChartMenuItem("Reset Chart"));
+		assertFalse(BaijiuShellChrome.shouldHideChartMenuItem("User Restriction"));
+		assertFalse(BaijiuShellChrome.shouldHideChartMenuItem("Peak Detector"));
+		assertFalse(BaijiuShellChrome.shouldHideChartMenuItem("峰检测器"));
+		assertEquals("重置图表", BaijiuShellChrome.translateChartMenuItem("Reset Chart"));
+		assertEquals("设置图表范围", BaijiuShellChrome.translateChartMenuItem("Set Chart Range"));
+		assertEquals("撤销选择", BaijiuShellChrome.translateChartMenuItem("Undo Selection"));
+		assertEquals("范围选择", BaijiuShellChrome.translateChartMenuItem("Range Selection"));
+		assertEquals("切换可见性", BaijiuShellChrome.translateChartMenuItem("Toggle Visibility"));
+		assertEquals("用户限制", BaijiuShellChrome.translateChartMenuItem("&User Restriction"));
+		assertTrue(BaijiuShellChrome.shouldHidePartStackMenuItem("Detach"));
+		assertTrue(BaijiuShellChrome.shouldHidePartStackMenuItem("&Move"));
+		assertTrue(BaijiuShellChrome.shouldHidePartStackMenuItem("Close Others"));
+		assertTrue(BaijiuShellChrome.shouldHidePartStackMenuItem("Close All"));
+		assertTrue(BaijiuShellChrome.shouldHidePartStackMenuItem("Size"));
+		assertFalse(BaijiuShellChrome.shouldHidePartStackMenuItem("Close"));
+		assertFalse(BaijiuShellChrome.shouldHidePartStackMenuItem("Restore"));
+		assertEquals("关闭", BaijiuShellChrome.translatePartStackMenuItem("Close"));
+		assertEquals("还原", BaijiuShellChrome.translatePartStackMenuItem("&Restore"));
+		assertEquals("最小化", BaijiuShellChrome.translatePartStackMenuItem("Minimize"));
+		assertEquals("最大化", BaijiuShellChrome.translatePartStackMenuItem("Maximize"));
+		assertTrue(BaijiuShellChrome.looksLikePartStackMenu(java.util.List.of("Restore", "Detach", "Close All")));
+		assertTrue(BaijiuShellChrome.looksLikeChartMenu(java.util.List.of("Reset Chart", "User Restriction")));
+		assertEquals("NoDetach", BaijiuShellChrome.NO_DETACH_TAG);
+		assertEquals("NoMove", BaijiuShellChrome.NO_MOVE_TAG);
+		assertEquals("NoClose", BaijiuShellChrome.NO_CLOSE_TAG);
 	}
 }
