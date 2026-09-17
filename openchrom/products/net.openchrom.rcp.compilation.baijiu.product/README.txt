@@ -1,4 +1,4 @@
-白酒 FID 工作站 — 专用壳产品（方案 B / Phase 2）
+白酒 FID 工作站 — 专用壳产品（方案 B / Phase 3）
 ================================================
 
 Product file: openchrom.compilation.baijiu.product
@@ -35,25 +35,32 @@ Run As → Eclipse Application (Windows engineer)
    (or Run As → Eclipse Application from the .product file).
 5. Default program args do **not** include -clearPersistedState (layout is
    remembered under ~/BaijiuFID). VM args set
-   -Dapplication.perspective=...baijiu...perspective.workbench,
+   -Dapplication.perspective=...baijiu.ui.perspective.plantHome,
    -Dosgi.nl=zh_CN, and -Dapplication.name=白酒FID工作站 (**no spaces** —
    do not write 白酒 FID 工作站 here or PDE/Windows treats FID as the
    main class: ClassNotFoundException: FID). Window title stays
    「白酒 FID 工作站」 via product name / shell chrome.
-6. Expect window title 白酒 FID 工作站, start on 白酒工作台,
-   right-hand tabs 白酒操作 + 气相色谱控制台, top menu 白酒,
-   File → 打开 CSD 文件 still there. Processor / research chromatogram
-   submenus should be hidden; 色谱 → 峰检测 / 峰积分 remain as fallback.
+6. Expect window title 白酒 FID 工作站, start on **厂工作台**:
+   left reverse-control (气/火/信号/就绪 + 当前针), right 进样序列 table,
+   chromatogram editor below. Top menu 文件 / 白酒 / 视图 / 帮助
+   (no 处理器 / 插件). Plant toolbar: 打开谱图、开始分析、推荐积分、
+   定量/白酒分析、报告. File → 打开 CSD 文件 still there.
 
 If the launch config was created for the **community** product, create a
 **new** one from this .product — do not reuse community's product id.
 
 Reset layout
 ------------
-- 白酒 → 重置窗口布局 (or 窗口 → 重置窗口布局), then restart.
+- 白酒 → 重置窗口布局, then restart.
 - Or add -clearPersistedState **once** to the launch / shortcut.
 - Or -Dnet.openchrom.baijiu.clearLayout=true for that start.
-Phase 2 also clears workbench.xmi once when the chrome epoch advances.
+Phase 3 also clears workbench.xmi once when the chrome epoch advances (now 3).
+
+Research-menu escape hatch (engineers only, not in the UI)
+----------------------------------------------------------
+-Dnet.openchrom.baijiu.showResearchMenus=true
+reveals 处理器 / 插件 / 色谱 / 窗口. Welcome / MALDI / NMR stay hidden.
+Do not use on plant desktops.
 
 Export Product (Windows)
 ------------------------
@@ -75,26 +82,31 @@ Tycho (optional, full product — heavy)
 
 Community product is unchanged:
   products/net.openchrom.rcp.compilation.community.product
-Community reverse-control stays a dialog (no dedicated-shell placeholder).
+Community reverse-control / sequence / 白酒分析 stay dialogs (no dedicated-shell
+placeholder).
 
-Phase 2 gaps (honest)
+Phase 3 gaps (honest)
 ---------------------
-- Chromatogram fallback kept (手册：色谱 → 峰检测 / 峰积分); research children hidden by id.
-- Some ChemClipse perspectives may still appear if ids rename; Phase 3 to drop features.
+- Chromatogram **widget** is still ChemClipse (plot chrome inside the editor).
+- 组分方法 remains a supporting tab on the analysis page (the four-step header
+  is 样品 → 校正 → 定量 → 报告).
 - MSD/WSD/NMR contributions that ChemClipse still ships are hidden by id;
-  if ChemClipse renames ids, some noise can reappear until Phase 3.
+  unloading those features is still later. If ChemClipse renames ids, some
+  noise can reappear.
 - No custom painted chromatogram canvas; no Electron; no Part 11.
 
 Verify on the engineer PC
 -------------------------
 [ ] .product opens; Run As starts; title 白酒 FID 工作站
-[ ] Default perspective 白酒工作台 (right-hand 白酒操作)
-[ ] 气相色谱控制台 visible as a tab (and/or 窗口 → 视角)
+[ ] Default perspective 厂工作台: status (气/火/信号/就绪) + sequence table visible
+[ ] Top bar 文件 / 白酒 / 视图 / 帮助; no 处理器 / 插件
+[ ] Toolbar: 打开谱图、开始分析、推荐积分、定量/白酒分析、报告
+[ ] 开始分析 uses the same FID gate as Main (blocks when disconnected)
+[ ] 定量/白酒分析 opens the analysis page (样品→校正→定量→报告); demo .ocb still works
 [ ] Restart keeps sash / window size (no forced -clearPersistedState)
 [ ] Reset via 白酒 → 重置窗口布局 then restart restores default
-[ ] 白酒 menu: 打开色谱图 / 推荐积分 / 白酒分析 / 气相色谱控制台 / 许可
-[ ] Processor / 插件 top menu hidden; 色谱 research submenus trimmed
-[ ] File → 打开 CSD 文件 opens demo .ocb; 白酒分析 still works
+[ ] File → 打开 CSD 文件 opens demo .ocb; report path still works
 [ ] Help → About shows 白酒 FID 工作站
+[ ] License gate unchanged
 [ ] baijiu.ui MANIFEST still JavaSE-21
 [ ] Community product file still present and launches separately (dialog 反控)

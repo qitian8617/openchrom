@@ -19,8 +19,14 @@ public final class TemperatureControlIds {
 
 	public static final String PART_ID = "net.openchrom.xxd.control.supplier.temperature.ui.part.control";
 	public static final String COMMAND_OPEN = "net.openchrom.xxd.control.supplier.temperature.ui.command.open";
+	public static final String COMMAND_START_ANALYSIS = "net.openchrom.xxd.control.supplier.temperature.ui.command.startAnalysis";
 	public static final String MENU_OPEN = "net.openchrom.xxd.control.supplier.temperature.ui.menu.open";
 	public static final String TOOLBAR_OPEN = "net.openchrom.xxd.control.supplier.temperature.ui.toolbar.open";
+	/**
+	 * Dedicated Baijiu shell plant-home perspective. Referenced by string so
+	 * this plug-in does not Require-Bundle the branding fragment.
+	 */
+	public static final String PLANT_HOME_PERSPECTIVE_ID = "net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome";
 
 	private TemperatureControlIds() {
 

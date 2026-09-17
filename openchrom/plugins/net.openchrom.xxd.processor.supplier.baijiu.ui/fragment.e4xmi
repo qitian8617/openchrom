@@ -59,5 +59,7 @@
   </fragments>
   <fragments xsi:type="fragment:StringModelFragment" xmi:id="_baijiuSharedFrag" featurename="sharedElements" parentElementId="org.eclipse.chemclipse.rcp.app.ui.trimmedwindow.main">
     <elements xsi:type="basic:Part" xmi:id="_baijiuWbPart" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.part.workbench" contributionURI="bundleclass://net.openchrom.xxd.processor.supplier.baijiu.ui/net.openchrom.xxd.processor.supplier.baijiu.ui.parts.BaijiuWorkbenchPart" label="%part.baijiuWorkbench" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/peak.gif"/>
+    <elements xsi:type="basic:Part" xmi:id="_baijiuSeqPart" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.part.sequence" contributionURI="bundleclass://net.openchrom.xxd.processor.supplier.baijiu.ui/net.openchrom.xxd.processor.supplier.baijiu.ui.parts.BaijiuSequencePart" label="%part.baijiuSequence" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/peak.gif" closeable="false"/>
+    <elements xsi:type="basic:Part" xmi:id="_baijiuAnaPart" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.part.analysis" contributionURI="bundleclass://net.openchrom.xxd.processor.supplier.baijiu.ui/net.openchrom.xxd.processor.supplier.baijiu.ui.parts.BaijiuAnalysisPart" label="%part.baijiuAnalysis" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/peak.gif" closeable="false"/>
   </fragments>
 </fragment:ModelFragments>

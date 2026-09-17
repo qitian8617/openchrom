@@ -13,16 +13,26 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 public class BaijiuShellChrome_1_Test {
+
+	@AfterEach
+	public void clearResearchEscape() {
+
+		System.clearProperty(BaijiuShellChrome.RESEARCH_MENUS_PROPERTY);
+	}
 
 	@Test
 	public void hidesResearchChromeKeepsPlantPath() {
 
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.msd.ui.handledmenuitem.openChromatogram"));
-		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.ui.menu.process"));
-		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.rcp.app.ui.menu.plugins"));
+		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.PROCESS_MENU_ID));
+		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.PLUGINS_MENU_ID));
+		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.PLUGINS_TOOLBAR_ID));
+		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.CHROMATOGRAM_MENU_ID));
+		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.WINDOW_MENU_ID));
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.ui.menu.chromatogram.filter"));
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.ui.menu.chromatogram.identifier"));
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.xxd.ui.perspective.main"));
@@ -31,26 +41,57 @@ public class BaijiuShellChrome_1_Test {
 		assertTrue(BaijiuShellChrome.shouldHide("net.openchrom.installer.ui.handledmenuitem.install.addons"));
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.chromatogram.msd.peak.detector.supplier.firstderivative"));
 		assertFalse(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.csd.ui.handledmenuitem.openChromatogram"));
-		assertFalse(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.ui.menu.chromatogram"));
 		assertFalse(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.ui.menu.chromatogram.integrator"));
 		assertFalse(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.chromatogram.csd.peak.detector.supplier.firstderivative"));
 		assertFalse(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.chromatogram.xxd.integrator.supplier.trapezoid.peakIntegrator"));
 		assertFalse(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.rcp.app.ui.menu.file"));
 		assertFalse(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.rcp.app.ui.menu.help"));
 		assertFalse(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.rcp.app.ui.menu.view"));
-		assertFalse(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.rcp.app.ui.menu.window"));
 		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.BAIJIU_MENU_ID));
 		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.PLANT_TOOLBAR_ID));
 		assertFalse(BaijiuShellChrome.shouldHide("net.openchrom.xxd.processor.supplier.baijiu.ui.menu.workbench"));
 		assertFalse(BaijiuShellChrome.shouldHide("net.openchrom.xxd.control.supplier.temperature.ui.menu.open"));
 		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.GC_CONTROL_PART_ID));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.SEQUENCE_PART_ID));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.ANALYSIS_PART_ID));
 		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.GC_PERSPECTIVE_ID));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.ANALYSIS_PERSPECTIVE_ID));
 		assertFalse(BaijiuShellChrome.shouldHide(null));
 		assertFalse(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.renamed.unknown.menu"));
 		assertEquals("白酒 FID 工作站", BaijiuShellChrome.WINDOW_TITLE);
 		assertEquals("白酒FID工作站", BaijiuShellChrome.APPLICATION_NAME_VM);
 		assertFalse(BaijiuShellChrome.APPLICATION_NAME_VM.contains(" "));
-		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui.perspective.workbench", BaijiuShellChrome.PERSPECTIVE_ID);
-		assertEquals(2, BaijiuShellChrome.CHROME_EPOCH);
+		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome", BaijiuShellChrome.PERSPECTIVE_ID);
+		assertEquals(3, BaijiuShellChrome.CHROME_EPOCH);
+	}
+
+	@Test
+	public void hidesProcessorAndPluginsByLabelOnMenus() {
+
+		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.unknown.menu.foo", "处理器"));
+		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.unknown.menu.bar", "插件"));
+		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.unknown.menu.chrom", "色谱"));
+		assertFalse(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.unknown.part.foo", "处理器"));
+		assertFalse(BaijiuShellChrome.shouldHide("net.openchrom.rcp.compilation.baijiu.ui.menu.openChromatogram", "打开谱图"));
+	}
+
+	@Test
+	public void researchEscapeHatchRevealsProcessorPluginsChromatogramWindow() {
+
+		System.setProperty(BaijiuShellChrome.RESEARCH_MENUS_PROPERTY, "true");
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.PROCESS_MENU_ID));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.PLUGINS_MENU_ID));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.CHROMATOGRAM_MENU_ID));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.WINDOW_MENU_ID));
+		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.ui.perspective.welcome"));
+		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.xxd.ui.perspective.maldi"));
+	}
+
+	@Test
+	public void layoutDefaultsArePlantHome() {
+
+		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome", BaijiuShellChrome.PERSPECTIVE_ID);
+		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui.perspective.workbench", BaijiuShellChrome.WORKBENCH_PERSPECTIVE_ID);
+		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.placeholder.gcHome", BaijiuShellChrome.GC_HOME_PLACEHOLDER_ID);
 	}
 }

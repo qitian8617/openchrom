@@ -8,7 +8,7 @@ The shared model still lives in the reverse-control plugin so **开始分析** o
 
 ## Where it lives
 
-- **白酒工作台** action **进样序列** (also **插件 → 白酒工作台 → 进样序列**): build, edit, reorder, skip, retry, save/load JSON.
+- **Dedicated shell 厂工作台:** sequence table is the **right-hand home column** (not only a dialog). **白酒工作台** action **进样序列** still opens the same editor (community: dialog).
 - Reverse-control **Main** shows a compact read-only **当前针** strip (type / id / name / status) and **在白酒工作台打开序列**. There is **no** **序列** navigation tab on the GC panel.
 - Baijiu **简单批量** is unchanged: quantitative matrix on already-saved `.ocb` files picked by the operator.
 - Baijiu **批处理结果** (item 8) reads the **current / loaded sequence**: DONE vials with chromatogram paths are quantified; incomplete vials stay listed (see Baijiu `GCWS-BATCH-RESULTS.md`).
@@ -30,7 +30,7 @@ The working queue auto-saves as `current.json` in that folder. **保存序列…
 ## Operator steps (manual inject)
 
 1. Heat inlet / detector / oven. Ignite FID. Wait until Main shows **FID 就绪**.
-2. Open **白酒工作台 → 进样序列**. Click **填入典型队列** and set 样品数 (for example 3) → rows: 空白, 混标, QC, 样品×N. Or add rows one by one: **+ 空白 / + 混标 / + QC / + 样品**. Select a 样品 row and **添加平行样** to insert a second SAMPLE needle (same id/name). Edit 编号 / 名称 / 备注, **保存本行**. Reorder with **上移 / 下移**. **设为当前** points at the next needle. After both needles are saved, **平行样结果…** opens mean / relative deviation (see Baijiu `GCWS-PARALLEL.md`).
+2. Dedicated shell: edit the **厂工作台** sequence table (or community **白酒工作台 → 进样序列**). Click **填入典型队列** and set 样品数 (for example 3) → rows: 空白, 混标, QC, 样品×N. Or add rows one by one: **+ 空白 / + 混标 / + QC / + 样品**. Select a 样品 row and **添加平行样** to insert a second SAMPLE needle (same id/name). Edit 编号 / 名称 / 备注, **保存本行**. Reorder with **上移 / 下移**. **设为当前** points at the next needle. After both needles are saved, **平行样结果…** opens mean / relative deviation (see Baijiu `GCWS-PARALLEL.md`).
 3. Optional: **保存序列…** to keep a named JSON next to other batches.
 4. Switch to **气相色谱控制台** Main. The strip shows the current vial. Inject that vial (▶ row). Main → **开始分析 → 启动**. The current row becomes **运行中**.
 5. **停止** or wait for device `ACQ_DONE`. On a successful save, the row becomes **已完成**, the chromatogram path is stored, and the pointer advances to the next **待进样**. The usual Baijiu handoff dialog is unchanged.

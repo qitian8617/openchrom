@@ -85,6 +85,9 @@ public class OpenBaijiuPerspectiveHandler {
 				return false;
 			}
 			EPartService partService = resolvePartService(application);
+			if(switchById(partService, BaijiuPerspectiveIds.PLANT_HOME_PERSPECTIVE_ID)) {
+				return true;
+			}
 			if(switchById(partService, PERSPECTIVE_ID)) {
 				return true;
 			}

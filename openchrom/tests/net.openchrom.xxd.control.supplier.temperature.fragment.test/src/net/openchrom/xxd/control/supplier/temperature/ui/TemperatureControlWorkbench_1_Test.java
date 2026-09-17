@@ -21,6 +21,7 @@ public class TemperatureControlWorkbench_1_Test {
 
 		assertEquals("net.openchrom.xxd.control.supplier.temperature.ui.part.control", TemperatureControlIds.PART_ID);
 		assertEquals("net.openchrom.xxd.control.supplier.temperature.ui.command.open", TemperatureControlIds.COMMAND_OPEN);
+		assertEquals("net.openchrom.xxd.control.supplier.temperature.ui.command.startAnalysis", TemperatureControlIds.COMMAND_START_ANALYSIS);
 	}
 
 	@Test

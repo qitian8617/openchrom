@@ -126,7 +126,16 @@ public final class BaijiuWorkbenchHandoff {
 	private static String openSequenceOnUi() {
 
 		OpenBaijiuPerspectiveHandler.showPerspective();
-		showWorkbenchPart();
+		try {
+			EPartService partService = resolvePartService();
+			MApplication application = ContextAddon.getApplication();
+			EModelService modelService = ContextAddon.getModelService();
+			if(BaijiuWorkbenchParts.showSequence(application, modelService, partService)) {
+				return "";
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// floating shell below
+		}
 		Shell parent = Display.getDefault().getActiveShell();
 		return BaijiuSequenceShell.open(parent);
 	}

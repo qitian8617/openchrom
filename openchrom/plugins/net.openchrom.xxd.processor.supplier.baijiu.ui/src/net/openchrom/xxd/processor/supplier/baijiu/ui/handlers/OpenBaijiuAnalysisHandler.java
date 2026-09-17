@@ -12,17 +12,27 @@ package net.openchrom.xxd.processor.supplier.baijiu.ui.handlers;
 import org.eclipse.e4.core.contexts.Active;
 import org.eclipse.e4.core.di.annotations.Execute;
 import org.eclipse.e4.core.di.annotations.Optional;
+import org.eclipse.e4.ui.model.application.MApplication;
+import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.swt.widgets.Shell;
 
+import net.openchrom.xxd.processor.supplier.baijiu.ui.BaijiuWorkbenchParts;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.ChromatogramBridge;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuAnalysisShell;
 
 public class OpenBaijiuAnalysisHandler {
 
 	@Execute
-	public void execute(@Active Shell shell, @Optional EPartService partService) {
+	public void execute(@Active Shell shell, @Optional EPartService partService, @Optional MApplication application, @Optional EModelService modelService) {
 
+		try {
+			if(BaijiuWorkbenchParts.showAnalysis(application, modelService, partService)) {
+				return;
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// community dialog below
+		}
 		BaijiuAnalysisShell.open(shell, ChromatogramBridge.resolve(partService), partService);
 	}
 }
