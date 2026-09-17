@@ -11,19 +11,12 @@ package net.openchrom.rcp.compilation.baijiu.ui.lifecycle;
 
 import org.junit.jupiter.api.Test;
 
-public class BaijiuShellAddon_1_Test {
+public class BaijiuShellMenus_1_Test {
 
 	@Test
-	public void missingModelDoesNotThrow() {
+	public void installWithoutDisplayDoesNotThrow() {
 
-		BaijiuShellAddon.applyChrome(null, null);
-		BaijiuShellAddon.selectBaijiuPerspective(null, null);
-		BaijiuShellAddon.revealPlantParts(null, null);
-		BaijiuShellAddon.dropDeadPlantEditorPlaceholder(null, null);
-		BaijiuShellAddon.hideTopWindowMenus(null, null);
-		BaijiuShellAddon.tagPlantHomeSingletons(null, null);
-		BaijiuShellParts.forceCreatePlantHomeGuis(null, null);
-		BaijiuChromatogramReadability.applyThemeRegistries();
 		BaijiuShellMenus.install();
+		BaijiuShellMenus.sanitize(null);
 	}
 }

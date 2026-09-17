@@ -42,7 +42,8 @@ public final class BaijiuWorkbenchParts {
 	public static boolean showSequence(MApplication application, EModelService modelService, EPartService partService) {
 
 		boolean switched = switchPerspective(application, modelService, partService, BaijiuPerspectiveIds.PLANT_HOME_PERSPECTIVE_ID);
-		boolean shown = showPart(application, modelService, partService, BaijiuPerspectiveIds.SEQUENCE_PART_ID);
+		boolean shown = showPart(application, modelService, partService, BaijiuPerspectiveIds.SEQUENCE_HOME_PART_ID) //
+				|| showPart(application, modelService, partService, BaijiuPerspectiveIds.SEQUENCE_PART_ID);
 		return switched || shown;
 	}
 

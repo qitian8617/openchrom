@@ -14,7 +14,9 @@
 #org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.saveAll,
 #org.eclipse.chemclipse.rcp.app.ui.toolbar.perspectives,
 #org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.perspectiveSwitcher,
+#org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.perspectiveSwitcher,
 #org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.selectView,
+#org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.selectView,
 #org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.resetperspective,
 #org.eclipse.ui.main.toolbar,
 #org.eclipse.chemclipse.ux.extension.msd.ui.handledmenuitem.openChromatogram,
@@ -85,4 +87,3 @@ ColorDefinition#org-eclipse-chemclipse-ux-extension-xxd-ui-internal-charts-Targe
 ColorDefinition#org-eclipse-chemclipse-ux-extension-xxd-ui-internal-charts-TargetReferenceLabelMarker-InactiveColor {
 	color: #202020;
 }
-

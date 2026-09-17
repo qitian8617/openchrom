@@ -20,6 +20,8 @@ public class TemperatureControlWorkbench_1_Test {
 	public void partIdIsStableForDedicatedShellImport() {
 
 		assertEquals("net.openchrom.xxd.control.supplier.temperature.ui.part.control", TemperatureControlIds.PART_ID);
+		assertEquals("net.openchrom.xxd.control.supplier.temperature.ui.part.control.plantHome", TemperatureControlIds.PLANT_HOME_PART_ID);
+		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome", TemperatureControlIds.PLANT_HOME_PERSPECTIVE_ID);
 		assertEquals("net.openchrom.xxd.control.supplier.temperature.ui.command.open", TemperatureControlIds.COMMAND_OPEN);
 		assertEquals("net.openchrom.xxd.control.supplier.temperature.ui.command.startAnalysis", TemperatureControlIds.COMMAND_START_ANALYSIS);
 	}
@@ -28,5 +30,6 @@ public class TemperatureControlWorkbench_1_Test {
 	public void missingModelFallsBackToDialog() {
 
 		assertFalse(TemperatureControlWorkbench.showPart(null, null, null));
+		assertFalse(TemperatureControlWorkbench.activateExisting(null, null, null, TemperatureControlIds.PLANT_HOME_PART_ID, TemperatureControlIds.PLANT_HOME_PERSPECTIVE_ID));
 	}
 }
