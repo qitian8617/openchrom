@@ -44,6 +44,8 @@ public class BaijiuShellParts_1_Test {
 		assertFalse(BaijiuShellParts.forceCreateElement(null, null, null));
 		BaijiuShellParts.trySetCurSharedRef(null, null);
 		assertFalse(BaijiuShellParts.hasHiddenResearchAncestor(null));
+		assertFalse(BaijiuShellModel.plantHomeSurfacePresent(null, null));
+		assertTrue(BaijiuShellModel.missingPlantHomeIds(null, null).contains(BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID));
 		BaijiuShellSelection.selectInParent(null);
 	}
 }

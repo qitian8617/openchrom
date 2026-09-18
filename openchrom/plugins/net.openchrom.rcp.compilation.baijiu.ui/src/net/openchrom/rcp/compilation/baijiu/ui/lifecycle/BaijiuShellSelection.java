@@ -41,7 +41,7 @@ public final class BaijiuShellSelection {
 
 		MUIElement walk = element;
 		while(walk != null) {
-			if(!isPresentable(walk) || BaijiuShellChrome.shouldHide(walk.getElementId())) {
+			if(!isPresentable(walk) || isForbiddenSelection(walk.getElementId())) {
 				return false;
 			}
 			try {
@@ -64,7 +64,7 @@ public final class BaijiuShellSelection {
 		if(element == null) {
 			return;
 		}
-		if(BaijiuShellChrome.shouldHide(element.getElementId()) || hasHiddenResearchAncestor(element)) {
+		if(isForbiddenSelection(element.getElementId()) || hasHiddenResearchAncestor(element)) {
 			deselectFromParent(element);
 			return;
 		}
@@ -72,7 +72,7 @@ public final class BaijiuShellSelection {
 		element.setVisible(true);
 		MUIElement walk = element;
 		while(walk != null) {
-			if(BaijiuShellChrome.shouldHide(walk.getElementId())) {
+			if(isForbiddenSelection(walk.getElementId())) {
 				deselectFromParent(walk);
 				break;
 			}
@@ -85,7 +85,7 @@ public final class BaijiuShellSelection {
 			if(parent == null) {
 				break;
 			}
-			if(BaijiuShellChrome.shouldHide(parent.getElementId())) {
+			if(isForbiddenSelection(parent.getElementId())) {
 				deselectFromParent(parent);
 				break;
 			}
@@ -93,7 +93,7 @@ public final class BaijiuShellSelection {
 				if(isUserHiddenGcConsole(parent)) {
 					break;
 				}
-				if(BaijiuShellChrome.shouldHide(parent.getElementId())) {
+				if(isForbiddenSelection(parent.getElementId())) {
 					break;
 				}
 				parent.setToBeRendered(true);
@@ -105,9 +105,55 @@ public final class BaijiuShellSelection {
 	}
 
 	/**
+	 * Select {@code perspective.plantHome} on its stack if that element exists.
+	 * Unhides the plant perspective first (stale xmi may have left it
+	 * {@code visible=false}). Never selects Welcome / MALDI / NMR.
+	 */
+	public static boolean selectPlantHomeIfPresent(MApplication application, EModelService modelService) {
+
+		if(application == null || modelService == null) {
+			return false;
+		}
+		MUIElement plant;
+		try {
+			plant = modelService.find(BaijiuShellChrome.PERSPECTIVE_ID, application);
+		} catch(RuntimeException | LinkageError e) {
+			return false;
+		}
+		if(plant == null || isForbiddenSelection(plant.getElementId())) {
+			return false;
+		}
+		unhideAllowed(plant);
+		selectInParent(plant);
+		return canSelect(plant);
+	}
+
+	/**
+	 * E4 {@code ElementContainer.selectedElement} listener: if chrome or the
+	 * compatibility layer selects a hidden research perspective after hide,
+	 * bounce to plant home (or another presentable child). Prevents
+	 * {@code InjectionException} wrapping {@code must be visible in the UI presentation}.
+	 */
+	@SuppressWarnings("unchecked")
+	public static void rejectHiddenSelection(Object container, Object selected) {
+
+		if(!(selected instanceof MUIElement element) || !isForbiddenSelection(element.getElementId())) {
+			return;
+		}
+		if(container instanceof MElementContainer<?> parent) {
+			MUIElement replacement = firstSelectableChild(parent, Set.of(element));
+			setSelected((MElementContainer<MUIElement>)parent, replacement);
+			return;
+		}
+		deselectFromParent(element);
+	}
+
+	/**
 	 * Before hiding research chrome, move each container's selection off the
 	 * elements about to disappear — while those replacements are still
 	 * visible, so the renderer does not see a hidden {@code selectedElement}.
+	 * Perspective stacks prefer {@code perspective.plantHome} (unhidden if
+	 * needed). Never leaves Welcome / MALDI / NMR selected.
 	 */
 	public static void reassignAwayFrom(Collection<? extends MUIElement> hiding) {
 
@@ -193,7 +239,7 @@ public final class BaijiuShellSelection {
 			return;
 		}
 		setSelected(parent, firstSelectableChild(parent, Set.of(element)));
-		if(BaijiuShellChrome.shouldHide(parent.getElementId()) || !isPresentable(parent)) {
+		if(isForbiddenSelection(parent.getElementId()) || !isPresentable(parent)) {
 			deselectFromParent(parent);
 		}
 	}
@@ -246,17 +292,45 @@ public final class BaijiuShellSelection {
 			if(exclude != null && exclude.contains(element)) {
 				continue;
 			}
-			if(!canSelect(element)) {
+			if(isForbiddenSelection(element.getElementId())) {
 				continue;
 			}
 			if(isPreferredPlantSelection(element.getElementId())) {
-				return element;
+				unhideAllowed(element);
+				if(canSelect(element)) {
+					return element;
+				}
+			}
+			if(!canSelect(element)) {
+				continue;
 			}
 			if(preferred == null) {
 				preferred = element;
 			}
 		}
 		return preferred;
+	}
+
+	static boolean isForbiddenSelection(String elementId) {
+
+		return BaijiuShellChrome.shouldHide(elementId) || BaijiuShellChrome.isHiddenResearchPerspective(elementId);
+	}
+
+	static void unhideAllowed(MUIElement element) {
+
+		MUIElement walk = element;
+		while(walk != null) {
+			if(isForbiddenSelection(walk.getElementId())) {
+				break;
+			}
+			walk.setToBeRendered(true);
+			walk.setVisible(true);
+			try {
+				walk = walk.getParent();
+			} catch(RuntimeException | LinkageError e) {
+				break;
+			}
+		}
 	}
 
 	private static boolean isPreferredPlantSelection(String elementId) {
@@ -279,7 +353,7 @@ public final class BaijiuShellSelection {
 
 		MUIElement walk = element;
 		while(walk != null) {
-			if(BaijiuShellChrome.shouldHide(walk.getElementId())) {
+			if(isForbiddenSelection(walk.getElementId())) {
 				return true;
 			}
 			try {
@@ -311,11 +385,14 @@ public final class BaijiuShellSelection {
 		if(container == null) {
 			return;
 		}
-		if(child != null && !isPresentable(child)) {
+		if(child != null && isForbiddenSelection(child.getElementId())) {
 			child = null;
 		}
-		if(child != null && BaijiuShellChrome.shouldHide(child.getElementId())) {
-			child = null;
+		if(child != null && !isPresentable(child)) {
+			unhideAllowed(child);
+			if(!isPresentable(child) || isForbiddenSelection(child.getElementId())) {
+				child = null;
+			}
 		}
 		try {
 			if(container.getSelectedElement() == child) {
@@ -328,6 +405,14 @@ public final class BaijiuShellSelection {
 			} catch(RuntimeException | LinkageError e2) {
 				// renderer already rejected a hidden selection
 			}
+		}
+		try {
+			MUIElement now = container.getSelectedElement();
+			if(now != null && isForbiddenSelection(now.getElementId())) {
+				container.setSelectedElement(null);
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// leave the container; hide path catches renderer errors
 		}
 	}
 }

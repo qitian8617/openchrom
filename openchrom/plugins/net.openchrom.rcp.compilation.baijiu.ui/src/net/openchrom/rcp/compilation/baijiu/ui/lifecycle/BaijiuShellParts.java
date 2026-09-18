@@ -67,6 +67,9 @@ public final class BaijiuShellParts {
 		forceCreatePlantHomeGuis(application, modelService);
 		revealPlantToolbar(application, modelService);
 		syncGcToggleToolItem(application, modelService);
+		if(!BaijiuShellModel.plantHomeSurfacePresent(application, modelService)) {
+			return false;
+		}
 		return workbench || sequence || analysis || chromatogram || gc;
 	}
 

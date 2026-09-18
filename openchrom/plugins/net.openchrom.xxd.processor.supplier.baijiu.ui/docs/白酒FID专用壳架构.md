@@ -49,7 +49,7 @@
 
 | 谁拥有 | 例子 | Phase 3 是否改代码 |
 |--------|------|-------------------|
-| **壳** | 厂工作台视角、分析页视角、菜单/工具栏裁剪、布局 epoch=14、顶栏「白酒」 | **改** branding 插件 + `.product` |
+| **壳** | 厂工作台视角、分析页视角、菜单/工具栏裁剪、布局 epoch=15、顶栏「白酒」 | **改** branding 插件 + `.product` |
 | **内核** | 打开 CSD、谱图编辑器、峰检测扩展点 | **不改** ChemClipse；不重写 community `.product` |
 | **业务插件** | `BaijiuAnalysisEngine`、许可门、GB 2757、反控面板 | **不复制引擎**；只 **新增 Part 宿主** 与开始分析命令 |
 
@@ -114,6 +114,7 @@ ChemClipse **内核特性本身** 仍带 MSD/WSD/NMR 菜单贡献——Phase 3 �
 | **Phase 3 左选项卡 / 右谱图** | 厂工作台改为 **左工作流选项卡（进样序列 / 白酒分析）\| 右固定谱图/采集**；反控停在选项卡左侧可开关；打开 CSD 不换边；chrome epoch=12 | 不把社区白酒工作台（谱图左 / 白酒操作按钮列右）改成厂布局；不 Detach |
 | **Phase 3 左谱图 / 右操作侧栏** | 对照操作员截图把 #40 **左右对调**：左固定谱图/采集 \| 右 PartStack（白酒操作 / 进样序列 / 白酒分析）；反控停在侧栏上方可开关；打开 CSD 仍在左侧；chrome epoch=13 | 不改社区白酒工作台；不 Detach；无 Part 的推荐积分/批处理/平行样/报告仍走工具条/菜单 |
 | **Phase 3 左空态 / 右侧三页签** | #41 后左侧 Area placeholder 无 CTabItem、冷启动一片灰；右侧若回退白酒工作台则只剩「白酒操作」。补 `BaijiuChromatogramHomePart` 空态页签、强制渲染三页签、禁止回退工作台视角；chrome epoch=14 | 不改社区产品；不恢复 MALDI must-be-visible |
+| **Phase 3 Welcome 选择中止** | #42 后 epoch 已到 14 但 `workbench.xmi` 仍无 plant-home Part：chrome 先藏 Welcome，E4 仍选中它 → `must be visible in the UI presentation` / `InjectionException`，厂工作台 reveal 未跑完。先选 `perspective.plantHome` 再藏 Welcome；缺 Part 时从 fragment 重建；chrome epoch=15 | 不改社区产品；不选 Welcome/MALDI/NMR |
 | **更后** | 可选：从专用壳卸 MSD/NMR 特性、自有色谱视图、Windows 安装包品牌 | 仍禁止 fork 定量/GB 2757 逻辑 |
 
 ---
@@ -190,7 +191,7 @@ Windows 上 **Run As → Eclipse Application** 与 **Export Product** 的逐步�
 - ChemClipse 动态贡献的处理器项若改名，可能重新露出来；未知 id 故意不藏。研究菜单退路见上文 JVM 开关。
 - 窗口 → 视角里，**视图**菜单的 Select View / 选择视图在专用壳上隐藏（厂路径走「白酒」菜单激活已有 Part）。ChemClipse `SelectViewDialog` 会列出全部 `MPart`、不看 visible，所以不能只靠 id 隐藏。
 - 反控 Part 与社区浮动壳 **不要同时开两份**（会抢 `GcConnectionManager`）。专用壳菜单优先激活厂工作台 `…plantHome` 单例；社区走对话框。厂工作台用 **独立 elementId** 的 concrete Part，与 `sharedElements` 里那份反控/序列 **不是同一个实例**；日常只渲染厂工作台那一份。
-- 本仓 Cloud Agent 环境通常 **不能** 弹出 Windows SWT 工作站做点击验收；厂工程师按 README 在本机 PDE 验证。冷启动（epoch=14 会再清一次 `workbench.xmi`）后必须能看到厂工具条（打开谱图 / 反控）、**左侧** 谱图/采集（有页签与空态提示，不能再是空灰）、**右侧** 白酒操作（默认）/ 进样序列 / 白酒分析选项卡，反控 sash 默认可关（停在侧栏上方），**或页内可读错误 Label**。打开 CSD 必须出现在左侧，操作侧栏留在右侧，子窗口不 Detach。点击「进样序列」按钮应选中右侧序列页签。
+- 本仓 Cloud Agent 环境通常 **不能** 弹出 Windows SWT 工作站做点击验收；厂工程师按 README 在本机 PDE 验证。冷启动（epoch=15 会再清一次 `workbench.xmi`）后必须能看到厂工具条（打开谱图 / 反控）、**左侧** 谱图/采集（有页签与空态提示，不能再是空灰）、**右侧** 白酒操作（默认）/ 进样序列 / 白酒分析选项卡，反控 sash 默认可关（停在侧栏上方），**或页内可读错误 Label**。打开 CSD 必须出现在左侧，操作侧栏留在右侧，子窗口不 Detach。点击「进样序列」按钮应选中右侧序列页签。`.log` 不得再刷 Welcome `must be visible in the UI presentation`。
 - **谱图右键**：专用壳 `BaijiuShellMenus` 在 `SWT.Show` 时藏 Chromatogram Classifier / Column Parser / Noise Calculator 等研究项，并把 Reset Chart / Set Chart Range / Undo Selection / User Restriction 译成中文。不改 SWTChart / ChemClipse 源码，社区产品菜单不变。
 - **谱图峰标签 / 坐标轴**：ChemClipse `TargetReferenceLabelMarker` 主题默认 `Verdana-regular-8`，轴 tick 用 LineColor。厂屏上看不清时由 **专用壳** `BaijiuChromatogramReadability` + `plugin_customization.ini` + `baijiu-shell.css` 在启动时写成微软雅黑 13 磅粗体、近黑前景。不改 ChemClipse、不改社区产品。再调：首选项 → 常规 → 外观 → 颜色和字体 → Charts。
 

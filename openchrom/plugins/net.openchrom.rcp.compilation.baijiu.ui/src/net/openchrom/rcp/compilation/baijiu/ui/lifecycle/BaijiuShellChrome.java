@@ -33,6 +33,9 @@ public final class BaijiuShellChrome {
 	public static final String WINDOW_TITLE = PRODUCT_NAME_ZH;
 	public static final String APPLICATION_NAME_VM = "白酒FID工作站";
 	public static final String PERSPECTIVE_ID = "net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome";
+	public static final String WELCOME_PERSPECTIVE_ID = "org.eclipse.chemclipse.ux.extension.ui.perspective.welcome";
+	public static final String MALDI_PERSPECTIVE_ID = "org.eclipse.chemclipse.ux.extension.xxd.ui.perspective.maldi";
+	public static final String NMR_PERSPECTIVE_ID = "org.eclipse.chemclipse.nmr.processing.supplier.base.ui.perspective.nmr";
 	public static final String WORKBENCH_PERSPECTIVE_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.perspective.workbench";
 	public static final String ANALYSIS_PERSPECTIVE_ID = "net.openchrom.rcp.compilation.baijiu.ui.perspective.analysis";
 	public static final String GC_PERSPECTIVE_ID = "net.openchrom.rcp.compilation.baijiu.ui.perspective.gcControl";
@@ -108,8 +111,25 @@ public final class BaijiuShellChrome {
 	 * Epoch 14: left empty-state Part so 谱图/采集 is labeled on cold start;
 	 * right sidebar always lists 白酒操作 / 进样序列 / 白酒分析 (no workbench
 	 * perspective fallback).
+	 * Epoch 15: never select hidden Welcome (same E4 abort as #39 MALDI);
+	 * create/reveal plant-home fragment children if workbench.xmi omitted them.
 	 */
-	public static final int CHROME_EPOCH = 14;
+	public static final int CHROME_EPOCH = 15;
+	/**
+	 * Ids that must exist on the live model after plant-home reveal. Missing
+	 * any of these is the empty-left / community-button-column failure mode.
+	 */
+	public static final List<String> PLANT_HOME_REQUIRED_ELEMENT_IDS = List.of( //
+			PERSPECTIVE_ID, //
+			PLANT_SASH_ID, //
+			CHROMATOGRAM_STACK_ID, //
+			CHROMATOGRAM_HOME_PART_ID, //
+			CHROMATOGRAM_PLACEHOLDER_ID, //
+			PLANT_TOP_SASH_ID, //
+			WORKFLOW_STACK_ID, //
+			WORKBENCH_HOME_PART_ID, //
+			SEQUENCE_HOME_PART_ID, //
+			ANALYSIS_HOME_PART_ID);
 	/**
 	 * ChemClipse Application.e4xmi Save / Save All coolbar. Stays hidden
 	 * so the plant toolbar (打开谱图 / 反控) is the visible chrome. File
@@ -223,12 +243,12 @@ public final class BaijiuShellChrome {
 			"org.eclipse.chemclipse.ux.extension.ui.menu.chromatogram.identifier", //
 			"org.eclipse.chemclipse.ux.extension.ui.menu.chromatogram.reports", //
 			"org.eclipse.chemclipse.ux.extension.ui.toolbar.operations", //
-			"org.eclipse.chemclipse.ux.extension.ui.perspective.welcome", //
+			WELCOME_PERSPECTIVE_ID, //
 			"org.eclipse.chemclipse.ux.extension.ui.part.welcomeView", //
 			"org.eclipse.chemclipse.ux.extension.xxd.ui.perspective.main", //
-			"org.eclipse.chemclipse.ux.extension.xxd.ui.perspective.maldi", //
+			MALDI_PERSPECTIVE_ID, //
 			"org.eclipse.chemclipse.ux.extension.xxd.ui.perspective.wsd", //
-			"org.eclipse.chemclipse.nmr.processing.supplier.base.ui.perspective.nmr", //
+			NMR_PERSPECTIVE_ID, //
 			"org.eclipse.chemclipse.ux.extension.xxd.ui.handledmenuitem.createProcessMethod", //
 			"org.eclipse.chemclipse.ux.extension.xxd.ui.directmenuitem.createnewprocessingmethod", //
 			"net.openchrom.installer.ui.handledmenuitem.install.addons", //
@@ -420,6 +440,25 @@ public final class BaijiuShellChrome {
 	public static boolean shouldHide(String elementId) {
 
 		return shouldHide(elementId, null);
+	}
+
+	/**
+	 * ChemClipse perspectives chrome must never put on a stack
+	 * {@code selectedElement}. Selecting Welcome/MALDI/NMR after hide throws
+	 * E4 {@code must be visible in the UI presentation} and aborts DI.
+	 */
+	public static boolean isHiddenResearchPerspective(String elementId) {
+
+		if(elementId == null || elementId.isBlank()) {
+			return false;
+		}
+		if(WELCOME_PERSPECTIVE_ID.equals(elementId) || MALDI_PERSPECTIVE_ID.equals(elementId) || NMR_PERSPECTIVE_ID.equals(elementId)) {
+			return true;
+		}
+		if(elementId.contains(".perspective.welcome") || elementId.endsWith(".perspective.maldi") || elementId.endsWith(".perspective.nmr")) {
+			return true;
+		}
+		return elementId.startsWith("org.eclipse.chemclipse.ux.extension.xxd.ui.perspective.");
 	}
 
 	public static boolean shouldHide(String elementId, String label) {
