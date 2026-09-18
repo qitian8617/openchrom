@@ -48,15 +48,29 @@ public final class BaijiuShellChrome {
 	public static final String SEQUENCE_HOME_PART_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.part.sequence.plantHome";
 	public static final String SEQUENCE_HOME_CONTRIBUTION_URI = "bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuSequenceHomePart";
 	public static final String ANALYSIS_PART_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.part.analysis";
+	public static final String ANALYSIS_HOME_PART_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.part.analysis.plantHome";
+	public static final String ANALYSIS_HOME_CONTRIBUTION_URI = "bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuAnalysisHomePart";
 	public static final String PLANT_SASH_ID = "net.openchrom.rcp.compilation.baijiu.ui.partsash.plantHome";
 	public static final String PLANT_TOP_SASH_ID = "net.openchrom.rcp.compilation.baijiu.ui.partsash.plantTop";
 	public static final String GC_HOME_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.gcHome";
 	public static final String SEQUENCE_HOME_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.sequenceHome";
+	public static final String WORKFLOW_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.plantWorkflow";
+	public static final String EDITOR_AREA_ID = "org.eclipse.chemclipse.rcp.app.ui.editor";
 	/**
-	 * Dead Phase-2 editor-area placeholder. Plant home is GC console +
-	 * sequence only; this id must not be restored or kept visible.
+	 * Live ChemClipse editor Area hosted as the plant-home 谱图/采集 tab.
+	 * Distinct from the dead Phase-2 {@link #PLANT_EDITOR_PLACEHOLDER_ID}.
+	 */
+	public static final String CHROMATOGRAM_PLACEHOLDER_ID = "net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantChromatogram";
+	/**
+	 * Dead Phase-2 editor-area placeholder. Must not be restored — it caused
+	 * {@code Could not create the view: ...placeholder.plantEditor}.
 	 */
 	public static final String PLANT_EDITOR_PLACEHOLDER_ID = "net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantEditor";
+	public static final String TRIMBAR_TOP_ID = "org.eclipse.chemclipse.rcp.app.ui.trimbar.top";
+	public static final String TOGGLE_GC_COMMAND_ID = "net.openchrom.rcp.compilation.baijiu.ui.command.toggleGcConsole";
+	public static final String TOGGLE_GC_TOOLITEM_ID = "net.openchrom.rcp.compilation.baijiu.ui.toolbar.toggleGcConsole";
+	public static final String OPEN_CHROMATOGRAM_TOOLITEM_ID = "net.openchrom.rcp.compilation.baijiu.ui.toolbar.openChromatogram";
+	public static final String GC_CONSOLE_HIDDEN_TAG = "BaijiuGcConsoleHidden";
 	public static final String PERSPECTIVE_STACK_ID = "org.eclipse.chemclipse.rcp.app.ui.perspectivestack.main";
 	public static final String MAIN_WINDOW_ID = "org.eclipse.chemclipse.rcp.app.ui.trimmedwindow.main";
 	public static final String PERSPECTIVE_PROPERTY = "application.perspective";
@@ -68,14 +82,14 @@ public final class BaijiuShellChrome {
 	public static final String RESEARCH_MENUS_PROPERTY = "net.openchrom.baijiu.showResearchMenus";
 	/**
 	 * Bump when chrome hide lists / plant-home tags change so persisted
-	 * {@code workbench.xmi} is rebuilt once. #36 used 8 (drop plantEditor,
-	 * hide File toolbar). This PR hides Select View menus, tags plant-home
-	 * singletons, and installs chart/tab filters — needs 9.
+	 * {@code workbench.xmi} is rebuilt once. #37 used 9 (singletons / menus).
+	 * Workflow tabs + GC toggle + live editor Area in plant home — needs 10.
 	 */
-	public static final int CHROME_EPOCH = 9;
+	public static final int CHROME_EPOCH = 10;
 	/**
-	 * ChemClipse Application.e4xmi Save / Save All coolbar. Stays disabled
-	 * on plant home (no editor). File menu Save is kept separately.
+	 * ChemClipse Application.e4xmi Save / Save All coolbar. Stays hidden
+	 * so the plant toolbar (打开谱图 / 反控) is the visible chrome. File
+	 * menu Save is kept separately.
 	 */
 	public static final String FILE_TOOLBAR_ID = "org.eclipse.chemclipse.rcp.app.ui.toolbar.main";
 	public static final String SAVE_TOOLITEM_ID = "org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.save";
@@ -257,6 +271,10 @@ public final class BaijiuShellChrome {
 			"org.eclipse.chemclipse.ux.extension.ui.menu.chromatogram.integrator", //
 			BAIJIU_MENU_ID, //
 			PLANT_TOOLBAR_ID, //
+			TRIMBAR_TOP_ID, //
+			TOGGLE_GC_COMMAND_ID, //
+			TOGGLE_GC_TOOLITEM_ID, //
+			OPEN_CHROMATOGRAM_TOOLITEM_ID, //
 			PERSPECTIVE_ID, //
 			WORKBENCH_PERSPECTIVE_ID, //
 			ANALYSIS_PERSPECTIVE_ID, //
@@ -267,10 +285,14 @@ public final class BaijiuShellChrome {
 			SEQUENCE_PART_ID, //
 			SEQUENCE_HOME_PART_ID, //
 			ANALYSIS_PART_ID, //
+			ANALYSIS_HOME_PART_ID, //
 			PLANT_SASH_ID, //
 			PLANT_TOP_SASH_ID, //
 			GC_HOME_STACK_ID, //
 			SEQUENCE_HOME_STACK_ID, //
+			WORKFLOW_STACK_ID, //
+			EDITOR_AREA_ID, //
+			CHROMATOGRAM_PLACEHOLDER_ID, //
 			"net.openchrom.xxd.processor.supplier.baijiu.ui.menu.workbench", //
 			"net.openchrom.xxd.control.supplier.temperature.ui.menu.open");
 
@@ -297,11 +319,13 @@ public final class BaijiuShellChrome {
 	 */
 	public static final Set<String> PLANT_SINGLETON_SHARED_PART_IDS = Set.of( //
 			GC_CONTROL_PART_ID, //
-			SEQUENCE_PART_ID);
+			SEQUENCE_PART_ID, //
+			ANALYSIS_PART_ID);
 
 	public static final Set<String> PLANT_SINGLETON_HOME_PART_IDS = Set.of( //
 			GC_HOME_PART_ID, //
-			SEQUENCE_HOME_PART_ID);
+			SEQUENCE_HOME_PART_ID, //
+			ANALYSIS_HOME_PART_ID);
 
 	/**
 	 * SWTChart / ChemClipse chart popup items that FID plant analysis still
@@ -519,7 +543,18 @@ public final class BaijiuShellChrome {
 		if(SEQUENCE_PART_ID.equals(elementId) || SEQUENCE_HOME_PART_ID.equals(elementId)) {
 			return SEQUENCE_HOME_PART_ID;
 		}
+		if(ANALYSIS_PART_ID.equals(elementId) || ANALYSIS_HOME_PART_ID.equals(elementId)) {
+			return ANALYSIS_HOME_PART_ID;
+		}
 		return null;
+	}
+
+	public static boolean isGcConsoleHidden(List<String> tags) {
+
+		if(tags == null || tags.isEmpty()) {
+			return false;
+		}
+		return tags.contains(GC_CONSOLE_HIDDEN_TAG);
 	}
 
 	public static boolean shouldHideChartMenuItem(String label) {

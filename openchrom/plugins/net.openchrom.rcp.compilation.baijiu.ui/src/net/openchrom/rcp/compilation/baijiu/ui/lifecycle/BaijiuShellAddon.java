@@ -33,11 +33,12 @@ import jakarta.inject.Inject;
 
 /**
  * After ChemClipse fragments attach, hide research chrome, select the plant
- * home (status + sequence), {@code showPart(..., ACTIVATE)} the branding
- * plant-home Parts, then {@code IPresentationEngine.createGui} so the client
- * is not an empty gray sash after {@code -clearPersistedState}. Plant-home
- * Part classes live in this bundle and OSGi-load temperature.ui / baijiu.ui
- * panels. Does not depend on those Java types (soft; no plugin cycle).
+ * home (workflow tabs: sequence / analysis / chromatogram; GC sash toggle),
+ * {@code showPart(..., ACTIVATE)} the branding plant-home Parts, then
+ * {@code IPresentationEngine.createGui} so the client is not an empty gray
+ * sash after {@code -clearPersistedState}. Plant-home Part classes live in
+ * this bundle and OSGi-load temperature.ui / baijiu.ui panels. Does not
+ * depend on those Java types (soft; no plugin cycle).
  */
 public class BaijiuShellAddon {
 
@@ -99,6 +100,9 @@ public class BaijiuShellAddon {
 		hideTopWindowMenus(application, modelService);
 		revealPlantParts(application, modelService);
 		tagPlantHomeSingletons(application, modelService);
+		BaijiuShellParts.revealPlantToolbar(application, modelService);
+		BaijiuShellParts.applyGcConsoleVisibility(application, modelService);
+		BaijiuShellParts.syncGcToggleToolItem(application, modelService);
 	}
 
 	static void selectBaijiuPerspective(MApplication application, EModelService modelService) {
@@ -150,12 +154,22 @@ public class BaijiuShellAddon {
 		show(modelService.find(BaijiuShellChrome.SEQUENCE_HOME_PART_ID, application));
 		show(modelService.find(BaijiuShellChrome.SEQUENCE_PART_ID, application));
 		show(modelService.find(BaijiuShellChrome.ANALYSIS_PART_ID, application));
+		show(modelService.find(BaijiuShellChrome.ANALYSIS_HOME_PART_ID, application));
+		show(modelService.find(BaijiuShellChrome.CHROMATOGRAM_PLACEHOLDER_ID, application));
+		show(modelService.find(BaijiuShellChrome.EDITOR_AREA_ID, application));
 		show(modelService.find(BaijiuShellChrome.BAIJIU_MENU_ID, application));
 		show(modelService.find(BaijiuShellChrome.PLANT_TOOLBAR_ID, application));
+		show(modelService.find(BaijiuShellChrome.TRIMBAR_TOP_ID, application));
+		show(modelService.find(BaijiuShellChrome.OPEN_CHROMATOGRAM_TOOLITEM_ID, application));
+		show(modelService.find(BaijiuShellChrome.TOGGLE_GC_TOOLITEM_ID, application));
 		show(modelService.find(BaijiuShellChrome.PLANT_SASH_ID, application));
 		show(modelService.find(BaijiuShellChrome.PLANT_TOP_SASH_ID, application));
 		show(modelService.find(BaijiuShellChrome.GC_HOME_STACK_ID, application));
 		show(modelService.find(BaijiuShellChrome.SEQUENCE_HOME_STACK_ID, application));
+		show(modelService.find(BaijiuShellChrome.WORKFLOW_STACK_ID, application));
+		BaijiuShellParts.applyGcConsoleVisibility(application, modelService);
+		BaijiuShellParts.revealPlantToolbar(application, modelService);
+		BaijiuShellParts.syncGcToggleToolItem(application, modelService);
 	}
 
 	/**
@@ -186,10 +200,13 @@ public class BaijiuShellAddon {
 		}
 		tagNoDetach(modelService.find(BaijiuShellChrome.GC_HOME_PART_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.SEQUENCE_HOME_PART_ID, application));
+		tagNoDetach(modelService.find(BaijiuShellChrome.ANALYSIS_HOME_PART_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.GC_HOME_STACK_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.SEQUENCE_HOME_STACK_ID, application));
+		tagNoDetach(modelService.find(BaijiuShellChrome.WORKFLOW_STACK_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.GC_CONTROL_PART_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.SEQUENCE_PART_ID, application));
+		tagNoDetach(modelService.find(BaijiuShellChrome.ANALYSIS_PART_ID, application));
 	}
 
 	private static void tagNoDetach(MUIElement element) {

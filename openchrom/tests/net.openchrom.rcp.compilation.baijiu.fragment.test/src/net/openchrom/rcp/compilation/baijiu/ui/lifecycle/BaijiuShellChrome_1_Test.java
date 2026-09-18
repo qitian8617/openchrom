@@ -64,13 +64,21 @@ public class BaijiuShellChrome_1_Test {
 		assertEquals("白酒FID工作站", BaijiuShellChrome.APPLICATION_NAME_VM);
 		assertFalse(BaijiuShellChrome.APPLICATION_NAME_VM.contains(" "));
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome", BaijiuShellChrome.PERSPECTIVE_ID);
-		assertEquals(9, BaijiuShellChrome.CHROME_EPOCH);
+		assertEquals(10, BaijiuShellChrome.CHROME_EPOCH);
 		assertTrue(BaijiuShellChrome.shouldHide("window"));
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.ui.windowMenu"));
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.ui.main.menu.window"));
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.ui.window"));
 		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.GC_HOME_STACK_ID));
 		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.SEQUENCE_HOME_STACK_ID));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.WORKFLOW_STACK_ID));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.ANALYSIS_HOME_PART_ID));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.CHROMATOGRAM_PLACEHOLDER_ID));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.EDITOR_AREA_ID));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.PLANT_TOOLBAR_ID));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.TRIMBAR_TOP_ID));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.TOGGLE_GC_TOOLITEM_ID));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.OPEN_CHROMATOGRAM_TOOLITEM_ID));
 		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.PLANT_EDITOR_PLACEHOLDER_ID));
 		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.FILE_TOOLBAR_ID));
 		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.SAVE_TOOLITEM_ID));
@@ -103,8 +111,14 @@ public class BaijiuShellChrome_1_Test {
 		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.SEQUENCE_HOME_PART_ID));
 		assertEquals(BaijiuShellChrome.GC_HOME_PART_ID, BaijiuShellChrome.plantHomePartIdFor(BaijiuShellChrome.GC_CONTROL_PART_ID));
 		assertEquals(BaijiuShellChrome.SEQUENCE_HOME_PART_ID, BaijiuShellChrome.plantHomePartIdFor(BaijiuShellChrome.SEQUENCE_PART_ID));
+		assertEquals(BaijiuShellChrome.ANALYSIS_HOME_PART_ID, BaijiuShellChrome.plantHomePartIdFor(BaijiuShellChrome.ANALYSIS_PART_ID));
 		assertTrue(BaijiuShellChrome.isPlantHomeSingletonPart(BaijiuShellChrome.GC_HOME_PART_ID));
+		assertTrue(BaijiuShellChrome.isPlantHomeSingletonPart(BaijiuShellChrome.ANALYSIS_HOME_PART_ID));
 		assertTrue(BaijiuShellChrome.isSharedSingletonPart(BaijiuShellChrome.GC_CONTROL_PART_ID));
+		assertTrue(BaijiuShellChrome.isSharedSingletonPart(BaijiuShellChrome.ANALYSIS_PART_ID));
+		assertFalse(BaijiuShellChrome.isGcConsoleHidden(null));
+		assertFalse(BaijiuShellChrome.isGcConsoleHidden(java.util.List.of()));
+		assertTrue(BaijiuShellChrome.isGcConsoleHidden(java.util.List.of(BaijiuShellChrome.GC_CONSOLE_HIDDEN_TAG)));
 
 	}
 
@@ -162,8 +176,12 @@ public class BaijiuShellChrome_1_Test {
 		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui.part.sequence.plantHome", BaijiuShellChrome.SEQUENCE_HOME_PART_ID);
 		assertTrue(BaijiuShellChrome.GC_HOME_CONTRIBUTION_URI.contains("BaijiuGcHomePart"));
 		assertTrue(BaijiuShellChrome.SEQUENCE_HOME_CONTRIBUTION_URI.contains("BaijiuSequenceHomePart"));
+		assertTrue(BaijiuShellChrome.ANALYSIS_HOME_CONTRIBUTION_URI.contains("BaijiuAnalysisHomePart"));
 		assertTrue(BaijiuShellChrome.GC_HOME_CONTRIBUTION_URI.startsWith("bundleclass://net.openchrom.rcp.compilation.baijiu.ui/"));
 		assertTrue(BaijiuShellChrome.SEQUENCE_HOME_CONTRIBUTION_URI.startsWith("bundleclass://net.openchrom.rcp.compilation.baijiu.ui/"));
+		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.partstack.plantWorkflow", BaijiuShellChrome.WORKFLOW_STACK_ID);
+		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantChromatogram", BaijiuShellChrome.CHROMATOGRAM_PLACEHOLDER_ID);
+		assertEquals("org.eclipse.chemclipse.rcp.app.ui.editor", BaijiuShellChrome.EDITOR_AREA_ID);
 	}
 
 	@Test

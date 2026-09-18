@@ -4,7 +4,7 @@
 
 Two install vehicles (both kept):
 
-1. **Dedicated product (target operator UI, 方案 B Phase 3):** `openchrom.compilation.baijiu.product` — window title **白酒 FID 工作站**, starts on **厂工作台** (status + sequence table + chromatogram). See [白酒FID专用壳架构.md](白酒FID专用壳架构.md) and `products/net.openchrom.rcp.compilation.baijiu.product/README.txt`.
+1. **Dedicated product (target operator UI, 方案 B Phase 3):** `openchrom.compilation.baijiu.product` — window title **白酒 FID 工作站**, starts on **厂工作台** (workflow tabs 进样序列 / 白酒分析 / 谱图·采集; reverse-control sash toggled from the plant toolbar). See [白酒FID专用壳架构.md](白酒FID专用壳架构.md) and `products/net.openchrom.rcp.compilation.baijiu.product/README.txt`.
 2. **Install New Software into community OpenChrom** (still supported): export `baijiu.pilot.feature` as below. This is not a rewrite of the community `.product`, not NSIS/Inno for all of OpenChrom, not a hardware dongle, not an activation server, and not Part 11.
 
 Acceptance: **本机导出验证** — an engineer on a Windows workstation can **either** Run/Export the dedicated product **or** export the pilot feature, install it, enter a sample license, and open 白酒分析.
@@ -62,9 +62,9 @@ Need the OpenChrom PDE workspace that already compiles `baijiu.ui` (**JavaSE-21*
 
 Phase 3 plant UI (dedicated product only):
 
-- Starts on **厂工作台**. Reverse-control (气/火/信号/就绪, current vial) is the **left home column**; injection sequence table is the **right home column**; ChemClipse chromatogram editor is below. Community install still opens the floating dialog.
-- Plant-home tabs are branding Parts (`BaijiuGcHomePart` / `BaijiuSequenceHomePart`) that OSGi-load the real panels. Cold start must show FID controls and/or the sequence table, **or a readable error Label** — never blank gray.
-- Top menu **文件 / 白酒 / 视图 / 帮助**. 处理器 / 插件 are hidden. Toolbar: 打开谱图、开始分析、推荐积分、定量/白酒分析、报告.
+- Starts on **厂工作台**. Main area is a **PartStack** of plant workflow tabs: **进样序列** (default), **白酒分析**, **谱图 / 采集** (ChemClipse editor Area). Reverse-control (气/火/信号/就绪, current vial) is a **left sash** shown/hidden by toolbar **反控** (check item, default visible; hide remembered via `BaijiuGcConsoleHidden`). Community install still opens the floating dialog.
+- Plant-home hosts are branding Parts (`BaijiuGcHomePart` / `BaijiuSequenceHomePart` / `BaijiuAnalysisHomePart`) that OSGi-load the real panels. Chromatogram tab is `placeholder.plantChromatogram` → ChemClipse Area (not the dead `placeholder.plantEditor`). Cold start must show the plant toolbar (打开谱图 / 反控) plus FID controls and/or the sequence table, **or a readable error Label** — never blank gray.
+- Top menu **文件 / 白酒 / 视图 / 帮助**. 处理器 / 插件 are hidden. Toolbar: **打开谱图**、**反控**、开始分析、推荐积分、定量/白酒分析、报告. **开始分析** / Main「启动」 switches to the 谱图/采集 surface after a successful start.
 - 白酒分析 is a page (样品→校正→定量→报告) on the dedicated shell; community still uses the dialog.
 - Default launch **does not** pass `-clearPersistedState`. Sash / window size is remembered under `~/BaijiuFID`. Reset: **白酒 → 重置窗口布局** then restart, or add `-clearPersistedState` **once**.
 - `-Dapplication.name=白酒FID工作站` must stay **without unquoted spaces** (do not put `白酒 FID 工作站` on that VM arg — `ClassNotFoundException: FID`).
@@ -152,7 +152,7 @@ After a valid license, continue demo `操作步骤.txt` **A–J** (method packag
 
 ## D. Engineer verify list (本机导出验证)
 
-- [ ] **Dedicated product:** Run As / Export `openchrom.compilation.baijiu.product`; title 白酒 FID 工作站; starts on **厂工作台** (FID console + sequence visible, or a readable error Label — never blank gray); top bar without 处理器/插件; toolbar plant actions; restart keeps layout; `baijiu.ui` still JavaSE-21
+- [ ] **Dedicated product:** Run As / Export `openchrom.compilation.baijiu.product`; title 白酒 FID 工作站; starts on **厂工作台** (toolbar 打开谱图 + 反控; tabs 进样序列 / 白酒分析 / 谱图·采集; FID console sash default visible, or a readable error Label — never blank gray); **开始分析** Start switches to 谱图/采集; top bar without 处理器/插件; restart keeps layout; `baijiu.ui` still JavaSE-21
 - [ ] **Community path:** Export Deployable Features of **Baijiu FID Pilot** to a folder (or Tycho `sites/baijiu-fid-pilot/target/repository`)
 - [ ] On a community OpenChrom, Install New Software from that folder; restart
 - [ ] About / Installation Details shows feature **1.6.32.*** qualifier
