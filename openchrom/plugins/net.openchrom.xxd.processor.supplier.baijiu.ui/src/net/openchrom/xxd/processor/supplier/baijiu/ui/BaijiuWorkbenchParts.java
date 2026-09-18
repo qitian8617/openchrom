@@ -144,10 +144,11 @@ public final class BaijiuWorkbenchParts {
 			}
 			part.setVisible(true);
 			part.setToBeRendered(true);
-			if(part.getParent() != plantStack) {
+			MElementContainer<MUIElement> parent = part.getParent();
+			if(parent != (MUIElement) plantStack) {
 				try {
-					if(part.getParent() != null) {
-						part.getParent().getChildren().remove(part);
+					if(parent != null) {
+						parent.getChildren().remove(part);
 					}
 					plantStack.getChildren().add(part);
 				} catch(RuntimeException | LinkageError e) {
