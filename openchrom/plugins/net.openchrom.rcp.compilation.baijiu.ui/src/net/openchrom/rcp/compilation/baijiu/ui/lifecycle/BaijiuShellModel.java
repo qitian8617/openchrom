@@ -310,7 +310,6 @@ public final class BaijiuShellModel {
 		}
 	}
 
-	@SuppressWarnings({"rawtypes", "unchecked"})
 	private static void detachIfUnder(MUIElement ancestor, MUIElement element, MElementContainer<?> destination) {
 
 		if(element == null || ancestor == null) {
@@ -334,7 +333,7 @@ public final class BaijiuShellModel {
 		}
 		BaijiuShellSelection.deselectFromParent(element);
 		neverRenderGcWindow(element);
-		MElementContainer parent = element.getParent();
+		MElementContainer<MUIElement> parent = element.getParent();
 		if(parent != null && parent.getChildren() != null) {
 			parent.getChildren().remove(element);
 		}

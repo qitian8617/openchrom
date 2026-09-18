@@ -164,10 +164,11 @@ public final class TemperatureControlWorkbench {
 			}
 			part.setVisible(true);
 			part.setToBeRendered(true);
-			if(part.getParent() != plantStack) {
+			if(!plantStack.getChildren().contains(part)) {
 				try {
-					if(part.getParent() != null) {
-						part.getParent().getChildren().remove(part);
+					MElementContainer<MUIElement> parent = part.getParent();
+					if(parent != null) {
+						parent.getChildren().remove(part);
 					}
 					plantStack.getChildren().add(part);
 				} catch(RuntimeException | LinkageError e) {
