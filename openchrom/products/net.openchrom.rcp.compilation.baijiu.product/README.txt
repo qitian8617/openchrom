@@ -145,6 +145,8 @@ Verify on the engineer PC
 [ ] After 白酒 → 重置窗口布局 and relaunch: main client is NOT empty gray; reverse-control stays closed until 反控
 [ ] First launch after this PR (epoch 20) auto-clears workbench.xmi once
     so plant home attaches to the live perspective stack (not empty left gray)
+[ ] Product .log does NOT contain PerspectiveApplicationAddon InjectionException
+    / NPE on MPerspectiveStack.setSelectedElement (stack was null)
 [ ] After that launch, persisted workbench.xmi contains chromatogramHome / plantChromatogram / workbench.plantHome / sequence.plantHome / analysis.plantHome / perspective.plantHome
 [ ] Product .log does NOT flood IllegalArgumentException Welcome “must be visible in the UI presentation”
 [ ] Top bar 文件 / 白酒 / 视图 / 帮助; no 处理器 / 插件 / 色谱图 / 窗口

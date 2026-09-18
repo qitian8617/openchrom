@@ -120,6 +120,7 @@ public class BaijiuShellAddon {
 			trimmed.setLabel(BaijiuShellChrome.WINDOW_TITLE);
 		}
 		dropDeadPlantEditorPlaceholder(application, modelService);
+		BaijiuShellModel.ensureChemclipsePerspectiveStack(application, modelService);
 		BaijiuShellModel.ensurePlantHome(application, modelService);
 		revealPlantParts(application, modelService);
 		BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
@@ -148,6 +149,7 @@ public class BaijiuShellAddon {
 		}
 		try {
 			dropDeadPlantEditorPlaceholder(application, modelService);
+			BaijiuShellModel.ensureChemclipsePerspectiveStack(application, modelService);
 			BaijiuShellModel.ensurePlantHome(application, modelService);
 			BaijiuShellParts.suppressE4GcWindow(application, modelService);
 			revealPlantParts(application, modelService);
@@ -177,6 +179,7 @@ public class BaijiuShellAddon {
 	private static void selectBaijiuPerspectiveUnguarded(MApplication application, EModelService modelService) {
 
 		dropDeadPlantEditorPlaceholder(application, modelService);
+		BaijiuShellModel.ensureChemclipsePerspectiveStack(application, modelService);
 		BaijiuShellModel.ensurePlantHome(application, modelService);
 		revealPlantParts(application, modelService);
 		BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
@@ -192,6 +195,7 @@ public class BaijiuShellAddon {
 		BaijiuShellParts.forceCreatePlantHomeGuis(application, modelService);
 		if(!shown || !BaijiuShellModel.plantHomeSurfacePresent(application, modelService)) {
 			BaijiuShellLog.warn("showPlantHomeParts did not expose required plant ids " + BaijiuShellModel.missingPlantHomeIds(application, modelService) + "; retrying create/reveal.");
+			BaijiuShellModel.ensureChemclipsePerspectiveStack(application, modelService);
 			BaijiuShellModel.ensurePlantHome(application, modelService);
 			revealPlantParts(application, modelService);
 			BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);

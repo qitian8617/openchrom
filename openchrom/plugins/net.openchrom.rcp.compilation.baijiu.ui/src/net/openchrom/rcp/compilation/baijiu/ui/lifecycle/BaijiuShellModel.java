@@ -108,26 +108,38 @@ public final class BaijiuShellModel {
 		return pickPerspectiveStack(collectPerspectiveStacks(application, modelService), mainWindow(application, modelService));
 	}
 
+	/**
+	 * ChemClipse {@code PerspectiveApplicationAddon} does
+	 * {@code modelService.find(perspectivestack.main)} and NPEs when that is
+	 * null. Guarantee a stack with that id on the plant window so the addon
+	 * and plant-home fragments can attach. Safe with a null model service
+	 * (walks {@code application}/{@code window} children).
+	 */
+	public static MPerspectiveStack ensureChemclipsePerspectiveStack(MApplication application, EModelService modelService) {
+
+		if(application == null) {
+			return null;
+		}
+		MWindow window = ensureMainWindow(application, modelService);
+		MPerspectiveStack stack = findPerspectiveStack(application, modelService);
+		if(stack == null && window != null) {
+			stack = create(MPerspectiveStack.class);
+			if(stack != null) {
+				stack.setElementId(BaijiuShellChrome.PERSPECTIVE_STACK_ID);
+				addChild(window, stack, true);
+			}
+		}
+		if(stack == null) {
+			return null;
+		}
+		publishChemclipseStackId(stack, application, modelService);
+		ensureStackPresentable(stack, window != null ? window : windowOf(stack), application, modelService);
+		return stack;
+	}
+
 	public static MPerspectiveStack findOrCreatePerspectiveStack(MApplication application, EModelService modelService) {
 
-		MPerspectiveStack existing = findPerspectiveStack(application, modelService);
-		if(existing != null) {
-			ensureStackPresentable(existing, mainWindow(application, modelService));
-			return existing;
-		}
-		MWindow window = mainWindow(application, modelService);
-		if(window == null) {
-			return null;
-		}
-		MPerspectiveStack created = create(MPerspectiveStack.class);
-		if(created == null) {
-			return null;
-		}
-		created.setElementId(BaijiuShellChrome.PERSPECTIVE_STACK_ID);
-		ensureStackPresentable(created, window);
-		addChild(window, created, true);
-		selectWindowStack(window, created);
-		return created;
+		return ensureChemclipsePerspectiveStack(application, modelService);
 	}
 
 	private static MPerspective perspective(MApplication application, EModelService modelService) {
@@ -372,7 +384,7 @@ public final class BaijiuShellModel {
 			}
 			addChild(stack, plant, true);
 		}
-		ensureStackPresentable(stack, windowOf(stack));
+		ensureStackPresentable(stack, windowOf(stack), null, null);
 		try {
 			List<MPerspective> children = stack.getChildren();
 			if(children != null && children.contains(plant) && BaijiuShellSelection.canSelect(plant)) {
@@ -384,18 +396,37 @@ public final class BaijiuShellModel {
 		selectWindowStack(windowOf(stack), stack);
 	}
 
-	private static void ensureStackPresentable(MPerspectiveStack stack, MWindow window) {
+	private static void ensureStackPresentable(MPerspectiveStack stack, MWindow window, MApplication application, EModelService modelService) {
 
 		if(stack == null) {
 			return;
 		}
 		stack.setVisible(true);
 		stack.setToBeRendered(true);
-		String id = stack.getElementId();
-		if((id == null || id.isBlank()) && window != null && !idTaken(window, BaijiuShellChrome.PERSPECTIVE_STACK_ID)) {
-			stack.setElementId(BaijiuShellChrome.PERSPECTIVE_STACK_ID);
-		}
+		publishChemclipseStackId(stack, application, modelService);
 		selectWindowStack(window, stack);
+	}
+
+	/**
+	 * {@code PerspectiveApplicationAddon} looks up this exact id. A live stack
+	 * whose id is blank, generated, or {@code PerspectiveStack} must be
+	 * published under the ChemClipse id or that addon NPEs and plant-home
+	 * fragments never merge.
+	 */
+	private static void publishChemclipseStackId(MPerspectiveStack stack, MApplication application, EModelService modelService) {
+
+		if(stack == null) {
+			return;
+		}
+		String wanted = BaijiuShellChrome.PERSPECTIVE_STACK_ID;
+		if(wanted.equals(stack.getElementId())) {
+			return;
+		}
+		MUIElement occupant = safeFind(modelService, application, wanted);
+		if(occupant != null && occupant != stack) {
+			return;
+		}
+		stack.setElementId(wanted);
 	}
 
 	private static void selectWindowStack(MWindow window, MPerspectiveStack stack) {
@@ -432,6 +463,28 @@ public final class BaijiuShellModel {
 			}
 		}
 		return null;
+	}
+
+	private static MWindow ensureMainWindow(MApplication application, EModelService modelService) {
+
+		MWindow window = mainWindow(application, modelService);
+		if(window != null) {
+			String id = window.getElementId();
+			if((id == null || id.isBlank()) && safeFind(modelService, application, BaijiuShellChrome.MAIN_WINDOW_ID) == null) {
+				window.setElementId(BaijiuShellChrome.MAIN_WINDOW_ID);
+			}
+			return window;
+		}
+		MTrimmedWindow created = create(MTrimmedWindow.class);
+		if(created == null) {
+			return null;
+		}
+		created.setElementId(BaijiuShellChrome.MAIN_WINDOW_ID);
+		created.setLabel(BaijiuShellChrome.WINDOW_TITLE);
+		created.setVisible(true);
+		created.setToBeRendered(true);
+		addChild(application, created, true);
+		return created;
 	}
 
 	private static MWindow mainWindow(MApplication application, EModelService modelService) {
@@ -552,28 +605,6 @@ public final class BaijiuShellModel {
 			}
 		}
 		return null;
-	}
-
-	private static boolean idTaken(MWindow window, String id) {
-
-		if(window == null || id == null) {
-			return false;
-		}
-		List<MUIElement> children;
-		try {
-			children = window.getChildren();
-		} catch(RuntimeException | LinkageError e) {
-			return false;
-		}
-		if(children == null) {
-			return false;
-		}
-		for(MUIElement child : children) {
-			if(child != null && id.equals(child.getElementId())) {
-				return true;
-			}
-		}
-		return false;
 	}
 
 	private static void addUnique(List<MPerspectiveStack> stacks, MPerspectiveStack stack) {

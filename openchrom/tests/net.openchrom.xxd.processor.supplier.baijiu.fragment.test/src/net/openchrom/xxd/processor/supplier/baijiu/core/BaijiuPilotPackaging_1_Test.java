@@ -283,6 +283,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertNotNull(lifeCycle);
 		String lifeCycleSrc = Files.readString(lifeCycle, StandardCharsets.UTF_8);
 		assertTrue(lifeCycleSrc.contains("BaijiuChromatogramReadability.apply"), lifeCycleSrc);
+		assertTrue(lifeCycleSrc.contains("ensureChemclipsePerspectiveStack"), lifeCycleSrc);
 
 		Path addon = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellAddon.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellAddon.java");
 		assertNotNull(addon);
@@ -303,6 +304,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(addonSrc.contains("hideResearchElements"), addonSrc);
 		assertTrue(addonSrc.contains("reassignAwayFrom"), addonSrc);
 		assertTrue(addonSrc.contains("clearHiddenSelections"), addonSrc);
+		assertTrue(addonSrc.contains("ensureChemclipsePerspectiveStack"), addonSrc);
 		assertTrue(addonSrc.contains("findOrCreatePerspectiveStack"), addonSrc);
 		assertTrue(addonSrc.contains("ensurePlantHome"), addonSrc);
 		assertTrue(addonSrc.contains("selectPlantHomeIfPresent"), addonSrc);
@@ -325,6 +327,8 @@ public class BaijiuPilotPackaging_1_Test {
 		Path model = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellModel.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellModel.java");
 		assertNotNull(model, "plant-home fragment recovery");
 		String modelSrc = Files.readString(model, StandardCharsets.UTF_8);
+		assertTrue(modelSrc.contains("ensureChemclipsePerspectiveStack"), modelSrc);
+		assertTrue(modelSrc.contains("publishChemclipseStackId"), modelSrc);
 		assertTrue(modelSrc.contains("ensurePlantHome"), modelSrc);
 		assertTrue(modelSrc.contains("findPerspectiveStack"), modelSrc);
 		assertTrue(modelSrc.contains("findOrCreatePerspectiveStack"), modelSrc);
@@ -348,7 +352,17 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(modelSrc.contains("MElementContainer<MUIElement> parent = element.getParent()"), modelSrc);
 		Path pluginXml = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/plugin.xml", "plugins/net.openchrom.rcp.compilation.baijiu.ui/plugin.xml");
 		assertNotNull(pluginXml);
-		assertTrue(Files.readString(pluginXml, StandardCharsets.UTF_8).contains("apply=\"always\""), "plant-home fragment must merge even with stale workbench.xmi");
+		String pluginXmlText = Files.readString(pluginXml, StandardCharsets.UTF_8);
+		assertTrue(pluginXmlText.contains("apply=\"always\""), "plant-home fragment must merge even with stale workbench.xmi");
+		assertTrue(pluginXmlText.contains("beforefragment=\"true\""), "stack must exist before plantHome fragment and PerspectiveApplicationAddon");
+		assertTrue(pluginXmlText.contains("BaijiuPerspectiveStackProcessor"), pluginXmlText);
+		assertTrue(pluginXmlText.contains("BaijiuPlantHomeModelProcessor"), pluginXmlText);
+		assertTrue(pluginXmlText.contains("beforefragment=\"false\""), pluginXmlText);
+		Path stackProcessor = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuPerspectiveStackProcessor.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuPerspectiveStackProcessor.java");
+		assertNotNull(stackProcessor, "before-fragment stack processor");
+		String stackProcessorSrc = Files.readString(stackProcessor, StandardCharsets.UTF_8);
+		assertTrue(stackProcessorSrc.contains("ensureChemclipsePerspectiveStack"), stackProcessorSrc);
+		assertTrue(stackProcessorSrc.contains("PerspectiveApplicationAddon"), stackProcessorSrc);
 		Path shellParts = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellParts.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellParts.java");
 		assertNotNull(shellParts);
 		String partsSrc = Files.readString(shellParts, StandardCharsets.UTF_8);
