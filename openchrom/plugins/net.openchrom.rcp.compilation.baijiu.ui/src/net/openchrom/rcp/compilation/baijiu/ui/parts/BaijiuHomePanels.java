@@ -38,6 +38,8 @@ public final class BaijiuHomePanels {
 	public static final String BAIJIU_BUNDLE_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui";
 	public static final String SEQUENCE_COMPOSITE_TYPE = "net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuSequenceComposite";
 	public static final String SEQUENCE_ACCESS_TYPE = "net.openchrom.xxd.processor.supplier.baijiu.ui.sequence.InjectionSequenceAccess";
+	public static final String ANALYSIS_SHELL_TYPE = "net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuAnalysisShell";
+	public static final String CHROMATOGRAM_BRIDGE_TYPE = "net.openchrom.xxd.processor.supplier.baijiu.ui.ChromatogramBridge";
 
 	private BaijiuHomePanels() {
 
@@ -64,6 +66,23 @@ public final class BaijiuHomePanels {
 				return;
 			}
 			newComposite(loadBundleClass(BAIJIU_BUNDLE_ID, SEQUENCE_COMPOSITE_TYPE), parent, SWT.NONE);
+			layout(parent);
+		} catch(Throwable t) {
+			showError(parent, t);
+		}
+	}
+
+	public static void createAnalysisShell(Composite parent, Object partService) {
+
+		try {
+			prepare(parent);
+			Class<?> shellType = loadBundleClass(BAIJIU_BUNDLE_ID, ANALYSIS_SHELL_TYPE);
+			Object selection = resolveChromatogramSelection(partService);
+			Method createIn = findCreateIn(shellType);
+			if(createIn == null) {
+				throw new IllegalStateException("未找到 BaijiuAnalysisShell.createIn(Composite, …)。");
+			}
+			createIn.invoke(null, parent, selection, partService);
 			layout(parent);
 		} catch(Throwable t) {
 			showError(parent, t);
@@ -149,6 +168,43 @@ public final class BaijiuHomePanels {
 		} catch(Throwable t) {
 			return null;
 		}
+	}
+
+	static Object resolveChromatogramSelection(Object partService) {
+
+		if(partService == null) {
+			return null;
+		}
+		try {
+			Class<?> bridge = loadBundleClass(BAIJIU_BUNDLE_ID, CHROMATOGRAM_BRIDGE_TYPE);
+			for(Method method : bridge.getMethods()) {
+				if(!"resolve".equals(method.getName()) || method.getParameterCount() != 1) {
+					continue;
+				}
+				if(method.getParameterTypes()[0].isInstance(partService)) {
+					return method.invoke(null, partService);
+				}
+			}
+		} catch(Throwable ignored) {
+			// analysis UI still opens without a live chromatogram
+		}
+		return null;
+	}
+
+	static Method findCreateIn(Class<?> shellType) {
+
+		if(shellType == null) {
+			return null;
+		}
+		for(Method method : shellType.getMethods()) {
+			if("createIn".equals(method.getName()) && method.getParameterCount() == 3) {
+				Class<?>[] types = method.getParameterTypes();
+				if(Composite.class.isAssignableFrom(types[0])) {
+					return method;
+				}
+			}
+		}
+		return null;
 	}
 
 	static Object newComposite(Class<?> type, Composite parent, int style) throws Exception {

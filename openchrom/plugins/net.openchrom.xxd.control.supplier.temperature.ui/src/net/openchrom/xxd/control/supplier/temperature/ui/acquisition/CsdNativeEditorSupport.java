@@ -107,6 +107,11 @@ public final class CsdNativeEditorSupport {
 						+ ", partService=" + (partService != null) + ")");
 				return;
 			}
+			try {
+				net.openchrom.xxd.control.supplier.temperature.ui.TemperatureControlWorkbench.showAcquisitionSurface(application, modelService, partService);
+			} catch(RuntimeException | LinkageError e) {
+				// editor stack lookup below still runs
+			}
 			MPartStack partStack = (MPartStack)modelService.find(IPerspectiveAndViewIds.EDITOR_PART_STACK_ID, application);
 			if(partStack == null) {
 				logger.warn("Cannot open CSD editor: editor part stack not found");

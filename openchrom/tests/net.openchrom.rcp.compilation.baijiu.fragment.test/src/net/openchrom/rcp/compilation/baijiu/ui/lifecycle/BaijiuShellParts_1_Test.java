@@ -26,6 +26,14 @@ public class BaijiuShellParts_1_Test {
 		assertFalse(BaijiuShellParts.forceCreateGui(null, null, BaijiuShellChrome.GC_HOME_PART_ID));
 		assertFalse(BaijiuShellParts.forceCreateGui(null, null, BaijiuShellChrome.SEQUENCE_HOME_PART_ID));
 		assertFalse(BaijiuShellParts.forceCreateGui(null, null, ""));
+		assertFalse(BaijiuShellParts.showChromatogram(null, null, null));
+		assertFalse(BaijiuShellParts.showAnalysis(null, null, null));
+		assertFalse(BaijiuShellParts.isGcConsoleHidden(null, null));
+		assertFalse(BaijiuShellParts.toggleGcConsole(null, null, null));
+		BaijiuShellParts.setGcConsoleVisible(null, null, null, false);
+		BaijiuShellParts.applyGcConsoleVisibility(null, null);
+		BaijiuShellParts.revealPlantToolbar(null, null);
+		BaijiuShellParts.syncGcToggleToolItem(null, null);
 		BaijiuShellParts.forceCreatePlantHomeGuis(null, null);
 	}
 }

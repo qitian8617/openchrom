@@ -17,6 +17,7 @@ import org.eclipse.e4.ui.model.application.ui.MUIElement;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPerspective;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPlaceholder;
 import org.eclipse.e4.ui.model.application.ui.basic.MPart;
+import org.eclipse.e4.ui.model.application.ui.menu.MItem;
 import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService.PartState;
@@ -40,6 +41,7 @@ public final class TemperatureControlWorkbench {
 			return false;
 		}
 		if(activateExisting(application, modelService, partService, TemperatureControlIds.PLANT_HOME_PART_ID, TemperatureControlIds.PLANT_HOME_PERSPECTIVE_ID)) {
+			unhideGcConsole(application, modelService);
 			return true;
 		}
 		MPart part = findPart(modelService, application, TemperatureControlIds.PART_ID);
@@ -67,6 +69,78 @@ public final class TemperatureControlWorkbench {
 		}
 		selectInParent(part);
 		return placeholder != null || part.getParent() != null;
+	}
+
+	/**
+	 * After Start Analysis / open CSD: stay on plant home and select the
+	 * 谱图/采集 tab (ChemClipse editor Area) so live acquisition has a large
+	 * chart surface. No-op on the community product.
+	 */
+	public static boolean showAcquisitionSurface() {
+
+		try {
+			return showAcquisitionSurface(org.eclipse.chemclipse.support.ui.activator.ContextAddon.getApplication(), org.eclipse.chemclipse.support.ui.activator.ContextAddon.getModelService(), org.eclipse.chemclipse.support.ui.activator.ContextAddon.getWindowPartService());
+		} catch(RuntimeException | LinkageError e) {
+			return false;
+		}
+	}
+
+	public static boolean showAcquisitionSurface(MApplication application, EModelService modelService, EPartService partService) {
+
+		if(application == null || modelService == null) {
+			return false;
+		}
+		switchPerspective(application, modelService, partService, TemperatureControlIds.PLANT_HOME_PERSPECTIVE_ID);
+		MUIElement placeholder = modelService.find(TemperatureControlIds.CHROMATOGRAM_PLACEHOLDER_ID, application);
+		if(placeholder == null) {
+			placeholder = modelService.find(TemperatureControlIds.EDITOR_AREA_ID, application);
+		}
+		if(placeholder == null) {
+			return false;
+		}
+		placeholder.setVisible(true);
+		placeholder.setToBeRendered(true);
+		selectInParent(placeholder);
+		MUIElement workflow = modelService.find(TemperatureControlIds.PLANT_WORKFLOW_STACK_ID, application);
+		if(workflow != null) {
+			workflow.setVisible(true);
+			workflow.setToBeRendered(true);
+		}
+		if(partService != null) {
+			try {
+				if(placeholder instanceof MPart part) {
+					partService.showPart(part, PartState.ACTIVATE);
+				}
+			} catch(RuntimeException | LinkageError e) {
+				// selection above is enough
+			}
+		}
+		return true;
+	}
+
+	static void unhideGcConsole(MApplication application, EModelService modelService) {
+
+		if(application == null || modelService == null) {
+			return;
+		}
+		MUIElement stack = modelService.find(TemperatureControlIds.PLANT_GC_STACK_ID, application);
+		if(stack == null) {
+			return;
+		}
+		stack.setToBeRendered(true);
+		stack.setVisible(true);
+		try {
+			List<String> tags = stack.getTags();
+			if(tags != null) {
+				tags.remove(TemperatureControlIds.GC_CONSOLE_HIDDEN_TAG);
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// ignore
+		}
+		MUIElement toggle = modelService.find(TemperatureControlIds.TOGGLE_GC_TOOLITEM_ID, application);
+		if(toggle instanceof MItem item) {
+			item.setSelected(true);
+		}
 	}
 
 	static boolean activateExisting(MApplication application, EModelService modelService, EPartService partService, String partId, String perspectiveId) {

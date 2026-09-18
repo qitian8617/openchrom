@@ -28,8 +28,9 @@ import net.openchrom.xxd.control.supplier.temperature.ui.communication.FidReadin
 
 /**
  * Plant toolbar / 白酒 menu: 开始分析. Reuses {@link AcquisitionStartGate}
- * (same FID gate as Main). Shows the reverse-control part when the dedicated
- * shell has placed it; community still has the Main button in the dialog.
+ * (same FID gate as Main). On a successful start, selects the plant-home
+ * 谱图/采集 surface so live acquisition has a large chart. Community still
+ * has the Main button in the dialog.
  */
 public class StartAcquisitionHandler {
 
@@ -37,14 +38,21 @@ public class StartAcquisitionHandler {
 	void execute(@Active Shell shell, @Optional MApplication application, @Optional EModelService modelService, @Optional EPartService partService) {
 
 		switchPlantHome(application, modelService, partService);
+		AcquisitionStartGate.Outcome outcome = AcquisitionStartGate.toggle(true);
+		if(outcome.ok()) {
+			if(outcome.acquiring()) {
+				try {
+					TemperatureControlWorkbench.showAcquisitionSurface(application, modelService, partService);
+				} catch(RuntimeException | LinkageError e) {
+					// acquisition already started
+				}
+			}
+			return;
+		}
 		try {
 			TemperatureControlWorkbench.showPart(application, modelService, partService);
 		} catch(RuntimeException | LinkageError e) {
-			// acquisition gate below does not need the part
-		}
-		AcquisitionStartGate.Outcome outcome = AcquisitionStartGate.toggle(true);
-		if(outcome.ok()) {
-			return;
+			// warn below
 		}
 		warn(shell, outcome.title(), outcome.message());
 	}

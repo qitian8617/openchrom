@@ -2055,6 +2055,8 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 		if(!outcome.ok()) {
 			applyReadiness(readinessMonitor.getSnapshot());
 			showWarning(outcome.title(), outcome.message());
+		} else if(outcome.acquiring()) {
+			net.openchrom.xxd.control.supplier.temperature.ui.TemperatureControlWorkbench.showAcquisitionSurface();
 		}
 		updateAcquisitionButtonLabel();
 	}

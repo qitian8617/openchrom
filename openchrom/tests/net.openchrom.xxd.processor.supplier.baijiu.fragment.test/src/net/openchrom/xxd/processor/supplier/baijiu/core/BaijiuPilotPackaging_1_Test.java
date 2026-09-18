@@ -185,20 +185,29 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(shellFrag.contains("net.openchrom.xxd.processor.supplier.baijiu.ui.part.sequence"), shellFrag);
 		assertTrue(shellFrag.contains("net.openchrom.xxd.control.supplier.temperature.ui.command.startAnalysis"), shellFrag);
 		assertTrue(shellFrag.contains("%toolbar.openChromatogram"), shellFrag);
+		assertTrue(shellFrag.contains("%toolbar.toggleGcConsole"), shellFrag);
 		assertTrue(shellFrag.contains("%toolbar.startAnalysis"), shellFrag);
 		assertTrue(shellFrag.contains("%toolbar.integrate"), shellFrag);
 		assertTrue(shellFrag.contains("%toolbar.analysis"), shellFrag);
 		assertTrue(shellFrag.contains("%toolbar.report"), shellFrag);
+		assertTrue(shellFrag.contains("net.openchrom.rcp.compilation.baijiu.ui.command.toggleGcConsole"), shellFrag);
+		assertTrue(shellFrag.contains("net.openchrom.rcp.compilation.baijiu.ui.partstack.plantWorkflow"), shellFrag);
+		assertTrue(shellFrag.contains("net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantChromatogram"), shellFrag);
+		assertTrue(shellFrag.contains("%part.chromatogramHome"), shellFrag);
+		assertTrue(shellFrag.contains("%part.analysisHome"), shellFrag);
 
 		Path chrome = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellChrome.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellChrome.java");
 		assertNotNull(chrome);
 		String chromeSrc = Files.readString(chrome, StandardCharsets.UTF_8);
-		assertTrue(chromeSrc.contains("CHROME_EPOCH = 9"), chromeSrc);
+		assertTrue(chromeSrc.contains("CHROME_EPOCH = 10"), chromeSrc);
 		assertTrue(chromeSrc.contains("showResearchMenus"), chromeSrc);
 		assertTrue(chromeSrc.contains("org.eclipse.chemclipse.rcp.app.ui.menu.window"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldHideTopMenu"), chromeSrc);
 		assertTrue(chromeSrc.contains("BaijiuGcHomePart"), chromeSrc);
 		assertTrue(chromeSrc.contains("BaijiuSequenceHomePart"), chromeSrc);
+		assertTrue(chromeSrc.contains("BaijiuAnalysisHomePart"), chromeSrc);
+		assertTrue(chromeSrc.contains("placeholder.plantChromatogram"), chromeSrc);
+		assertTrue(chromeSrc.contains("partstack.plantWorkflow"), chromeSrc);
 		assertTrue(chromeSrc.contains("FILE_TOOLBAR_ID"), chromeSrc);
 		assertTrue(chromeSrc.contains("org.eclipse.ui.WorkingSetActionSet"), chromeSrc);
 		assertTrue(chromeSrc.contains("SELECT_VIEW_MENU_ID"), chromeSrc);
@@ -236,6 +245,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(addonSrc.contains("BaijiuChromatogramReadability.apply"), addonSrc);
 		assertTrue(addonSrc.contains("BaijiuShellMenus.install"), addonSrc);
 		assertTrue(addonSrc.contains("tagPlantHomeSingletons"), addonSrc);
+		assertTrue(addonSrc.contains("revealPlantToolbar"), addonSrc);
+		assertTrue(addonSrc.contains("applyGcConsoleVisibility"), addonSrc);
 		Path shellParts = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellParts.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellParts.java");
 		assertNotNull(shellParts);
 		String partsSrc = Files.readString(shellParts, StandardCharsets.UTF_8);
@@ -245,6 +256,9 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(partsSrc.contains("forceCreateGui"), partsSrc);
 		assertTrue(partsSrc.contains("GC_HOME_PART_ID"), partsSrc);
 		assertTrue(partsSrc.contains("SEQUENCE_HOME_PART_ID"), partsSrc);
+		assertTrue(partsSrc.contains("ANALYSIS_HOME_PART_ID"), partsSrc);
+		assertTrue(partsSrc.contains("showChromatogram"), partsSrc);
+		assertTrue(partsSrc.contains("toggleGcConsole"), partsSrc);
 		assertTrue(shellFrag.contains("xsi:type=\"advanced:Placeholder\""), shellFrag);
 		assertFalse(shellFrag.contains("net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantEditor"), shellFrag);
 		assertFalse(shellFrag.contains("net.openchrom.rcp.compilation.baijiu.ui.placeholder.gcHome"), shellFrag);
@@ -253,6 +267,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(shellFrag.contains("net.openchrom.xxd.processor.supplier.baijiu.ui.part.sequence.plantHome"), shellFrag);
 		assertTrue(shellFrag.contains("bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuGcHomePart"), shellFrag);
 		assertTrue(shellFrag.contains("bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuSequenceHomePart"), shellFrag);
+		assertTrue(shellFrag.contains("bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuAnalysisHomePart"), shellFrag);
 		assertTrue(shellFrag.contains("NoDetach"), shellFrag);
 		assertTrue(shellFrag.contains("NoMove"), shellFrag);
 		assertTrue(shellFrag.contains("NoClose"), shellFrag);
@@ -267,6 +282,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(homePanelsSrc.contains("FrameworkUtil"), homePanelsSrc);
 		assertTrue(homePanelsSrc.contains("TemperatureControlPanel"), homePanelsSrc);
 		assertTrue(homePanelsSrc.contains("BaijiuSequenceComposite"), homePanelsSrc);
+		assertTrue(homePanelsSrc.contains("BaijiuAnalysisShell"), homePanelsSrc);
+		assertTrue(homePanelsSrc.contains("createAnalysisShell"), homePanelsSrc);
 		assertTrue(homePanelsSrc.contains("InjectionSequenceAccess"), homePanelsSrc);
 		assertTrue(homePanelsSrc.contains("COLOR_WHITE"), homePanelsSrc);
 
@@ -284,6 +301,19 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(seqHomeSrc.contains("createSequenceComposite"), seqHomeSrc);
 		assertTrue(seqHomeSrc.contains("catch(Throwable"), seqHomeSrc);
 
+		Path anaHomePart = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/parts/BaijiuAnalysisHomePart.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/parts/BaijiuAnalysisHomePart.java");
+		assertNotNull(anaHomePart);
+		String anaHomeSrc = Files.readString(anaHomePart, StandardCharsets.UTF_8);
+		assertTrue(anaHomeSrc.contains("@PostConstruct"), anaHomeSrc);
+		assertTrue(anaHomeSrc.contains("createAnalysisShell"), anaHomeSrc);
+		assertTrue(anaHomeSrc.contains("catch(Throwable"), anaHomeSrc);
+
+		Path toggleGc = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/handlers/ToggleGcConsoleHandler.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/handlers/ToggleGcConsoleHandler.java");
+		assertNotNull(toggleGc, "GC sash toolbar toggle");
+		String toggleGcSrc = Files.readString(toggleGc, StandardCharsets.UTF_8);
+		assertTrue(toggleGcSrc.contains("@Execute"), toggleGcSrc);
+		assertTrue(toggleGcSrc.contains("toggleGcConsole"), toggleGcSrc);
+
 		Path gcPart = locate("openchrom/plugins/net.openchrom.xxd.control.supplier.temperature.ui/src/net/openchrom/xxd/control/supplier/temperature/ui/parts/TemperatureControlPart.java", "plugins/net.openchrom.xxd.control.supplier.temperature.ui/src/net/openchrom/xxd/control/supplier/temperature/ui/parts/TemperatureControlPart.java");
 		assertNotNull(gcPart);
 		String gcPartSrc = Files.readString(gcPart, StandardCharsets.UTF_8);
@@ -298,11 +328,21 @@ public class BaijiuPilotPackaging_1_Test {
 		String gcWorkbenchSrc = Files.readString(gcWorkbench, StandardCharsets.UTF_8);
 		assertTrue(gcWorkbenchSrc.contains("PLANT_HOME_PART_ID"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("activateExisting"), gcWorkbenchSrc);
+		assertTrue(gcWorkbenchSrc.contains("showAcquisitionSurface"), gcWorkbenchSrc);
+		assertTrue(gcWorkbenchSrc.contains("unhideGcConsole"), gcWorkbenchSrc);
+
+		Path startHdl = locate("openchrom/plugins/net.openchrom.xxd.control.supplier.temperature.ui/src/net/openchrom/xxd/control/supplier/temperature/ui/handlers/StartAcquisitionHandler.java", "plugins/net.openchrom.xxd.control.supplier.temperature.ui/src/net/openchrom/xxd/control/supplier/temperature/ui/handlers/StartAcquisitionHandler.java");
+		assertNotNull(startHdl);
+		String startHdlSrc = Files.readString(startHdl, StandardCharsets.UTF_8);
+		assertTrue(startHdlSrc.contains("showAcquisitionSurface"), startHdlSrc);
+		assertTrue(startHdlSrc.contains("AcquisitionStartGate"), startHdlSrc);
 
 		Path seqWorkbench = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/BaijiuWorkbenchParts.java", "plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/BaijiuWorkbenchParts.java");
 		assertNotNull(seqWorkbench);
 		String seqWorkbenchSrc = Files.readString(seqWorkbench, StandardCharsets.UTF_8);
 		assertTrue(seqWorkbenchSrc.contains("SEQUENCE_HOME_PART_ID"), seqWorkbenchSrc);
+		assertTrue(seqWorkbenchSrc.contains("ANALYSIS_HOME_PART_ID"), seqWorkbenchSrc);
+		assertTrue(seqWorkbenchSrc.contains("showChromatogram"), seqWorkbenchSrc);
 
 		Path shellMenus = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellMenus.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellMenus.java");
 		assertNotNull(shellMenus, "plant SWT popup sanitizer");
@@ -329,6 +369,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(cssText.contains("#111111"), cssText);
 		assertTrue(cssText.contains("handledtoolitem.selectView"), cssText);
 		assertTrue(cssText.contains("handledmenuitem.selectView"), cssText);
+		assertTrue(cssText.contains("toolbar.toggleGcConsole"), cssText);
 		assertFalse(cssText.contains("#org.eclipse.chemclipse.ux.extension.ui.menu.process {") || cssText.contains("#org.eclipse.chemclipse.ux.extension.ui.menu.process,"), "CSS must not hide 处理器 so the JVM escape hatch can reveal it");
 		assertFalse(cssText.contains("#org.eclipse.chemclipse.rcp.app.ui.menu.plugins {") || cssText.contains("#org.eclipse.chemclipse.rcp.app.ui.menu.plugins,"), "CSS must not hide 插件 so the JVM escape hatch can reveal it");
 
@@ -358,7 +399,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(archText.contains("BaijiuSequenceHomePart"), archText);
 		assertTrue(archText.contains("loadClass"), archText);
 		assertTrue(archText.contains("BaijiuChromatogramReadability"), archText);
-		assertTrue(archText.contains("chrome epoch=9") || archText.contains("epoch=9") || archText.contains("当前 = 9"), archText);
+		assertTrue(archText.contains("chrome epoch=10") || archText.contains("epoch=10") || archText.contains("当前 = 10"), archText);
 		assertTrue(archText.contains("plantHome"), archText);
 
 		Path manual = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/docs/\u767d\u9152FID\u8bd5\u70b9\u64cd\u4f5c\u624b\u518c.md", "docs/\u767d\u9152FID\u8bd5\u70b9\u64cd\u4f5c\u624b\u518c.md");

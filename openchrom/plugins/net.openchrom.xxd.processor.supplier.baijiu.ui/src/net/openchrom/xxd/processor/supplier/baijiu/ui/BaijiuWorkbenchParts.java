@@ -34,9 +34,34 @@ public final class BaijiuWorkbenchParts {
 
 	public static boolean showAnalysis(MApplication application, EModelService modelService, EPartService partService) {
 
+		boolean plant = switchPerspective(application, modelService, partService, BaijiuPerspectiveIds.PLANT_HOME_PERSPECTIVE_ID);
+		boolean shown = showPart(application, modelService, partService, BaijiuPerspectiveIds.ANALYSIS_HOME_PART_ID) //
+				|| showPart(application, modelService, partService, BaijiuPerspectiveIds.ANALYSIS_PART_ID);
+		if(shown || plant) {
+			return true;
+		}
 		boolean switched = switchPerspective(application, modelService, partService, BaijiuPerspectiveIds.ANALYSIS_PERSPECTIVE_ID);
-		boolean shown = showPart(application, modelService, partService, BaijiuPerspectiveIds.ANALYSIS_PART_ID);
+		shown = showPart(application, modelService, partService, BaijiuPerspectiveIds.ANALYSIS_PART_ID);
 		return switched || shown;
+	}
+
+	public static boolean showChromatogram(MApplication application, EModelService modelService, EPartService partService) {
+
+		boolean switched = switchPerspective(application, modelService, partService, BaijiuPerspectiveIds.PLANT_HOME_PERSPECTIVE_ID);
+		MUIElement placeholder = null;
+		if(modelService != null && application != null) {
+			placeholder = modelService.find(BaijiuPerspectiveIds.CHROMATOGRAM_PLACEHOLDER_ID, application);
+			if(placeholder == null) {
+				placeholder = modelService.find(BaijiuPerspectiveIds.EDITOR_AREA_ID, application);
+			}
+		}
+		if(placeholder != null) {
+			placeholder.setVisible(true);
+			placeholder.setToBeRendered(true);
+			selectInParent(placeholder);
+			return true;
+		}
+		return switched;
 	}
 
 	public static boolean showSequence(MApplication application, EModelService modelService, EPartService partService) {

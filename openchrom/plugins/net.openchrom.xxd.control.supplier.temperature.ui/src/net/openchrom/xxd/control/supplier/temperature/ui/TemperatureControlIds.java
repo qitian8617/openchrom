@@ -34,6 +34,12 @@ public final class TemperatureControlIds {
 	 * this plug-in does not Require-Bundle the branding fragment.
 	 */
 	public static final String PLANT_HOME_PERSPECTIVE_ID = "net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome";
+	public static final String PLANT_GC_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.gcHome";
+	public static final String PLANT_WORKFLOW_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.plantWorkflow";
+	public static final String CHROMATOGRAM_PLACEHOLDER_ID = "net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantChromatogram";
+	public static final String EDITOR_AREA_ID = "org.eclipse.chemclipse.rcp.app.ui.editor";
+	public static final String TOGGLE_GC_TOOLITEM_ID = "net.openchrom.rcp.compilation.baijiu.ui.toolbar.toggleGcConsole";
+	public static final String GC_CONSOLE_HIDDEN_TAG = "BaijiuGcConsoleHidden";
 
 	private TemperatureControlIds() {
 

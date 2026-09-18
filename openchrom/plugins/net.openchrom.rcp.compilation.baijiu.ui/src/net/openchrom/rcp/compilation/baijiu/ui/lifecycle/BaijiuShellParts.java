@@ -26,12 +26,13 @@ import org.eclipse.swt.widgets.Composite;
 /**
  * Activates plant-home parts by element id. Prefers the concrete Parts hosted
  * in the plant-home stacks ({@code contributionURI} to branding-bundle
- * {@code BaijiuGcHomePart} / {@code BaijiuSequenceHomePart}) so
- * {@code @PostConstruct} runs in this bundle. Those hosts OSGi-load the
- * real SWT panels; rendering does not depend on foreign-bundle
- * {@code contributionURI} or Placeholder {@code <imports>}. Still supports
- * shared-part / placeholder show for the workbench fallback. No Java
- * dependency on baijiu.ui / temperature.ui (branding stays soft).
+ * {@code BaijiuGcHomePart} / {@code BaijiuSequenceHomePart} /
+ * {@code BaijiuAnalysisHomePart}) so {@code @PostConstruct} runs in this
+ * bundle. Those hosts OSGi-load the real SWT panels; rendering does not
+ * depend on foreign-bundle {@code contributionURI}. Chromatogram / live
+ * acquisition uses the ChemClipse editor Area placeholder in the workflow
+ * stack. No Java dependency on baijiu.ui / temperature.ui (branding stays
+ * soft).
  */
 public final class BaijiuShellParts {
 
@@ -40,18 +41,22 @@ public final class BaijiuShellParts {
 	}
 
 	/**
-	 * {@code showPart(..., ACTIVATE)} reverse control + sequence on plant
-	 * home, then {@link IPresentationEngine#createGui(MUIElement)} so the
-	 * part client is not a blank tab. Returns true when at least one part
-	 * is shown.
+	 * Show plant-home hosts. Sequence is activated last so the workflow
+	 * PartStack opens on 进样序列. GC sash follows the user hide-tag
+	 * (default visible). Returns true when at least one part is shown.
 	 */
 	public static boolean showPlantHomeParts(MApplication application, EModelService modelService, EPartService partService) {
 
-		boolean gc = showPart(application, modelService, partService, BaijiuShellChrome.GC_HOME_PART_ID, null) //
-				|| showPart(application, modelService, partService, BaijiuShellChrome.GC_CONTROL_PART_ID, BaijiuShellChrome.GC_CONTROL_PLACEHOLDER_ID);
+		applyGcConsoleVisibility(application, modelService);
+		boolean gc = !isGcConsoleHidden(application, modelService) && (showPart(application, modelService, partService, BaijiuShellChrome.GC_HOME_PART_ID, null) //
+				|| showPart(application, modelService, partService, BaijiuShellChrome.GC_CONTROL_PART_ID, BaijiuShellChrome.GC_CONTROL_PLACEHOLDER_ID));
+		showPart(application, modelService, partService, BaijiuShellChrome.ANALYSIS_HOME_PART_ID, null);
+		revealChromatogramPlaceholder(application, modelService);
 		boolean sequence = showPart(application, modelService, partService, BaijiuShellChrome.SEQUENCE_HOME_PART_ID, null) //
 				|| showPart(application, modelService, partService, BaijiuShellChrome.SEQUENCE_PART_ID, null);
 		forceCreatePlantHomeGuis(application, modelService);
+		revealPlantToolbar(application, modelService);
+		syncGcToggleToolItem(application, modelService);
 		return gc || sequence;
 	}
 
@@ -64,6 +69,190 @@ public final class BaijiuShellParts {
 
 		forceCreateGui(application, modelService, BaijiuShellChrome.GC_HOME_PART_ID);
 		forceCreateGui(application, modelService, BaijiuShellChrome.SEQUENCE_HOME_PART_ID);
+		forceCreateGui(application, modelService, BaijiuShellChrome.ANALYSIS_HOME_PART_ID);
+	}
+
+	public static boolean showChromatogram(MApplication application, EModelService modelService, EPartService partService) {
+
+		if(application == null || modelService == null) {
+			return false;
+		}
+		MUIElement placeholder = modelService.find(BaijiuShellChrome.CHROMATOGRAM_PLACEHOLDER_ID, application);
+		if(placeholder == null) {
+			placeholder = modelService.find(BaijiuShellChrome.EDITOR_AREA_ID, application);
+		}
+		if(placeholder == null) {
+			return false;
+		}
+		placeholder.setVisible(true);
+		placeholder.setToBeRendered(true);
+		selectInParent(placeholder);
+		if(partService != null) {
+			try {
+				MPart editor = findPart(modelService, application, BaijiuShellChrome.EDITOR_AREA_ID);
+				if(editor != null) {
+					partService.showPart(editor, PartState.ACTIVATE);
+				}
+			} catch(RuntimeException | LinkageError e) {
+				// stack selection above is enough
+			}
+		}
+		return true;
+	}
+
+	public static boolean showAnalysis(MApplication application, EModelService modelService, EPartService partService) {
+
+		if(showPart(application, modelService, partService, BaijiuShellChrome.ANALYSIS_HOME_PART_ID, null)) {
+			forceCreateGui(application, modelService, BaijiuShellChrome.ANALYSIS_HOME_PART_ID);
+			return true;
+		}
+		return showPart(application, modelService, partService, BaijiuShellChrome.ANALYSIS_PART_ID, null);
+	}
+
+	public static boolean isGcConsoleHidden(MApplication application, EModelService modelService) {
+
+		if(application == null || modelService == null) {
+			return false;
+		}
+		MUIElement stack = modelService.find(BaijiuShellChrome.GC_HOME_STACK_ID, application);
+		if(stack == null) {
+			return false;
+		}
+		return BaijiuShellChrome.isGcConsoleHidden(stack.getTags()) || !stack.isVisible();
+	}
+
+	public static boolean toggleGcConsole(MApplication application, EModelService modelService, EPartService partService) {
+
+		boolean show = isGcConsoleHidden(application, modelService);
+		setGcConsoleVisible(application, modelService, partService, show);
+		return show;
+	}
+
+	public static void setGcConsoleVisible(MApplication application, EModelService modelService, EPartService partService, boolean visible) {
+
+		if(application == null || modelService == null) {
+			return;
+		}
+		MUIElement stack = modelService.find(BaijiuShellChrome.GC_HOME_STACK_ID, application);
+		if(stack == null) {
+			return;
+		}
+		stack.setToBeRendered(true);
+		if(visible) {
+			removeTag(stack, BaijiuShellChrome.GC_CONSOLE_HIDDEN_TAG);
+			stack.setVisible(true);
+			showPart(application, modelService, partService, BaijiuShellChrome.GC_HOME_PART_ID, null);
+			forceCreateGui(application, modelService, BaijiuShellChrome.GC_HOME_PART_ID);
+		} else {
+			addTag(stack, BaijiuShellChrome.GC_CONSOLE_HIDDEN_TAG);
+			stack.setVisible(false);
+		}
+		syncGcToggleToolItem(application, modelService);
+	}
+
+	public static void applyGcConsoleVisibility(MApplication application, EModelService modelService) {
+
+		if(application == null || modelService == null) {
+			return;
+		}
+		MUIElement stack = modelService.find(BaijiuShellChrome.GC_HOME_STACK_ID, application);
+		if(stack == null) {
+			return;
+		}
+		stack.setToBeRendered(true);
+		if(BaijiuShellChrome.isGcConsoleHidden(stack.getTags())) {
+			stack.setVisible(false);
+		} else {
+			stack.setVisible(true);
+		}
+	}
+
+	public static void revealPlantToolbar(MApplication application, EModelService modelService) {
+
+		if(application == null || modelService == null) {
+			return;
+		}
+		showElementAndAncestors(modelService.find(BaijiuShellChrome.TRIMBAR_TOP_ID, application));
+		MUIElement toolbar = modelService.find(BaijiuShellChrome.PLANT_TOOLBAR_ID, application);
+		showElementAndAncestors(toolbar);
+		showElementAndAncestors(modelService.find(BaijiuShellChrome.OPEN_CHROMATOGRAM_TOOLITEM_ID, application));
+		showElementAndAncestors(modelService.find(BaijiuShellChrome.TOGGLE_GC_TOOLITEM_ID, application));
+		if(toolbar instanceof MElementContainer<?> container) {
+			List<?> children = container.getChildren();
+			if(children != null) {
+				for(Object child : children) {
+					if(child instanceof MUIElement element) {
+						element.setVisible(true);
+						element.setToBeRendered(true);
+					}
+				}
+			}
+		}
+	}
+
+	public static void syncGcToggleToolItem(MApplication application, EModelService modelService) {
+
+		if(application == null || modelService == null) {
+			return;
+		}
+		MUIElement found = modelService.find(BaijiuShellChrome.TOGGLE_GC_TOOLITEM_ID, application);
+		if(found instanceof org.eclipse.e4.ui.model.application.ui.menu.MItem item) {
+			item.setSelected(!isGcConsoleHidden(application, modelService));
+		}
+	}
+
+	static void revealChromatogramPlaceholder(MApplication application, EModelService modelService) {
+
+		if(application == null || modelService == null) {
+			return;
+		}
+		MUIElement placeholder = modelService.find(BaijiuShellChrome.CHROMATOGRAM_PLACEHOLDER_ID, application);
+		if(placeholder == null) {
+			return;
+		}
+		placeholder.setVisible(true);
+		placeholder.setToBeRendered(true);
+	}
+
+	private static void showElementAndAncestors(MUIElement element) {
+
+		MUIElement walk = element;
+		while(walk != null) {
+			walk.setVisible(true);
+			walk.setToBeRendered(true);
+			walk = walk.getParent();
+		}
+	}
+
+	private static void addTag(MUIElement element, String tag) {
+
+		if(element == null || tag == null || tag.isBlank()) {
+			return;
+		}
+		try {
+			List<String> tags = element.getTags();
+			if(tags == null || tags.contains(tag)) {
+				return;
+			}
+			tags.add(tag);
+		} catch(RuntimeException | LinkageError e) {
+			// immutable tag list
+		}
+	}
+
+	private static void removeTag(MUIElement element, String tag) {
+
+		if(element == null || tag == null || tag.isBlank()) {
+			return;
+		}
+		try {
+			List<String> tags = element.getTags();
+			if(tags != null) {
+				tags.remove(tag);
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// immutable tag list
+		}
 	}
 
 	public static boolean forceCreateGui(MApplication application, EModelService modelService, String partId) {
