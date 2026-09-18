@@ -82,10 +82,11 @@ public final class BaijiuShellChrome {
 	public static final String RESEARCH_MENUS_PROPERTY = "net.openchrom.baijiu.showResearchMenus";
 	/**
 	 * Bump when chrome hide lists / plant-home tags change so persisted
-	 * {@code workbench.xmi} is rebuilt once. #37 used 9 (singletons / menus).
-	 * Workflow tabs + GC toggle + live editor Area in plant home — needs 10.
+	 * {@code workbench.xmi} is rebuilt once. #38 used 10 (workflow tabs).
+	 * Epoch 11 clears a restore that left hidden MALDI sash
+	 * {@code selectedElement} (E4 "must be visible in the UI presentation").
 	 */
-	public static final int CHROME_EPOCH = 10;
+	public static final int CHROME_EPOCH = 11;
 	/**
 	 * ChemClipse Application.e4xmi Save / Save All coolbar. Stays hidden
 	 * so the plant toolbar (打开谱图 / 反控) is the visible chrome. File

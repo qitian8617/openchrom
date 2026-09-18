@@ -9,6 +9,7 @@
  *******************************************************************************/
 package net.openchrom.rcp.compilation.baijiu.ui.lifecycle;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.e4.core.services.events.IEventBroker;
@@ -86,19 +87,14 @@ public class BaijiuShellAddon {
 		if(elements == null) {
 			hideTopWindowMenus(application, modelService);
 			revealPlantParts(application, modelService);
+			BaijiuShellSelection.selectInParent(modelService.find(BaijiuShellChrome.PERSPECTIVE_ID, application));
 			return;
 		}
-		for(MUIElement element : elements) {
-			if(element == null) {
-				continue;
-			}
-			if(shouldHideElement(element)) {
-				element.setVisible(false);
-				element.setToBeRendered(false);
-			}
-		}
+		hideResearchElements(elements);
 		hideTopWindowMenus(application, modelService);
 		revealPlantParts(application, modelService);
+		BaijiuShellSelection.clearHiddenSelections(elements);
+		BaijiuShellSelection.selectInParent(modelService.find(BaijiuShellChrome.PERSPECTIVE_ID, application));
 		tagPlantHomeSingletons(application, modelService);
 		BaijiuShellParts.revealPlantToolbar(application, modelService);
 		BaijiuShellParts.applyGcConsoleVisibility(application, modelService);
@@ -136,6 +132,7 @@ public class BaijiuShellAddon {
 				showWorkbenchParts(application, modelService, partService);
 			}
 		}
+		BaijiuShellSelection.clearHiddenSelections(application, modelService);
 		hideTopWindowMenus(application, modelService);
 	}
 
@@ -187,6 +184,7 @@ public class BaijiuShellAddon {
 		if(found == null) {
 			return;
 		}
+		BaijiuShellSelection.deselectFromParent(found);
 		hide(found);
 		if(found.getParent() != null) {
 			found.getParent().getChildren().remove(found);
@@ -321,13 +319,38 @@ public class BaijiuShellAddon {
 		return gc || sequence;
 	}
 
+	/**
+	 * Hide research chrome, but reassign stack/sash {@code selectedElement}
+	 * <em>before</em> {@code setVisible(false)}. E4 throws if a hidden MALDI
+	 * {@code PartSashContainer} remains the selected child.
+	 */
+	private static void hideResearchElements(List<MUIElement> elements) {
+
+		List<MUIElement> toHide = new ArrayList<>();
+		for(MUIElement element : elements) {
+			if(element != null && shouldHideElement(element)) {
+				toHide.add(element);
+			}
+		}
+		BaijiuShellSelection.reassignAwayFrom(toHide);
+		for(MUIElement element : toHide) {
+			element.setVisible(false);
+			element.setToBeRendered(false);
+		}
+	}
+
 	private static void switchTo(MApplication application, EModelService modelService, EPartService partService, MPerspective perspective) {
 
 		perspective.setVisible(true);
 		perspective.setToBeRendered(true);
+		BaijiuShellSelection.selectInParent(perspective);
 		MUIElement stackElement = modelService.find(BaijiuShellChrome.PERSPECTIVE_STACK_ID, application);
-		if(stackElement instanceof MPerspectiveStack stack) {
-			stack.setSelectedElement(perspective);
+		if(stackElement instanceof MPerspectiveStack stack && BaijiuShellSelection.canSelect(perspective)) {
+			try {
+				stack.setSelectedElement(perspective);
+			} catch(RuntimeException | LinkageError e) {
+				BaijiuShellSelection.selectInParent(perspective);
+			}
 		}
 		if(partService != null) {
 			try {
@@ -429,6 +452,7 @@ public class BaijiuShellAddon {
 		if(element == null) {
 			return;
 		}
+		BaijiuShellSelection.deselectFromParent(element);
 		element.setVisible(false);
 		element.setToBeRendered(false);
 	}

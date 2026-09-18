@@ -50,8 +50,14 @@ public final class BaijiuWorkbenchParts {
 		boolean switched = switchPerspective(application, modelService, partService, BaijiuPerspectiveIds.PLANT_HOME_PERSPECTIVE_ID);
 		MUIElement placeholder = null;
 		if(modelService != null && application != null) {
-			placeholder = modelService.find(BaijiuPerspectiveIds.CHROMATOGRAM_PLACEHOLDER_ID, application);
+			MUIElement plant = modelService.find(BaijiuPerspectiveIds.PLANT_HOME_PERSPECTIVE_ID, application);
+			if(plant != null) {
+				placeholder = modelService.find(BaijiuPerspectiveIds.CHROMATOGRAM_PLACEHOLDER_ID, plant);
+			}
 			if(placeholder == null) {
+				placeholder = modelService.find(BaijiuPerspectiveIds.CHROMATOGRAM_PLACEHOLDER_ID, application);
+			}
+			if(placeholder == null && plant == null) {
 				placeholder = modelService.find(BaijiuPerspectiveIds.EDITOR_AREA_ID, application);
 			}
 		}
@@ -81,8 +87,8 @@ public final class BaijiuWorkbenchParts {
 		if(!(found instanceof MPerspective perspective)) {
 			return false;
 		}
-		perspective.setVisible(true);
 		perspective.setToBeRendered(true);
+		perspective.setVisible(true);
 		selectInParent(perspective);
 		if(partService != null) {
 			try {
@@ -182,8 +188,15 @@ public final class BaijiuWorkbenchParts {
 		if(parent == null) {
 			return;
 		}
+		if(!parent.isVisible() || !parent.isToBeRendered()) {
+			return;
+		}
 		element.setToBeRendered(true);
 		element.setVisible(true);
-		parent.setSelectedElement(element);
+		try {
+			parent.setSelectedElement(element);
+		} catch(RuntimeException | LinkageError e) {
+			// hidden sash / perspective — E4 requires selectedElement visible
+		}
 	}
 }

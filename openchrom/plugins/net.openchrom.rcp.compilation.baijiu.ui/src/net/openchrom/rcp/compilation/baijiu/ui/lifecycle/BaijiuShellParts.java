@@ -77,17 +77,17 @@ public final class BaijiuShellParts {
 		if(application == null || modelService == null) {
 			return false;
 		}
-		MUIElement placeholder = modelService.find(BaijiuShellChrome.CHROMATOGRAM_PLACEHOLDER_ID, application);
-		if(placeholder == null) {
-			placeholder = modelService.find(BaijiuShellChrome.EDITOR_AREA_ID, application);
-		}
+		MUIElement placeholder = findPlantChromatogram(application, modelService);
 		if(placeholder == null) {
 			return false;
 		}
 		placeholder.setVisible(true);
 		placeholder.setToBeRendered(true);
-		selectInParent(placeholder);
-		if(partService != null) {
+		if(!BaijiuShellSelection.canSelect(placeholder) && hasHiddenResearchAncestor(placeholder)) {
+			return false;
+		}
+		BaijiuShellSelection.selectInParent(placeholder);
+		if(partService != null && BaijiuShellSelection.canSelect(placeholder)) {
 			try {
 				MPart editor = findPart(modelService, application, BaijiuShellChrome.EDITOR_AREA_ID);
 				if(editor != null) {
@@ -145,7 +145,14 @@ public final class BaijiuShellParts {
 			forceCreateGui(application, modelService, BaijiuShellChrome.GC_HOME_PART_ID);
 		} else {
 			addTag(stack, BaijiuShellChrome.GC_CONSOLE_HIDDEN_TAG);
+			BaijiuShellSelection.deselectFromParent(stack);
 			stack.setVisible(false);
+			MUIElement workflow = modelService.find(BaijiuShellChrome.WORKFLOW_STACK_ID, application);
+			if(workflow != null) {
+				workflow.setToBeRendered(true);
+				workflow.setVisible(true);
+				BaijiuShellSelection.selectInParent(workflow);
+			}
 		}
 		syncGcToggleToolItem(application, modelService);
 	}
@@ -161,7 +168,14 @@ public final class BaijiuShellParts {
 		}
 		stack.setToBeRendered(true);
 		if(BaijiuShellChrome.isGcConsoleHidden(stack.getTags())) {
+			BaijiuShellSelection.deselectFromParent(stack);
 			stack.setVisible(false);
+			MUIElement workflow = modelService.find(BaijiuShellChrome.WORKFLOW_STACK_ID, application);
+			if(workflow != null) {
+				workflow.setToBeRendered(true);
+				workflow.setVisible(true);
+				BaijiuShellSelection.selectInParent(workflow);
+			}
 		} else {
 			stack.setVisible(true);
 		}
@@ -266,7 +280,7 @@ public final class BaijiuShellParts {
 		}
 		part.setVisible(true);
 		part.setToBeRendered(true);
-		selectInParent(part);
+		BaijiuShellSelection.selectInParent(part);
 		IPresentationEngine engine = presentationEngine(application, part);
 		if(engine == null) {
 			return false;
@@ -276,7 +290,7 @@ public final class BaijiuShellParts {
 				engine.removeGui(part);
 				part.setVisible(true);
 				part.setToBeRendered(true);
-				selectInParent(part);
+				BaijiuShellSelection.selectInParent(part);
 			}
 			Object created = engine.createGui(part);
 			if(created instanceof Composite composite && !composite.isDisposed()) {
@@ -314,15 +328,21 @@ public final class BaijiuShellParts {
 			}
 			placeholder.setVisible(true);
 			placeholder.setToBeRendered(true);
-			selectInParent(placeholder);
+			if(hasHiddenResearchAncestor(placeholder)) {
+				return false;
+			}
+			BaijiuShellSelection.selectInParent(placeholder);
 			try {
 				part.setCurSharedRef(placeholder);
 			} catch(RuntimeException | LinkageError e) {
 				// older E4: showPart below is enough
 			}
 		}
-		selectInParent(part);
-		if(partService != null) {
+		if(hasHiddenResearchAncestor(part)) {
+			return placeholder != null;
+		}
+		BaijiuShellSelection.selectInParent(part);
+		if(partService != null && (placeholder == null || BaijiuShellSelection.canSelect(placeholder))) {
 			try {
 				partService.showPart(part, PartState.ACTIVATE);
 				return true;
@@ -350,14 +370,14 @@ public final class BaijiuShellParts {
 
 		if(preferredPlaceholderId != null && !preferredPlaceholderId.isBlank()) {
 			MUIElement preferred = modelService.find(preferredPlaceholderId, application);
-			if(preferred instanceof MPlaceholder placeholder) {
+			if(preferred instanceof MPlaceholder placeholder && !hasHiddenResearchAncestor(placeholder)) {
 				return placeholder;
 			}
 		}
 		if(part != null) {
 			try {
 				MPlaceholder current = part.getCurSharedRef();
-				if(current != null) {
+				if(current != null && !hasHiddenResearchAncestor(current)) {
 					return current;
 				}
 			} catch(RuntimeException | LinkageError e) {
@@ -369,7 +389,7 @@ public final class BaijiuShellParts {
 			return null;
 		}
 		for(MPlaceholder placeholder : placeholders) {
-			if(placeholder == null) {
+			if(placeholder == null || hasHiddenResearchAncestor(placeholder)) {
 				continue;
 			}
 			if(part != null && placeholder.getRef() == part) {
@@ -417,20 +437,31 @@ public final class BaijiuShellParts {
 		}
 	}
 
-	private static void selectInParent(MUIElement element) {
+	static MUIElement findPlantChromatogram(MApplication application, EModelService modelService) {
 
-		if(element == null) {
-			return;
+		MUIElement plant = modelService.find(BaijiuShellChrome.PERSPECTIVE_ID, application);
+		if(plant != null) {
+			MUIElement scoped = modelService.find(BaijiuShellChrome.CHROMATOGRAM_PLACEHOLDER_ID, plant);
+			if(scoped != null) {
+				return scoped;
+			}
 		}
+		return modelService.find(BaijiuShellChrome.CHROMATOGRAM_PLACEHOLDER_ID, application);
+	}
+
+	static boolean hasHiddenResearchAncestor(MUIElement element) {
+
 		MUIElement walk = element;
 		while(walk != null) {
-			walk.setToBeRendered(true);
-			walk.setVisible(true);
-			MElementContainer<MUIElement> parent = walk.getParent();
-			if(parent != null) {
-				parent.setSelectedElement(walk);
+			if(BaijiuShellChrome.shouldHide(walk.getElementId())) {
+				return true;
 			}
-			walk = parent;
+			try {
+				walk = walk.getParent();
+			} catch(RuntimeException | LinkageError e) {
+				return true;
+			}
 		}
+		return false;
 	}
 }
