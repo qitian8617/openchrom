@@ -55,6 +55,13 @@ public final class BaijiuShellChrome {
 	public static final String WORKBENCH_PART_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.part.workbench";
 	public static final String WORKBENCH_HOME_PART_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.part.workbench.plantHome";
 	public static final String WORKBENCH_HOME_CONTRIBUTION_URI = "bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuWorkbenchHomePart";
+	/**
+	 * Concrete empty-state Part in the left 谱图/采集 stack. An Area
+	 * placeholder alone does not create a CTabItem, so cold start was a
+	 * blank gray void after #41.
+	 */
+	public static final String CHROMATOGRAM_HOME_PART_ID = "net.openchrom.rcp.compilation.baijiu.ui.part.chromatogramHome";
+	public static final String CHROMATOGRAM_HOME_CONTRIBUTION_URI = "bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuChromatogramHomePart";
 	public static final String PLANT_SASH_ID = "net.openchrom.rcp.compilation.baijiu.ui.partsash.plantHome";
 	public static final String PLANT_TOP_SASH_ID = "net.openchrom.rcp.compilation.baijiu.ui.partsash.plantTop";
 	public static final String GC_HOME_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.gcHome";
@@ -98,8 +105,11 @@ public final class BaijiuShellChrome {
 	 * Epoch 12: left workflow tabs | right fixed 谱图/采集; GC docks left of tabs.
 	 * Epoch 13: flip to left 谱图/采集 | right sidebar ops tabs (白酒操作 /
 	 * 进样序列 / 白酒分析); GC docks above the sidebar when shown.
+	 * Epoch 14: left empty-state Part so 谱图/采集 is labeled on cold start;
+	 * right sidebar always lists 白酒操作 / 进样序列 / 白酒分析 (no workbench
+	 * perspective fallback).
 	 */
-	public static final int CHROME_EPOCH = 13;
+	public static final int CHROME_EPOCH = 14;
 	/**
 	 * ChemClipse Application.e4xmi Save / Save All coolbar. Stays hidden
 	 * so the plant toolbar (打开谱图 / 反控) is the visible chrome. File
@@ -302,6 +312,7 @@ public final class BaijiuShellChrome {
 			ANALYSIS_HOME_PART_ID, //
 			WORKBENCH_PART_ID, //
 			WORKBENCH_HOME_PART_ID, //
+			CHROMATOGRAM_HOME_PART_ID, //
 			PLANT_SASH_ID, //
 			PLANT_TOP_SASH_ID, //
 			GC_HOME_STACK_ID, //
@@ -344,7 +355,8 @@ public final class BaijiuShellChrome {
 			GC_HOME_PART_ID, //
 			SEQUENCE_HOME_PART_ID, //
 			ANALYSIS_HOME_PART_ID, //
-			WORKBENCH_HOME_PART_ID);
+			WORKBENCH_HOME_PART_ID, //
+			CHROMATOGRAM_HOME_PART_ID);
 
 	/**
 	 * SWTChart / ChemClipse chart popup items that FID plant analysis still
@@ -594,6 +606,9 @@ public final class BaijiuShellChrome {
 		}
 		if(WORKBENCH_PART_ID.equals(elementId) || WORKBENCH_HOME_PART_ID.equals(elementId)) {
 			return WORKBENCH_HOME_PART_ID;
+		}
+		if(CHROMATOGRAM_HOME_PART_ID.equals(elementId) || CHROMATOGRAM_PLACEHOLDER_ID.equals(elementId) || EDITOR_AREA_ID.equals(elementId)) {
+			return CHROMATOGRAM_HOME_PART_ID;
 		}
 		return null;
 	}

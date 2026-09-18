@@ -68,6 +68,9 @@ public class BaijiuHomePanels_1_Test {
 		assertTrue(BaijiuHomePanels.SEQUENCE_ACCESS_TYPE.endsWith(".sequence.InjectionSequenceAccess"));
 		assertTrue(BaijiuHomePanels.ANALYSIS_SHELL_TYPE.endsWith(".shell.BaijiuAnalysisShell"));
 		assertTrue(BaijiuHomePanels.WORKBENCH_PART_TYPE.endsWith(".parts.BaijiuWorkbenchPart"));
+		assertEquals("谱图/采集", BaijiuHomePanels.CHROMATOGRAM_EMPTY_TITLE);
+		assertTrue(BaijiuHomePanels.CHROMATOGRAM_EMPTY_HINT.contains("打开色谱图"), BaijiuHomePanels.CHROMATOGRAM_EMPTY_HINT);
+		assertTrue(BaijiuHomePanels.CHROMATOGRAM_EMPTY_HINT.contains("打开谱图"), BaijiuHomePanels.CHROMATOGRAM_EMPTY_HINT);
 		assertTrue(BaijiuHomePanels.CHROMATOGRAM_BRIDGE_TYPE.endsWith(".ChromatogramBridge"));
 		assertNull(BaijiuHomePanels.findCreateIn(null));
 		assertNull(BaijiuHomePanels.resolveChromatogramSelection(null));
@@ -81,6 +84,7 @@ public class BaijiuHomePanels_1_Test {
 		BaijiuHomePanels.createSequenceComposite(null);
 		BaijiuHomePanels.createAnalysisShell(null, null);
 		BaijiuHomePanels.createWorkbenchPanel(null, null, null, null, null);
+		BaijiuHomePanels.createChromatogramEmptyState(null);
 	}
 
 	@Test
@@ -90,9 +94,11 @@ public class BaijiuHomePanels_1_Test {
 		new BaijiuSequenceHomePart().create(null);
 		new BaijiuAnalysisHomePart().create(null);
 		new BaijiuWorkbenchHomePart().create(null);
+		new BaijiuChromatogramHomePart().create(null);
 		new BaijiuGcHomePart((Composite)null);
 		new BaijiuSequenceHomePart((Composite)null);
 		new BaijiuAnalysisHomePart((Composite)null);
 		new BaijiuWorkbenchHomePart((Composite)null);
+		new BaijiuChromatogramHomePart((Composite)null);
 	}
 }

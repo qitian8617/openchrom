@@ -16,6 +16,8 @@ import java.lang.reflect.Method;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.FillLayout;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
@@ -41,6 +43,8 @@ public final class BaijiuHomePanels {
 	public static final String ANALYSIS_SHELL_TYPE = "net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuAnalysisShell";
 	public static final String WORKBENCH_PART_TYPE = "net.openchrom.xxd.processor.supplier.baijiu.ui.parts.BaijiuWorkbenchPart";
 	public static final String CHROMATOGRAM_BRIDGE_TYPE = "net.openchrom.xxd.processor.supplier.baijiu.ui.ChromatogramBridge";
+	public static final String CHROMATOGRAM_EMPTY_TITLE = "谱图/采集";
+	public static final String CHROMATOGRAM_EMPTY_HINT = "尚未打开色谱图。点击「打开色谱图」或工具栏「打开谱图」打开谱图。";
 
 	private BaijiuHomePanels() {
 
@@ -100,6 +104,27 @@ public final class BaijiuHomePanels {
 				throw new IllegalStateException("未找到 BaijiuWorkbenchPart.createIn(Composite, …)。");
 			}
 			createIn.invoke(null, parent, partService, modelService, application, context);
+			layout(parent);
+		} catch(Throwable t) {
+			showError(parent, t);
+		}
+	}
+
+	public static void createChromatogramEmptyState(Composite parent) {
+
+		if(parent == null || parent.isDisposed()) {
+			return;
+		}
+		try {
+			disposeChildren(parent);
+			parent.setLayout(new GridLayout(1, false));
+			Label title = new Label(parent, SWT.WRAP);
+			title.setText(CHROMATOGRAM_EMPTY_TITLE);
+			title.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+			Label hint = new Label(parent, SWT.WRAP);
+			hint.setText(CHROMATOGRAM_EMPTY_HINT);
+			hint.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+			applyEmptyStateColors(parent, title, hint);
 			layout(parent);
 		} catch(Throwable t) {
 			showError(parent, t);
@@ -332,5 +357,23 @@ public final class BaijiuHomePanels {
 		label.setForeground(display.getSystemColor(SWT.COLOR_WHITE));
 		label.setBackground(display.getSystemColor(SWT.COLOR_DARK_GRAY));
 		parent.setBackground(display.getSystemColor(SWT.COLOR_DARK_GRAY));
+	}
+
+	private static void applyEmptyStateColors(Composite parent, Label... labels) {
+
+		Display display = parent.getDisplay();
+		if(display == null || display.isDisposed()) {
+			return;
+		}
+		parent.setBackground(display.getSystemColor(SWT.COLOR_WIDGET_BACKGROUND));
+		if(labels == null) {
+			return;
+		}
+		for(Label label : labels) {
+			if(label != null && !label.isDisposed()) {
+				label.setForeground(display.getSystemColor(SWT.COLOR_WIDGET_FOREGROUND));
+				label.setBackground(display.getSystemColor(SWT.COLOR_WIDGET_BACKGROUND));
+			}
+		}
 	}
 }

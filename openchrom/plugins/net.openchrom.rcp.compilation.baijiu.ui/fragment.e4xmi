@@ -60,6 +60,11 @@
           <tags>NoMove</tags>
           <tags>NoDetach</tags>
           <tags>NoClose</tags>
+          <children xsi:type="basic:Part" xmi:id="_baijiuChromHomePart" elementId="net.openchrom.rcp.compilation.baijiu.ui.part.chromatogramHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuChromatogramHomePart" label="%part.chromatogramHome" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/importChromatogramCSD.gif" closeable="false">
+            <tags>NoMove</tags>
+            <tags>NoDetach</tags>
+            <tags>NoClose</tags>
+          </children>
           <children xsi:type="advanced:Placeholder" xmi:id="_baijiuPlantChromPh" elementId="net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantChromatogram" label="%part.chromatogramHome" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/importChromatogramCSD.gif" ref="_impEditor">
             <tags>NoMove</tags>
             <tags>NoDetach</tags>

@@ -266,9 +266,11 @@ public final class BaijiuShellSelection {
 		}
 		return BaijiuShellChrome.PERSPECTIVE_ID.equals(elementId) //
 				|| BaijiuShellChrome.WORKFLOW_STACK_ID.equals(elementId) //
+				|| BaijiuShellChrome.WORKBENCH_HOME_PART_ID.equals(elementId) //
 				|| BaijiuShellChrome.SEQUENCE_HOME_PART_ID.equals(elementId) //
 				|| BaijiuShellChrome.GC_HOME_STACK_ID.equals(elementId) //
 				|| BaijiuShellChrome.PLANT_SASH_ID.equals(elementId) //
+				|| BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID.equals(elementId) //
 				|| BaijiuShellChrome.CHROMATOGRAM_PLACEHOLDER_ID.equals(elementId) //
 				|| BaijiuShellChrome.ANALYSIS_HOME_PART_ID.equals(elementId);
 	}

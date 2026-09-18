@@ -34,15 +34,13 @@ public final class BaijiuWorkbenchParts {
 
 	public static boolean showAnalysis(MApplication application, EModelService modelService, EPartService partService) {
 
-		boolean plant = switchPerspective(application, modelService, partService, BaijiuPerspectiveIds.PLANT_HOME_PERSPECTIVE_ID);
-		boolean shown = showPart(application, modelService, partService, BaijiuPerspectiveIds.ANALYSIS_HOME_PART_ID) //
-				|| showPart(application, modelService, partService, BaijiuPerspectiveIds.ANALYSIS_PART_ID);
-		if(shown || plant) {
+		switchPerspective(application, modelService, partService, BaijiuPerspectiveIds.PLANT_HOME_PERSPECTIVE_ID);
+		if(showPart(application, modelService, partService, BaijiuPerspectiveIds.ANALYSIS_HOME_PART_ID) //
+				|| showPart(application, modelService, partService, BaijiuPerspectiveIds.ANALYSIS_PART_ID)) {
 			return true;
 		}
 		boolean switched = switchPerspective(application, modelService, partService, BaijiuPerspectiveIds.ANALYSIS_PERSPECTIVE_ID);
-		shown = showPart(application, modelService, partService, BaijiuPerspectiveIds.ANALYSIS_PART_ID);
-		return switched || shown;
+		return showPart(application, modelService, partService, BaijiuPerspectiveIds.ANALYSIS_PART_ID) || switched;
 	}
 
 	public static boolean showWorkbench(MApplication application, EModelService modelService, EPartService partService) {
@@ -85,10 +83,9 @@ public final class BaijiuWorkbenchParts {
 
 	public static boolean showSequence(MApplication application, EModelService modelService, EPartService partService) {
 
-		boolean switched = switchPerspective(application, modelService, partService, BaijiuPerspectiveIds.PLANT_HOME_PERSPECTIVE_ID);
-		boolean shown = showPart(application, modelService, partService, BaijiuPerspectiveIds.SEQUENCE_HOME_PART_ID) //
+		switchPerspective(application, modelService, partService, BaijiuPerspectiveIds.PLANT_HOME_PERSPECTIVE_ID);
+		return showPart(application, modelService, partService, BaijiuPerspectiveIds.SEQUENCE_HOME_PART_ID) //
 				|| showPart(application, modelService, partService, BaijiuPerspectiveIds.SEQUENCE_PART_ID);
-		return switched || shown;
 	}
 
 	public static boolean switchPerspective(MApplication application, EModelService modelService, EPartService partService, String perspectiveId) {

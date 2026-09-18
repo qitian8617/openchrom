@@ -34,13 +34,17 @@ import jakarta.inject.Inject;
 
 /**
  * After ChemClipse fragments attach, hide research chrome, select the plant
- * home (left fixed 谱图/采集; right sidebar tabs: 白酒操作 / 进样序列 /
- * 白酒分析; GC sash toggle docks above the sidebar),
+ * home (left 谱图/采集 empty-state + editor Area; right sidebar tabs: 白酒操作 /
+ * 进样序列 / 白酒分析; GC sash toggle docks above the sidebar),
  * {@code showPart(..., ACTIVATE)} the branding plant-home Parts, then
  * {@code IPresentationEngine.createGui} so the client is not an empty gray
- * sash after {@code -clearPersistedState}. Plant-home Part classes live in
- * this bundle and OSGi-load temperature.ui / baijiu.ui panels. Does not
- * depend on those Java types (soft; no plugin cycle).
+ * sash after {@code -clearPersistedState}. The left stack hosts a concrete
+ * empty-state Part so cold start shows a labeled tab and Chinese hint; opening
+ * a CSD selects {@code placeholder.plantChromatogram}. Does not fall back to
+ * the community workbench perspective (that left an empty editor + only
+ * 白酒操作). Plant-home Part classes live in this bundle and OSGi-load
+ * temperature.ui / baijiu.ui panels. Does not depend on those Java types
+ * (soft; no plugin cycle).
  */
 public class BaijiuShellAddon {
 
@@ -119,19 +123,11 @@ public class BaijiuShellAddon {
 			return;
 		}
 		switchTo(application, modelService, partService, perspective);
-		boolean shown;
 		if(plantHome) {
-			shown = BaijiuShellParts.showPlantHomeParts(application, modelService, partService);
+			BaijiuShellParts.showPlantHomeParts(application, modelService, partService);
 			BaijiuShellParts.forceCreatePlantHomeGuis(application, modelService);
 		} else {
-			shown = showWorkbenchParts(application, modelService, partService);
-		}
-		if(!shown && plantHome) {
-			MPerspective fallback = findPerspective(application, modelService, BaijiuShellChrome.WORKBENCH_PERSPECTIVE_ID);
-			if(fallback != null && fallback != perspective) {
-				switchTo(application, modelService, partService, fallback);
-				showWorkbenchParts(application, modelService, partService);
-			}
+			showWorkbenchParts(application, modelService, partService);
 		}
 		BaijiuShellSelection.clearHiddenSelections(application, modelService);
 		hideTopWindowMenus(application, modelService);
@@ -154,6 +150,7 @@ public class BaijiuShellAddon {
 		show(modelService.find(BaijiuShellChrome.ANALYSIS_PART_ID, application));
 		show(modelService.find(BaijiuShellChrome.ANALYSIS_HOME_PART_ID, application));
 		show(modelService.find(BaijiuShellChrome.WORKBENCH_HOME_PART_ID, application));
+		show(modelService.find(BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID, application));
 		show(modelService.find(BaijiuShellChrome.CHROMATOGRAM_PLACEHOLDER_ID, application));
 		show(modelService.find(BaijiuShellChrome.EDITOR_AREA_ID, application));
 		show(modelService.find(BaijiuShellChrome.BAIJIU_MENU_ID, application));
@@ -203,6 +200,7 @@ public class BaijiuShellAddon {
 		tagNoDetach(modelService.find(BaijiuShellChrome.SEQUENCE_HOME_PART_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.ANALYSIS_HOME_PART_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.WORKBENCH_HOME_PART_ID, application));
+		tagNoDetach(modelService.find(BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.GC_HOME_STACK_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.SEQUENCE_HOME_STACK_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.WORKFLOW_STACK_ID, application));
