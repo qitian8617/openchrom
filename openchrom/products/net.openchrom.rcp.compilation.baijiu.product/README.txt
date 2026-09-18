@@ -45,8 +45,8 @@ Run As → Eclipse Application (Windows engineer)
    **left** workflow tabs (谱图/采集 ChemClipse editor Area; opening a CSD stays here;
    plus 推荐积分 / 白酒分析 / 三步向导 / 进样序列 / 批处理结果 / 简单批量 / 平行样 / 预览报告);
    **right** fixed 白酒操作 sidebar (NoDetach, resizable sash);
-   reverse-control is an independent window (气/火/信号/就绪 + 当前针) default visible,
-   hidden by toolbar 反控 or by closing the window (remembered). Chromatogram / live
+   reverse-control is an independent window (气/火/信号/就绪 + 当前针) default hidden,
+   shown by toolbar 反控 or 白酒 menu (close hides, hide remembered). Chromatogram / live
    acquisition is the left 谱图/采集 host (placeholder.plantChromatogram), not a competing
    right tab and not the dead placeholder.plantEditor.
    Plant-home stacks host **branding-bundle Parts**
@@ -138,10 +138,11 @@ Verify on the engineer PC
 [ ] Default perspective 厂工作台: toolbar 打开谱图 + 反控 visible;
     **left** 谱图/采集 tab with empty-state hint (not blank gray) plus other
     workflow tabs; **right** 白酒操作 only (resizable, no Detach);
-    reverse-control independent window default visible
+    reverse-control independent window default hidden (toolbar 反控 unchecked)
+    until 反控 / 白酒 menu; FID console 600×1024 when opened
     (or a readable white-on-dark error Label inside the tab — never blank gray)
-[ ] After 白酒 → 重置窗口布局 and relaunch: main client is NOT empty gray; reverse-control and/or sequence table still visible
-[ ] First launch after this PR (epoch 16) auto-clears workbench.xmi once
+[ ] After 白酒 → 重置窗口布局 and relaunch: main client is NOT empty gray; reverse-control stays closed until 反控
+[ ] First launch after this PR (epoch 18) auto-clears workbench.xmi once
 [ ] After that launch, persisted workbench.xmi contains chromatogramHome / plantChromatogram / workbench.plantHome / sequence.plantHome / analysis.plantHome / perspective.plantHome
 [ ] Product .log does NOT flood IllegalArgumentException Welcome “must be visible in the UI presentation”
 [ ] Top bar 文件 / 白酒 / 视图 / 帮助; no 处理器 / 插件 / 色谱图 / 窗口

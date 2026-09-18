@@ -185,7 +185,9 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(shellFrag.contains("net.openchrom.xxd.processor.supplier.baijiu.ui.part.sequence"), shellFrag);
 		assertTrue(shellFrag.contains("net.openchrom.xxd.control.supplier.temperature.ui.command.startAnalysis"), shellFrag);
 		assertTrue(shellFrag.contains("%toolbar.openChromatogram"), shellFrag);
-		assertTrue(shellFrag.contains("%toolbar.toggleGcConsole"), shellFrag);
+		assertTrue(shellFrag.contains("type=\"Check\" selected=\"false\""), shellFrag);
+		assertTrue(shellFrag.contains("BaijiuGcConsoleHidden"), shellFrag);
+		assertFalse(shellFrag.contains("type=\"Check\" selected=\"true\""), shellFrag);
 		assertTrue(shellFrag.contains("%toolbar.startAnalysis"), shellFrag);
 		assertTrue(shellFrag.contains("%toolbar.integrate"), shellFrag);
 		assertTrue(shellFrag.contains("%toolbar.analysis"), shellFrag);
@@ -231,7 +233,8 @@ public class BaijiuPilotPackaging_1_Test {
 		Path chrome = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellChrome.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellChrome.java");
 		assertNotNull(chrome);
 		String chromeSrc = Files.readString(chrome, StandardCharsets.UTF_8);
-		assertTrue(chromeSrc.contains("CHROME_EPOCH = 17"), chromeSrc);
+		assertTrue(chromeSrc.contains("CSD_EDITOR_PART_ID"), chromeSrc);
+		assertTrue(chromeSrc.contains("CHROME_EPOCH = 18"), chromeSrc);
 		assertTrue(chromeSrc.contains("WELCOME_PERSPECTIVE_ID"), chromeSrc);
 		assertTrue(chromeSrc.contains("PLANT_HOME_REQUIRED_ELEMENT_IDS"), chromeSrc);
 		assertTrue(chromeSrc.contains("isHiddenResearchPerspective"), chromeSrc);
@@ -348,7 +351,9 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(partsSrc.contains("revealStackChildren"), partsSrc);
 		assertTrue(partsSrc.contains("restoreDefaultTabSelection"), partsSrc);
 		assertTrue(partsSrc.contains("attachChromatogramPlaceholder"), partsSrc);
-		assertTrue(partsSrc.contains("showChromatogram"), partsSrc);
+		assertTrue(partsSrc.contains("hostOpenCsdEditors"), partsSrc);
+		assertTrue(partsSrc.contains("persistGcConsoleHidden"), partsSrc);
+		assertTrue(partsSrc.contains("Never open the OS window during chrome apply"), partsSrc);
 		assertTrue(partsSrc.contains("CHROMATOGRAM_STACK_ID"), partsSrc);
 		assertTrue(partsSrc.contains("toggleGcConsole"), partsSrc);
 		assertTrue(partsSrc.contains("GC_WINDOW_ID"), partsSrc);
@@ -497,6 +502,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(gcWorkbenchSrc.contains("PLANT_HOME_PART_ID"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("activateExisting"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("showAcquisitionSurface"), gcWorkbenchSrc);
+		assertTrue(gcWorkbenchSrc.contains("hostOpenCsdEditors"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("PLANT_CHROMATOGRAM_STACK_ID"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("unhideGcConsole"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("PLANT_GC_WINDOW_ID"), gcWorkbenchSrc);
@@ -519,11 +525,13 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(seqWorkbenchSrc.contains("ANALYSIS_HOME_PART_ID"), seqWorkbenchSrc);
 		assertTrue(seqWorkbenchSrc.contains("WORKBENCH_HOME_PART_ID"), seqWorkbenchSrc);
 		assertTrue(seqWorkbenchSrc.contains("showChromatogram"), seqWorkbenchSrc);
+		assertTrue(seqWorkbenchSrc.contains("hostOpenCsdEditors"), seqWorkbenchSrc);
+		assertTrue(seqWorkbenchSrc.contains("findPlantEditorStack"), seqWorkbenchSrc);
 		assertTrue(seqWorkbenchSrc.contains("CHROMATOGRAM_PLACEHOLDER_ID"), seqWorkbenchSrc);
 		assertTrue(seqWorkbenchSrc.contains("CHROMATOGRAM_STACK_ID"), seqWorkbenchSrc);
 		assertTrue(seqWorkbenchSrc.contains("showIntegration"), seqWorkbenchSrc);
 		assertTrue(seqWorkbenchSrc.contains("INTEGRATION_HOME_PART_ID"), seqWorkbenchSrc);
-		assertTrue(seqWorkbenchSrc.contains("parent.isVisible()"), seqWorkbenchSrc);
+		assertTrue(seqWorkbenchSrc.contains("trySetCurSharedRef"), seqWorkbenchSrc);
 		assertFalse(seqWorkbenchSrc.contains("return switched || shown"), "进样序列 button must select the sequence tab, not return true just because plant home switched");
 
 		Path shellMenus = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellMenus.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellMenus.java");
@@ -604,6 +612,27 @@ public class BaijiuPilotPackaging_1_Test {
 		Path site = locate("openchrom/sites/baijiu-fid-pilot/README.txt", "sites/baijiu-fid-pilot/README.txt");
 		assertNotNull(site);
 		assertTrue(Files.readString(site, StandardCharsets.UTF_8).contains("Dedicated product"));
+	}
+
+	@Test
+	public void openChromatogramSkipsBrokenPreferenceWizardAndHostsLeftStack() throws Exception {
+
+		Path handler = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/handlers/OpenBaijiuChromatogramHandler.java", "plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/handlers/OpenBaijiuChromatogramHandler.java");
+		assertNotNull(handler);
+		String handlerSrc = Files.readString(handler, StandardCharsets.UTF_8);
+		assertFalse(handlerSrc.contains("InputEntriesWizard"), handlerSrc);
+		assertFalse(handlerSrc.contains("InputWizardSettings"), handlerSrc);
+		assertTrue(handlerSrc.contains("FileDialog"), handlerSrc);
+		assertTrue(handlerSrc.contains("openInPlantStack"), handlerSrc);
+		assertTrue(handlerSrc.contains("ChromatogramEditorCSD"), handlerSrc);
+		assertTrue(handlerSrc.contains("showPlantChromatogram"), handlerSrc);
+		assertTrue(handlerSrc.contains("BaijiuShellParts"), handlerSrc);
+
+		Path cdfPrefs = locate("openchrom/plugins/net.openchrom.csd.converter.supplier.cdf.ui/plugin.xml", "plugins/net.openchrom.csd.converter.supplier.cdf.ui/plugin.xml");
+		assertNotNull(cdfPrefs);
+		String cdfXml = Files.readString(cdfPrefs, StandardCharsets.UTF_8);
+		assertFalse(cdfXml.contains("org.eclipse.chemclipse.csd.converter.ui.converterPreferencePage"), cdfXml);
+		assertTrue(cdfXml.contains("net.openchrom.csd.converter.supplier.cdf.ui.preferences.preferencePage"), cdfXml);
 	}
 
 	/**

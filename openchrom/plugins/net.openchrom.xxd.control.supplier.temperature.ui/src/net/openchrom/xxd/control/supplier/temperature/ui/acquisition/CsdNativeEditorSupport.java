@@ -37,6 +37,8 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 
+import net.openchrom.xxd.control.supplier.temperature.ui.TemperatureControlIds;
+
 public final class CsdNativeEditorSupport {
 
 	private static final Logger logger = Logger.getLogger(CsdNativeEditorSupport.class);
@@ -112,7 +114,7 @@ public final class CsdNativeEditorSupport {
 			} catch(RuntimeException | LinkageError e) {
 				// editor stack lookup below still runs
 			}
-			MPartStack partStack = (MPartStack)modelService.find(IPerspectiveAndViewIds.EDITOR_PART_STACK_ID, application);
+			MPartStack partStack = resolveEditorStack(modelService, application);
 			if(partStack == null) {
 				logger.warn("Cannot open CSD editor: editor part stack not found");
 				return;
@@ -129,6 +131,11 @@ public final class CsdNativeEditorSupport {
 			part.setCloseable(true);
 			partStack.getChildren().add(part);
 			partService.showPart(part, PartState.ACTIVATE);
+			try {
+				net.openchrom.xxd.control.supplier.temperature.ui.TemperatureControlWorkbench.showAcquisitionSurface(application, modelService, partService);
+			} catch(RuntimeException | LinkageError e) {
+				// plant stack selection above
+			}
 			refreshEditorLayout(window, part);
 			schedulePostOpenRefresh(Display.getDefault(), chromatogram, window);
 			logger.info("Opened native CSD editor for " + chromatogram.getName());
@@ -149,7 +156,7 @@ public final class CsdNativeEditorSupport {
 						+ ", partService=" + (partService != null) + ")");
 				return false;
 			}
-			MPartStack partStack = (MPartStack)modelService.find(IPerspectiveAndViewIds.EDITOR_PART_STACK_ID, application);
+			MPartStack partStack = resolveEditorStack(modelService, application);
 			if(partStack == null) {
 				logger.warn("Cannot open saved CSD file: editor part stack not found");
 				return false;
@@ -167,6 +174,11 @@ public final class CsdNativeEditorSupport {
 			part.setCloseable(true);
 			partStack.getChildren().add(part);
 			partService.showPart(part, PartState.ACTIVATE);
+			try {
+				net.openchrom.xxd.control.supplier.temperature.ui.TemperatureControlWorkbench.showAcquisitionSurface(application, modelService, partService);
+			} catch(RuntimeException | LinkageError e) {
+				// plant stack selection above
+			}
 			if(livePart != null && livePart != part) {
 				clearDirty(livePart);
 				removePart(livePart);
@@ -179,6 +191,19 @@ public final class CsdNativeEditorSupport {
 			logger.warn("Failed to open saved CSD file", e);
 			return false;
 		}
+	}
+
+	private static MPartStack resolveEditorStack(EModelService modelService, MApplication application) {
+
+		MUIElement plant = modelService.find(TemperatureControlIds.PLANT_CHROMATOGRAM_STACK_ID, application);
+		if(plant instanceof MPartStack stack) {
+			return stack;
+		}
+		MUIElement primary = modelService.find(IPerspectiveAndViewIds.EDITOR_PART_STACK_ID, application);
+		if(primary instanceof MPartStack stack) {
+			return stack;
+		}
+		return null;
 	}
 
 	private static void removePart(MPart part) {

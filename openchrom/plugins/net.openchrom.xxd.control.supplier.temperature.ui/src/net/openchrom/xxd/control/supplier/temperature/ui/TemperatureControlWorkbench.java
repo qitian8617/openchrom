@@ -17,6 +17,7 @@ import org.eclipse.e4.ui.model.application.ui.MUIElement;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPerspective;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPlaceholder;
 import org.eclipse.e4.ui.model.application.ui.basic.MPart;
+import org.eclipse.e4.ui.model.application.ui.basic.MPartStack;
 import org.eclipse.e4.ui.model.application.ui.menu.MItem;
 import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
@@ -107,17 +108,29 @@ public final class TemperatureControlWorkbench {
 		}
 		placeholder.setVisible(true);
 		placeholder.setToBeRendered(true);
-		selectInParent(placeholder);
+		showAncestors(placeholder);
+		if(placeholder instanceof MPlaceholder shared) {
+			MUIElement ref = shared.getRef();
+			if(ref != null) {
+				ref.setVisible(true);
+				ref.setToBeRendered(true);
+				trySetCurSharedRef(ref, shared);
+			}
+		}
 		MUIElement chromatogramStack = modelService.find(TemperatureControlIds.PLANT_CHROMATOGRAM_STACK_ID, application);
 		if(chromatogramStack != null) {
 			chromatogramStack.setVisible(true);
 			chromatogramStack.setToBeRendered(true);
-			selectInParent(chromatogramStack);
+			showAncestors(chromatogramStack);
 		}
 		MUIElement workflow = modelService.find(TemperatureControlIds.PLANT_WORKFLOW_STACK_ID, application);
 		if(workflow != null) {
 			workflow.setVisible(true);
 			workflow.setToBeRendered(true);
+		}
+		boolean hosted = hostOpenCsdEditors(application, modelService, partService);
+		if(!hosted) {
+			selectInParent(placeholder);
 		}
 		if(partService != null) {
 			try {
@@ -129,6 +142,84 @@ public final class TemperatureControlWorkbench {
 			}
 		}
 		return true;
+	}
+
+	static boolean hostOpenCsdEditors(MApplication application, EModelService modelService, EPartService partService) {
+
+		if(application == null || modelService == null) {
+			return false;
+		}
+		MUIElement stackElement = modelService.find(TemperatureControlIds.PLANT_CHROMATOGRAM_STACK_ID, application);
+		if(!(stackElement instanceof MPartStack plantStack)) {
+			return false;
+		}
+		List<MPart> editors = modelService.findElements(application, TemperatureControlIds.CSD_EDITOR_PART_ID, MPart.class, null);
+		if(editors == null || editors.isEmpty()) {
+			return false;
+		}
+		boolean hosted = false;
+		for(MPart part : editors) {
+			if(part == null) {
+				continue;
+			}
+			part.setVisible(true);
+			part.setToBeRendered(true);
+			if(part.getParent() != plantStack) {
+				try {
+					if(part.getParent() != null) {
+						part.getParent().getChildren().remove(part);
+					}
+					plantStack.getChildren().add(part);
+				} catch(RuntimeException | LinkageError e) {
+					continue;
+				}
+			}
+			selectInParent(part);
+			if(partService != null) {
+				try {
+					partService.showPart(part, PartState.ACTIVATE);
+				} catch(RuntimeException | LinkageError e) {
+					// selection above
+				}
+			}
+			hosted = true;
+		}
+		return hosted;
+	}
+
+	static void trySetCurSharedRef(MUIElement shared, MPlaceholder placeholder) {
+
+		if(shared == null || placeholder == null) {
+			return;
+		}
+		if(shared instanceof MPart part) {
+			try {
+				part.setCurSharedRef(placeholder);
+				return;
+			} catch(RuntimeException | LinkageError e) {
+				// Area
+			}
+		}
+		try {
+			java.lang.reflect.Method setter = shared.getClass().getMethod("setCurSharedRef", MPlaceholder.class);
+			setter.invoke(shared, placeholder);
+		} catch(RuntimeException | LinkageError | ReflectiveOperationException e) {
+			// MArea
+		}
+	}
+
+	private static void showAncestors(MUIElement element) {
+
+		MUIElement walk = element;
+		while(walk != null) {
+			walk.setVisible(true);
+			walk.setToBeRendered(true);
+			try {
+				walk = walk.getParent();
+			} catch(RuntimeException | LinkageError e) {
+				return;
+			}
+		}
 	}
 
 	static void unhideGcConsole(MApplication application, EModelService modelService) {

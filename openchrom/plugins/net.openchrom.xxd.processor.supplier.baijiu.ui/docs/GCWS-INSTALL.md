@@ -62,7 +62,7 @@ Need the OpenChrom PDE workspace that already compiles `baijiu.ui` (**JavaSE-21*
 
 Phase 3 plant UI (dedicated product only):
 
-- Starts on **厂工作台**. Horizontal sash (resizable): **left** PartStack of workflow tabs **谱图 / 采集** (ChemClipse editor Area + empty-state, not closable, does not swap sides when opening a CSD) plus 推荐积分 / 白酒分析 / 三步向导 / 进样序列 / 批处理结果 / 简单批量 / 平行样 / 预览报告; **right** fixed **白酒操作** sidebar (NoDetach). Reverse-control is an **independent window** shown/hidden by toolbar **反控** (check item, default visible; close hides, reopen shows the same singleton; hide remembered via `BaijiuGcConsoleHidden`). Community install still opens the floating dialog.
+- Starts on **厂工作台**. Horizontal sash (resizable): **left** PartStack of workflow tabs **谱图 / 采集** (ChemClipse editor Area + empty-state, not closable, does not swap sides when opening a CSD) plus 推荐积分 / 白酒分析 / 三步向导 / 进样序列 / 批处理结果 / 简单批量 / 平行样 / 预览报告; **right** fixed **白酒操作** sidebar (NoDetach). Reverse-control is an **independent window** shown/hidden by toolbar **反控** (check item, **default hidden**; close hides, reopen shows the same singleton; hide remembered via `BaijiuGcConsoleHidden`). Community install still opens the floating dialog.
 - Plant-home hosts are branding Parts (`BaijiuGcHomePart` / `BaijiuSequenceHomePart` / `BaijiuAnalysisHomePart` / `BaijiuWorkbenchHomePart`) that OSGi-load the real panels. Chromatogram host is `placeholder.plantChromatogram` in `partstack.plantChromatogram` → ChemClipse Area (not the dead `placeholder.plantEditor`, not a right-side tab). Cold start must show the plant toolbar (打开谱图 / 反控) plus FID controls and/or the sequence table, **or a readable error Label** — never blank gray.
 - Top menu **文件 / 白酒 / 视图 / 帮助**. 处理器 / 插件 are hidden. Toolbar: **打开谱图**、**反控**、开始分析、推荐积分、定量/白酒分析、报告. **开始分析** / Main「启动」 keeps the live chart on the **left** 谱图/采集 surface after a successful start.
 - 白酒分析 is a page (样品→校正→定量→报告) on the dedicated shell; community still uses the dialog.
@@ -152,7 +152,7 @@ After a valid license, continue demo `操作步骤.txt` **A–J** (method packag
 
 ## D. Engineer verify list (本机导出验证)
 
-- [ ] **Dedicated product:** Run As / Export `openchrom.compilation.baijiu.product`; title 白酒 FID 工作站; starts on **厂工作台** (toolbar 打开谱图 + 反控; **left** 谱图·采集 workflow tabs; **right** 白酒操作 only; FID console independent window default visible, or a readable error Label — never blank gray); opening a CSD stays on the **left**; **开始分析** Start keeps 谱图/采集 on the left; top bar without 处理器/插件; restart keeps layout; `baijiu.ui` still JavaSE-21
+- [ ] **Dedicated product:** Run As / Export `openchrom.compilation.baijiu.product`; title 白酒 FID 工作站; starts on **厂工作台** (toolbar 打开谱图 + 反控 unchecked; **left** 谱图·采集 workflow tabs; **right** 白酒操作 only; FID console independent window **default hidden** until 反控, or a readable error Label — never blank gray); opening a CSD stays on the **left**; **开始分析** Start keeps 谱图/采集 on the left; top bar without 处理器/插件; restart keeps layout; `baijiu.ui` still JavaSE-21
 - [ ] **Community path:** Export Deployable Features of **Baijiu FID Pilot** to a folder (or Tycho `sites/baijiu-fid-pilot/target/repository`)
 - [ ] On a community OpenChrom, Install New Software from that folder; restart
 - [ ] About / Installation Details shows feature **1.6.32.*** qualifier

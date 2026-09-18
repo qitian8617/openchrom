@@ -25,7 +25,8 @@ import java.util.Set;
  * picker. Plant home sash: left workflow tabs (谱图/采集 + analysis pages) |
  * right fixed 白酒操作 sidebar. GC console is a true top-level SWT Shell
  * (600×1024), toggled from 反控 — never a Part/sash child of plant home.
- * Escape hatch (documented, not in the UI):
+ * Cold start leaves that Shell hidden (toolbar 反控 unchecked) until the
+ * operator clicks 反控 or 白酒 → 气相色谱控制台. Escape hatch (documented, not in the UI):
  * {@code -Dnet.openchrom.baijiu.showResearchMenus=true}.
  */
 public final class BaijiuShellChrome {
@@ -107,6 +108,8 @@ public final class BaijiuShellChrome {
 	public static final String REPORT_HOME_PART_ID = "net.openchrom.rcp.compilation.baijiu.ui.part.reportHome";
 	public static final String REPORT_HOME_CONTRIBUTION_URI = "bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuReportHomePart";
 	public static final String EDITOR_AREA_ID = "org.eclipse.chemclipse.rcp.app.ui.editor";
+	public static final String CSD_EDITOR_PART_ID = "org.eclipse.chemclipse.ux.extension.xxd.ui.part.chromatogramEditorCSD";
+	public static final String PRIMARY_EDITOR_STACK_ID = "org.eclipse.e4.primaryDataStack";
 	/**
 	 * Live ChemClipse editor Area hosted as the plant-home 谱图/采集 surface
 	 * (left sash). Distinct from the dead Phase-2 {@link #PLANT_EDITOR_PLACEHOLDER_ID}.
@@ -149,8 +152,11 @@ public final class BaijiuShellChrome {
 	 * Epoch 17: GC is a true top-level SWT Shell (600×1024), not an E4 Part
 	 * / MDI child of the FID TrimmedWindow. The model TrimmedWindow stays
 	 * unrendered (sibling under MApplication) for ids / hide-tag only.
+	 * Epoch 18: GC Shell stays closed on cold start (toolbar 反控 unchecked;
+	 * hide tag default). Opening a CSD hosts the editor on the left
+	 * 谱图/采集 stack instead of the empty-state Part.
 	 */
-	public static final int CHROME_EPOCH = 17;
+	public static final int CHROME_EPOCH = 18;
 	/**
 	 * Ids that must exist on the live model after plant-home reveal. Missing
 	 * any of these is the empty-left / community-button-column failure mode.
