@@ -96,7 +96,7 @@ public final class BaijiuShellModel {
 		if(found instanceof MPerspective perspective) {
 			return perspective;
 		}
-		MPerspective created = create(modelService, MPerspective.class);
+		MPerspective created = create(MPerspective.class);
 		if(created == null) {
 			return null;
 		}
@@ -130,7 +130,7 @@ public final class BaijiuShellModel {
 			return false;
 		}
 		MPart chromatogramHome = part(application, modelService, chromatogramStack, BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID, BaijiuShellChrome.CHROMATOGRAM_HOME_CONTRIBUTION_URI, "谱图 / 采集", ICON_CSD);
-		placeholder(application, modelService, chromatogramStack, BaijiuShellChrome.CHROMATOGRAM_PLACEHOLDER_ID, "谱图 / 采集", ICON_CSD, BaijiuShellChrome.EDITOR_AREA_ID);
+		placeholder(application, modelService, chromatogramStack, BaijiuShellChrome.CHROMATOGRAM_PLACEHOLDER_ID, BaijiuShellChrome.EDITOR_AREA_ID);
 		MPartStack gcStack = stack(application, modelService, top, BaijiuShellChrome.GC_HOME_STACK_ID, "3800");
 		MPartStack workflow = stack(application, modelService, top, BaijiuShellChrome.WORKFLOW_STACK_ID, "6200");
 		if(gcStack != null) {
@@ -154,7 +154,7 @@ public final class BaijiuShellModel {
 			tagNoDetach(existing);
 			return existing;
 		}
-		MPartSashContainer created = create(modelService, MPartSashContainer.class);
+		MPartSashContainer created = create(MPartSashContainer.class);
 		if(created == null) {
 			return null;
 		}
@@ -179,7 +179,7 @@ public final class BaijiuShellModel {
 			tagNoDetach(existing);
 			return existing;
 		}
-		MPartStack created = create(modelService, MPartStack.class);
+		MPartStack created = create(MPartStack.class);
 		if(created == null) {
 			return null;
 		}
@@ -204,7 +204,7 @@ public final class BaijiuShellModel {
 			tagNoDetach(existing);
 			return existing;
 		}
-		MPart created = create(modelService, MPart.class);
+		MPart created = create(MPart.class);
 		if(created == null) {
 			return null;
 		}
@@ -220,7 +220,7 @@ public final class BaijiuShellModel {
 		return created;
 	}
 
-	private static MPlaceholder placeholder(MApplication application, EModelService modelService, MElementContainer<?> parent, String id, String label, String iconUri, String refId) {
+	private static MPlaceholder placeholder(MApplication application, EModelService modelService, MElementContainer<?> parent, String id, String refId) {
 
 		MUIElement found = modelService.find(id, application);
 		if(found instanceof MPlaceholder existing) {
@@ -230,13 +230,11 @@ public final class BaijiuShellModel {
 			tagNoDetach(existing);
 			return existing;
 		}
-		MPlaceholder created = create(modelService, MPlaceholder.class);
+		MPlaceholder created = create(MPlaceholder.class);
 		if(created == null) {
 			return null;
 		}
 		created.setElementId(id);
-		created.setLabel(label);
-		created.setIconURI(iconUri);
 		created.setVisible(true);
 		created.setToBeRendered(true);
 		tagNoDetach(created);
@@ -300,18 +298,8 @@ public final class BaijiuShellModel {
 	}
 
 	@SuppressWarnings("unchecked")
-	static <T> T create(EModelService modelService, Class<T> type) {
+	static <T> T create(Class<T> type) {
 
-		if(modelService != null) {
-			try {
-				T created = modelService.createModelElement(type);
-				if(created != null) {
-					return created;
-				}
-			} catch(RuntimeException | LinkageError e) {
-				// EMF factory below
-			}
-		}
 		try {
 			if(type == MPerspective.class) {
 				return (T)MAdvancedFactory.INSTANCE.createPerspective();

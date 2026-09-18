@@ -34,6 +34,12 @@ public class BaijiuShellModel_1_Test {
 	}
 
 	@Test
+	public void factoryCreateUnknownTypeIsNull() {
+
+		assertTrue(BaijiuShellModel.create(Object.class) == null);
+	}
+
+	@Test
 	public void requiredPlantHomeIdsCoverLeftChartAndRightTabs() {
 
 		assertTrue(BaijiuShellChrome.PLANT_HOME_REQUIRED_ELEMENT_IDS.contains(BaijiuShellChrome.PERSPECTIVE_ID));
