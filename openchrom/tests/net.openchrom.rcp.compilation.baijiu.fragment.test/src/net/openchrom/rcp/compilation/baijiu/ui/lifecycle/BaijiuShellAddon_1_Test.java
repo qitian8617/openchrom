@@ -23,6 +23,7 @@ public class BaijiuShellAddon_1_Test {
 		BaijiuShellAddon.hideTopWindowMenus(null, null);
 		BaijiuShellAddon.tagPlantHomeSingletons(null, null);
 		BaijiuShellAddon.recoverPlantHome(null, null);
+		BaijiuShellParts.suppressE4GcWindow(null, null);
 		BaijiuShellModel.ensurePlantHome(null, null);
 		BaijiuShellSelection.selectPlantHomeIfPresent(null, null);
 		BaijiuShellSelection.rejectHiddenSelection(null, null);

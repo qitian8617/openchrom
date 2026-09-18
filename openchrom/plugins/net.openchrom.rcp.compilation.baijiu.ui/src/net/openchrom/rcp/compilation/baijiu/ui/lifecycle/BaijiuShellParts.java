@@ -23,10 +23,7 @@ import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService.PartState;
 import org.eclipse.e4.ui.workbench.modeling.IWindowCloseHandler;
-import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.Shell;
 
 /**
  * Activates plant-home parts by element id. Prefers the concrete Parts hosted
@@ -40,7 +37,8 @@ import org.eclipse.swt.widgets.Shell;
  * <em>left</em> sash ({@code partstack.plantChromatogram}), not as a
  * competing tab in the right 白酒操作 sidebar. A concrete empty-state Part
  * sits first in that stack so cold start is not a blank gray void. The GC
- * console is a singleton secondary window, not a sash child. No Java
+ * console is a singleton top-level SWT Shell ({@code BaijiuGcConsoleShell}),
+ * not a sash child and not a rendered E4 TrimmedWindow. No Java
  * dependency on baijiu.ui / temperature.ui (branding stays soft).
  */
 public final class BaijiuShellParts {
@@ -55,15 +53,19 @@ public final class BaijiuShellParts {
 	 * other workflow pages stay rendered siblings on the left stack.
 	 * Chromatogram stays on the left sash: empty-state Part selected until a
 	 * CSD is opened, with the editor Area placeholder attached and created.
-	 * GC console is an independent window (default visible; toolbar 反控
+	 * GC console is an independent OS window (default visible; toolbar 反控
 	 * hides it). Returns true when the plant-home surface is shown —
 	 * never fall back to the community workbench perspective.
 	 */
 	public static boolean showPlantHomeParts(MApplication application, EModelService modelService, EPartService partService) {
 
+		if(application == null || modelService == null) {
+			return false;
+		}
+		BaijiuShellModel.ensureIndependentGcWindow(application, modelService);
+		suppressE4GcWindow(application, modelService);
 		applyGcConsoleVisibility(application, modelService);
-		boolean gc = !isGcConsoleHidden(application, modelService) && (showPart(application, modelService, partService, BaijiuShellChrome.GC_HOME_PART_ID, null) //
-				|| showPart(application, modelService, partService, BaijiuShellChrome.GC_CONTROL_PART_ID, BaijiuShellChrome.GC_CONTROL_PLACEHOLDER_ID));
+		boolean gc = !isGcConsoleHidden(application, modelService) && BaijiuGcConsoleShell.show();
 		revealStackChildren(application, modelService, BaijiuShellChrome.CHROMATOGRAM_STACK_ID);
 		revealStackChildren(application, modelService, BaijiuShellChrome.WORKFLOW_STACK_ID);
 		boolean sequence = showPart(application, modelService, partService, BaijiuShellChrome.SEQUENCE_HOME_PART_ID, null) //
@@ -93,8 +95,14 @@ public final class BaijiuShellParts {
 	 */
 	public static void forceCreatePlantHomeGuis(MApplication application, EModelService modelService) {
 
+		if(application == null || modelService == null) {
+			return;
+		}
+		suppressE4GcWindow(application, modelService);
 		if(!isGcConsoleHidden(application, modelService)) {
-			forceCreateGui(application, modelService, BaijiuShellChrome.GC_HOME_PART_ID);
+			BaijiuGcConsoleShell.show();
+		} else {
+			BaijiuGcConsoleShell.hide();
 		}
 		for(String id : BaijiuShellChrome.LEFT_WORKFLOW_PART_IDS) {
 			forceCreateGui(application, modelService, id);
@@ -208,13 +216,13 @@ public final class BaijiuShellParts {
 		}
 		MUIElement window = gcConsoleWindow(application, modelService);
 		if(window != null) {
-			return BaijiuShellChrome.isGcConsoleHidden(window.getTags()) || !window.isVisible();
+			return BaijiuShellChrome.isGcConsoleHidden(window.getTags());
 		}
 		MUIElement stack = modelService.find(BaijiuShellChrome.GC_HOME_STACK_ID, application);
-		if(stack == null) {
-			return false;
+		if(stack != null) {
+			return BaijiuShellChrome.isGcConsoleHidden(stack.getTags());
 		}
-		return BaijiuShellChrome.isGcConsoleHidden(stack.getTags()) || !stack.isVisible();
+		return false;
 	}
 
 	public static boolean toggleGcConsole(MApplication application, EModelService modelService, EPartService partService) {
@@ -224,38 +232,43 @@ public final class BaijiuShellParts {
 		return show;
 	}
 
+	private static boolean gcVisibilityBusy;
+
 	public static void setGcConsoleVisible(MApplication application, EModelService modelService, EPartService partService, boolean visible) {
 
-		if(application == null || modelService == null) {
+		if(application == null || modelService == null || gcVisibilityBusy) {
 			return;
 		}
-		MUIElement window = gcConsoleWindow(application, modelService);
-		MUIElement stack = modelService.find(BaijiuShellChrome.GC_HOME_STACK_ID, application);
-		MUIElement target = window != null ? window : stack;
-		if(target == null) {
-			return;
-		}
-		target.setToBeRendered(true);
-		if(visible) {
-			removeTag(target, BaijiuShellChrome.GC_CONSOLE_HIDDEN_TAG);
-			if(stack != null && stack != target) {
-				removeTag(stack, BaijiuShellChrome.GC_CONSOLE_HIDDEN_TAG);
-				stack.setVisible(true);
-				stack.setToBeRendered(true);
+		gcVisibilityBusy = true;
+		try {
+			BaijiuShellModel.ensureIndependentGcWindow(application, modelService);
+			suppressE4GcWindow(application, modelService);
+			MUIElement window = gcConsoleWindow(application, modelService);
+			MUIElement stack = modelService.find(BaijiuShellChrome.GC_HOME_STACK_ID, application);
+			MUIElement target = window != null ? window : stack;
+			if(target != null) {
+				if(visible) {
+					removeTag(target, BaijiuShellChrome.GC_CONSOLE_HIDDEN_TAG);
+					if(stack != null && stack != target) {
+						removeTag(stack, BaijiuShellChrome.GC_CONSOLE_HIDDEN_TAG);
+					}
+				} else {
+					addTag(target, BaijiuShellChrome.GC_CONSOLE_HIDDEN_TAG);
+					if(stack != null && stack != target) {
+						addTag(stack, BaijiuShellChrome.GC_CONSOLE_HIDDEN_TAG);
+					}
+				}
 			}
-			target.setVisible(true);
-			showElementAndAncestors(target);
-			showPart(application, modelService, partService, BaijiuShellChrome.GC_HOME_PART_ID, null);
-			forceCreateGui(application, modelService, BaijiuShellChrome.GC_HOME_PART_ID);
-			bringGcWindowToFront(target);
-			installGcWindowCloseHandler(application, modelService, partService, window instanceof MWindow mWindow ? mWindow : null);
-		} else {
-			addTag(target, BaijiuShellChrome.GC_CONSOLE_HIDDEN_TAG);
-			BaijiuShellSelection.deselectFromParent(target);
-			target.setVisible(false);
-			hideGcWindowShell(target);
+			installGcOsWindowHideHook(application, modelService, partService);
+			if(visible) {
+				BaijiuGcConsoleShell.show();
+			} else {
+				BaijiuGcConsoleShell.hide();
+			}
+			syncGcToggleToolItem(application, modelService);
+		} finally {
+			gcVisibilityBusy = false;
 		}
-		syncGcToggleToolItem(application, modelService);
 	}
 
 	public static void applyGcConsoleVisibility(MApplication application, EModelService modelService) {
@@ -263,25 +276,15 @@ public final class BaijiuShellParts {
 		if(application == null || modelService == null) {
 			return;
 		}
-		MUIElement window = gcConsoleWindow(application, modelService);
-		MUIElement stack = modelService.find(BaijiuShellChrome.GC_HOME_STACK_ID, application);
-		MUIElement target = window != null ? window : stack;
-		if(target == null) {
-			return;
-		}
-		target.setToBeRendered(true);
-		if(BaijiuShellChrome.isGcConsoleHidden(target.getTags())) {
-			BaijiuShellSelection.deselectFromParent(target);
-			target.setVisible(false);
-			hideGcWindowShell(target);
+		BaijiuShellModel.ensureIndependentGcWindow(application, modelService);
+		suppressE4GcWindow(application, modelService);
+		installGcOsWindowHideHook(application, modelService, partService(application));
+		if(isGcConsoleHidden(application, modelService)) {
+			BaijiuGcConsoleShell.hide();
 		} else {
-			target.setVisible(true);
-			if(stack != null) {
-				stack.setVisible(true);
-				stack.setToBeRendered(true);
-			}
-			installGcWindowCloseHandler(application, modelService, null, window instanceof MWindow mWindow ? mWindow : null);
+			BaijiuGcConsoleShell.show();
 		}
+		syncGcToggleToolItem(application, modelService);
 	}
 
 	public static void revealPlantToolbar(MApplication application, EModelService modelService) {
@@ -539,6 +542,12 @@ public final class BaijiuShellParts {
 		if(application == null || modelService == null || partId == null || partId.isBlank()) {
 			return false;
 		}
+		if(BaijiuShellChrome.GC_HOME_PART_ID.equals(partId) || BaijiuShellChrome.GC_CONTROL_PART_ID.equals(partId)) {
+			if(gcConsoleWindow(application, modelService) != null || modelService.find(BaijiuShellChrome.GC_HOME_PART_ID, application) != null) {
+				setGcConsoleVisible(application, modelService, partService, true);
+				return true;
+			}
+		}
 		MPart part = findPart(modelService, application, partId);
 		if(part == null) {
 			return false;
@@ -684,35 +693,72 @@ public final class BaijiuShellParts {
 		return modelService.find(BaijiuShellChrome.GC_WINDOW_ID, application);
 	}
 
-	static void bringGcWindowToFront(MUIElement window) {
+	/**
+	 * Never paint the E4 TrimmedWindow / GC Part inside the FID main shell.
+	 * #45 left that window as an MDI/Part child; the operator UI is
+	 * {@link BaijiuGcConsoleShell}.
+	 */
+	public static void suppressE4GcWindow(MApplication application, EModelService modelService) {
 
-		if(window == null) {
+		if(application == null || modelService == null) {
 			return;
 		}
-		window.setVisible(true);
-		window.setToBeRendered(true);
-		Object widget = window.getWidget();
-		if(widget instanceof Shell shell && !shell.isDisposed()) {
-			shell.setMinimized(false);
-			shell.setVisible(true);
-			shell.setActive();
-			shell.forceActive();
+		MUIElement window = gcConsoleWindow(application, modelService);
+		if(window instanceof org.eclipse.e4.ui.model.application.ui.basic.MTrimmedWindow trimmed) {
+			BaijiuShellModel.applyGcWindowBounds(trimmed);
+			BaijiuShellModel.reparentToApplication(application, trimmed);
 		}
+		BaijiuShellModel.neverRenderGcWindow(window);
+		BaijiuShellModel.disposeGcWindowWidget(window);
+		BaijiuShellModel.neverRenderGcWindow(modelService.find(BaijiuShellChrome.GC_WINDOW_SASH_ID, application));
+		BaijiuShellModel.neverRenderGcWindow(modelService.find(BaijiuShellChrome.GC_HOME_STACK_ID, application));
+		BaijiuShellModel.neverRenderGcWindow(modelService.find(BaijiuShellChrome.GC_HOME_PART_ID, application));
+		BaijiuShellModel.neverRenderGcWindow(modelService.find(BaijiuShellChrome.GC_CONTROL_PLACEHOLDER_ID, application));
+		BaijiuShellModel.neverRenderGcWindow(modelService.find(BaijiuShellChrome.GC_PERSPECTIVE_PLACEHOLDER_ID, application));
+		MUIElement plantSash = modelService.find(BaijiuShellChrome.PLANT_SASH_ID, application);
+		MUIElement placeholder = modelService.find(BaijiuShellChrome.GC_CONTROL_PLACEHOLDER_ID, application);
+		if(placeholder != null && plantSash != null && isAncestor(plantSash, placeholder)) {
+			BaijiuShellSelection.deselectFromParent(placeholder);
+			BaijiuShellModel.neverRenderGcWindow(placeholder);
+		}
+	}
+
+	private static boolean isAncestor(MUIElement ancestor, MUIElement element) {
+
+		MUIElement walk = element;
+		while(walk != null) {
+			if(walk == ancestor) {
+				return true;
+			}
+			try {
+				walk = walk.getParent();
+			} catch(RuntimeException | LinkageError e) {
+				return false;
+			}
+		}
+		return false;
+	}
+
+	static void installGcOsWindowHideHook(MApplication application, EModelService modelService, EPartService partService) {
+
+		BaijiuGcConsoleShell.setOnHide(() -> setGcConsoleVisible(application, modelService, partService, false));
+	}
+
+	static void bringGcWindowToFront(MUIElement window) {
+
+		BaijiuShellModel.disposeGcWindowWidget(window);
+		BaijiuGcConsoleShell.show();
 	}
 
 	static void hideGcWindowShell(MUIElement window) {
 
-		if(window == null) {
-			return;
-		}
-		Object widget = window.getWidget();
-		if(widget instanceof Shell shell && !shell.isDisposed()) {
-			shell.setVisible(false);
-		}
+		BaijiuShellModel.disposeGcWindowWidget(window);
+		BaijiuGcConsoleShell.hide();
 	}
 
 	static void installGcWindowCloseHandler(MApplication application, EModelService modelService, EPartService partService, MWindow window) {
 
+		installGcOsWindowHideHook(application, modelService, partService);
 		if(window == null) {
 			return;
 		}
@@ -726,14 +772,18 @@ public final class BaijiuShellParts {
 		} catch(RuntimeException | LinkageError e) {
 			// older E4
 		}
-		Object widget = window.getWidget();
-		if(widget instanceof Shell shell && !shell.isDisposed() && shell.getData("baijiu.gcCloseHook") == null) {
-			Listener hide = event -> {
-				event.doit = false;
-				setGcConsoleVisible(application, modelService, partService, false);
-			};
-			shell.addListener(SWT.Close, hide);
-			shell.setData("baijiu.gcCloseHook", hide);
+		BaijiuShellModel.disposeGcWindowWidget(window);
+	}
+
+	private static EPartService partService(MApplication application) {
+
+		if(application == null || application.getContext() == null) {
+			return null;
+		}
+		try {
+			return application.getContext().get(EPartService.class);
+		} catch(RuntimeException | LinkageError e) {
+			return null;
 		}
 	}
 

@@ -48,11 +48,8 @@
       <children xsi:type="menu:HandledToolItem" xmi:id="_baijiuToolReport" elementId="net.openchrom.rcp.compilation.baijiu.ui.toolbar.report" label="%toolbar.report" tooltip="%toolbar.report" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/peak.gif" toBeRendered="true" visible="true" command="_impReport"/>
     </elements>
   </fragments>
-  <fragments xsi:type="fragment:StringModelFragment" xmi:id="_baijiuGcTabFrag" featurename="children" parentElementId="net.openchrom.xxd.processor.supplier.baijiu.ui.partstack.workbench">
-    <elements xsi:type="advanced:Placeholder" xmi:id="_baijiuGcPh" elementId="net.openchrom.rcp.compilation.baijiu.ui.placeholder.gcControl" ref="_impGcPart"/>
-  </fragments>
   <fragments xsi:type="fragment:StringModelFragment" xmi:id="_baijiuGcWindowFrag" featurename="children" parentElementId="org.eclipse.chemclipse.rcp.ide.application">
-    <elements xsi:type="basic:TrimmedWindow" xmi:id="_baijiuGcWindow" elementId="net.openchrom.rcp.compilation.baijiu.ui.window.gcConsole" label="%part.gcHome" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/preferences.gif" x="120" y="80" width="980" height="720" visible="true" toBeRendered="true">
+    <elements xsi:type="basic:TrimmedWindow" xmi:id="_baijiuGcWindow" elementId="net.openchrom.rcp.compilation.baijiu.ui.window.gcConsole" label="%part.gcHome" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/preferences.gif" x="80" y="40" width="600" height="1024" visible="false" toBeRendered="false">
       <children xsi:type="basic:PartSashContainer" xmi:id="_baijiuGcWindowSash" elementId="net.openchrom.rcp.compilation.baijiu.ui.partsash.gcConsole" horizontal="true">
         <children xsi:type="basic:PartStack" xmi:id="_baijiuPlantGcStack" elementId="net.openchrom.rcp.compilation.baijiu.ui.partstack.gcHome">
           <tags>NoMove</tags>

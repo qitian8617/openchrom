@@ -23,7 +23,8 @@ import java.util.Set;
  * are hidden by id and by top-menu label. Select View / perspective switcher
  * are hidden so the plant home GC console cannot be cloned from the view
  * picker. Plant home sash: left workflow tabs (谱图/采集 + analysis pages) |
- * right fixed 白酒操作 sidebar. GC console is an independent window.
+ * right fixed 白酒操作 sidebar. GC console is a true top-level SWT Shell
+ * (600×1024), toggled from 反控 — never a Part/sash child of plant home.
  * Escape hatch (documented, not in the UI):
  * {@code -Dnet.openchrom.baijiu.showResearchMenus=true}.
  */
@@ -42,6 +43,7 @@ public final class BaijiuShellChrome {
 	public static final String GC_PERSPECTIVE_ID = "net.openchrom.rcp.compilation.baijiu.ui.perspective.gcControl";
 	public static final String GC_CONTROL_PART_ID = "net.openchrom.xxd.control.supplier.temperature.ui.part.control";
 	public static final String GC_CONTROL_PLACEHOLDER_ID = "net.openchrom.rcp.compilation.baijiu.ui.placeholder.gcControl";
+	public static final String GC_PERSPECTIVE_PLACEHOLDER_ID = "net.openchrom.rcp.compilation.baijiu.ui.placeholder.gcControl.perspective";
 	/**
 	 * Concrete plant-home host (not a Placeholder import of the shared
 	 * reverse-control part). Distinct id so it cannot clash with
@@ -75,6 +77,12 @@ public final class BaijiuShellChrome {
 	public static final String GC_WINDOW_ID = "net.openchrom.rcp.compilation.baijiu.ui.window.gcConsole";
 	public static final String GC_WINDOW_SASH_ID = "net.openchrom.rcp.compilation.baijiu.ui.partsash.gcConsole";
 	public static final String GC_HOME_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.gcHome";
+	/**
+	 * Independent OS window client size. Must match the operator FID console
+	 * (temperature {@code UiStyles.PANEL_WIDTH}/{@code PANEL_HEIGHT}).
+	 */
+	public static final int GC_WINDOW_WIDTH = 600;
+	public static final int GC_WINDOW_HEIGHT = 1024;
 	public static final String SEQUENCE_HOME_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.sequenceHome";
 	/**
 	 * Right-hand fixed 白酒操作 sidebar. Sequence / analysis live on
@@ -138,8 +146,11 @@ public final class BaijiuShellChrome {
 	 * create/reveal plant-home fragment children if workbench.xmi omitted them.
 	 * Epoch 16: GC console is an independent window; right sidebar is 白酒操作
 	 * only; left stack hosts workflow pages as tabs.
+	 * Epoch 17: GC is a true top-level SWT Shell (600×1024), not an E4 Part
+	 * / MDI child of the FID TrimmedWindow. The model TrimmedWindow stays
+	 * unrendered (sibling under MApplication) for ids / hide-tag only.
 	 */
-	public static final int CHROME_EPOCH = 16;
+	public static final int CHROME_EPOCH = 17;
 	/**
 	 * Ids that must exist on the live model after plant-home reveal. Missing
 	 * any of these is the empty-left / community-button-column failure mode.

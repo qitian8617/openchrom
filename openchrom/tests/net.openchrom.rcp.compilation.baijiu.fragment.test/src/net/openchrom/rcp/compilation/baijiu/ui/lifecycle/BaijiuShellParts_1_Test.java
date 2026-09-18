@@ -42,6 +42,7 @@ public class BaijiuShellParts_1_Test {
 		assertFalse(BaijiuShellParts.toggleGcConsole(null, null, null));
 		BaijiuShellParts.setGcConsoleVisible(null, null, null, false);
 		BaijiuShellParts.applyGcConsoleVisibility(null, null);
+		BaijiuShellParts.suppressE4GcWindow(null, null);
 		BaijiuShellParts.revealPlantToolbar(null, null);
 		BaijiuShellParts.syncGcToggleToolItem(null, null);
 		BaijiuShellParts.forceCreatePlantHomeGuis(null, null);

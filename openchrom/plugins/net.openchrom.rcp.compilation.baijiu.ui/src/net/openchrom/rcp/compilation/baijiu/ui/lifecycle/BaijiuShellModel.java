@@ -25,6 +25,8 @@ import org.eclipse.e4.ui.model.application.ui.basic.MPartSashContainer;
 import org.eclipse.e4.ui.model.application.ui.basic.MPartStack;
 import org.eclipse.e4.ui.model.application.ui.basic.MTrimmedWindow;
 import org.eclipse.e4.ui.workbench.modeling.EModelService;
+import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Shell;
 
 /**
  * Ensures the plant-home perspective from {@code fragment.e4xmi} is in the
@@ -141,8 +143,22 @@ public final class BaijiuShellModel {
 		MPart parallel = part(application, modelService, chromatogramStack, BaijiuShellChrome.PARALLEL_HOME_PART_ID, BaijiuShellChrome.PARALLEL_HOME_CONTRIBUTION_URI, "平行样", ICON_PEAK);
 		MPart report = part(application, modelService, chromatogramStack, BaijiuShellChrome.REPORT_HOME_PART_ID, BaijiuShellChrome.REPORT_HOME_CONTRIBUTION_URI, "预览报告", ICON_PEAK);
 		MPart workbench = part(application, modelService, workflow, BaijiuShellChrome.WORKBENCH_HOME_PART_ID, BaijiuShellChrome.WORKBENCH_HOME_CONTRIBUTION_URI, "白酒操作", ICON_PEAK);
-		MPart gc = ensureGcConsoleWindow(application, modelService);
+		MPart gc = ensureIndependentGcWindow(application, modelService);
 		return chromatogramHome != null && workbench != null && sequence != null && analysis != null && integration != null && wizard != null && batchResults != null && simpleBatch != null && parallel != null && report != null && gc != null;
+	}
+
+	/**
+	 * Keep a sibling {@code MTrimmedWindow} under {@link MApplication} for
+	 * ids / hide-tag persistence. Never render it: #45's visible TrimmedWindow
+	 * was parented under the main Shell and painted as an MDI/Part child of
+	 * 「白酒 FID 工作站」. The operator UI is {@code BaijiuGcConsoleShell}.
+	 */
+	public static MPart ensureIndependentGcWindow(MApplication application, EModelService modelService) {
+
+		if(application == null || modelService == null) {
+			return null;
+		}
+		return ensureGcConsoleWindow(application, modelService);
 	}
 
 	private static MPart ensureGcConsoleWindow(MApplication application, EModelService modelService) {
@@ -151,26 +167,41 @@ public final class BaijiuShellModel {
 		if(window == null) {
 			return null;
 		}
+		neverRenderGcWindow(window);
 		MPartSashContainer sash = sash(application, modelService, window, BaijiuShellChrome.GC_WINDOW_SASH_ID, true, null);
 		if(sash == null) {
 			return null;
 		}
+		neverRenderGcWindow(sash);
 		MPartStack stack = stack(application, modelService, sash, BaijiuShellChrome.GC_HOME_STACK_ID, null);
 		if(stack == null) {
 			return null;
 		}
-		return part(application, modelService, stack, BaijiuShellChrome.GC_HOME_PART_ID, BaijiuShellChrome.GC_HOME_CONTRIBUTION_URI, "气相色谱控制台", ICON_PREFERENCES);
+		neverRenderGcWindow(stack);
+		MPart part = part(application, modelService, stack, BaijiuShellChrome.GC_HOME_PART_ID, BaijiuShellChrome.GC_HOME_CONTRIBUTION_URI, "气相色谱控制台", ICON_PREFERENCES);
+		evacuateGcFromPlantHome(application, modelService, window, stack, part);
+		neverRenderGcWindow(window);
+		neverRenderGcWindow(sash);
+		neverRenderGcWindow(stack);
+		neverRenderGcWindow(part);
+		disposeGcWindowWidget(window);
+		return part;
 	}
 
 	private static MTrimmedWindow gcWindow(MApplication application, EModelService modelService) {
 
 		MUIElement found = modelService.find(BaijiuShellChrome.GC_WINDOW_ID, application);
 		if(found instanceof MTrimmedWindow existing) {
-			existing.setToBeRendered(true);
-			if(!BaijiuShellChrome.isGcConsoleHidden(existing.getTags())) {
-				existing.setVisible(true);
-			}
+			applyGcWindowBounds(existing);
+			reparentToApplication(application, existing);
+			neverRenderGcWindow(existing);
+			disposeGcWindowWidget(existing);
 			return existing;
+		}
+		if(found != null) {
+			reparentToApplication(application, found);
+			neverRenderGcWindow(found);
+			disposeGcWindowWidget(found);
 		}
 		MTrimmedWindow created = create(MTrimmedWindow.class);
 		if(created == null) {
@@ -179,14 +210,137 @@ public final class BaijiuShellModel {
 		created.setElementId(BaijiuShellChrome.GC_WINDOW_ID);
 		created.setLabel("气相色谱控制台");
 		created.setIconURI(ICON_PREFERENCES);
-		created.setX(120);
-		created.setY(80);
-		created.setWidth(980);
-		created.setHeight(720);
-		created.setVisible(true);
-		created.setToBeRendered(true);
+		applyGcWindowBounds(created);
+		neverRenderGcWindow(created);
 		addChild(application, created, false);
 		return created;
+	}
+
+	static void applyGcWindowBounds(MTrimmedWindow window) {
+
+		if(window == null) {
+			return;
+		}
+		window.setX(80);
+		window.setY(40);
+		window.setWidth(BaijiuShellChrome.GC_WINDOW_WIDTH);
+		window.setHeight(BaijiuShellChrome.GC_WINDOW_HEIGHT);
+	}
+
+	static void neverRenderGcWindow(MUIElement element) {
+
+		if(element == null) {
+			return;
+		}
+		element.setToBeRendered(false);
+		element.setVisible(false);
+	}
+
+	static void disposeGcWindowWidget(MUIElement window) {
+
+		if(window == null) {
+			return;
+		}
+		Object widget = window.getWidget();
+		if(widget instanceof Shell shell && !shell.isDisposed()) {
+			try {
+				shell.setVisible(false);
+				shell.dispose();
+			} catch(RuntimeException | LinkageError e) {
+				// already gone
+			}
+		} else if(widget instanceof Control control && !control.isDisposed()) {
+			try {
+				control.setVisible(false);
+				control.dispose();
+			} catch(RuntimeException | LinkageError e) {
+				// already gone
+			}
+		}
+		try {
+			window.setWidget(null);
+		} catch(RuntimeException | LinkageError e) {
+			// older E4
+		}
+		neverRenderGcWindow(window);
+	}
+
+	static void reparentToApplication(MApplication application, MUIElement child) {
+
+		if(application == null || child == null) {
+			return;
+		}
+		MElementContainer<?> parent;
+		try {
+			parent = child.getParent();
+		} catch(RuntimeException | LinkageError e) {
+			return;
+		}
+		if(parent == application) {
+			return;
+		}
+		BaijiuShellSelection.deselectFromParent(child);
+		if(parent != null) {
+			try {
+				List<?> children = parent.getChildren();
+				if(children != null) {
+					children.remove(child);
+				}
+			} catch(RuntimeException | LinkageError e) {
+				// immutable
+			}
+		}
+		addChild(application, child, false);
+	}
+
+	static void evacuateGcFromPlantHome(MApplication application, EModelService modelService, MTrimmedWindow window, MPartStack stack, MPart part) {
+
+		if(application == null || modelService == null) {
+			return;
+		}
+		MUIElement plantSash = modelService.find(BaijiuShellChrome.PLANT_SASH_ID, application);
+		detachIfUnder(plantSash, modelService.find(BaijiuShellChrome.GC_HOME_STACK_ID, application), stack);
+		detachIfUnder(plantSash, modelService.find(BaijiuShellChrome.GC_HOME_PART_ID, application), stack != null ? stack : window);
+		detachIfUnder(plantSash, modelService.find(BaijiuShellChrome.GC_WINDOW_SASH_ID, application), window);
+		detachIfUnder(plantSash, modelService.find(BaijiuShellChrome.GC_CONTROL_PLACEHOLDER_ID, application), null);
+		MUIElement topSash = modelService.find(BaijiuShellChrome.PLANT_TOP_SASH_ID, application);
+		if(topSash != null) {
+			BaijiuShellSelection.deselectFromParent(topSash);
+			neverRenderGcWindow(topSash);
+		}
+	}
+
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	private static void detachIfUnder(MUIElement ancestor, MUIElement element, MElementContainer<?> destination) {
+
+		if(element == null || ancestor == null) {
+			return;
+		}
+		MUIElement walk = element;
+		boolean under = false;
+		while(walk != null) {
+			if(walk == ancestor) {
+				under = true;
+				break;
+			}
+			try {
+				walk = walk.getParent();
+			} catch(RuntimeException | LinkageError e) {
+				return;
+			}
+		}
+		if(!under) {
+			return;
+		}
+		BaijiuShellSelection.deselectFromParent(element);
+		neverRenderGcWindow(element);
+		MElementContainer parent = element.getParent();
+		if(parent != null && parent.getChildren() != null) {
+			parent.getChildren().remove(element);
+		}
+		if(destination != null && destination != element) {
+			addChild(destination, element, false);
+		}
 	}
 
 	private static MPartSashContainer sash(MApplication application, EModelService modelService, MElementContainer<?> parent, String id, boolean horizontal, String containerData) {

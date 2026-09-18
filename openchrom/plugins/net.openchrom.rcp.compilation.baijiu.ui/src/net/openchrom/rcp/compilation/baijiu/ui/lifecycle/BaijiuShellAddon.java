@@ -149,6 +149,7 @@ public class BaijiuShellAddon {
 		try {
 			dropDeadPlantEditorPlaceholder(application, modelService);
 			BaijiuShellModel.ensurePlantHome(application, modelService);
+			BaijiuShellParts.suppressE4GcWindow(application, modelService);
 			revealPlantParts(application, modelService);
 			BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
 			BaijiuShellParts.showPlantHomeParts(application, modelService, partService(application));
@@ -215,9 +216,6 @@ public class BaijiuShellAddon {
 		show(modelService.find(BaijiuShellChrome.WORKBENCH_PERSPECTIVE_ID, application));
 		show(modelService.find(BaijiuShellChrome.ANALYSIS_PERSPECTIVE_ID, application));
 		show(modelService.find(BaijiuShellChrome.GC_PERSPECTIVE_ID, application));
-		show(modelService.find(BaijiuShellChrome.GC_HOME_PART_ID, application));
-		show(modelService.find(BaijiuShellChrome.GC_CONTROL_PART_ID, application));
-		show(modelService.find(BaijiuShellChrome.GC_CONTROL_PLACEHOLDER_ID, application));
 		show(modelService.find(BaijiuShellChrome.SEQUENCE_HOME_PART_ID, application));
 		show(modelService.find(BaijiuShellChrome.SEQUENCE_PART_ID, application));
 		show(modelService.find(BaijiuShellChrome.ANALYSIS_PART_ID, application));
@@ -232,9 +230,7 @@ public class BaijiuShellAddon {
 		show(modelService.find(BaijiuShellChrome.OPEN_CHROMATOGRAM_TOOLITEM_ID, application));
 		show(modelService.find(BaijiuShellChrome.TOGGLE_GC_TOOLITEM_ID, application));
 		show(modelService.find(BaijiuShellChrome.PLANT_SASH_ID, application));
-		show(modelService.find(BaijiuShellChrome.GC_WINDOW_ID, application));
-		show(modelService.find(BaijiuShellChrome.GC_HOME_STACK_ID, application));
-		show(modelService.find(BaijiuShellChrome.SEQUENCE_HOME_STACK_ID, application));
+		BaijiuShellParts.suppressE4GcWindow(application, modelService);
 		show(modelService.find(BaijiuShellChrome.WORKFLOW_STACK_ID, application));
 		show(modelService.find(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, application));
 		show(modelService.find(BaijiuShellChrome.INTEGRATION_HOME_PART_ID, application));
