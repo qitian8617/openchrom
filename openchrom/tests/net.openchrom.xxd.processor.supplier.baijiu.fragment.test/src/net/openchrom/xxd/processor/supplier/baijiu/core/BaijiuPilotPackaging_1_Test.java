@@ -196,6 +196,9 @@ public class BaijiuPilotPackaging_1_Test {
 		assertFalse(shellFrag.contains("net.openchrom.rcp.compilation.baijiu.ui.partsash.plantTop"), shellFrag);
 		assertTrue(shellFrag.contains("net.openchrom.rcp.compilation.baijiu.ui.window.gcConsole"), shellFrag);
 		assertTrue(shellFrag.contains("xsi:type=\"basic:TrimmedWindow\""), shellFrag);
+		assertTrue(shellFrag.contains("width=\"600\""), shellFrag);
+		assertTrue(shellFrag.contains("height=\"1024\""), shellFrag);
+		assertTrue(shellFrag.contains("width=\"600\" height=\"1024\" visible=\"false\" toBeRendered=\"false\""), shellFrag);
 		assertTrue(shellFrag.contains("net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantChromatogram"), shellFrag);
 		assertTrue(shellFrag.contains("net.openchrom.rcp.compilation.baijiu.ui.part.chromatogramHome"), shellFrag);
 		assertTrue(shellFrag.contains("%part.chromatogramHome"), shellFrag);
@@ -228,7 +231,7 @@ public class BaijiuPilotPackaging_1_Test {
 		Path chrome = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellChrome.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellChrome.java");
 		assertNotNull(chrome);
 		String chromeSrc = Files.readString(chrome, StandardCharsets.UTF_8);
-		assertTrue(chromeSrc.contains("CHROME_EPOCH = 16"), chromeSrc);
+		assertTrue(chromeSrc.contains("CHROME_EPOCH = 17"), chromeSrc);
 		assertTrue(chromeSrc.contains("WELCOME_PERSPECTIVE_ID"), chromeSrc);
 		assertTrue(chromeSrc.contains("PLANT_HOME_REQUIRED_ELEMENT_IDS"), chromeSrc);
 		assertTrue(chromeSrc.contains("isHiddenResearchPerspective"), chromeSrc);
@@ -245,6 +248,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(chromeSrc.contains("partstack.plantWorkflow"), chromeSrc);
 		assertTrue(chromeSrc.contains("partstack.plantChromatogram"), chromeSrc);
 		assertTrue(chromeSrc.contains("window.gcConsole"), chromeSrc);
+		assertTrue(chromeSrc.contains("GC_WINDOW_WIDTH = 600"), chromeSrc);
+		assertTrue(chromeSrc.contains("GC_WINDOW_HEIGHT = 1024"), chromeSrc);
 		assertTrue(chromeSrc.contains("LEFT_WORKFLOW_PART_IDS"), chromeSrc);
 		assertTrue(chromeSrc.contains("FILE_TOOLBAR_ID"), chromeSrc);
 		assertTrue(chromeSrc.contains("org.eclipse.ui.WorkingSetActionSet"), chromeSrc);
@@ -287,6 +292,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(addonSrc.contains("tagPlantHomeSingletons"), addonSrc);
 		assertTrue(addonSrc.contains("revealPlantToolbar"), addonSrc);
 		assertTrue(addonSrc.contains("applyGcConsoleVisibility"), addonSrc);
+		assertTrue(addonSrc.contains("suppressE4GcWindow"), addonSrc);
 		assertTrue(addonSrc.contains("hideResearchElements"), addonSrc);
 		assertTrue(addonSrc.contains("reassignAwayFrom"), addonSrc);
 		assertTrue(addonSrc.contains("clearHiddenSelections"), addonSrc);
@@ -319,6 +325,9 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(modelSrc.contains("GC_WINDOW_ID"), modelSrc);
 		assertTrue(modelSrc.contains("MTrimmedWindow"), modelSrc);
 		assertTrue(modelSrc.contains("createTrimmedWindow"), modelSrc);
+		assertTrue(modelSrc.contains("GC_WINDOW_WIDTH"), modelSrc);
+		assertTrue(modelSrc.contains("ensureIndependentGcWindow"), modelSrc);
+		assertTrue(modelSrc.contains("reparentToApplication"), modelSrc);
 		assertFalse(modelSrc.contains("placeholder.setLabel"), modelSrc);
 		assertFalse(modelSrc.contains("placeholder.setIconURI"), modelSrc);
 		Path pluginXml = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/plugin.xml", "plugins/net.openchrom.rcp.compilation.baijiu.ui/plugin.xml");
@@ -343,6 +352,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(partsSrc.contains("CHROMATOGRAM_STACK_ID"), partsSrc);
 		assertTrue(partsSrc.contains("toggleGcConsole"), partsSrc);
 		assertTrue(partsSrc.contains("GC_WINDOW_ID"), partsSrc);
+		assertTrue(partsSrc.contains("BaijiuGcConsoleShell"), partsSrc);
+		assertTrue(partsSrc.contains("suppressE4GcWindow"), partsSrc);
 		assertTrue(partsSrc.contains("showIntegration"), partsSrc);
 		assertTrue(partsSrc.contains("IWindowCloseHandler"), partsSrc);
 		assertTrue(partsSrc.contains("BaijiuShellSelection.selectInParent"), partsSrc);
@@ -456,6 +467,15 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(wbPartSrc.contains("createIn"), wbPartSrc);
 		assertTrue(wbPartSrc.contains("@PostConstruct"), wbPartSrc);
 
+		Path gcOsShell = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuGcConsoleShell.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuGcConsoleShell.java");
+		assertNotNull(gcOsShell, "independent GC OS window");
+		String gcOsSrc = Files.readString(gcOsShell, StandardCharsets.UTF_8);
+		assertTrue(gcOsSrc.contains("new Shell(display"), gcOsSrc);
+		assertTrue(gcOsSrc.contains("SWT.SHELL_TRIM"), gcOsSrc);
+		assertTrue(gcOsSrc.contains("GC_WINDOW_WIDTH"), gcOsSrc);
+		assertTrue(gcOsSrc.contains("GC_WINDOW_HEIGHT"), gcOsSrc);
+		assertTrue(gcOsSrc.contains("BaijiuGcHomePart"), gcOsSrc);
+
 		Path toggleGc = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/handlers/ToggleGcConsoleHandler.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/handlers/ToggleGcConsoleHandler.java");
 		assertNotNull(toggleGc, "GC sash toolbar toggle");
 		String toggleGcSrc = Files.readString(toggleGc, StandardCharsets.UTF_8);
@@ -480,6 +500,9 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(gcWorkbenchSrc.contains("PLANT_CHROMATOGRAM_STACK_ID"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("unhideGcConsole"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("PLANT_GC_WINDOW_ID"), gcWorkbenchSrc);
+		assertTrue(gcWorkbenchSrc.contains("showPlantGcOsWindow"), gcWorkbenchSrc);
+		assertTrue(gcWorkbenchSrc.contains("plantGcHostPresent"), gcWorkbenchSrc);
+		assertTrue(gcWorkbenchSrc.contains("BaijiuGcConsoleShell"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("findUnder"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("parent.isVisible()"), gcWorkbenchSrc);
 
@@ -559,7 +582,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(archText.contains("BaijiuWorkbenchHomePart"), archText);
 		assertTrue(archText.contains("loadClass"), archText);
 		assertTrue(archText.contains("BaijiuChromatogramReadability"), archText);
-		assertTrue(archText.contains("chrome epoch=10") || archText.contains("epoch=10") || archText.contains("当前 = 10") || archText.contains("epoch=12") || archText.contains("当前 = 12") || archText.contains("epoch=13") || archText.contains("当前 = 13") || archText.contains("epoch=14") || archText.contains("当前 = 14") || archText.contains("epoch=15") || archText.contains("当前 = 15") || archText.contains("epoch=16") || archText.contains("当前 = 16"), archText);
+		assertTrue(archText.contains("chrome epoch=10") || archText.contains("epoch=10") || archText.contains("当前 = 10") || archText.contains("epoch=12") || archText.contains("当前 = 12") || archText.contains("epoch=13") || archText.contains("当前 = 13") || archText.contains("epoch=14") || archText.contains("当前 = 14") || archText.contains("epoch=15") || archText.contains("当前 = 15") || archText.contains("epoch=16") || archText.contains("当前 = 16") || archText.contains("epoch=17") || archText.contains("当前 = 17"), archText);
 		assertTrue(archText.contains("plantHome"), archText);
 		assertTrue(archText.contains("谱图/采集") || archText.contains("谱图 / 采集") || archText.contains("谱图·采集"), archText);
 		assertTrue(archText.contains("BaijiuChromatogramHomePart"), archText);

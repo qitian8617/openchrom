@@ -19,9 +19,10 @@ import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuShellParts;
 
 /**
- * Plant toolbar check item: show or hide the reverse-control window. Does not
- * clone a second GC console (#37 singleton). Closing the window hides it;
- * this command shows it again.
+ * Plant toolbar check item: show or hide the reverse-control OS window. Does
+ * not clone a second GC console (#37 singleton) and does not embed the
+ * console in the FID main sash. Closing the window hides it; this command
+ * shows the same singleton again.
  */
 public class ToggleGcConsoleHandler {
 

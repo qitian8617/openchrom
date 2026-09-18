@@ -24,11 +24,10 @@ import org.eclipse.e4.ui.workbench.modeling.EPartService.PartState;
 import org.eclipse.swt.widgets.Shell;
 
 /**
- * Activates the reverse-control part when a dedicated-shell placeholder has
- * placed it. Prefers the plant-home singleton Part when present so Show View
- * / 白酒 menu cannot clone a second console into the editor stack. Returns
- * false on the community product (no plant-home Part / no placeholder) so the
- * existing dialog remains the fallback. No branding / baijiu.ui types.
+ * Activates the reverse-control console. On the Baijiu plant product the
+ * console is a Display-parented SWT Shell (never {@code showPart} into the
+ * FID main window). Community still opens the floating dialog when the plant
+ * host is absent. No branding / baijiu.ui types.
  */
 public final class TemperatureControlWorkbench {
 
@@ -41,7 +40,7 @@ public final class TemperatureControlWorkbench {
 		if(application == null || modelService == null) {
 			return false;
 		}
-		if(activateExisting(application, modelService, partService, TemperatureControlIds.PLANT_HOME_PART_ID, TemperatureControlIds.PLANT_HOME_PERSPECTIVE_ID)) {
+		if(plantGcHostPresent(application, modelService)) {
 			unhideGcConsole(application, modelService);
 			return true;
 		}
@@ -140,26 +139,56 @@ public final class TemperatureControlWorkbench {
 		MUIElement window = modelService.find(TemperatureControlIds.PLANT_GC_WINDOW_ID, application);
 		MUIElement stack = modelService.find(TemperatureControlIds.PLANT_GC_STACK_ID, application);
 		MUIElement target = window != null ? window : stack;
-		if(target == null) {
-			return;
+		if(target != null) {
+			unhideGcTag(target);
+			if(stack != null && stack != target) {
+				unhideGcTag(stack);
+			}
+			/*
+			 * Never setVisible / createGui on the E4 TrimmedWindow. #45 rendered
+			 * that window as an MDI/Part child of the FID main Shell. The plant
+			 * product hosts the console in a Display-parented SWT Shell.
+			 */
+			target.setToBeRendered(false);
+			target.setVisible(false);
+			Object widget = target.getWidget();
+			if(widget instanceof Shell shell && !shell.isDisposed()) {
+				try {
+					shell.setVisible(false);
+					if(shell.getParent() != null) {
+						shell.dispose();
+					}
+				} catch(RuntimeException | LinkageError e) {
+					// ignore
+				}
+			}
 		}
-		target.setToBeRendered(true);
-		target.setVisible(true);
-		unhideGcTag(target);
-		if(stack != null && stack != target) {
-			stack.setToBeRendered(true);
-			stack.setVisible(true);
-			unhideGcTag(stack);
-		}
-		Object widget = target.getWidget();
-		if(widget instanceof Shell shell && !shell.isDisposed()) {
-			shell.setMinimized(false);
-			shell.setVisible(true);
-			shell.setActive();
-		}
+		showPlantGcOsWindow();
 		MUIElement toggle = modelService.find(TemperatureControlIds.TOGGLE_GC_TOOLITEM_ID, application);
 		if(toggle instanceof MItem item) {
 			item.setSelected(true);
+		}
+	}
+
+	static boolean plantGcHostPresent(MApplication application, EModelService modelService) {
+
+		if(application == null || modelService == null) {
+			return false;
+		}
+		return modelService.find(TemperatureControlIds.PLANT_GC_WINDOW_ID, application) != null //
+				|| modelService.find(TemperatureControlIds.PLANT_HOME_PART_ID, application) != null;
+	}
+
+	static boolean showPlantGcOsWindow() {
+
+		try {
+			Class<?> type = Class.forName("net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuGcConsoleShell");
+			Object result = type.getMethod("show").invoke(null);
+			return !(result instanceof Boolean) || ((Boolean)result).booleanValue();
+		} catch(ClassNotFoundException | LinkageError e) {
+			return false;
+		} catch(Throwable t) {
+			return false;
 		}
 	}
 

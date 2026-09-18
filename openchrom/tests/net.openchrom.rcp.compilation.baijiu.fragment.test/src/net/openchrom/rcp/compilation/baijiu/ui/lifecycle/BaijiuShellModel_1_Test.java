@@ -33,6 +33,7 @@ public class BaijiuShellModel_1_Test {
 		assertTrue(missing.contains(BaijiuShellChrome.GC_WINDOW_ID));
 		assertTrue(missing.contains(BaijiuShellChrome.INTEGRATION_HOME_PART_ID));
 		assertTrue(missing.size() >= BaijiuShellChrome.PLANT_HOME_REQUIRED_ELEMENT_IDS.size());
+		assertTrue(BaijiuShellModel.ensureIndependentGcWindow(null, null) == null);
 	}
 
 	@Test
