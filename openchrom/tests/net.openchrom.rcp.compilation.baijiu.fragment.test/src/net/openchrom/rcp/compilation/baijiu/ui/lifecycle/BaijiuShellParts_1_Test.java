@@ -35,5 +35,7 @@ public class BaijiuShellParts_1_Test {
 		BaijiuShellParts.revealPlantToolbar(null, null);
 		BaijiuShellParts.syncGcToggleToolItem(null, null);
 		BaijiuShellParts.forceCreatePlantHomeGuis(null, null);
+		assertFalse(BaijiuShellParts.hasHiddenResearchAncestor(null));
+		BaijiuShellSelection.selectInParent(null);
 	}
 }

@@ -134,7 +134,7 @@ Verify on the engineer PC
     进样序列 / 白酒分析 / 谱图·采集; reverse-control sash default visible
     (or a readable white-on-dark error Label inside the tab — never blank gray)
 [ ] After 白酒 → 重置窗口布局 and relaunch: main client is NOT empty gray; reverse-control and/or sequence table still visible
-[ ] First launch after this PR (epoch 10) auto-clears workbench.xmi once
+[ ] First launch after this PR (epoch 11) auto-clears workbench.xmi once
 [ ] Top bar 文件 / 白酒 / 视图 / 帮助; no 处理器 / 插件 / 色谱图 / 窗口
 [ ] Toolbar: 打开谱图、反控、开始分析、推荐积分、定量/白酒分析、报告
 [ ] 反控 check item hides/shows the GC sash (no second console)

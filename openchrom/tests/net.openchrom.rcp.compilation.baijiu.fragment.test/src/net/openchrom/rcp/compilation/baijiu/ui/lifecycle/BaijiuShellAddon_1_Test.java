@@ -22,6 +22,8 @@ public class BaijiuShellAddon_1_Test {
 		BaijiuShellAddon.dropDeadPlantEditorPlaceholder(null, null);
 		BaijiuShellAddon.hideTopWindowMenus(null, null);
 		BaijiuShellAddon.tagPlantHomeSingletons(null, null);
+		BaijiuShellSelection.selectInParent(null);
+		BaijiuShellSelection.clearHiddenSelections(null, null);
 		BaijiuShellParts.forceCreatePlantHomeGuis(null, null);
 		BaijiuChromatogramReadability.applyThemeRegistries();
 		BaijiuShellMenus.install();

@@ -37,5 +37,6 @@ public class TemperatureControlWorkbench_1_Test {
 		assertFalse(TemperatureControlWorkbench.activateExisting(null, null, null, TemperatureControlIds.PLANT_HOME_PART_ID, TemperatureControlIds.PLANT_HOME_PERSPECTIVE_ID));
 		assertFalse(TemperatureControlWorkbench.showAcquisitionSurface(null, null, null));
 		TemperatureControlWorkbench.unhideGcConsole(null, null);
+		assertEquals(null, TemperatureControlWorkbench.findUnder(null, null, TemperatureControlIds.CHROMATOGRAM_PLACEHOLDER_ID, TemperatureControlIds.PLANT_HOME_PERSPECTIVE_ID));
 	}
 }

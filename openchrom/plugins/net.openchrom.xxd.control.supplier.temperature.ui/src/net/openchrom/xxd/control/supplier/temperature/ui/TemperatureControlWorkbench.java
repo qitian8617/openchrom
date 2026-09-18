@@ -91,8 +91,14 @@ public final class TemperatureControlWorkbench {
 			return false;
 		}
 		switchPerspective(application, modelService, partService, TemperatureControlIds.PLANT_HOME_PERSPECTIVE_ID);
-		MUIElement placeholder = modelService.find(TemperatureControlIds.CHROMATOGRAM_PLACEHOLDER_ID, application);
+		MUIElement placeholder = findUnder(modelService, application, TemperatureControlIds.CHROMATOGRAM_PLACEHOLDER_ID, TemperatureControlIds.PLANT_HOME_PERSPECTIVE_ID);
 		if(placeholder == null) {
+			placeholder = modelService.find(TemperatureControlIds.CHROMATOGRAM_PLACEHOLDER_ID, application);
+		}
+		if(placeholder == null) {
+			if(modelService.find(TemperatureControlIds.PLANT_HOME_PERSPECTIVE_ID, application) != null) {
+				return false;
+			}
 			placeholder = modelService.find(TemperatureControlIds.EDITOR_AREA_ID, application);
 		}
 		if(placeholder == null) {
@@ -251,13 +257,39 @@ public final class TemperatureControlWorkbench {
 		}
 		MUIElement walk = element;
 		while(walk != null) {
-			walk.setToBeRendered(true);
-			walk.setVisible(true);
 			MElementContainer<MUIElement> parent = walk.getParent();
-			if(parent != null) {
+			if(parent == null) {
+				break;
+			}
+			if(!walk.isToBeRendered() || !walk.isVisible()) {
+				break;
+			}
+			if(!parent.isToBeRendered() || !parent.isVisible()) {
+				break;
+			}
+			try {
 				parent.setSelectedElement(walk);
+			} catch(RuntimeException | LinkageError e) {
+				break;
 			}
 			walk = parent;
 		}
+	}
+
+	static MUIElement findUnder(EModelService modelService, MApplication application, String elementId, String scopeId) {
+
+		if(modelService == null || application == null || elementId == null || elementId.isBlank()) {
+			return null;
+		}
+		if(scopeId != null && !scopeId.isBlank()) {
+			MUIElement scope = modelService.find(scopeId, application);
+			if(scope != null) {
+				MUIElement found = modelService.find(elementId, scope);
+				if(found != null) {
+					return found;
+				}
+			}
+		}
+		return null;
 	}
 }
