@@ -363,9 +363,9 @@ public final class BaijiuShellParts {
 			}
 			part.setVisible(true);
 			part.setToBeRendered(true);
-			MElementContainer<MUIElement> parent = part.getParent();
-			if(parent != (MUIElement) plantStack) {
+			if(!plantStack.getChildren().contains(part)) {
 				try {
+					MElementContainer<MUIElement> parent = part.getParent();
 					if(parent != null) {
 						parent.getChildren().remove(part);
 					}

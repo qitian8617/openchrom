@@ -354,7 +354,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(partsSrc.contains("attachChromatogramPlaceholder"), partsSrc);
 		assertTrue(partsSrc.contains("hostOpenCsdEditors"), partsSrc);
 		assertFalse(partsSrc.contains("getParent() != plantStack"), "MElementContainer<MUIElement> vs MPartStack is incomparable on Java 21");
-		assertTrue(partsSrc.contains("parent != (MUIElement) plantStack") || partsSrc.contains("parent != (MUIElement)plantStack"), partsSrc);
+		assertTrue(partsSrc.contains("plantStack.getChildren().contains(part)"), partsSrc);
 		assertTrue(partsSrc.contains("persistGcConsoleHidden"), partsSrc);
 		assertTrue(partsSrc.contains("Never open the OS window during chrome apply"), partsSrc);
 		assertTrue(partsSrc.contains("if(!hosted)"), partsSrc);
@@ -508,7 +508,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(gcWorkbenchSrc.contains("showAcquisitionSurface"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("hostOpenCsdEditors"), gcWorkbenchSrc);
 		assertFalse(gcWorkbenchSrc.contains("getParent() != plantStack"), "MElementContainer<MUIElement> vs MPartStack is incomparable on Java 21");
-		assertTrue(gcWorkbenchSrc.contains("parent != (MUIElement) plantStack") || gcWorkbenchSrc.contains("parent != (MUIElement)plantStack"), gcWorkbenchSrc);
+		assertTrue(gcWorkbenchSrc.contains("plantStack.getChildren().contains(part)"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("if(!hosted)"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("PLANT_CHROMATOGRAM_STACK_ID"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("unhideGcConsole"), gcWorkbenchSrc);
@@ -534,7 +534,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(seqWorkbenchSrc.contains("showChromatogram"), seqWorkbenchSrc);
 		assertTrue(seqWorkbenchSrc.contains("hostOpenCsdEditors"), seqWorkbenchSrc);
 		assertFalse(seqWorkbenchSrc.contains("getParent() != plantStack"), "MElementContainer<MUIElement> vs MPartStack is incomparable on Java 21");
-		assertTrue(seqWorkbenchSrc.contains("parent != (MUIElement) plantStack") || seqWorkbenchSrc.contains("parent != (MUIElement)plantStack"), seqWorkbenchSrc);
+		assertTrue(seqWorkbenchSrc.contains("plantStack.getChildren().contains(part)"), seqWorkbenchSrc);
 		assertTrue(seqWorkbenchSrc.contains("if(!hosted && placeholder != null)"), seqWorkbenchSrc);
 		assertTrue(seqWorkbenchSrc.contains("findPlantEditorStack"), seqWorkbenchSrc);
 		assertTrue(seqWorkbenchSrc.contains("CHROMATOGRAM_PLACEHOLDER_ID"), seqWorkbenchSrc);
