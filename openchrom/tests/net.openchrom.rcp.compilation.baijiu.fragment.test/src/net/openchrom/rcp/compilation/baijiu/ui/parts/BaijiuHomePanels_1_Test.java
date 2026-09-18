@@ -67,6 +67,7 @@ public class BaijiuHomePanels_1_Test {
 		assertTrue(BaijiuHomePanels.SEQUENCE_COMPOSITE_TYPE.endsWith(".shell.BaijiuSequenceComposite"));
 		assertTrue(BaijiuHomePanels.SEQUENCE_ACCESS_TYPE.endsWith(".sequence.InjectionSequenceAccess"));
 		assertTrue(BaijiuHomePanels.ANALYSIS_SHELL_TYPE.endsWith(".shell.BaijiuAnalysisShell"));
+		assertTrue(BaijiuHomePanels.WORKBENCH_PART_TYPE.endsWith(".parts.BaijiuWorkbenchPart"));
 		assertTrue(BaijiuHomePanels.CHROMATOGRAM_BRIDGE_TYPE.endsWith(".ChromatogramBridge"));
 		assertNull(BaijiuHomePanels.findCreateIn(null));
 		assertNull(BaijiuHomePanels.resolveChromatogramSelection(null));
@@ -79,6 +80,7 @@ public class BaijiuHomePanels_1_Test {
 		BaijiuHomePanels.createTemperaturePanel(null);
 		BaijiuHomePanels.createSequenceComposite(null);
 		BaijiuHomePanels.createAnalysisShell(null, null);
+		BaijiuHomePanels.createWorkbenchPanel(null, null, null, null, null);
 	}
 
 	@Test
@@ -87,8 +89,10 @@ public class BaijiuHomePanels_1_Test {
 		new BaijiuGcHomePart().create(null);
 		new BaijiuSequenceHomePart().create(null);
 		new BaijiuAnalysisHomePart().create(null);
+		new BaijiuWorkbenchHomePart().create(null);
 		new BaijiuGcHomePart((Composite)null);
 		new BaijiuSequenceHomePart((Composite)null);
 		new BaijiuAnalysisHomePart((Composite)null);
+		new BaijiuWorkbenchHomePart((Composite)null);
 	}
 }

@@ -73,8 +73,8 @@ public final class TemperatureControlWorkbench {
 
 	/**
 	 * After Start Analysis / open CSD: stay on plant home and show the
-	 * right-hand 谱图/采集 Area (ChemClipse editor) so live acquisition has
-	 * a large chart surface. Does not steal the left workflow tab.
+	 * left-hand 谱图/采集 Area (ChemClipse editor) so live acquisition has
+	 * a large chart surface. Does not steal the right sidebar tab.
 	 * No-op on the community product.
 	 */
 	public static boolean showAcquisitionSurface() {

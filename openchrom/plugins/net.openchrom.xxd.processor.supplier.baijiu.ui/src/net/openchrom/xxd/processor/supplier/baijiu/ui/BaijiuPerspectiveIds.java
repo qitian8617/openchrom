@@ -24,6 +24,7 @@ public final class BaijiuPerspectiveIds {
 	public static final String SEQUENCE_HOME_PART_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.part.sequence.plantHome";
 	public static final String ANALYSIS_PART_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.part.analysis";
 	public static final String ANALYSIS_HOME_PART_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.part.analysis.plantHome";
+	public static final String WORKBENCH_HOME_PART_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.part.workbench.plantHome";
 	public static final String CHROMATOGRAM_PLACEHOLDER_ID = "net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantChromatogram";
 	public static final String CHROMATOGRAM_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.plantChromatogram";
 	public static final String EDITOR_AREA_ID = "org.eclipse.chemclipse.rcp.app.ui.editor";

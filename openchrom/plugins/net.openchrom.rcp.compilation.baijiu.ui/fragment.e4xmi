@@ -56,7 +56,17 @@
       <children xsi:type="basic:PartSashContainer" xmi:id="_baijiuPlantSash" elementId="net.openchrom.rcp.compilation.baijiu.ui.partsash.plantHome" horizontal="true">
         <tags>NoMove</tags>
         <tags>NoDetach</tags>
-        <children xsi:type="basic:PartSashContainer" xmi:id="_baijiuPlantTopSash" elementId="net.openchrom.rcp.compilation.baijiu.ui.partsash.plantTop" horizontal="true" containerData="4000">
+        <children xsi:type="basic:PartStack" xmi:id="_baijiuPlantChromStack" elementId="net.openchrom.rcp.compilation.baijiu.ui.partstack.plantChromatogram" containerData="7400">
+          <tags>NoMove</tags>
+          <tags>NoDetach</tags>
+          <tags>NoClose</tags>
+          <children xsi:type="advanced:Placeholder" xmi:id="_baijiuPlantChromPh" elementId="net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantChromatogram" label="%part.chromatogramHome" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/importChromatogramCSD.gif" ref="_impEditor">
+            <tags>NoMove</tags>
+            <tags>NoDetach</tags>
+            <tags>NoClose</tags>
+          </children>
+        </children>
+        <children xsi:type="basic:PartSashContainer" xmi:id="_baijiuPlantTopSash" elementId="net.openchrom.rcp.compilation.baijiu.ui.partsash.plantTop" horizontal="false" containerData="2600">
           <tags>NoMove</tags>
           <tags>NoDetach</tags>
           <children xsi:type="basic:PartStack" xmi:id="_baijiuPlantGcStack" elementId="net.openchrom.rcp.compilation.baijiu.ui.partstack.gcHome" containerData="3800">
@@ -73,6 +83,11 @@
             <tags>NoMove</tags>
             <tags>NoDetach</tags>
             <tags>NoClose</tags>
+            <children xsi:type="basic:Part" xmi:id="_baijiuWbHomePart" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.part.workbench.plantHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuWorkbenchHomePart" label="%part.workbenchHome" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/peak.gif" closeable="false">
+              <tags>NoMove</tags>
+              <tags>NoDetach</tags>
+              <tags>NoClose</tags>
+            </children>
             <children xsi:type="basic:Part" xmi:id="_baijiuSeqHomePart" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.part.sequence.plantHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuSequenceHomePart" label="%part.sequenceHome" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/peak.gif" closeable="false">
               <tags>NoMove</tags>
               <tags>NoDetach</tags>
@@ -83,16 +98,6 @@
               <tags>NoDetach</tags>
               <tags>NoClose</tags>
             </children>
-          </children>
-        </children>
-        <children xsi:type="basic:PartStack" xmi:id="_baijiuPlantChromStack" elementId="net.openchrom.rcp.compilation.baijiu.ui.partstack.plantChromatogram" containerData="6000">
-          <tags>NoMove</tags>
-          <tags>NoDetach</tags>
-          <tags>NoClose</tags>
-          <children xsi:type="advanced:Placeholder" xmi:id="_baijiuPlantChromPh" elementId="net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantChromatogram" label="%part.chromatogramHome" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/importChromatogramCSD.gif" ref="_impEditor">
-            <tags>NoMove</tags>
-            <tags>NoDetach</tags>
-            <tags>NoClose</tags>
           </children>
         </children>
       </children>
