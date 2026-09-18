@@ -22,7 +22,8 @@ import jakarta.inject.Inject;
  * until a CSD is open. This branding Part paints a labeled tab and a Chinese
  * hint immediately. Opening a CSD / 开始分析 embeds the ChromatogramEditorCSD
  * widget into this Part's Composite so the chart is the 谱图/采集 page —
- * not a sibling workflow tab.
+ * not a sibling workflow tab. The Area placeholder is kept unrendered so
+ * cold start does not flash nested empty editor frames.
  */
 public class BaijiuChromatogramHomePart {
 

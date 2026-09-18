@@ -421,8 +421,8 @@ public final class BaijiuShellModel {
 
 		MUIElement found = modelService.find(id, application);
 		if(found instanceof MPlaceholder existing) {
-			existing.setVisible(true);
-			existing.setToBeRendered(true);
+			existing.setVisible(false);
+			existing.setToBeRendered(false);
 			bindRef(application, modelService, existing, refId);
 			tagNoDetach(existing);
 			return existing;
@@ -432,8 +432,8 @@ public final class BaijiuShellModel {
 			return null;
 		}
 		created.setElementId(id);
-		created.setVisible(true);
-		created.setToBeRendered(true);
+		created.setVisible(false);
+		created.setToBeRendered(false);
 		tagNoDetach(created);
 		bindRef(application, modelService, created, refId);
 		addChild(parent, created, false);

@@ -113,17 +113,8 @@ public final class TemperatureControlWorkbench {
 		if(placeholder == null) {
 			return false;
 		}
-		placeholder.setVisible(true);
-		placeholder.setToBeRendered(true);
-		showAncestors(placeholder);
-		if(placeholder instanceof MPlaceholder shared) {
-			MUIElement ref = shared.getRef();
-			if(ref != null) {
-				ref.setVisible(true);
-				ref.setToBeRendered(true);
-				trySetCurSharedRef(ref, shared);
-			}
-		}
+		boolean plantPlaceholder = TemperatureControlIds.CHROMATOGRAM_PLACEHOLDER_ID.equals(placeholder.getElementId());
+		MPart home = findPart(modelService, application, TemperatureControlIds.CHROMATOGRAM_HOME_PART_ID);
 		MUIElement chromatogramStack = modelService.find(TemperatureControlIds.PLANT_CHROMATOGRAM_STACK_ID, application);
 		if(chromatogramStack != null) {
 			chromatogramStack.setVisible(true);
@@ -136,17 +127,15 @@ public final class TemperatureControlWorkbench {
 			workflow.setToBeRendered(true);
 		}
 		boolean hosted = hostOpenCsdEditors(application, modelService, partService);
-		if(!hosted) {
+		if(!hosted && home != null) {
+			selectInParent(home);
+			ensurePartGui(application, home);
+		} else if(!hosted && !plantPlaceholder) {
 			selectInParent(placeholder);
-			if(partService != null) {
-				try {
-					if(placeholder instanceof MPart part) {
-						partService.showPart(part, PartState.ACTIVATE);
-					}
-				} catch(RuntimeException | LinkageError e) {
-					// selection above is enough
-				}
-			}
+		}
+		if(plantPlaceholder) {
+			placeholder.setVisible(false);
+			placeholder.setToBeRendered(false);
 		}
 		return true;
 	}
@@ -172,8 +161,6 @@ public final class TemperatureControlWorkbench {
 			if(part == null) {
 				continue;
 			}
-			part.setVisible(true);
-			part.setToBeRendered(true);
 			if(plantStack.getChildren().contains(part)) {
 				try {
 					plantStack.getChildren().remove(part);
@@ -181,6 +168,12 @@ public final class TemperatureControlWorkbench {
 					continue;
 				}
 			}
+			if(!hasCsdInput(part)) {
+				dockOffWorkflowTabs(application, modelService, plantStack, part);
+				continue;
+			}
+			part.setVisible(true);
+			part.setToBeRendered(true);
 			if(!dockOffWorkflowTabs(application, modelService, plantStack, part)) {
 				continue;
 			}
@@ -344,6 +337,27 @@ public final class TemperatureControlWorkbench {
 			walk = walk.getParent();
 		}
 		return false;
+	}
+
+	static boolean hasCsdInput(MPart part) {
+
+		if(part == null) {
+			return false;
+		}
+		Object object = part.getObject();
+		if(object instanceof java.util.Map<?, ?> map) {
+			Object file = map.get("file");
+			if(file instanceof String path && !path.isBlank()) {
+				return true;
+			}
+			if(file instanceof java.io.File) {
+				return true;
+			}
+		} else if(object != null) {
+			return true;
+		}
+		String label = part.getLabel();
+		return label != null && label.contains("[CSD]");
 	}
 
 	static Composite homeWidget(MPart home) {

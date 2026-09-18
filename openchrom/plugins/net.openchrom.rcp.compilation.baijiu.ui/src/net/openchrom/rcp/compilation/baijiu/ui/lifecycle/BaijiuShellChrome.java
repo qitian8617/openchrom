@@ -156,8 +156,11 @@ public final class BaijiuShellChrome {
 	 * Epoch 18: GC Shell stays closed on cold start (toolbar 反控 unchecked;
 	 * hide tag default). Opening a CSD embeds ChromatogramEditorCSD into the
 	 * left 谱图/采集 Part instead of a sibling workflow tab.
+	 * Epoch 19: do not createGui the ChemClipse editor Area into the left
+	 * stack on cold start (nested empty frames). The Area placeholder stays
+	 * in the model unrendered; CSD still embeds into 谱图/采集.
 	 */
-	public static final int CHROME_EPOCH = 18;
+	public static final int CHROME_EPOCH = 19;
 	/**
 	 * Ids that must exist on the live model after plant-home reveal. Missing
 	 * any of these is the empty-left / community-button-column failure mode.

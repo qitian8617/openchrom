@@ -346,7 +346,6 @@ public final class BaijiuShellSelection {
 				|| BaijiuShellChrome.GC_WINDOW_ID.equals(elementId) //
 				|| BaijiuShellChrome.PLANT_SASH_ID.equals(elementId) //
 				|| BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID.equals(elementId) //
-				|| BaijiuShellChrome.CHROMATOGRAM_PLACEHOLDER_ID.equals(elementId) //
 				|| BaijiuShellChrome.ANALYSIS_HOME_PART_ID.equals(elementId) //
 				|| BaijiuShellChrome.LEFT_WORKFLOW_PART_IDS.contains(elementId);
 	}

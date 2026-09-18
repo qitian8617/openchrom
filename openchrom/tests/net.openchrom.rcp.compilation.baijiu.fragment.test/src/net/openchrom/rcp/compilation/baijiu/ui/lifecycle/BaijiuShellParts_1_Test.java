@@ -32,6 +32,8 @@ public class BaijiuShellParts_1_Test {
 		assertFalse(BaijiuShellParts.forceCreateGui(null, null, ""));
 		assertFalse(BaijiuShellParts.showChromatogram(null, null, null));
 		assertFalse(BaijiuShellParts.hostOpenCsdEditors(null, null, null));
+		assertFalse(BaijiuShellParts.hasCsdInput(null));
+		assertFalse(BaijiuShellParts.isParkedEditorArea(null));
 		assertFalse(BaijiuShellParts.embedCsdEditor(null, null, null, null));
 		assertFalse(BaijiuShellParts.dockOffWorkflowTabs(null, null, null, null));
 		assertFalse(BaijiuShellParts.addToSharedElements(null, null));
@@ -53,6 +55,7 @@ public class BaijiuShellParts_1_Test {
 		BaijiuShellParts.revealPlantToolbar(null, null);
 		BaijiuShellParts.syncGcToggleToolItem(null, null);
 		BaijiuShellParts.forceCreatePlantHomeGuis(null, null);
+		BaijiuShellParts.parkChromatogramEditorArea(null, null);
 		BaijiuShellParts.attachChromatogramPlaceholder(null, null);
 		BaijiuShellParts.restoreDefaultTabSelection(null, null);
 		BaijiuShellParts.revealStackChildren(null, null, null);

@@ -76,7 +76,7 @@
             <tags>NoDetach</tags>
             <tags>NoClose</tags>
           </children>
-          <children xsi:type="advanced:Placeholder" xmi:id="_baijiuPlantChromPh" elementId="net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantChromatogram" ref="_impEditor">
+          <children xsi:type="advanced:Placeholder" xmi:id="_baijiuPlantChromPh" elementId="net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantChromatogram" ref="_impEditor" visible="false" toBeRendered="false">
             <tags>NoMove</tags>
             <tags>NoDetach</tags>
             <tags>NoClose</tags>

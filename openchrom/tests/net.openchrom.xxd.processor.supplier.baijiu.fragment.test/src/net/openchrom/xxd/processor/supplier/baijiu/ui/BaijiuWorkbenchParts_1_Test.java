@@ -25,6 +25,7 @@ public class BaijiuWorkbenchParts_1_Test {
 		assertFalse(BaijiuWorkbenchParts.showSequence(null, null, null));
 		assertFalse(BaijiuWorkbenchParts.showChromatogram(null, null, null));
 		assertFalse(BaijiuWorkbenchParts.hostOpenCsdEditors(null, null, null));
+		assertFalse(BaijiuWorkbenchParts.hasCsdInput(null));
 		assertEquals(null, BaijiuWorkbenchParts.findPlantEditorStack(null, null));
 		assertEquals(null, BaijiuWorkbenchParts.findPlantChromatogramStack(null, null));
 		assertEquals(null, BaijiuWorkbenchParts.findPrimaryEditorStack(null, null));

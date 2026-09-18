@@ -75,19 +75,8 @@ public final class BaijiuWorkbenchParts {
 				placeholder = modelService.find(BaijiuPerspectiveIds.EDITOR_AREA_ID, application);
 			}
 		}
-		if(placeholder != null) {
-			placeholder.setVisible(true);
-			placeholder.setToBeRendered(true);
-			showAncestors(placeholder);
-			if(placeholder instanceof MPlaceholder shared) {
-				MUIElement ref = shared.getRef();
-				if(ref != null) {
-					ref.setVisible(true);
-					ref.setToBeRendered(true);
-					trySetCurSharedRef(ref, shared);
-				}
-			}
-		}
+		boolean plantPlaceholder = placeholder != null && BaijiuPerspectiveIds.CHROMATOGRAM_PLACEHOLDER_ID.equals(placeholder.getElementId());
+		MPart home = findPart(modelService, application, BaijiuPerspectiveIds.CHROMATOGRAM_HOME_PART_ID);
 		MUIElement stack = modelService == null || application == null ? null : modelService.find(BaijiuPerspectiveIds.CHROMATOGRAM_STACK_ID, application);
 		if(stack != null) {
 			stack.setVisible(true);
@@ -95,20 +84,17 @@ public final class BaijiuWorkbenchParts {
 			showAncestors(stack);
 		}
 		boolean hosted = hostOpenCsdEditors(application, modelService, partService);
-		if(!hosted && placeholder != null) {
+		if(!hosted && home != null) {
+			selectInParent(home);
+			ensurePartGui(application, home);
+		} else if(!hosted && placeholder != null && !plantPlaceholder) {
 			selectInParent(placeholder);
-			if(partService != null && placeholder instanceof MPlaceholder) {
-				try {
-					MPart editor = findPart(modelService, application, BaijiuPerspectiveIds.EDITOR_AREA_ID);
-					if(editor != null) {
-						partService.showPart(editor, PartState.ACTIVATE);
-					}
-				} catch(RuntimeException | LinkageError e) {
-					// stack selection above is enough
-				}
-			}
 		}
-		return hosted || placeholder != null || switched;
+		if(plantPlaceholder) {
+			placeholder.setVisible(false);
+			placeholder.setToBeRendered(false);
+		}
+		return hosted || home != null || placeholder != null || switched;
 	}
 
 	/**
@@ -171,8 +157,6 @@ public final class BaijiuWorkbenchParts {
 			if(part == null) {
 				continue;
 			}
-			part.setVisible(true);
-			part.setToBeRendered(true);
 			if(plantStack.getChildren().contains(part)) {
 				try {
 					plantStack.getChildren().remove(part);
@@ -180,6 +164,12 @@ public final class BaijiuWorkbenchParts {
 					continue;
 				}
 			}
+			if(!hasCsdInput(part)) {
+				dockOffWorkflowTabs(application, modelService, plantStack, part);
+				continue;
+			}
+			part.setVisible(true);
+			part.setToBeRendered(true);
 			if(!dockOffWorkflowTabs(application, modelService, plantStack, part)) {
 				continue;
 			}
@@ -343,6 +333,27 @@ public final class BaijiuWorkbenchParts {
 			walk = walk.getParent();
 		}
 		return false;
+	}
+
+	static boolean hasCsdInput(MPart part) {
+
+		if(part == null) {
+			return false;
+		}
+		Object object = part.getObject();
+		if(object instanceof java.util.Map<?, ?> map) {
+			Object file = map.get("file");
+			if(file instanceof String path && !path.isBlank()) {
+				return true;
+			}
+			if(file instanceof java.io.File) {
+				return true;
+			}
+		} else if(object != null) {
+			return true;
+		}
+		String label = part.getLabel();
+		return label != null && label.contains("[CSD]");
 	}
 
 	static Composite homeWidget(MPart home) {

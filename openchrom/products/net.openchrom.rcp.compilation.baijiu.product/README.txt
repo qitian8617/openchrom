@@ -143,7 +143,8 @@ Verify on the engineer PC
     until 反控 / 白酒 menu; FID console 600×1024 when opened
     (or a readable white-on-dark error Label inside the tab — never blank gray)
 [ ] After 白酒 → 重置窗口布局 and relaunch: main client is NOT empty gray; reverse-control stays closed until 反控
-[ ] First launch after this PR (epoch 18) auto-clears workbench.xmi once
+[ ] First launch after this PR (epoch 19) auto-clears workbench.xmi once
+    so cold start does not flash nested empty editor frames in 谱图/采集
 [ ] After that launch, persisted workbench.xmi contains chromatogramHome / plantChromatogram / workbench.plantHome / sequence.plantHome / analysis.plantHome / perspective.plantHome
 [ ] Product .log does NOT flood IllegalArgumentException Welcome “must be visible in the UI presentation”
 [ ] Top bar 文件 / 白酒 / 视图 / 帮助; no 处理器 / 插件 / 色谱图 / 窗口

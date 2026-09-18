@@ -43,6 +43,7 @@ public class TemperatureControlWorkbench_1_Test {
 		assertFalse(TemperatureControlWorkbench.activateExisting(null, null, null, TemperatureControlIds.PLANT_HOME_PART_ID, TemperatureControlIds.PLANT_HOME_PERSPECTIVE_ID));
 		assertFalse(TemperatureControlWorkbench.showAcquisitionSurface(null, null, null));
 		assertFalse(TemperatureControlWorkbench.hostOpenCsdEditors(null, null, null));
+		assertFalse(TemperatureControlWorkbench.hasCsdInput(null));
 		assertFalse(TemperatureControlWorkbench.embedCsdEditor(null, null, null, null));
 		assertFalse(TemperatureControlWorkbench.dockOffWorkflowTabs(null, null, null, null));
 		assertFalse(TemperatureControlWorkbench.addToSharedElements(null, null));
