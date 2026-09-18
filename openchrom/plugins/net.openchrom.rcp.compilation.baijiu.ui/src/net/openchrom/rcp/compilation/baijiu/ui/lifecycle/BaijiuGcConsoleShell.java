@@ -82,7 +82,7 @@ public final class BaijiuGcConsoleShell {
 			shell.setActive();
 			shell.forceActive();
 			return true;
-		} catch(RuntimeException | LinkageError | Error e) {
+		} catch(RuntimeException | Error e) {
 			return false;
 		}
 	}
@@ -102,7 +102,7 @@ public final class BaijiuGcConsoleShell {
 			if(!shell.isDisposed()) {
 				shell.setVisible(false);
 			}
-		} catch(RuntimeException | LinkageError | Error e) {
+		} catch(RuntimeException | Error e) {
 			// headless / disposed display
 		}
 	}
@@ -228,7 +228,7 @@ public final class BaijiuGcConsoleShell {
 				return current;
 			}
 			return Display.getDefault();
-		} catch(RuntimeException | LinkageError | Error e) {
+		} catch(RuntimeException | Error e) {
 			return null;
 		}
 	}
