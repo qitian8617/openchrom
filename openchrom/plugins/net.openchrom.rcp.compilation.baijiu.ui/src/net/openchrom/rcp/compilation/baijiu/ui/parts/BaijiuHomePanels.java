@@ -187,6 +187,65 @@ public final class BaijiuHomePanels {
 		}
 	}
 
+	/**
+	 * Replaces the 谱图/采集 empty-state labels with a ChemClipse CSD editor
+	 * widget. FillLayout so the chart occupies the whole tab client; leftover
+	 * empty-state children are disposed (hidden children still take space).
+	 */
+	public static void hostEditor(Composite home, Object editorWidget) {
+
+		if(home == null || home.isDisposed()) {
+			return;
+		}
+		Control editor = editorWidget instanceof Control control && !control.isDisposed() ? control : null;
+		Control[] children = home.getChildren();
+		if(children != null) {
+			for(Control child : children) {
+				if(child == null || child.isDisposed() || child == editor) {
+					continue;
+				}
+				if(editor != null && isAncestor(editor, child)) {
+					continue;
+				}
+				if(!(child instanceof Label)) {
+					continue;
+				}
+				try {
+					child.dispose();
+				} catch(RuntimeException | LinkageError e) {
+					// already gone
+				}
+			}
+		}
+		home.setLayout(new FillLayout());
+		if(editor != null && editor.getParent() != home) {
+			try {
+				editor.setParent(home);
+			} catch(RuntimeException | LinkageError e) {
+				// SWT may reject some reparents
+			}
+		}
+		if(editor != null) {
+			editor.setVisible(true);
+			if(editor instanceof Composite composite && !composite.isDisposed()) {
+				composite.layout(true, true);
+			}
+		}
+		layout(home);
+	}
+
+	static boolean isAncestor(Control child, Control ancestor) {
+
+		Control walk = child;
+		while(walk != null) {
+			if(walk == ancestor) {
+				return true;
+			}
+			walk = walk.getParent();
+		}
+		return false;
+	}
+
 	public static void showError(Composite parent, Throwable t) {
 
 		showMessage(parent, formatThrowable(t));

@@ -25,7 +25,15 @@ public class BaijiuWorkbenchParts_1_Test {
 		assertFalse(BaijiuWorkbenchParts.showSequence(null, null, null));
 		assertFalse(BaijiuWorkbenchParts.showChromatogram(null, null, null));
 		assertFalse(BaijiuWorkbenchParts.hostOpenCsdEditors(null, null, null));
+		assertFalse(BaijiuWorkbenchParts.hasCsdInput(null));
 		assertEquals(null, BaijiuWorkbenchParts.findPlantEditorStack(null, null));
+		assertEquals(null, BaijiuWorkbenchParts.findPlantChromatogramStack(null, null));
+		assertEquals(null, BaijiuWorkbenchParts.findPrimaryEditorStack(null, null));
+		assertFalse(BaijiuWorkbenchParts.addToSharedElements(null, null));
+		assertFalse(BaijiuWorkbenchParts.embedCsdEditor(null, null, null, null));
+		assertFalse(BaijiuWorkbenchParts.dockOffWorkflowTabs(null, null, null, null));
+		BaijiuWorkbenchParts.hostEditor(null, null);
+		assertEquals(null, BaijiuWorkbenchParts.homeWidget(null));
 		assertFalse(BaijiuWorkbenchParts.showIntegration(null, null, null));
 		assertFalse(BaijiuWorkbenchParts.showWizard(null, null, null));
 		assertFalse(BaijiuWorkbenchParts.showBatchResults(null, null, null));
@@ -49,6 +57,7 @@ public class BaijiuWorkbenchParts_1_Test {
 		assertEquals("org.eclipse.chemclipse.ux.extension.xxd.ui.part.chromatogramEditorCSD", BaijiuPerspectiveIds.CSD_EDITOR_PART_ID);
 		assertEquals("org.eclipse.e4.primaryDataStack", BaijiuPerspectiveIds.PRIMARY_EDITOR_STACK_ID);
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.partstack.plantChromatogram", BaijiuPerspectiveIds.CHROMATOGRAM_STACK_ID);
+		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.part.chromatogramHome", BaijiuPerspectiveIds.CHROMATOGRAM_HOME_PART_ID);
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.part.integrationHome", BaijiuPerspectiveIds.INTEGRATION_HOME_PART_ID);
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.part.wizardHome", BaijiuPerspectiveIds.WIZARD_HOME_PART_ID);
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.part.batchResultsHome", BaijiuPerspectiveIds.BATCH_RESULTS_HOME_PART_ID);

@@ -11,6 +11,7 @@ package net.openchrom.xxd.processor.supplier.baijiu.ui;
 
 import java.util.List;
 
+import org.eclipse.e4.core.contexts.IEclipseContext;
 import org.eclipse.e4.ui.model.application.MApplication;
 import org.eclipse.e4.ui.model.application.ui.MElementContainer;
 import org.eclipse.e4.ui.model.application.ui.MUIElement;
@@ -18,9 +19,15 @@ import org.eclipse.e4.ui.model.application.ui.advanced.MPerspective;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPlaceholder;
 import org.eclipse.e4.ui.model.application.ui.basic.MPart;
 import org.eclipse.e4.ui.model.application.ui.basic.MPartStack;
+import org.eclipse.e4.ui.model.application.ui.basic.MWindow;
+import org.eclipse.e4.ui.workbench.IPresentationEngine;
 import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService.PartState;
+import org.eclipse.swt.layout.FillLayout;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Label;
 
 /**
  * Shows dedicated-shell parts/perspectives when branding has placed them.
@@ -68,19 +75,8 @@ public final class BaijiuWorkbenchParts {
 				placeholder = modelService.find(BaijiuPerspectiveIds.EDITOR_AREA_ID, application);
 			}
 		}
-		if(placeholder != null) {
-			placeholder.setVisible(true);
-			placeholder.setToBeRendered(true);
-			showAncestors(placeholder);
-			if(placeholder instanceof MPlaceholder shared) {
-				MUIElement ref = shared.getRef();
-				if(ref != null) {
-					ref.setVisible(true);
-					ref.setToBeRendered(true);
-					trySetCurSharedRef(ref, shared);
-				}
-			}
-		}
+		boolean plantPlaceholder = placeholder != null && BaijiuPerspectiveIds.CHROMATOGRAM_PLACEHOLDER_ID.equals(placeholder.getElementId());
+		MPart home = findPart(modelService, application, BaijiuPerspectiveIds.CHROMATOGRAM_HOME_PART_ID);
 		MUIElement stack = modelService == null || application == null ? null : modelService.find(BaijiuPerspectiveIds.CHROMATOGRAM_STACK_ID, application);
 		if(stack != null) {
 			stack.setVisible(true);
@@ -88,27 +84,35 @@ public final class BaijiuWorkbenchParts {
 			showAncestors(stack);
 		}
 		boolean hosted = hostOpenCsdEditors(application, modelService, partService);
-		if(!hosted && placeholder != null) {
+		if(!hosted && home != null) {
+			selectInParent(home);
+			ensurePartGui(application, home);
+		} else if(!hosted && placeholder != null && !plantPlaceholder) {
 			selectInParent(placeholder);
-			if(partService != null && placeholder instanceof MPlaceholder) {
-				try {
-					MPart editor = findPart(modelService, application, BaijiuPerspectiveIds.EDITOR_AREA_ID);
-					if(editor != null) {
-						partService.showPart(editor, PartState.ACTIVATE);
-					}
-				} catch(RuntimeException | LinkageError e) {
-					// stack selection above is enough
-				}
-			}
 		}
-		return hosted || placeholder != null || switched;
+		if(plantPlaceholder) {
+			placeholder.setVisible(false);
+			placeholder.setToBeRendered(false);
+		}
+		return hosted || home != null || placeholder != null || switched;
 	}
 
 	/**
-	 * Left 谱图/采集 PartStack when the plant-home fragment is present; otherwise
-	 * ChemClipse {@code org.eclipse.e4.primaryDataStack}.
+	 * ChemClipse {@code org.eclipse.e4.primaryDataStack} when present; otherwise
+	 * the left 谱图/采集 workflow {@code partstack.plantChromatogram}. Callers
+	 * that create CSD parts should prefer {@link #findPrimaryEditorStack} so the
+	 * editor is not a sibling of 谱图/采集 / 推荐积分 / ….
 	 */
 	public static MPartStack findPlantEditorStack(MApplication application, EModelService modelService) {
+
+		MPartStack primary = findPrimaryEditorStack(application, modelService);
+		if(primary != null) {
+			return primary;
+		}
+		return findPlantChromatogramStack(application, modelService);
+	}
+
+	public static MPartStack findPlantChromatogramStack(MApplication application, EModelService modelService) {
 
 		if(application == null || modelService == null) {
 			return null;
@@ -116,6 +120,14 @@ public final class BaijiuWorkbenchParts {
 		MUIElement plant = modelService.find(BaijiuPerspectiveIds.CHROMATOGRAM_STACK_ID, application);
 		if(plant instanceof MPartStack stack) {
 			return stack;
+		}
+		return null;
+	}
+
+	public static MPartStack findPrimaryEditorStack(MApplication application, EModelService modelService) {
+
+		if(application == null || modelService == null) {
+			return null;
 		}
 		MUIElement primary = modelService.find(BaijiuPerspectiveIds.PRIMARY_EDITOR_STACK_ID, application);
 		if(primary instanceof MPartStack stack) {
@@ -129,7 +141,7 @@ public final class BaijiuWorkbenchParts {
 		if(application == null || modelService == null) {
 			return false;
 		}
-		MPartStack plantStack = findPlantEditorStack(application, modelService);
+		MPartStack plantStack = findPlantChromatogramStack(application, modelService);
 		if(plantStack == null) {
 			return false;
 		}
@@ -137,35 +149,262 @@ public final class BaijiuWorkbenchParts {
 		if(editors == null || editors.isEmpty()) {
 			return false;
 		}
+		MPart home = findPart(modelService, application, BaijiuPerspectiveIds.CHROMATOGRAM_HOME_PART_ID);
+		ensurePartGui(application, home);
+		Composite host = homeWidget(home);
 		boolean hosted = false;
 		for(MPart part : editors) {
 			if(part == null) {
 				continue;
 			}
-			part.setVisible(true);
-			part.setToBeRendered(true);
-			if(!plantStack.getChildren().contains(part)) {
+			if(plantStack.getChildren().contains(part)) {
 				try {
-					MElementContainer<MUIElement> parent = part.getParent();
-					if(parent != null) {
-						parent.getChildren().remove(part);
-					}
-					plantStack.getChildren().add(part);
+					plantStack.getChildren().remove(part);
 				} catch(RuntimeException | LinkageError e) {
 					continue;
 				}
 			}
-			selectInParent(part);
-			if(partService != null) {
-				try {
-					partService.showPart(part, PartState.ACTIVATE);
-				} catch(RuntimeException | LinkageError e) {
-					// selection above
-				}
+			if(!hasCsdInput(part)) {
+				dockOffWorkflowTabs(application, modelService, plantStack, part);
+				continue;
+			}
+			part.setVisible(true);
+			part.setToBeRendered(true);
+			if(!dockOffWorkflowTabs(application, modelService, plantStack, part)) {
+				continue;
+			}
+			if(!embedCsdEditor(application, partService, part, host)) {
+				continue;
 			}
 			hosted = true;
 		}
+		if(hosted && home != null) {
+			selectInParent(home);
+		}
 		return hosted;
+	}
+
+	static boolean dockOffWorkflowTabs(MApplication application, EModelService modelService, MPartStack plantStack, MPart part) {
+
+		if(part == null) {
+			return false;
+		}
+		try {
+			MElementContainer<MUIElement> parent = part.getParent();
+			if(parent != null) {
+				return true;
+			}
+		} catch(RuntimeException | LinkageError e) {
+			return false;
+		}
+		MPartStack dataStack = findPrimaryEditorStack(application, modelService);
+		if(dataStack != null && dataStack != plantStack && !dataStack.getChildren().contains(part)) {
+			try {
+				dataStack.getChildren().add(part);
+				return true;
+			} catch(RuntimeException | LinkageError e) {
+				// sharedElements below
+			}
+		}
+		return addToSharedElements(application, part);
+	}
+
+	public static boolean addToSharedElements(MApplication application, MPart part) {
+
+		if(application == null || part == null) {
+			return false;
+		}
+		try {
+			List<MWindow> windows = application.getChildren();
+			if(windows == null) {
+				return false;
+			}
+			for(MWindow window : windows) {
+				if(window == null) {
+					continue;
+				}
+				List<MUIElement> shared = window.getSharedElements();
+				if(shared == null) {
+					continue;
+				}
+				if(!shared.contains(part)) {
+					shared.add(part);
+				}
+				return true;
+			}
+		} catch(RuntimeException | LinkageError e) {
+			return false;
+		}
+		return false;
+	}
+
+	static boolean embedCsdEditor(MApplication application, EPartService partService, MPart part, Composite host) {
+
+		if(part == null) {
+			return false;
+		}
+		if(host != null && !host.isDisposed()) {
+			Object widget = part.getWidget();
+			if(widget instanceof Control control && !control.isDisposed()) {
+				hostEditor(host, control);
+				return true;
+			}
+			IPresentationEngine engine = presentationEngine(application, part);
+			if(engine != null) {
+				try {
+					IEclipseContext context = application == null ? null : application.getContext();
+					Object created = engine.createGui(part, host, context);
+					hostEditor(host, part.getWidget() != null ? part.getWidget() : created);
+					if(part.getWidget() != null || created != null) {
+						return true;
+					}
+				} catch(RuntimeException | LinkageError e) {
+					// showPart below
+				}
+			}
+		}
+		if(partService != null) {
+			try {
+				partService.showPart(part, PartState.CREATE);
+			} catch(RuntimeException | LinkageError e) {
+				try {
+					partService.showPart(part, PartState.ACTIVATE);
+				} catch(RuntimeException | LinkageError e2) {
+					// widget reparent below
+				}
+			}
+		}
+		if(host != null && !host.isDisposed() && part.getWidget() instanceof Control control && !control.isDisposed()) {
+			hostEditor(host, control);
+			return true;
+		}
+		return part.getWidget() != null || part.getObject() != null;
+	}
+
+	static void hostEditor(Composite host, Object editorWidget) {
+
+		if(host == null || host.isDisposed()) {
+			return;
+		}
+		Control editor = editorWidget instanceof Control control && !control.isDisposed() ? control : null;
+		Control[] children = host.getChildren();
+		if(children != null) {
+			for(Control child : children) {
+				if(child == null || child.isDisposed() || child == editor) {
+					continue;
+				}
+				if(editor != null && isControlAncestor(editor, child)) {
+					continue;
+				}
+				if(!(child instanceof Label)) {
+					continue;
+				}
+				try {
+					child.dispose();
+				} catch(RuntimeException | LinkageError e) {
+					// already gone
+				}
+			}
+		}
+		host.setLayout(new FillLayout());
+		if(editor != null && editor.getParent() != host) {
+			try {
+				editor.setParent(host);
+			} catch(RuntimeException | LinkageError e) {
+				// SWT may reject some reparents
+			}
+		}
+		if(editor != null) {
+			editor.setVisible(true);
+			if(editor instanceof Composite composite && !composite.isDisposed()) {
+				composite.layout(true, true);
+			}
+		}
+		host.layout(true, true);
+	}
+
+	static boolean isControlAncestor(Control child, Control ancestor) {
+
+		Control walk = child;
+		while(walk != null) {
+			if(walk == ancestor) {
+				return true;
+			}
+			walk = walk.getParent();
+		}
+		return false;
+	}
+
+	static boolean hasCsdInput(MPart part) {
+
+		if(part == null) {
+			return false;
+		}
+		Object object = part.getObject();
+		if(object instanceof java.util.Map<?, ?> map) {
+			Object file = map.get("file");
+			if(file instanceof String path && !path.isBlank()) {
+				return true;
+			}
+			if(file instanceof java.io.File) {
+				return true;
+			}
+		} else if(object != null) {
+			return true;
+		}
+		String label = part.getLabel();
+		return label != null && label.contains("[CSD]");
+	}
+
+	static Composite homeWidget(MPart home) {
+
+		if(home != null && home.getWidget() instanceof Composite composite && !composite.isDisposed()) {
+			return composite;
+		}
+		return null;
+	}
+
+	static void ensurePartGui(MApplication application, MPart part) {
+
+		if(part == null) {
+			return;
+		}
+		part.setVisible(true);
+		part.setToBeRendered(true);
+		selectInParent(part);
+		if(part.getWidget() != null) {
+			return;
+		}
+		IPresentationEngine engine = presentationEngine(application, part);
+		if(engine == null) {
+			return;
+		}
+		try {
+			engine.createGui(part);
+		} catch(RuntimeException | LinkageError e) {
+			// embed still tries createGui(part, host)
+		}
+	}
+
+	private static IPresentationEngine presentationEngine(MApplication application, MPart part) {
+
+		IPresentationEngine engine = fromContext(application == null ? null : application.getContext());
+		if(engine == null && part != null) {
+			engine = fromContext(part.getContext());
+		}
+		return engine;
+	}
+
+	private static IPresentationEngine fromContext(IEclipseContext context) {
+
+		if(context == null) {
+			return null;
+		}
+		try {
+			return context.get(IPresentationEngine.class);
+		} catch(RuntimeException | LinkageError e) {
+			return null;
+		}
 	}
 
 	static void trySetCurSharedRef(MUIElement shared, MPlaceholder placeholder) {

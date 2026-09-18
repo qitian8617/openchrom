@@ -222,8 +222,7 @@ public class BaijiuShellAddon {
 		show(modelService.find(BaijiuShellChrome.ANALYSIS_HOME_PART_ID, application));
 		show(modelService.find(BaijiuShellChrome.WORKBENCH_HOME_PART_ID, application));
 		show(modelService.find(BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID, application));
-		show(modelService.find(BaijiuShellChrome.CHROMATOGRAM_PLACEHOLDER_ID, application));
-		show(modelService.find(BaijiuShellChrome.EDITOR_AREA_ID, application));
+		BaijiuShellParts.parkChromatogramEditorArea(application, modelService);
 		show(modelService.find(BaijiuShellChrome.BAIJIU_MENU_ID, application));
 		show(modelService.find(BaijiuShellChrome.PLANT_TOOLBAR_ID, application));
 		show(modelService.find(BaijiuShellChrome.TRIMBAR_TOP_ID, application));
