@@ -131,14 +131,14 @@ public final class TemperatureControlWorkbench {
 		boolean hosted = hostOpenCsdEditors(application, modelService, partService);
 		if(!hosted) {
 			selectInParent(placeholder);
-		}
-		if(partService != null) {
-			try {
-				if(placeholder instanceof MPart part) {
-					partService.showPart(part, PartState.ACTIVATE);
+			if(partService != null) {
+				try {
+					if(placeholder instanceof MPart part) {
+						partService.showPart(part, PartState.ACTIVATE);
+					}
+				} catch(RuntimeException | LinkageError e) {
+					// selection above is enough
 				}
-			} catch(RuntimeException | LinkageError e) {
-				// selection above is enough
 			}
 		}
 		return true;

@@ -90,15 +90,15 @@ public final class BaijiuWorkbenchParts {
 		boolean hosted = hostOpenCsdEditors(application, modelService, partService);
 		if(!hosted && placeholder != null) {
 			selectInParent(placeholder);
-		}
-		if(partService != null && placeholder instanceof MPlaceholder) {
-			try {
-				MPart editor = findPart(modelService, application, BaijiuPerspectiveIds.EDITOR_AREA_ID);
-				if(editor != null) {
-					partService.showPart(editor, PartState.ACTIVATE);
+			if(partService != null && placeholder instanceof MPlaceholder) {
+				try {
+					MPart editor = findPart(modelService, application, BaijiuPerspectiveIds.EDITOR_AREA_ID);
+					if(editor != null) {
+						partService.showPart(editor, PartState.ACTIVATE);
+					}
+				} catch(RuntimeException | LinkageError e) {
+					// stack selection above is enough
 				}
-			} catch(RuntimeException | LinkageError e) {
-				// stack selection above is enough
 			}
 		}
 		return hosted || placeholder != null || switched;

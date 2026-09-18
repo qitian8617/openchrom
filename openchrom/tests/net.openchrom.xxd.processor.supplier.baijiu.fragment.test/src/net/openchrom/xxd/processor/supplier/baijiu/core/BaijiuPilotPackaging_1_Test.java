@@ -354,6 +354,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(partsSrc.contains("hostOpenCsdEditors"), partsSrc);
 		assertTrue(partsSrc.contains("persistGcConsoleHidden"), partsSrc);
 		assertTrue(partsSrc.contains("Never open the OS window during chrome apply"), partsSrc);
+		assertTrue(partsSrc.contains("if(!hosted)"), partsSrc);
 		assertTrue(partsSrc.contains("CHROMATOGRAM_STACK_ID"), partsSrc);
 		assertTrue(partsSrc.contains("toggleGcConsole"), partsSrc);
 		assertTrue(partsSrc.contains("GC_WINDOW_ID"), partsSrc);
@@ -503,6 +504,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(gcWorkbenchSrc.contains("activateExisting"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("showAcquisitionSurface"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("hostOpenCsdEditors"), gcWorkbenchSrc);
+		assertTrue(gcWorkbenchSrc.contains("if(!hosted)"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("PLANT_CHROMATOGRAM_STACK_ID"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("unhideGcConsole"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("PLANT_GC_WINDOW_ID"), gcWorkbenchSrc);
@@ -526,6 +528,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(seqWorkbenchSrc.contains("WORKBENCH_HOME_PART_ID"), seqWorkbenchSrc);
 		assertTrue(seqWorkbenchSrc.contains("showChromatogram"), seqWorkbenchSrc);
 		assertTrue(seqWorkbenchSrc.contains("hostOpenCsdEditors"), seqWorkbenchSrc);
+		assertTrue(seqWorkbenchSrc.contains("if(!hosted && placeholder != null)"), seqWorkbenchSrc);
 		assertTrue(seqWorkbenchSrc.contains("findPlantEditorStack"), seqWorkbenchSrc);
 		assertTrue(seqWorkbenchSrc.contains("CHROMATOGRAM_PLACEHOLDER_ID"), seqWorkbenchSrc);
 		assertTrue(seqWorkbenchSrc.contains("CHROMATOGRAM_STACK_ID"), seqWorkbenchSrc);
@@ -590,7 +593,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(archText.contains("BaijiuWorkbenchHomePart"), archText);
 		assertTrue(archText.contains("loadClass"), archText);
 		assertTrue(archText.contains("BaijiuChromatogramReadability"), archText);
-		assertTrue(archText.contains("chrome epoch=10") || archText.contains("epoch=10") || archText.contains("当前 = 10") || archText.contains("epoch=12") || archText.contains("当前 = 12") || archText.contains("epoch=13") || archText.contains("当前 = 13") || archText.contains("epoch=14") || archText.contains("当前 = 14") || archText.contains("epoch=15") || archText.contains("当前 = 15") || archText.contains("epoch=16") || archText.contains("当前 = 16") || archText.contains("epoch=17") || archText.contains("当前 = 17"), archText);
+		assertTrue(archText.contains("epoch=18") || archText.contains("当前 = 18"), archText);
+		assertTrue(archText.contains("chrome epoch=10") || archText.contains("epoch=10") || archText.contains("当前 = 10") || archText.contains("epoch=12") || archText.contains("当前 = 12") || archText.contains("epoch=13") || archText.contains("当前 = 13") || archText.contains("epoch=14") || archText.contains("当前 = 14") || archText.contains("epoch=15") || archText.contains("当前 = 15") || archText.contains("epoch=16") || archText.contains("当前 = 16") || archText.contains("epoch=17") || archText.contains("当前 = 17") || archText.contains("epoch=18") || archText.contains("当前 = 18"), archText);
 		assertTrue(archText.contains("plantHome"), archText);
 		assertTrue(archText.contains("谱图/采集") || archText.contains("谱图 / 采集") || archText.contains("谱图·采集"), archText);
 		assertTrue(archText.contains("BaijiuChromatogramHomePart"), archText);

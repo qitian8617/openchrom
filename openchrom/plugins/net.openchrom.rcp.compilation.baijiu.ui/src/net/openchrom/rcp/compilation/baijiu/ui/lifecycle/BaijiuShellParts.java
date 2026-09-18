@@ -139,16 +139,16 @@ public final class BaijiuShellParts {
 		boolean hosted = hostOpenCsdEditors(application, modelService, partService);
 		if(!hosted) {
 			BaijiuShellSelection.selectInParent(placeholder);
-		}
-		forceCreateElement(application, modelService, placeholder);
-		if(partService != null && BaijiuShellSelection.canSelect(placeholder)) {
-			try {
-				MPart editor = findPart(modelService, application, BaijiuShellChrome.EDITOR_AREA_ID);
-				if(editor != null) {
-					partService.showPart(editor, PartState.ACTIVATE);
+			forceCreateElement(application, modelService, placeholder);
+			if(partService != null && BaijiuShellSelection.canSelect(placeholder)) {
+				try {
+					MPart editor = findPart(modelService, application, BaijiuShellChrome.EDITOR_AREA_ID);
+					if(editor != null) {
+						partService.showPart(editor, PartState.ACTIVATE);
+					}
+				} catch(RuntimeException | LinkageError e) {
+					// stack selection above is enough
 				}
-			} catch(RuntimeException | LinkageError e) {
-				// stack selection above is enough
 			}
 		}
 		return true;
