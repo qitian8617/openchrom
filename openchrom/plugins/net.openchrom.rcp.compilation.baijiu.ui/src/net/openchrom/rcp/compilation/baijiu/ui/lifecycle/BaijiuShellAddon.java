@@ -487,11 +487,6 @@ public class BaijiuShellAddon {
 		return BaijiuShellChrome.isHiddenResearchPerspective(elementId);
 	}
 
-	private static void hideWindowMenuChildren(MUIElement menuElement) {
-
-		hideRestrictedMenuChildren(menuElement);
-	}
-
 	private static void hideRestrictedMenuChildren(MUIElement menuElement) {
 
 		if(menuElement instanceof MMenu menu) {
