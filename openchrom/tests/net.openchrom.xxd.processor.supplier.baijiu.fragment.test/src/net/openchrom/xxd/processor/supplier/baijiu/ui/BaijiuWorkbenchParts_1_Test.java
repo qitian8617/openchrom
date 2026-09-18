@@ -21,6 +21,7 @@ public class BaijiuWorkbenchParts_1_Test {
 	public void missingModelFallsBackToDialogs() {
 
 		assertFalse(BaijiuWorkbenchParts.showAnalysis(null, null, null));
+		assertFalse(BaijiuWorkbenchParts.showWorkbench(null, null, null));
 		assertFalse(BaijiuWorkbenchParts.showSequence(null, null, null));
 		assertFalse(BaijiuWorkbenchParts.showChromatogram(null, null, null));
 		assertFalse(BaijiuWorkbenchParts.switchPerspective(null, null, null, BaijiuPerspectiveIds.ANALYSIS_PERSPECTIVE_ID));
@@ -35,6 +36,7 @@ public class BaijiuWorkbenchParts_1_Test {
 		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui.part.sequence.plantHome", BaijiuPerspectiveIds.SEQUENCE_HOME_PART_ID);
 		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui.part.analysis", BaijiuPerspectiveIds.ANALYSIS_PART_ID);
 		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui.part.analysis.plantHome", BaijiuPerspectiveIds.ANALYSIS_HOME_PART_ID);
+		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui.part.workbench.plantHome", BaijiuPerspectiveIds.WORKBENCH_HOME_PART_ID);
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantChromatogram", BaijiuPerspectiveIds.CHROMATOGRAM_PLACEHOLDER_ID);
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.partstack.plantChromatogram", BaijiuPerspectiveIds.CHROMATOGRAM_STACK_ID);
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome", BaijiuPerspectiveIds.PLANT_HOME_PERSPECTIVE_ID);

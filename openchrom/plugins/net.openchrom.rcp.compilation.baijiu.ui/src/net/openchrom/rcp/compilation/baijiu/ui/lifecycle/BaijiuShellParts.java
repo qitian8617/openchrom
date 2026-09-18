@@ -27,12 +27,12 @@ import org.eclipse.swt.widgets.Composite;
  * Activates plant-home parts by element id. Prefers the concrete Parts hosted
  * in the plant-home stacks ({@code contributionURI} to branding-bundle
  * {@code BaijiuGcHomePart} / {@code BaijiuSequenceHomePart} /
- * {@code BaijiuAnalysisHomePart}) so {@code @PostConstruct} runs in this
+ * {@code BaijiuAnalysisHomePart} / {@code BaijiuWorkbenchHomePart}) so {@code @PostConstruct} runs in this
  * bundle. Those hosts OSGi-load the real SWT panels; rendering does not
  * depend on foreign-bundle {@code contributionURI}. Chromatogram / live
  * acquisition uses the ChemClipse editor Area placeholder in the
- * <em>right</em> sash ({@code partstack.plantChromatogram}), not as a
- * competing tab in the left workflow stack. No Java dependency on
+ * <em>left</em> sash ({@code partstack.plantChromatogram}), not as a
+ * competing tab in the right sidebar stack. No Java dependency on
  * baijiu.ui / temperature.ui (branding stays soft).
  */
 public final class BaijiuShellParts {
@@ -42,10 +42,10 @@ public final class BaijiuShellParts {
 	}
 
 	/**
-	 * Show plant-home hosts. Sequence is activated last so the left
-	 * workflow PartStack opens on 进样序列. Chromatogram stays on the
-	 * right sash (not a competing tab). GC sash follows the user hide-tag
-	 * (default visible; docks left of the workflow tabs). Returns true
+	 * Show plant-home hosts. Workbench (白酒操作) is activated last so the
+	 * right sidebar PartStack opens on that tab. Chromatogram stays on the
+	 * left sash (not a competing tab). GC sash follows the user hide-tag
+	 * (default visible; docks above the sidebar tabs). Returns true
 	 * when at least one part is shown.
 	 */
 	public static boolean showPlantHomeParts(MApplication application, EModelService modelService, EPartService partService) {
@@ -53,10 +53,11 @@ public final class BaijiuShellParts {
 		applyGcConsoleVisibility(application, modelService);
 		boolean gc = !isGcConsoleHidden(application, modelService) && (showPart(application, modelService, partService, BaijiuShellChrome.GC_HOME_PART_ID, null) //
 				|| showPart(application, modelService, partService, BaijiuShellChrome.GC_CONTROL_PART_ID, BaijiuShellChrome.GC_CONTROL_PLACEHOLDER_ID));
-		showPart(application, modelService, partService, BaijiuShellChrome.ANALYSIS_HOME_PART_ID, null);
-		revealChromatogramPlaceholder(application, modelService);
 		boolean sequence = showPart(application, modelService, partService, BaijiuShellChrome.SEQUENCE_HOME_PART_ID, null) //
 				|| showPart(application, modelService, partService, BaijiuShellChrome.SEQUENCE_PART_ID, null);
+		showPart(application, modelService, partService, BaijiuShellChrome.ANALYSIS_HOME_PART_ID, null);
+		revealChromatogramPlaceholder(application, modelService);
+		showPart(application, modelService, partService, BaijiuShellChrome.WORKBENCH_HOME_PART_ID, null);
 		forceCreatePlantHomeGuis(application, modelService);
 		revealPlantToolbar(application, modelService);
 		syncGcToggleToolItem(application, modelService);
@@ -73,6 +74,7 @@ public final class BaijiuShellParts {
 		forceCreateGui(application, modelService, BaijiuShellChrome.GC_HOME_PART_ID);
 		forceCreateGui(application, modelService, BaijiuShellChrome.SEQUENCE_HOME_PART_ID);
 		forceCreateGui(application, modelService, BaijiuShellChrome.ANALYSIS_HOME_PART_ID);
+		forceCreateGui(application, modelService, BaijiuShellChrome.WORKBENCH_HOME_PART_ID);
 	}
 
 	public static boolean showChromatogram(MApplication application, EModelService modelService, EPartService partService) {

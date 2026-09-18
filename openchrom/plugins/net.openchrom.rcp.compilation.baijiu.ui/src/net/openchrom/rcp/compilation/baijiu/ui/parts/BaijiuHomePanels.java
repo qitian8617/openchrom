@@ -39,6 +39,7 @@ public final class BaijiuHomePanels {
 	public static final String SEQUENCE_COMPOSITE_TYPE = "net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuSequenceComposite";
 	public static final String SEQUENCE_ACCESS_TYPE = "net.openchrom.xxd.processor.supplier.baijiu.ui.sequence.InjectionSequenceAccess";
 	public static final String ANALYSIS_SHELL_TYPE = "net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuAnalysisShell";
+	public static final String WORKBENCH_PART_TYPE = "net.openchrom.xxd.processor.supplier.baijiu.ui.parts.BaijiuWorkbenchPart";
 	public static final String CHROMATOGRAM_BRIDGE_TYPE = "net.openchrom.xxd.processor.supplier.baijiu.ui.ChromatogramBridge";
 
 	private BaijiuHomePanels() {
@@ -78,11 +79,27 @@ public final class BaijiuHomePanels {
 			prepare(parent);
 			Class<?> shellType = loadBundleClass(BAIJIU_BUNDLE_ID, ANALYSIS_SHELL_TYPE);
 			Object selection = resolveChromatogramSelection(partService);
-			Method createIn = findCreateIn(shellType);
+			Method createIn = findCreateIn(shellType, 3);
 			if(createIn == null) {
 				throw new IllegalStateException("未找到 BaijiuAnalysisShell.createIn(Composite, …)。");
 			}
 			createIn.invoke(null, parent, selection, partService);
+			layout(parent);
+		} catch(Throwable t) {
+			showError(parent, t);
+		}
+	}
+
+	public static void createWorkbenchPanel(Composite parent, Object partService, Object modelService, Object application, Object context) {
+
+		try {
+			prepare(parent);
+			Class<?> partType = loadBundleClass(BAIJIU_BUNDLE_ID, WORKBENCH_PART_TYPE);
+			Method createIn = findCreateIn(partType, 5);
+			if(createIn == null) {
+				throw new IllegalStateException("未找到 BaijiuWorkbenchPart.createIn(Composite, …)。");
+			}
+			createIn.invoke(null, parent, partService, modelService, application, context);
 			layout(parent);
 		} catch(Throwable t) {
 			showError(parent, t);
@@ -191,13 +208,18 @@ public final class BaijiuHomePanels {
 		return null;
 	}
 
-	static Method findCreateIn(Class<?> shellType) {
+	static Method findCreateIn(Class<?> type) {
 
-		if(shellType == null) {
+		return findCreateIn(type, 3);
+	}
+
+	static Method findCreateIn(Class<?> type, int parameterCount) {
+
+		if(type == null || parameterCount < 1) {
 			return null;
 		}
-		for(Method method : shellType.getMethods()) {
-			if("createIn".equals(method.getName()) && method.getParameterCount() == 3) {
+		for(Method method : type.getMethods()) {
+			if("createIn".equals(method.getName()) && method.getParameterCount() == parameterCount) {
 				Class<?>[] types = method.getParameterTypes();
 				if(Composite.class.isAssignableFrom(types[0])) {
 					return method;

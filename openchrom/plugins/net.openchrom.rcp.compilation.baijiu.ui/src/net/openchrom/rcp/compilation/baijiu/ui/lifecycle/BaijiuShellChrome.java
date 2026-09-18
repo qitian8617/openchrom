@@ -22,7 +22,7 @@ import java.util.Set;
  * Normal plant top bar: 文件 / 白酒 / 视图 / 帮助. 处理器 / 插件 / 色谱 / 窗口
  * are hidden by id and by top-menu label. Select View / perspective switcher
  * are hidden so the plant home GC console cannot be cloned from the view
- * picker. Plant home sash: left workflow tabs | right fixed 谱图/采集.
+ * picker. Plant home sash: left fixed 谱图/采集 | right sidebar ops tabs.
  * Escape hatch (documented, not in the UI):
  * {@code -Dnet.openchrom.baijiu.showResearchMenus=true}.
  */
@@ -52,20 +52,23 @@ public final class BaijiuShellChrome {
 	public static final String ANALYSIS_PART_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.part.analysis";
 	public static final String ANALYSIS_HOME_PART_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.part.analysis.plantHome";
 	public static final String ANALYSIS_HOME_CONTRIBUTION_URI = "bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuAnalysisHomePart";
+	public static final String WORKBENCH_PART_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.part.workbench";
+	public static final String WORKBENCH_HOME_PART_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.part.workbench.plantHome";
+	public static final String WORKBENCH_HOME_CONTRIBUTION_URI = "bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuWorkbenchHomePart";
 	public static final String PLANT_SASH_ID = "net.openchrom.rcp.compilation.baijiu.ui.partsash.plantHome";
 	public static final String PLANT_TOP_SASH_ID = "net.openchrom.rcp.compilation.baijiu.ui.partsash.plantTop";
 	public static final String GC_HOME_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.gcHome";
 	public static final String SEQUENCE_HOME_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.sequenceHome";
 	public static final String WORKFLOW_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.plantWorkflow";
 	/**
-	 * Right-hand 谱图/采集 host. Not a competing tab in
+	 * Left-hand 谱图/采集 host. Not a competing tab in
 	 * {@link #WORKFLOW_STACK_ID}; opening a CSD stays here.
 	 */
 	public static final String CHROMATOGRAM_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.plantChromatogram";
 	public static final String EDITOR_AREA_ID = "org.eclipse.chemclipse.rcp.app.ui.editor";
 	/**
 	 * Live ChemClipse editor Area hosted as the plant-home 谱图/采集 surface
-	 * (right sash). Distinct from the dead Phase-2 {@link #PLANT_EDITOR_PLACEHOLDER_ID}.
+	 * (left sash). Distinct from the dead Phase-2 {@link #PLANT_EDITOR_PLACEHOLDER_ID}.
 	 */
 	public static final String CHROMATOGRAM_PLACEHOLDER_ID = "net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantChromatogram";
 	/**
@@ -93,8 +96,10 @@ public final class BaijiuShellChrome {
 	 * Epoch 11 clears a restore that left hidden MALDI sash
 	 * {@code selectedElement} (E4 "must be visible in the UI presentation").
 	 * Epoch 12: left workflow tabs | right fixed 谱图/采集; GC docks left of tabs.
+	 * Epoch 13: flip to left 谱图/采集 | right sidebar ops tabs (白酒操作 /
+	 * 进样序列 / 白酒分析); GC docks above the sidebar when shown.
 	 */
-	public static final int CHROME_EPOCH = 12;
+	public static final int CHROME_EPOCH = 13;
 	/**
 	 * ChemClipse Application.e4xmi Save / Save All coolbar. Stays hidden
 	 * so the plant toolbar (打开谱图 / 反控) is the visible chrome. File
@@ -295,6 +300,8 @@ public final class BaijiuShellChrome {
 			SEQUENCE_HOME_PART_ID, //
 			ANALYSIS_PART_ID, //
 			ANALYSIS_HOME_PART_ID, //
+			WORKBENCH_PART_ID, //
+			WORKBENCH_HOME_PART_ID, //
 			PLANT_SASH_ID, //
 			PLANT_TOP_SASH_ID, //
 			GC_HOME_STACK_ID, //
@@ -330,12 +337,14 @@ public final class BaijiuShellChrome {
 	public static final Set<String> PLANT_SINGLETON_SHARED_PART_IDS = Set.of( //
 			GC_CONTROL_PART_ID, //
 			SEQUENCE_PART_ID, //
-			ANALYSIS_PART_ID);
+			ANALYSIS_PART_ID, //
+			WORKBENCH_PART_ID);
 
 	public static final Set<String> PLANT_SINGLETON_HOME_PART_IDS = Set.of( //
 			GC_HOME_PART_ID, //
 			SEQUENCE_HOME_PART_ID, //
-			ANALYSIS_HOME_PART_ID);
+			ANALYSIS_HOME_PART_ID, //
+			WORKBENCH_HOME_PART_ID);
 
 	/**
 	 * SWTChart / ChemClipse chart popup items that FID plant analysis still
@@ -582,6 +591,9 @@ public final class BaijiuShellChrome {
 		}
 		if(ANALYSIS_PART_ID.equals(elementId) || ANALYSIS_HOME_PART_ID.equals(elementId)) {
 			return ANALYSIS_HOME_PART_ID;
+		}
+		if(WORKBENCH_PART_ID.equals(elementId) || WORKBENCH_HOME_PART_ID.equals(elementId)) {
+			return WORKBENCH_HOME_PART_ID;
 		}
 		return null;
 	}

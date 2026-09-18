@@ -51,6 +51,18 @@ public class BaijiuWorkbenchPart {
 	@PostConstruct
 	public void create(Composite parent) {
 
+		createIn(parent, partService, modelService, application, context);
+	}
+
+	/**
+	 * Shared button-column UI for the community workbench Part and the plant
+	 * home 白酒操作 tab (branding hosts this via OSGi {@code loadClass}).
+	 */
+	public static void createIn(Composite parent, EPartService partService, EModelService modelService, MApplication application, IEclipseContext context) {
+
+		if(parent == null || parent.isDisposed()) {
+			return;
+		}
 		Shell shell = parent.getShell();
 		parent.setLayout(new GridLayout(1, false));
 		Label title = new Label(parent, SWT.WRAP);
