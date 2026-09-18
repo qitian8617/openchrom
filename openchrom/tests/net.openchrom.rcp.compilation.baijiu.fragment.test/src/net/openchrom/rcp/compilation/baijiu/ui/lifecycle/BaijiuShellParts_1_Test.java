@@ -26,9 +26,11 @@ public class BaijiuShellParts_1_Test {
 		assertFalse(BaijiuShellParts.forceCreateGui(null, null, BaijiuShellChrome.GC_HOME_PART_ID));
 		assertFalse(BaijiuShellParts.forceCreateGui(null, null, BaijiuShellChrome.SEQUENCE_HOME_PART_ID));
 		assertFalse(BaijiuShellParts.forceCreateGui(null, null, BaijiuShellChrome.WORKBENCH_HOME_PART_ID));
+		assertFalse(BaijiuShellParts.forceCreateGui(null, null, BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID));
 		assertFalse(BaijiuShellParts.forceCreateGui(null, null, ""));
 		assertFalse(BaijiuShellParts.showChromatogram(null, null, null));
 		assertFalse(BaijiuShellParts.showAnalysis(null, null, null));
+		assertFalse(BaijiuShellParts.showSequence(null, null, null));
 		assertFalse(BaijiuShellParts.isGcConsoleHidden(null, null));
 		assertFalse(BaijiuShellParts.toggleGcConsole(null, null, null));
 		BaijiuShellParts.setGcConsoleVisible(null, null, null, false);
@@ -36,6 +38,11 @@ public class BaijiuShellParts_1_Test {
 		BaijiuShellParts.revealPlantToolbar(null, null);
 		BaijiuShellParts.syncGcToggleToolItem(null, null);
 		BaijiuShellParts.forceCreatePlantHomeGuis(null, null);
+		BaijiuShellParts.attachChromatogramPlaceholder(null, null);
+		BaijiuShellParts.restoreDefaultTabSelection(null, null);
+		BaijiuShellParts.revealStackChildren(null, null, null);
+		assertFalse(BaijiuShellParts.forceCreateElement(null, null, null));
+		BaijiuShellParts.trySetCurSharedRef(null, null);
 		assertFalse(BaijiuShellParts.hasHiddenResearchAncestor(null));
 		BaijiuShellSelection.selectInParent(null);
 	}

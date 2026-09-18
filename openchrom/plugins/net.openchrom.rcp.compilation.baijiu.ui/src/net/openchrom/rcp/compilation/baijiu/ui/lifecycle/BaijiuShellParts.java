@@ -27,13 +27,15 @@ import org.eclipse.swt.widgets.Composite;
  * Activates plant-home parts by element id. Prefers the concrete Parts hosted
  * in the plant-home stacks ({@code contributionURI} to branding-bundle
  * {@code BaijiuGcHomePart} / {@code BaijiuSequenceHomePart} /
- * {@code BaijiuAnalysisHomePart} / {@code BaijiuWorkbenchHomePart}) so {@code @PostConstruct} runs in this
+ * {@code BaijiuAnalysisHomePart} / {@code BaijiuWorkbenchHomePart} /
+ * {@code BaijiuChromatogramHomePart}) so {@code @PostConstruct} runs in this
  * bundle. Those hosts OSGi-load the real SWT panels; rendering does not
  * depend on foreign-bundle {@code contributionURI}. Chromatogram / live
  * acquisition uses the ChemClipse editor Area placeholder in the
  * <em>left</em> sash ({@code partstack.plantChromatogram}), not as a
- * competing tab in the right sidebar stack. No Java dependency on
- * baijiu.ui / temperature.ui (branding stays soft).
+ * competing tab in the right sidebar stack. A concrete empty-state Part
+ * sits first in that stack so cold start is not a blank gray void. No Java
+ * dependency on baijiu.ui / temperature.ui (branding stays soft).
  */
 public final class BaijiuShellParts {
 
@@ -43,31 +45,36 @@ public final class BaijiuShellParts {
 
 	/**
 	 * Show plant-home hosts. Workbench (白酒操作) is activated last so the
-	 * right sidebar PartStack opens on that tab. Chromatogram stays on the
-	 * left sash (not a competing tab). GC sash follows the user hide-tag
-	 * (default visible; docks above the sidebar tabs). Returns true
-	 * when at least one part is shown.
+	 * right sidebar PartStack opens on that tab. Sequence and analysis stay
+	 * rendered siblings (tabs 白酒操作 | 进样序列 | 白酒分析). Chromatogram
+	 * stays on the left sash: empty-state Part selected until a CSD is
+	 * opened, with the editor Area placeholder attached and created.
+	 * GC sash follows the user hide-tag (default visible; docks above the
+	 * sidebar tabs). Returns true when the plant-home surface is shown —
+	 * never fall back to the community workbench perspective.
 	 */
 	public static boolean showPlantHomeParts(MApplication application, EModelService modelService, EPartService partService) {
 
 		applyGcConsoleVisibility(application, modelService);
 		boolean gc = !isGcConsoleHidden(application, modelService) && (showPart(application, modelService, partService, BaijiuShellChrome.GC_HOME_PART_ID, null) //
 				|| showPart(application, modelService, partService, BaijiuShellChrome.GC_CONTROL_PART_ID, BaijiuShellChrome.GC_CONTROL_PLACEHOLDER_ID));
+		revealStackChildren(application, modelService, BaijiuShellChrome.WORKFLOW_STACK_ID);
 		boolean sequence = showPart(application, modelService, partService, BaijiuShellChrome.SEQUENCE_HOME_PART_ID, null) //
 				|| showPart(application, modelService, partService, BaijiuShellChrome.SEQUENCE_PART_ID, null);
-		showPart(application, modelService, partService, BaijiuShellChrome.ANALYSIS_HOME_PART_ID, null);
-		revealChromatogramPlaceholder(application, modelService);
-		showPart(application, modelService, partService, BaijiuShellChrome.WORKBENCH_HOME_PART_ID, null);
+		boolean analysis = showPart(application, modelService, partService, BaijiuShellChrome.ANALYSIS_HOME_PART_ID, null);
+		boolean workbench = showPart(application, modelService, partService, BaijiuShellChrome.WORKBENCH_HOME_PART_ID, null);
+		boolean chromatogram = revealChromatogramHost(application, modelService, partService);
 		forceCreatePlantHomeGuis(application, modelService);
 		revealPlantToolbar(application, modelService);
 		syncGcToggleToolItem(application, modelService);
-		return gc || sequence;
+		return workbench || sequence || analysis || chromatogram || gc;
 	}
 
 	/**
 	 * Force the plant-home part widgets to be created. {@code showPart}
 	 * can leave a selected tab whose client Composite never ran
-	 * {@code @PostConstruct}.
+	 * {@code @PostConstruct}. Ends by selecting 白酒操作 on the right and
+	 * the 谱图/采集 empty-state on the left.
 	 */
 	public static void forceCreatePlantHomeGuis(MApplication application, EModelService modelService) {
 
@@ -75,6 +82,9 @@ public final class BaijiuShellParts {
 		forceCreateGui(application, modelService, BaijiuShellChrome.SEQUENCE_HOME_PART_ID);
 		forceCreateGui(application, modelService, BaijiuShellChrome.ANALYSIS_HOME_PART_ID);
 		forceCreateGui(application, modelService, BaijiuShellChrome.WORKBENCH_HOME_PART_ID);
+		forceCreateGui(application, modelService, BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID);
+		attachChromatogramPlaceholder(application, modelService);
+		restoreDefaultTabSelection(application, modelService);
 	}
 
 	public static boolean showChromatogram(MApplication application, EModelService modelService, EPartService partService) {
@@ -91,10 +101,19 @@ public final class BaijiuShellParts {
 		showElementAndAncestors(placeholder);
 		showElementAndAncestors(modelService.find(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, application));
 		showElementAndAncestors(modelService.find(BaijiuShellChrome.WORKFLOW_STACK_ID, application));
+		if(placeholder instanceof MPlaceholder shared) {
+			MUIElement ref = shared.getRef();
+			if(ref != null) {
+				ref.setVisible(true);
+				ref.setToBeRendered(true);
+				trySetCurSharedRef(ref, shared);
+			}
+		}
 		if(!BaijiuShellSelection.canSelect(placeholder) && hasHiddenResearchAncestor(placeholder)) {
 			return false;
 		}
 		BaijiuShellSelection.selectInParent(placeholder);
+		forceCreateElement(application, modelService, placeholder);
 		if(partService != null && BaijiuShellSelection.canSelect(placeholder)) {
 			try {
 				MPart editor = findPart(modelService, application, BaijiuShellChrome.EDITOR_AREA_ID);
@@ -115,6 +134,15 @@ public final class BaijiuShellParts {
 			return true;
 		}
 		return showPart(application, modelService, partService, BaijiuShellChrome.ANALYSIS_PART_ID, null);
+	}
+
+	public static boolean showSequence(MApplication application, EModelService modelService, EPartService partService) {
+
+		if(showPart(application, modelService, partService, BaijiuShellChrome.SEQUENCE_HOME_PART_ID, null)) {
+			forceCreateGui(application, modelService, BaijiuShellChrome.SEQUENCE_HOME_PART_ID);
+			return true;
+		}
+		return showPart(application, modelService, partService, BaijiuShellChrome.SEQUENCE_PART_ID, null);
 	}
 
 	public static boolean isGcConsoleHidden(MApplication application, EModelService modelService) {
@@ -228,11 +256,88 @@ public final class BaijiuShellParts {
 		if(application == null || modelService == null) {
 			return;
 		}
-		MUIElement placeholder = modelService.find(BaijiuShellChrome.CHROMATOGRAM_PLACEHOLDER_ID, application);
+		MUIElement placeholder = findPlantChromatogram(application, modelService);
 		showElementAndAncestors(placeholder);
+		showElementAndAncestors(modelService.find(BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID, application));
 		showElementAndAncestors(modelService.find(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, application));
 		showElementAndAncestors(modelService.find(BaijiuShellChrome.PLANT_TOP_SASH_ID, application));
 		showElementAndAncestors(modelService.find(BaijiuShellChrome.WORKFLOW_STACK_ID, application));
+		revealStackChildren(application, modelService, BaijiuShellChrome.CHROMATOGRAM_STACK_ID);
+		revealStackChildren(application, modelService, BaijiuShellChrome.WORKFLOW_STACK_ID);
+	}
+
+	static boolean revealChromatogramHost(MApplication application, EModelService modelService, EPartService partService) {
+
+		revealChromatogramPlaceholder(application, modelService);
+		attachChromatogramPlaceholder(application, modelService);
+		boolean emptyState = showPart(application, modelService, partService, BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID, null);
+		if(emptyState) {
+			forceCreateGui(application, modelService, BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID);
+		}
+		return emptyState || findPlantChromatogram(application, modelService) != null;
+	}
+
+	static void attachChromatogramPlaceholder(MApplication application, EModelService modelService) {
+
+		if(application == null || modelService == null) {
+			return;
+		}
+		MUIElement found = findPlantChromatogram(application, modelService);
+		if(found == null) {
+			return;
+		}
+		found.setVisible(true);
+		found.setToBeRendered(true);
+		showElementAndAncestors(found);
+		showElementAndAncestors(modelService.find(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, application));
+		if(found instanceof MPlaceholder placeholder) {
+			MUIElement ref = placeholder.getRef();
+			if(ref != null) {
+				ref.setVisible(true);
+				ref.setToBeRendered(true);
+				trySetCurSharedRef(ref, placeholder);
+			}
+		}
+		forceCreateElement(application, modelService, found);
+	}
+
+	static void restoreDefaultTabSelection(MApplication application, EModelService modelService) {
+
+		if(application == null || modelService == null) {
+			return;
+		}
+		revealStackChildren(application, modelService, BaijiuShellChrome.WORKFLOW_STACK_ID);
+		revealStackChildren(application, modelService, BaijiuShellChrome.CHROMATOGRAM_STACK_ID);
+		MPart chromatogramHome = findPart(modelService, application, BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID);
+		if(chromatogramHome != null) {
+			BaijiuShellSelection.selectInParent(chromatogramHome);
+		}
+		MPart workbench = findPart(modelService, application, BaijiuShellChrome.WORKBENCH_HOME_PART_ID);
+		if(workbench != null) {
+			BaijiuShellSelection.selectInParent(workbench);
+		}
+	}
+
+	static void revealStackChildren(MApplication application, EModelService modelService, String stackId) {
+
+		if(application == null || modelService == null || stackId == null || stackId.isBlank()) {
+			return;
+		}
+		MUIElement stack = modelService.find(stackId, application);
+		showElementAndAncestors(stack);
+		if(!(stack instanceof MElementContainer<?> container)) {
+			return;
+		}
+		List<?> children = container.getChildren();
+		if(children == null) {
+			return;
+		}
+		for(Object child : children) {
+			if(child instanceof MUIElement element) {
+				element.setVisible(true);
+				element.setToBeRendered(true);
+			}
+		}
 	}
 
 	private static void showElementAndAncestors(MUIElement element) {
@@ -306,6 +411,55 @@ public final class BaijiuShellParts {
 			return part.getWidget() != null || part.getObject() != null;
 		} catch(RuntimeException | LinkageError e) {
 			return false;
+		}
+	}
+
+	static boolean forceCreateElement(MApplication application, EModelService modelService, MUIElement element) {
+
+		if(application == null || modelService == null || element == null) {
+			return false;
+		}
+		element.setVisible(true);
+		element.setToBeRendered(true);
+		IPresentationEngine engine = presentationEngine(application, element instanceof MPart part ? part : null);
+		if(engine == null) {
+			return false;
+		}
+		try {
+			Object created = engine.createGui(element);
+			if(created instanceof Composite composite && !composite.isDisposed()) {
+				composite.layout(true, true);
+			}
+			if(element instanceof MPlaceholder placeholder && placeholder.getRef() != null) {
+				MUIElement ref = placeholder.getRef();
+				ref.setVisible(true);
+				ref.setToBeRendered(true);
+				engine.createGui(ref);
+			}
+			return element.getWidget() != null || created != null;
+		} catch(RuntimeException | LinkageError e) {
+			return false;
+		}
+	}
+
+	static void trySetCurSharedRef(MUIElement shared, MPlaceholder placeholder) {
+
+		if(shared == null || placeholder == null) {
+			return;
+		}
+		if(shared instanceof MPart part) {
+			try {
+				part.setCurSharedRef(placeholder);
+				return;
+			} catch(RuntimeException | LinkageError e) {
+				// older E4 / Area
+			}
+		}
+		try {
+			java.lang.reflect.Method setter = shared.getClass().getMethod("setCurSharedRef", MPlaceholder.class);
+			setter.invoke(shared, placeholder);
+		} catch(RuntimeException | LinkageError | ReflectiveOperationException e) {
+			// MArea has no curSharedRef; createGui on the placeholder is enough
 		}
 	}
 

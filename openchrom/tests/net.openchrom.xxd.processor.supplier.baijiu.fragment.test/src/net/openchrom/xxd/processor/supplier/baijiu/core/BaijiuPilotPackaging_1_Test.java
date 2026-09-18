@@ -195,15 +195,18 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(shellFrag.contains("net.openchrom.rcp.compilation.baijiu.ui.partstack.plantChromatogram"), shellFrag);
 		assertTrue(shellFrag.contains("net.openchrom.rcp.compilation.baijiu.ui.partsash.plantTop"), shellFrag);
 		assertTrue(shellFrag.contains("net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantChromatogram"), shellFrag);
+		assertTrue(shellFrag.contains("net.openchrom.rcp.compilation.baijiu.ui.part.chromatogramHome"), shellFrag);
 		assertTrue(shellFrag.contains("%part.chromatogramHome"), shellFrag);
 		assertTrue(shellFrag.contains("%part.analysisHome"), shellFrag);
 		int workflowIdx = shellFrag.indexOf("net.openchrom.rcp.compilation.baijiu.ui.partstack.plantWorkflow");
 		int chromStackIdx = shellFrag.indexOf("net.openchrom.rcp.compilation.baijiu.ui.partstack.plantChromatogram");
 		int chromPhIdx = shellFrag.indexOf("net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantChromatogram");
 		int topSashIdx = shellFrag.indexOf("net.openchrom.rcp.compilation.baijiu.ui.partsash.plantTop");
+		int chromHomeIdx = shellFrag.indexOf("net.openchrom.rcp.compilation.baijiu.ui.part.chromatogramHome");
 		assertTrue(chromStackIdx > 0 && chromStackIdx < topSashIdx, "谱图/采集 stack is the left sash child");
 		assertTrue(topSashIdx > chromStackIdx && workflowIdx > topSashIdx, "right plantTop sash hosts sidebar ops tabs");
 		assertTrue(chromPhIdx > chromStackIdx && chromPhIdx < topSashIdx, "chromatogram placeholder lives in the left stack, not the right tab folder");
+		assertTrue(chromHomeIdx > chromStackIdx && chromHomeIdx < chromPhIdx, "empty-state Part is the first left-stack child so cold start has a 谱图/采集 tab");
 		int workbenchHomeIdx = shellFrag.indexOf("net.openchrom.xxd.processor.supplier.baijiu.ui.part.workbench.plantHome");
 		int analysisHomeIdx = shellFrag.indexOf("net.openchrom.xxd.processor.supplier.baijiu.ui.part.analysis.plantHome");
 		assertTrue(workbenchHomeIdx > topSashIdx && analysisHomeIdx > workbenchHomeIdx, "白酒操作 / 进样序列 / 白酒分析 are right sidebar tabs");
@@ -214,7 +217,7 @@ public class BaijiuPilotPackaging_1_Test {
 		Path chrome = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellChrome.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellChrome.java");
 		assertNotNull(chrome);
 		String chromeSrc = Files.readString(chrome, StandardCharsets.UTF_8);
-		assertTrue(chromeSrc.contains("CHROME_EPOCH = 13"), chromeSrc);
+		assertTrue(chromeSrc.contains("CHROME_EPOCH = 14"), chromeSrc);
 		assertTrue(chromeSrc.contains("showResearchMenus"), chromeSrc);
 		assertTrue(chromeSrc.contains("org.eclipse.chemclipse.rcp.app.ui.menu.window"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldHideTopMenu"), chromeSrc);
@@ -223,6 +226,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(chromeSrc.contains("BaijiuSequenceHomePart"), chromeSrc);
 		assertTrue(chromeSrc.contains("BaijiuAnalysisHomePart"), chromeSrc);
 		assertTrue(chromeSrc.contains("BaijiuWorkbenchHomePart"), chromeSrc);
+		assertTrue(chromeSrc.contains("BaijiuChromatogramHomePart"), chromeSrc);
 		assertTrue(chromeSrc.contains("placeholder.plantChromatogram"), chromeSrc);
 		assertTrue(chromeSrc.contains("partstack.plantWorkflow"), chromeSrc);
 		assertTrue(chromeSrc.contains("partstack.plantChromatogram"), chromeSrc);
@@ -271,6 +275,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(addonSrc.contains("hideResearchElements"), addonSrc);
 		assertTrue(addonSrc.contains("reassignAwayFrom"), addonSrc);
 		assertTrue(addonSrc.contains("clearHiddenSelections"), addonSrc);
+		assertFalse(addonSrc.contains("if(!shown && plantHome)"), "plant home must not fall back to the community workbench perspective");
 		Path selection = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellSelection.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellSelection.java");
 		assertNotNull(selection, "E4 hidden-selection helper");
 		String selectionSrc = Files.readString(selection, StandardCharsets.UTF_8);
@@ -290,6 +295,10 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(partsSrc.contains("SEQUENCE_HOME_PART_ID"), partsSrc);
 		assertTrue(partsSrc.contains("ANALYSIS_HOME_PART_ID"), partsSrc);
 		assertTrue(partsSrc.contains("WORKBENCH_HOME_PART_ID"), partsSrc);
+		assertTrue(partsSrc.contains("CHROMATOGRAM_HOME_PART_ID"), partsSrc);
+		assertTrue(partsSrc.contains("revealStackChildren"), partsSrc);
+		assertTrue(partsSrc.contains("restoreDefaultTabSelection"), partsSrc);
+		assertTrue(partsSrc.contains("attachChromatogramPlaceholder"), partsSrc);
 		assertTrue(partsSrc.contains("showChromatogram"), partsSrc);
 		assertTrue(partsSrc.contains("CHROMATOGRAM_STACK_ID"), partsSrc);
 		assertTrue(partsSrc.contains("toggleGcConsole"), partsSrc);
@@ -307,6 +316,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(shellFrag.contains("bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuSequenceHomePart"), shellFrag);
 		assertTrue(shellFrag.contains("bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuAnalysisHomePart"), shellFrag);
 		assertTrue(shellFrag.contains("bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuWorkbenchHomePart"), shellFrag);
+		assertTrue(shellFrag.contains("bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuChromatogramHomePart"), shellFrag);
 		assertTrue(shellFrag.contains("NoDetach"), shellFrag);
 		assertTrue(shellFrag.contains("NoMove"), shellFrag);
 		assertTrue(shellFrag.contains("NoClose"), shellFrag);
@@ -325,6 +335,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(homePanelsSrc.contains("createAnalysisShell"), homePanelsSrc);
 		assertTrue(homePanelsSrc.contains("createWorkbenchPanel"), homePanelsSrc);
 		assertTrue(homePanelsSrc.contains("BaijiuWorkbenchPart"), homePanelsSrc);
+		assertTrue(homePanelsSrc.contains("createChromatogramEmptyState"), homePanelsSrc);
+		assertTrue(homePanelsSrc.contains("CHROMATOGRAM_EMPTY_HINT"), homePanelsSrc);
 		assertTrue(homePanelsSrc.contains("InjectionSequenceAccess"), homePanelsSrc);
 		assertTrue(homePanelsSrc.contains("COLOR_WHITE"), homePanelsSrc);
 
@@ -355,6 +367,13 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(wbHomeSrc.contains("@PostConstruct"), wbHomeSrc);
 		assertTrue(wbHomeSrc.contains("createWorkbenchPanel"), wbHomeSrc);
 		assertTrue(wbHomeSrc.contains("catch(Throwable"), wbHomeSrc);
+
+		Path chromHomePart = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/parts/BaijiuChromatogramHomePart.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/parts/BaijiuChromatogramHomePart.java");
+		assertNotNull(chromHomePart);
+		String chromHomeSrc = Files.readString(chromHomePart, StandardCharsets.UTF_8);
+		assertTrue(chromHomeSrc.contains("@PostConstruct"), chromHomeSrc);
+		assertTrue(chromHomeSrc.contains("createChromatogramEmptyState"), chromHomeSrc);
+		assertTrue(chromHomeSrc.contains("catch(Throwable"), chromHomeSrc);
 
 		Path wbPart = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/parts/BaijiuWorkbenchPart.java", "plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/parts/BaijiuWorkbenchPart.java");
 		assertNotNull(wbPart);
@@ -404,6 +423,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(seqWorkbenchSrc.contains("CHROMATOGRAM_PLACEHOLDER_ID"), seqWorkbenchSrc);
 		assertTrue(seqWorkbenchSrc.contains("CHROMATOGRAM_STACK_ID"), seqWorkbenchSrc);
 		assertTrue(seqWorkbenchSrc.contains("parent.isVisible()"), seqWorkbenchSrc);
+		assertFalse(seqWorkbenchSrc.contains("return switched || shown"), "进样序列 button must select the sequence tab, not return true just because plant home switched");
 
 		Path shellMenus = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellMenus.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellMenus.java");
 		assertNotNull(shellMenus, "plant SWT popup sanitizer");
@@ -461,9 +481,10 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(archText.contains("BaijiuWorkbenchHomePart"), archText);
 		assertTrue(archText.contains("loadClass"), archText);
 		assertTrue(archText.contains("BaijiuChromatogramReadability"), archText);
-		assertTrue(archText.contains("chrome epoch=10") || archText.contains("epoch=10") || archText.contains("当前 = 10") || archText.contains("epoch=12") || archText.contains("当前 = 12") || archText.contains("epoch=13") || archText.contains("当前 = 13"), archText);
+		assertTrue(archText.contains("chrome epoch=10") || archText.contains("epoch=10") || archText.contains("当前 = 10") || archText.contains("epoch=12") || archText.contains("当前 = 12") || archText.contains("epoch=13") || archText.contains("当前 = 13") || archText.contains("epoch=14") || archText.contains("当前 = 14"), archText);
 		assertTrue(archText.contains("plantHome"), archText);
 		assertTrue(archText.contains("谱图/采集") || archText.contains("谱图 / 采集") || archText.contains("谱图·采集"), archText);
+		assertTrue(archText.contains("BaijiuChromatogramHomePart"), archText);
 
 		Path manual = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/docs/\u767d\u9152FID\u8bd5\u70b9\u64cd\u4f5c\u624b\u518c.md", "docs/\u767d\u9152FID\u8bd5\u70b9\u64cd\u4f5c\u624b\u518c.md");
 		assertNotNull(manual);

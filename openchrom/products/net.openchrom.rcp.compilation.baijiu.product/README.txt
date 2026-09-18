@@ -50,9 +50,10 @@ Run As → Eclipse Application (Windows engineer)
    right tab and not the dead placeholder.plantEditor.
    Plant-home stacks host **branding-bundle Parts**
    (`BaijiuGcHomePart` / `BaijiuSequenceHomePart` / `BaijiuAnalysisHomePart` /
-   `BaijiuWorkbenchHomePart`)
+   `BaijiuWorkbenchHomePart` / `BaijiuChromatogramHomePart`)
    that OSGi-load TemperatureControlPanel / BaijiuSequenceComposite /
-   BaijiuAnalysisShell / BaijiuWorkbenchPart. Do **not** point contributionURI at foreign-bundle
+   BaijiuAnalysisShell / BaijiuWorkbenchPart, plus a left 谱图/采集 empty-state
+   (tab + Chinese hint) until a CSD is opened. Do **not** point contributionURI at foreign-bundle
    Parts (this PDE launch does not run their @PostConstruct — blank gray
    tabs, no error Label).
    Top menu 文件 / 白酒 / 视图 / 帮助
@@ -134,11 +135,12 @@ Verify on the engineer PC
 -------------------------
 [ ] .product opens; Run As starts; title 白酒 FID 工作站
 [ ] Default perspective 厂工作台: toolbar 打开谱图 + 反控 visible;
-    **left** 谱图·采集; **right** tabs 白酒操作 / 进样序列 / 白酒分析; reverse-control
+    **left** 谱图/采集 tab with empty-state hint (not blank gray);
+    **right** tabs 白酒操作 / 进样序列 / 白酒分析; reverse-control
     sash default visible above the sidebar
     (or a readable white-on-dark error Label inside the tab — never blank gray)
 [ ] After 白酒 → 重置窗口布局 and relaunch: main client is NOT empty gray; reverse-control and/or sequence table still visible
-[ ] First launch after this PR (epoch 13) auto-clears workbench.xmi once
+[ ] First launch after this PR (epoch 14) auto-clears workbench.xmi once
 [ ] Top bar 文件 / 白酒 / 视图 / 帮助; no 处理器 / 插件 / 色谱图 / 窗口
 [ ] Toolbar: 打开谱图、反控、开始分析、推荐积分、定量/白酒分析、报告
 [ ] 反控 check item hides/shows the GC sash (no second console; does not restore GC|Sequence as the only chrome)
