@@ -17,6 +17,7 @@ import org.eclipse.e4.ui.model.application.ui.MElementContainer;
 import org.eclipse.e4.ui.model.application.ui.MUIElement;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPlaceholder;
 import org.eclipse.e4.ui.model.application.ui.basic.MPart;
+import org.eclipse.e4.ui.model.application.ui.basic.MPartStack;
 import org.eclipse.e4.ui.model.application.ui.basic.MWindow;
 import org.eclipse.e4.ui.workbench.IPresentationEngine;
 import org.eclipse.e4.ui.workbench.modeling.EModelService;
@@ -53,8 +54,8 @@ public final class BaijiuShellParts {
 	 * other workflow pages stay rendered siblings on the left stack.
 	 * Chromatogram stays on the left sash: empty-state Part selected until a
 	 * CSD is opened, with the editor Area placeholder attached and created.
-	 * GC console is an independent OS window (default visible; toolbar 反控
-	 * hides it). Returns true when the plant-home surface is shown —
+	 * GC console is an independent OS window (default hidden; toolbar 反控
+	 * shows it). Returns true when the plant-home surface is shown —
 	 * never fall back to the community workbench perspective.
 	 */
 	public static boolean showPlantHomeParts(MApplication application, EModelService modelService, EPartService partService) {
@@ -65,7 +66,7 @@ public final class BaijiuShellParts {
 		BaijiuShellModel.ensureIndependentGcWindow(application, modelService);
 		suppressE4GcWindow(application, modelService);
 		applyGcConsoleVisibility(application, modelService);
-		boolean gc = !isGcConsoleHidden(application, modelService) && BaijiuGcConsoleShell.show();
+		boolean gc = BaijiuGcConsoleShell.isShowing();
 		revealStackChildren(application, modelService, BaijiuShellChrome.CHROMATOGRAM_STACK_ID);
 		revealStackChildren(application, modelService, BaijiuShellChrome.WORKFLOW_STACK_ID);
 		boolean sequence = showPart(application, modelService, partService, BaijiuShellChrome.SEQUENCE_HOME_PART_ID, null) //
@@ -91,7 +92,7 @@ public final class BaijiuShellParts {
 	 * Force the plant-home part widgets to be created. {@code showPart}
 	 * can leave a selected tab whose client Composite never ran
 	 * {@code @PostConstruct}. Ends by selecting 白酒操作 on the right and
-	 * the 谱图/采集 empty-state on the left.
+	 * either an open CSD editor or the 谱图/采集 empty-state on the left.
 	 */
 	public static void forceCreatePlantHomeGuis(MApplication application, EModelService modelService) {
 
@@ -99,9 +100,7 @@ public final class BaijiuShellParts {
 			return;
 		}
 		suppressE4GcWindow(application, modelService);
-		if(!isGcConsoleHidden(application, modelService)) {
-			BaijiuGcConsoleShell.show();
-		} else {
+		if(isGcConsoleHidden(application, modelService) || !BaijiuGcConsoleShell.isShowing()) {
 			BaijiuGcConsoleShell.hide();
 		}
 		for(String id : BaijiuShellChrome.LEFT_WORKFLOW_PART_IDS) {
@@ -137,16 +136,19 @@ public final class BaijiuShellParts {
 		if(!BaijiuShellSelection.canSelect(placeholder) && hasHiddenResearchAncestor(placeholder)) {
 			return false;
 		}
-		BaijiuShellSelection.selectInParent(placeholder);
-		forceCreateElement(application, modelService, placeholder);
-		if(partService != null && BaijiuShellSelection.canSelect(placeholder)) {
-			try {
-				MPart editor = findPart(modelService, application, BaijiuShellChrome.EDITOR_AREA_ID);
-				if(editor != null) {
-					partService.showPart(editor, PartState.ACTIVATE);
+		boolean hosted = hostOpenCsdEditors(application, modelService, partService);
+		if(!hosted) {
+			BaijiuShellSelection.selectInParent(placeholder);
+			forceCreateElement(application, modelService, placeholder);
+			if(partService != null && BaijiuShellSelection.canSelect(placeholder)) {
+				try {
+					MPart editor = findPart(modelService, application, BaijiuShellChrome.EDITOR_AREA_ID);
+					if(editor != null) {
+						partService.showPart(editor, PartState.ACTIVATE);
+					}
+				} catch(RuntimeException | LinkageError e) {
+					// stack selection above is enough
 				}
-			} catch(RuntimeException | LinkageError e) {
-				// stack selection above is enough
 			}
 		}
 		return true;
@@ -279,10 +281,14 @@ public final class BaijiuShellParts {
 		BaijiuShellModel.ensureIndependentGcWindow(application, modelService);
 		suppressE4GcWindow(application, modelService);
 		installGcOsWindowHideHook(application, modelService, partService(application));
-		if(isGcConsoleHidden(application, modelService)) {
+		/*
+		 * Never open the OS window during chrome apply / plant-home reveal.
+		 * Cold start and stale workbench.xmi (tool selected=true) stay closed.
+		 * Persist hide when the Shell is not showing so 反控 starts unchecked.
+		 */
+		if(!BaijiuGcConsoleShell.isShowing()) {
+			persistGcConsoleHidden(application, modelService);
 			BaijiuGcConsoleShell.hide();
-		} else {
-			BaijiuGcConsoleShell.show();
 		}
 		syncGcToggleToolItem(application, modelService);
 	}
@@ -317,8 +323,67 @@ public final class BaijiuShellParts {
 		}
 		MUIElement found = modelService.find(BaijiuShellChrome.TOGGLE_GC_TOOLITEM_ID, application);
 		if(found instanceof org.eclipse.e4.ui.model.application.ui.menu.MItem item) {
-			item.setSelected(!isGcConsoleHidden(application, modelService));
+			item.setSelected(BaijiuGcConsoleShell.isShowing());
 		}
+	}
+
+	static void persistGcConsoleHidden(MApplication application, EModelService modelService) {
+
+		if(application == null || modelService == null) {
+			return;
+		}
+		MUIElement window = gcConsoleWindow(application, modelService);
+		MUIElement stack = modelService.find(BaijiuShellChrome.GC_HOME_STACK_ID, application);
+		MUIElement target = window != null ? window : stack;
+		if(target != null) {
+			addTag(target, BaijiuShellChrome.GC_CONSOLE_HIDDEN_TAG);
+			if(stack != null && stack != target) {
+				addTag(stack, BaijiuShellChrome.GC_CONSOLE_HIDDEN_TAG);
+			}
+		}
+	}
+
+	static boolean hostOpenCsdEditors(MApplication application, EModelService modelService, EPartService partService) {
+
+		if(application == null || modelService == null) {
+			return false;
+		}
+		MUIElement stackElement = modelService.find(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, application);
+		if(!(stackElement instanceof MPartStack plantStack)) {
+			return false;
+		}
+		List<MPart> editors = modelService.findElements(application, BaijiuShellChrome.CSD_EDITOR_PART_ID, MPart.class, null);
+		if(editors == null || editors.isEmpty()) {
+			return false;
+		}
+		boolean hosted = false;
+		for(MPart part : editors) {
+			if(part == null) {
+				continue;
+			}
+			part.setVisible(true);
+			part.setToBeRendered(true);
+			if(part.getParent() != plantStack) {
+				try {
+					if(part.getParent() != null) {
+						part.getParent().getChildren().remove(part);
+					}
+					plantStack.getChildren().add(part);
+				} catch(RuntimeException | LinkageError e) {
+					continue;
+				}
+			}
+			BaijiuShellSelection.selectInParent(part);
+			if(partService != null) {
+				try {
+					partService.showPart(part, PartState.ACTIVATE);
+				} catch(RuntimeException | LinkageError e) {
+					// selection above
+				}
+			}
+			hosted = true;
+		}
+		return hosted;
 	}
 
 	static void revealChromatogramPlaceholder(MApplication application, EModelService modelService) {
@@ -377,9 +442,11 @@ public final class BaijiuShellParts {
 		}
 		revealStackChildren(application, modelService, BaijiuShellChrome.WORKFLOW_STACK_ID);
 		revealStackChildren(application, modelService, BaijiuShellChrome.CHROMATOGRAM_STACK_ID);
-		MPart chromatogramHome = findPart(modelService, application, BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID);
-		if(chromatogramHome != null) {
-			BaijiuShellSelection.selectInParent(chromatogramHome);
+		if(!hostOpenCsdEditors(application, modelService, partService(application))) {
+			MPart chromatogramHome = findPart(modelService, application, BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID);
+			if(chromatogramHome != null) {
+				BaijiuShellSelection.selectInParent(chromatogramHome);
+			}
 		}
 		MPart workbench = findPart(modelService, application, BaijiuShellChrome.WORKBENCH_HOME_PART_ID);
 		if(workbench != null) {

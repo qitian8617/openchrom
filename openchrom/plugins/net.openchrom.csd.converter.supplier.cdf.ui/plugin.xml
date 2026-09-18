@@ -4,7 +4,6 @@
    <extension
          point="org.eclipse.ui.preferencePages">
       <page
-            category="org.eclipse.chemclipse.csd.converter.ui.converterPreferencePage"
             class="net.openchrom.csd.converter.supplier.cdf.ui.preferences.PreferencePage"
             id="net.openchrom.csd.converter.supplier.cdf.ui.preferences.preferencePage"
             name="Common Data Format (*.cdf)">

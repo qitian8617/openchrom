@@ -17,6 +17,7 @@ import org.eclipse.e4.ui.model.application.ui.MUIElement;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPerspective;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPlaceholder;
 import org.eclipse.e4.ui.model.application.ui.basic.MPart;
+import org.eclipse.e4.ui.model.application.ui.basic.MPartStack;
 import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService.PartState;
@@ -70,15 +71,135 @@ public final class BaijiuWorkbenchParts {
 		if(placeholder != null) {
 			placeholder.setVisible(true);
 			placeholder.setToBeRendered(true);
-			MUIElement stack = modelService.find(BaijiuPerspectiveIds.CHROMATOGRAM_STACK_ID, application);
-			if(stack != null) {
-				stack.setVisible(true);
-				stack.setToBeRendered(true);
+			showAncestors(placeholder);
+			if(placeholder instanceof MPlaceholder shared) {
+				MUIElement ref = shared.getRef();
+				if(ref != null) {
+					ref.setVisible(true);
+					ref.setToBeRendered(true);
+					trySetCurSharedRef(ref, shared);
+				}
 			}
-			selectInParent(placeholder);
-			return true;
 		}
-		return switched;
+		MUIElement stack = modelService == null || application == null ? null : modelService.find(BaijiuPerspectiveIds.CHROMATOGRAM_STACK_ID, application);
+		if(stack != null) {
+			stack.setVisible(true);
+			stack.setToBeRendered(true);
+			showAncestors(stack);
+		}
+		boolean hosted = hostOpenCsdEditors(application, modelService, partService);
+		if(!hosted && placeholder != null) {
+			selectInParent(placeholder);
+			if(partService != null && placeholder instanceof MPlaceholder) {
+				try {
+					MPart editor = findPart(modelService, application, BaijiuPerspectiveIds.EDITOR_AREA_ID);
+					if(editor != null) {
+						partService.showPart(editor, PartState.ACTIVATE);
+					}
+				} catch(RuntimeException | LinkageError e) {
+					// stack selection above is enough
+				}
+			}
+		}
+		return hosted || placeholder != null || switched;
+	}
+
+	/**
+	 * Left 谱图/采集 PartStack when the plant-home fragment is present; otherwise
+	 * ChemClipse {@code org.eclipse.e4.primaryDataStack}.
+	 */
+	public static MPartStack findPlantEditorStack(MApplication application, EModelService modelService) {
+
+		if(application == null || modelService == null) {
+			return null;
+		}
+		MUIElement plant = modelService.find(BaijiuPerspectiveIds.CHROMATOGRAM_STACK_ID, application);
+		if(plant instanceof MPartStack stack) {
+			return stack;
+		}
+		MUIElement primary = modelService.find(BaijiuPerspectiveIds.PRIMARY_EDITOR_STACK_ID, application);
+		if(primary instanceof MPartStack stack) {
+			return stack;
+		}
+		return null;
+	}
+
+	static boolean hostOpenCsdEditors(MApplication application, EModelService modelService, EPartService partService) {
+
+		if(application == null || modelService == null) {
+			return false;
+		}
+		MPartStack plantStack = findPlantEditorStack(application, modelService);
+		if(plantStack == null) {
+			return false;
+		}
+		List<MPart> editors = modelService.findElements(application, BaijiuPerspectiveIds.CSD_EDITOR_PART_ID, MPart.class, null);
+		if(editors == null || editors.isEmpty()) {
+			return false;
+		}
+		boolean hosted = false;
+		for(MPart part : editors) {
+			if(part == null) {
+				continue;
+			}
+			part.setVisible(true);
+			part.setToBeRendered(true);
+			if(part.getParent() != plantStack) {
+				try {
+					if(part.getParent() != null) {
+						part.getParent().getChildren().remove(part);
+					}
+					plantStack.getChildren().add(part);
+				} catch(RuntimeException | LinkageError e) {
+					continue;
+				}
+			}
+			selectInParent(part);
+			if(partService != null) {
+				try {
+					partService.showPart(part, PartState.ACTIVATE);
+				} catch(RuntimeException | LinkageError e) {
+					// selection above
+				}
+			}
+			hosted = true;
+		}
+		return hosted;
+	}
+
+	static void trySetCurSharedRef(MUIElement shared, MPlaceholder placeholder) {
+
+		if(shared == null || placeholder == null) {
+			return;
+		}
+		if(shared instanceof MPart part) {
+			try {
+				part.setCurSharedRef(placeholder);
+				return;
+			} catch(RuntimeException | LinkageError e) {
+				// Area
+			}
+		}
+		try {
+			java.lang.reflect.Method setter = shared.getClass().getMethod("setCurSharedRef", MPlaceholder.class);
+			setter.invoke(shared, placeholder);
+		} catch(RuntimeException | LinkageError | ReflectiveOperationException e) {
+			// MArea has no curSharedRef
+		}
+	}
+
+	private static void showAncestors(MUIElement element) {
+
+		MUIElement walk = element;
+		while(walk != null) {
+			walk.setVisible(true);
+			walk.setToBeRendered(true);
+			try {
+				walk = walk.getParent();
+			} catch(RuntimeException | LinkageError e) {
+				return;
+			}
+		}
 	}
 
 	public static boolean showSequence(MApplication application, EModelService modelService, EPartService partService) {
@@ -230,19 +351,22 @@ public final class BaijiuWorkbenchParts {
 		if(element == null) {
 			return;
 		}
-		MElementContainer<MUIElement> parent = element.getParent();
-		if(parent == null) {
-			return;
-		}
-		if(!parent.isVisible() || !parent.isToBeRendered()) {
-			return;
-		}
-		element.setToBeRendered(true);
-		element.setVisible(true);
-		try {
-			parent.setSelectedElement(element);
-		} catch(RuntimeException | LinkageError e) {
-			// hidden sash / perspective — E4 requires selectedElement visible
+		MUIElement walk = element;
+		while(walk != null) {
+			walk.setToBeRendered(true);
+			walk.setVisible(true);
+			MElementContainer<MUIElement> parent = walk.getParent();
+			if(parent == null) {
+				return;
+			}
+			parent.setToBeRendered(true);
+			parent.setVisible(true);
+			try {
+				parent.setSelectedElement(walk);
+			} catch(RuntimeException | LinkageError e) {
+				return;
+			}
+			walk = parent;
 		}
 	}
 }

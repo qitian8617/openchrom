@@ -24,6 +24,8 @@ public class BaijiuWorkbenchParts_1_Test {
 		assertFalse(BaijiuWorkbenchParts.showWorkbench(null, null, null));
 		assertFalse(BaijiuWorkbenchParts.showSequence(null, null, null));
 		assertFalse(BaijiuWorkbenchParts.showChromatogram(null, null, null));
+		assertFalse(BaijiuWorkbenchParts.hostOpenCsdEditors(null, null, null));
+		assertEquals(null, BaijiuWorkbenchParts.findPlantEditorStack(null, null));
 		assertFalse(BaijiuWorkbenchParts.showIntegration(null, null, null));
 		assertFalse(BaijiuWorkbenchParts.showWizard(null, null, null));
 		assertFalse(BaijiuWorkbenchParts.showBatchResults(null, null, null));
@@ -44,6 +46,8 @@ public class BaijiuWorkbenchParts_1_Test {
 		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui.part.analysis.plantHome", BaijiuPerspectiveIds.ANALYSIS_HOME_PART_ID);
 		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui.part.workbench.plantHome", BaijiuPerspectiveIds.WORKBENCH_HOME_PART_ID);
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantChromatogram", BaijiuPerspectiveIds.CHROMATOGRAM_PLACEHOLDER_ID);
+		assertEquals("org.eclipse.chemclipse.ux.extension.xxd.ui.part.chromatogramEditorCSD", BaijiuPerspectiveIds.CSD_EDITOR_PART_ID);
+		assertEquals("org.eclipse.e4.primaryDataStack", BaijiuPerspectiveIds.PRIMARY_EDITOR_STACK_ID);
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.partstack.plantChromatogram", BaijiuPerspectiveIds.CHROMATOGRAM_STACK_ID);
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.part.integrationHome", BaijiuPerspectiveIds.INTEGRATION_HOME_PART_ID);
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.part.wizardHome", BaijiuPerspectiveIds.WIZARD_HOME_PART_ID);

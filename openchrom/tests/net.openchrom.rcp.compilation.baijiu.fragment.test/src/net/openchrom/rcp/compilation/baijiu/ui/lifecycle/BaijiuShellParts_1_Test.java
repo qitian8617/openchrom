@@ -30,6 +30,8 @@ public class BaijiuShellParts_1_Test {
 		assertFalse(BaijiuShellParts.forceCreateGui(null, null, BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID));
 		assertFalse(BaijiuShellParts.forceCreateGui(null, null, ""));
 		assertFalse(BaijiuShellParts.showChromatogram(null, null, null));
+		assertFalse(BaijiuShellParts.hostOpenCsdEditors(null, null, null));
+		BaijiuShellParts.persistGcConsoleHidden(null, null);
 		assertFalse(BaijiuShellParts.showAnalysis(null, null, null));
 		assertFalse(BaijiuShellParts.showSequence(null, null, null));
 		assertFalse(BaijiuShellParts.showIntegration(null, null, null));

@@ -40,6 +40,7 @@ public final class TemperatureControlIds {
 	public static final String PLANT_CHROMATOGRAM_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.plantChromatogram";
 	public static final String CHROMATOGRAM_PLACEHOLDER_ID = "net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantChromatogram";
 	public static final String EDITOR_AREA_ID = "org.eclipse.chemclipse.rcp.app.ui.editor";
+	public static final String CSD_EDITOR_PART_ID = "org.eclipse.chemclipse.ux.extension.xxd.ui.part.chromatogramEditorCSD";
 	public static final String TOGGLE_GC_TOOLITEM_ID = "net.openchrom.rcp.compilation.baijiu.ui.toolbar.toggleGcConsole";
 	public static final String GC_CONSOLE_HIDDEN_TAG = "BaijiuGcConsoleHidden";
 
