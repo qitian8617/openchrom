@@ -42,10 +42,12 @@ Run As → Eclipse Application (Windows engineer)
    「白酒 FID 工作站」 via product name / shell chrome.
 6. Expect window title 白酒 FID 工作站, start on **厂工作台**:
    plant toolbar always visible (打开谱图, 反控 check item, 开始分析, …);
-   main PartStack tabs 进样序列 (default) / 白酒分析 / 谱图·采集;
-   left reverse-control sash (气/火/信号/就绪 + 当前针) default visible,
+   **left** PartStack tabs 进样序列 (default) / 白酒分析;
+   **right** fixed 谱图/采集 (ChemClipse editor Area; opening a CSD stays here);
+   reverse-control sash docks left of the tabs (气/火/信号/就绪 + 当前针) default visible,
    hidden by toolbar 反控 (remembered). Chromatogram / live acquisition is
-   the 谱图·采集 tab (ChemClipse editor Area via placeholder.plantChromatogram).
+   the right 谱图/采集 host (placeholder.plantChromatogram), not a competing
+   left tab and not the dead placeholder.plantEditor.
    Plant-home stacks host **branding-bundle Parts**
    (`BaijiuGcHomePart` / `BaijiuSequenceHomePart` / `BaijiuAnalysisHomePart`)
    that OSGi-load TemperatureControlPanel / BaijiuSequenceComposite /
@@ -55,7 +57,7 @@ Run As → Eclipse Application (Windows engineer)
    Top menu 文件 / 白酒 / 视图 / 帮助
    (no 处理器 / 插件 / 色谱图 / 窗口). Plant toolbar: 打开谱图、反控、开始分析、推荐积分、
    定量/白酒分析、报告. File → 打开 CSD 文件 still there. 开始分析 Start
-   switches to the 谱图/采集 tab.
+   keeps the live chart on the right 谱图/采集.
 
 If the launch config was created for the **community** product, create a
 **new** one from this .product — do not reuse community's product id.
@@ -82,7 +84,7 @@ Reset layout
 - 白酒 → 重置窗口布局, then restart.
 - Or add -clearPersistedState **once** to the launch / shortcut.
 - Or -Dnet.openchrom.baijiu.clearLayout=true for that start.
-Phase 3 also clears workbench.xmi once when the chrome epoch advances (now 10).
+Phase 3 also clears workbench.xmi once when the chrome epoch advances (now 12).
 
 Research-menu escape hatch (engineers only, not in the UI)
 ----------------------------------------------------------
@@ -130,20 +132,22 @@ Phase 3 gaps (honest)
 Verify on the engineer PC
 -------------------------
 [ ] .product opens; Run As starts; title 白酒 FID 工作站
-[ ] Default perspective 厂工作台: toolbar 打开谱图 + 反控 visible; tabs
-    进样序列 / 白酒分析 / 谱图·采集; reverse-control sash default visible
+[ ] Default perspective 厂工作台: toolbar 打开谱图 + 反控 visible;
+    **left** tabs 进样序列 / 白酒分析; **right** 谱图·采集; reverse-control
+    sash default visible left of the tabs
     (or a readable white-on-dark error Label inside the tab — never blank gray)
 [ ] After 白酒 → 重置窗口布局 and relaunch: main client is NOT empty gray; reverse-control and/or sequence table still visible
-[ ] First launch after this PR (epoch 11) auto-clears workbench.xmi once
+[ ] First launch after this PR (epoch 12) auto-clears workbench.xmi once
 [ ] Top bar 文件 / 白酒 / 视图 / 帮助; no 处理器 / 插件 / 色谱图 / 窗口
 [ ] Toolbar: 打开谱图、反控、开始分析、推荐积分、定量/白酒分析、报告
-[ ] 反控 check item hides/shows the GC sash (no second console)
+[ ] 反控 check item hides/shows the GC sash (no second console; does not restore GC|Sequence as the only chrome)
 [ ] 开始分析 / Main「启动」 uses the same FID gate as Main (blocks when disconnected)
-    and switches to 谱图 / 采集 for the live chart
-[ ] 定量/白酒分析 opens the plant-home 白酒分析 tab (样品→校正→定量→报告); demo .ocb still works
+    and shows the live chart on the **right** 谱图 / 采集
+[ ] 定量/白酒分析 opens the plant-home **left** 白酒分析 tab (样品→校正→定量→报告); demo .ocb still works
 [ ] Restart keeps sash / window size / GC hide tag (no forced -clearPersistedState)
 [ ] Reset via 白酒 → 重置窗口布局 then restart restores default
-[ ] Toolbar 打开谱图 and File → 打开 CSD 文件 open demo .ocb on the 谱图/采集 tab; report path still works
+[ ] Toolbar 打开谱图 and File → 打开 CSD 文件 open demo .ocb on the **right** 谱图/采集; they do not swap sides with 白酒分析 / 白酒操作
+[ ] Plant sash children / these tabs: no Detach (NoDetach); left/right width still draggable
 [ ] Open the same CSD: peak names above peaks and axis text (时间 [min], 强度)
     are clearly readable (plant default Microsoft YaHei bold 13 / near-black).
     Cloud VMs cannot screenshot the Windows SWT product — do this on the

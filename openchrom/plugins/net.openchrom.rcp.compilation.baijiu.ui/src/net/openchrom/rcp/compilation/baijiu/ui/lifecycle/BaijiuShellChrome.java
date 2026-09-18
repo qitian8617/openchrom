@@ -20,9 +20,11 @@ import java.util.Set;
  * Unknown / renamed ChemClipse ids are left visible so launch cannot brick.
  * <p>
  * Normal plant top bar: 文件 / 白酒 / 视图 / 帮助. 处理器 / 插件 / 色谱 / 窗口
- * are hidden by id. Select View / perspective switcher are hidden so the
- * plant home GC console cannot be cloned from the view picker. Escape hatch
- * (documented, not in the UI): {@code -Dnet.openchrom.baijiu.showResearchMenus=true}.
+ * are hidden by id and by top-menu label. Select View / perspective switcher
+ * are hidden so the plant home GC console cannot be cloned from the view
+ * picker. Plant home sash: left workflow tabs | right fixed 谱图/采集.
+ * Escape hatch (documented, not in the UI):
+ * {@code -Dnet.openchrom.baijiu.showResearchMenus=true}.
  */
 public final class BaijiuShellChrome {
 
@@ -55,10 +57,15 @@ public final class BaijiuShellChrome {
 	public static final String GC_HOME_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.gcHome";
 	public static final String SEQUENCE_HOME_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.sequenceHome";
 	public static final String WORKFLOW_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.plantWorkflow";
+	/**
+	 * Right-hand 谱图/采集 host. Not a competing tab in
+	 * {@link #WORKFLOW_STACK_ID}; opening a CSD stays here.
+	 */
+	public static final String CHROMATOGRAM_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.plantChromatogram";
 	public static final String EDITOR_AREA_ID = "org.eclipse.chemclipse.rcp.app.ui.editor";
 	/**
-	 * Live ChemClipse editor Area hosted as the plant-home 谱图/采集 tab.
-	 * Distinct from the dead Phase-2 {@link #PLANT_EDITOR_PLACEHOLDER_ID}.
+	 * Live ChemClipse editor Area hosted as the plant-home 谱图/采集 surface
+	 * (right sash). Distinct from the dead Phase-2 {@link #PLANT_EDITOR_PLACEHOLDER_ID}.
 	 */
 	public static final String CHROMATOGRAM_PLACEHOLDER_ID = "net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantChromatogram";
 	/**
@@ -85,8 +92,9 @@ public final class BaijiuShellChrome {
 	 * {@code workbench.xmi} is rebuilt once. #38 used 10 (workflow tabs).
 	 * Epoch 11 clears a restore that left hidden MALDI sash
 	 * {@code selectedElement} (E4 "must be visible in the UI presentation").
+	 * Epoch 12: left workflow tabs | right fixed 谱图/采集; GC docks left of tabs.
 	 */
-	public static final int CHROME_EPOCH = 11;
+	public static final int CHROME_EPOCH = 12;
 	/**
 	 * ChemClipse Application.e4xmi Save / Save All coolbar. Stays hidden
 	 * so the plant toolbar (打开谱图 / 反控) is the visible chrome. File
@@ -292,6 +300,7 @@ public final class BaijiuShellChrome {
 			GC_HOME_STACK_ID, //
 			SEQUENCE_HOME_STACK_ID, //
 			WORKFLOW_STACK_ID, //
+			CHROMATOGRAM_STACK_ID, //
 			EDITOR_AREA_ID, //
 			CHROMATOGRAM_PLACEHOLDER_ID, //
 			"net.openchrom.xxd.processor.supplier.baijiu.ui.menu.workbench", //
@@ -439,6 +448,33 @@ public final class BaijiuShellChrome {
 			return false;
 		}
 		return isWindowMenuId(elementId) || isWindowMenuLabel(label) || isWindowActionSet(elementId, tags);
+	}
+
+	/**
+	 * Top-level main-menu children on the plant product. Catches 处理器 /
+	 * 插件 / 色谱 even when ChemClipse contributes a generated id after
+	 * chrome apply. Keep File / 白酒 / View / Help.
+	 */
+	public static boolean shouldHideMainMenuChild(String elementId, String label, List<String> tags) {
+
+		if(researchMenusVisible()) {
+			return false;
+		}
+		if(elementId != null && !elementId.isBlank() && KEEP_ELEMENT_IDS.contains(elementId)) {
+			return false;
+		}
+		if(shouldHide(elementId, label) || shouldHideTopMenu(elementId, label, tags)) {
+			return true;
+		}
+		return isResearchTopMenuLabel(label);
+	}
+
+	static boolean isResearchTopMenuLabel(String label) {
+
+		if(label == null || label.isBlank()) {
+			return false;
+		}
+		return RESEARCH_LABELS.contains(normalizeMenuLabel(label));
 	}
 
 	static boolean isWindowMenuId(String elementId) {

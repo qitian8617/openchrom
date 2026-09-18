@@ -64,7 +64,7 @@ public class BaijiuShellChrome_1_Test {
 		assertEquals("白酒FID工作站", BaijiuShellChrome.APPLICATION_NAME_VM);
 		assertFalse(BaijiuShellChrome.APPLICATION_NAME_VM.contains(" "));
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome", BaijiuShellChrome.PERSPECTIVE_ID);
-		assertEquals(11, BaijiuShellChrome.CHROME_EPOCH);
+		assertEquals(12, BaijiuShellChrome.CHROME_EPOCH);
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.xxd.ui.perspective.maldi"));
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.xxd.ui.perspective.maldi.partsashcontainer.0"));
 		assertTrue(BaijiuShellChrome.shouldHide("window"));
@@ -74,6 +74,7 @@ public class BaijiuShellChrome_1_Test {
 		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.GC_HOME_STACK_ID));
 		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.SEQUENCE_HOME_STACK_ID));
 		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.WORKFLOW_STACK_ID));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.CHROMATOGRAM_STACK_ID));
 		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.ANALYSIS_HOME_PART_ID));
 		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.CHROMATOGRAM_PLACEHOLDER_ID));
 		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.EDITOR_AREA_ID));
@@ -149,6 +150,14 @@ public class BaijiuShellChrome_1_Test {
 		assertFalse(BaijiuShellChrome.shouldHideTopMenu(BaijiuShellChrome.BAIJIU_MENU_ID, "白酒"));
 		assertFalse(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.unknown.part.foo", "处理器"));
 		assertFalse(BaijiuShellChrome.shouldHide("net.openchrom.rcp.compilation.baijiu.ui.menu.openChromatogram", "打开谱图"));
+		assertTrue(BaijiuShellChrome.shouldHideMainMenuChild(null, "处理器", null));
+		assertTrue(BaijiuShellChrome.shouldHideMainMenuChild("generated.xyz", "插件", null));
+		assertTrue(BaijiuShellChrome.shouldHideMainMenuChild("generated.chrom", "色谱", null));
+		assertTrue(BaijiuShellChrome.shouldHideMainMenuChild("window", "窗口", null));
+		assertFalse(BaijiuShellChrome.shouldHideMainMenuChild(BaijiuShellChrome.BAIJIU_MENU_ID, "白酒", null));
+		assertFalse(BaijiuShellChrome.shouldHideMainMenuChild("org.eclipse.chemclipse.rcp.app.ui.menu.file", "文件", null));
+		assertFalse(BaijiuShellChrome.shouldHideMainMenuChild("org.eclipse.chemclipse.rcp.app.ui.menu.help", "帮助", null));
+		assertFalse(BaijiuShellChrome.shouldHideMainMenuChild("org.eclipse.chemclipse.rcp.app.ui.menu.view", "视图", null));
 	}
 
 	@Test
@@ -162,6 +171,7 @@ public class BaijiuShellChrome_1_Test {
 		assertFalse(BaijiuShellChrome.shouldHide("window"));
 		assertFalse(BaijiuShellChrome.shouldHide("org.eclipse.ui.windowMenu"));
 		assertFalse(BaijiuShellChrome.shouldHideTopMenu("window", "窗口"));
+		assertFalse(BaijiuShellChrome.shouldHideMainMenuChild(null, "处理器", null));
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.ui.perspective.welcome"));
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.xxd.ui.perspective.maldi"));
 		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.PLANT_EDITOR_PLACEHOLDER_ID));
@@ -182,6 +192,8 @@ public class BaijiuShellChrome_1_Test {
 		assertTrue(BaijiuShellChrome.GC_HOME_CONTRIBUTION_URI.startsWith("bundleclass://net.openchrom.rcp.compilation.baijiu.ui/"));
 		assertTrue(BaijiuShellChrome.SEQUENCE_HOME_CONTRIBUTION_URI.startsWith("bundleclass://net.openchrom.rcp.compilation.baijiu.ui/"));
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.partstack.plantWorkflow", BaijiuShellChrome.WORKFLOW_STACK_ID);
+		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.partstack.plantChromatogram", BaijiuShellChrome.CHROMATOGRAM_STACK_ID);
+		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.partsash.plantTop", BaijiuShellChrome.PLANT_TOP_SASH_ID);
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantChromatogram", BaijiuShellChrome.CHROMATOGRAM_PLACEHOLDER_ID);
 		assertEquals("org.eclipse.chemclipse.rcp.app.ui.editor", BaijiuShellChrome.EDITOR_AREA_ID);
 	}

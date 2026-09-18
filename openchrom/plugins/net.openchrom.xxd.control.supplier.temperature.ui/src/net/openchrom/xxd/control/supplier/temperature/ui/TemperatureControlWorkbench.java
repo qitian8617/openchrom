@@ -72,9 +72,10 @@ public final class TemperatureControlWorkbench {
 	}
 
 	/**
-	 * After Start Analysis / open CSD: stay on plant home and select the
-	 * 谱图/采集 tab (ChemClipse editor Area) so live acquisition has a large
-	 * chart surface. No-op on the community product.
+	 * After Start Analysis / open CSD: stay on plant home and show the
+	 * right-hand 谱图/采集 Area (ChemClipse editor) so live acquisition has
+	 * a large chart surface. Does not steal the left workflow tab.
+	 * No-op on the community product.
 	 */
 	public static boolean showAcquisitionSurface() {
 
@@ -107,6 +108,12 @@ public final class TemperatureControlWorkbench {
 		placeholder.setVisible(true);
 		placeholder.setToBeRendered(true);
 		selectInParent(placeholder);
+		MUIElement chromatogramStack = modelService.find(TemperatureControlIds.PLANT_CHROMATOGRAM_STACK_ID, application);
+		if(chromatogramStack != null) {
+			chromatogramStack.setVisible(true);
+			chromatogramStack.setToBeRendered(true);
+			selectInParent(chromatogramStack);
+		}
 		MUIElement workflow = modelService.find(TemperatureControlIds.PLANT_WORKFLOW_STACK_ID, application);
 		if(workflow != null) {
 			workflow.setVisible(true);

@@ -34,7 +34,8 @@ import jakarta.inject.Inject;
 
 /**
  * After ChemClipse fragments attach, hide research chrome, select the plant
- * home (workflow tabs: sequence / analysis / chromatogram; GC sash toggle),
+ * home (left workflow tabs: sequence / analysis; right fixed 谱图/采集;
+ * GC sash toggle docks left of the tabs),
  * {@code showPart(..., ACTIVATE)} the branding plant-home Parts, then
  * {@code IPresentationEngine.createGui} so the client is not an empty gray
  * sash after {@code -clearPersistedState}. Plant-home Part classes live in
@@ -164,6 +165,7 @@ public class BaijiuShellAddon {
 		show(modelService.find(BaijiuShellChrome.GC_HOME_STACK_ID, application));
 		show(modelService.find(BaijiuShellChrome.SEQUENCE_HOME_STACK_ID, application));
 		show(modelService.find(BaijiuShellChrome.WORKFLOW_STACK_ID, application));
+		show(modelService.find(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, application));
 		BaijiuShellParts.applyGcConsoleVisibility(application, modelService);
 		BaijiuShellParts.revealPlantToolbar(application, modelService);
 		BaijiuShellParts.syncGcToggleToolItem(application, modelService);
@@ -202,6 +204,10 @@ public class BaijiuShellAddon {
 		tagNoDetach(modelService.find(BaijiuShellChrome.GC_HOME_STACK_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.SEQUENCE_HOME_STACK_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.WORKFLOW_STACK_ID, application));
+		tagNoDetach(modelService.find(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, application));
+		tagNoDetach(modelService.find(BaijiuShellChrome.PLANT_SASH_ID, application));
+		tagNoDetach(modelService.find(BaijiuShellChrome.PLANT_TOP_SASH_ID, application));
+		tagNoDetach(modelService.find(BaijiuShellChrome.CHROMATOGRAM_PLACEHOLDER_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.GC_CONTROL_PART_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.SEQUENCE_PART_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.ANALYSIS_PART_ID, application));
@@ -243,13 +249,13 @@ public class BaijiuShellAddon {
 		if(application == null || modelService == null || BaijiuShellChrome.researchMenusVisible()) {
 			return;
 		}
-		hideWindowMenuChildren(findMenu(modelService, application, BaijiuShellChrome.MAIN_MENU_ID));
-		hideWindowMenuChildren(findMenu(modelService, application, BaijiuShellChrome.ECLIPSE_MAIN_MENU_ID));
+		hideRestrictedMenuChildren(findMenu(modelService, application, BaijiuShellChrome.MAIN_MENU_ID));
+		hideRestrictedMenuChildren(findMenu(modelService, application, BaijiuShellChrome.ECLIPSE_MAIN_MENU_ID));
 		List<MWindow> windows = modelService.findElements(application, null, MWindow.class, null);
 		if(windows != null) {
 			for(MWindow window : windows) {
 				if(window != null) {
-					hideWindowMenuChildren(window.getMainMenu());
+					hideRestrictedMenuChildren(window.getMainMenu());
 				}
 			}
 		}
@@ -267,8 +273,8 @@ public class BaijiuShellAddon {
 				if(contribution == null) {
 					continue;
 				}
-				if(BaijiuShellChrome.shouldHideTopMenu(contribution.getParentId(), null, contribution.getTags()) //
-						|| BaijiuShellChrome.shouldHideTopMenu(contribution.getElementId(), labelOf(contribution), contribution.getTags())) {
+				if(BaijiuShellChrome.shouldHideMainMenuChild(contribution.getParentId(), null, contribution.getTags()) //
+						|| BaijiuShellChrome.shouldHideMainMenuChild(contribution.getElementId(), labelOf(contribution), contribution.getTags())) {
 					hide(contribution);
 				}
 				hideWindowMenuElements(contribution.getChildren());
@@ -397,6 +403,11 @@ public class BaijiuShellAddon {
 
 	private static void hideWindowMenuChildren(MUIElement menuElement) {
 
+		hideRestrictedMenuChildren(menuElement);
+	}
+
+	private static void hideRestrictedMenuChildren(MUIElement menuElement) {
+
 		if(menuElement instanceof MMenu menu) {
 			hideWindowMenuElements(menu.getChildren());
 		}
@@ -411,7 +422,7 @@ public class BaijiuShellAddon {
 			if(child == null) {
 				continue;
 			}
-			if(BaijiuShellChrome.shouldHideTopMenu(child.getElementId(), labelOf(child), child.getTags())) {
+			if(BaijiuShellChrome.shouldHideMainMenuChild(child.getElementId(), labelOf(child), child.getTags())) {
 				hide(child);
 			}
 		}
