@@ -42,6 +42,12 @@ public final class BaijiuHomePanels {
 	public static final String SEQUENCE_ACCESS_TYPE = "net.openchrom.xxd.processor.supplier.baijiu.ui.sequence.InjectionSequenceAccess";
 	public static final String ANALYSIS_SHELL_TYPE = "net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuAnalysisShell";
 	public static final String WORKBENCH_PART_TYPE = "net.openchrom.xxd.processor.supplier.baijiu.ui.parts.BaijiuWorkbenchPart";
+	public static final String INTEGRATION_SHELL_TYPE = "net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuIntegrationShell";
+	public static final String WIZARD_TYPE = "net.openchrom.xxd.processor.supplier.baijiu.ui.wizards.BaijiuWorkflowWizard";
+	public static final String BATCH_SHELL_TYPE = "net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuBatchShell";
+	public static final String PARALLEL_SHELL_TYPE = "net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuParallelShell";
+	public static final String BATCH_RESULTS_SHELL_TYPE = "net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuSequenceResultsShell";
+	public static final String REPORT_SHELL_TYPE = "net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuReportShell";
 	public static final String CHROMATOGRAM_BRIDGE_TYPE = "net.openchrom.xxd.processor.supplier.baijiu.ui.ChromatogramBridge";
 	public static final String CHROMATOGRAM_EMPTY_TITLE = "谱图/采集";
 	public static final String CHROMATOGRAM_EMPTY_HINT = "尚未打开色谱图。点击「打开色谱图」或工具栏「打开谱图」打开谱图。";
@@ -104,6 +110,56 @@ public final class BaijiuHomePanels {
 				throw new IllegalStateException("未找到 BaijiuWorkbenchPart.createIn(Composite, …)。");
 			}
 			createIn.invoke(null, parent, partService, modelService, application, context);
+			layout(parent);
+		} catch(Throwable t) {
+			showError(parent, t);
+		}
+	}
+
+	public static void createIntegrationPanel(Composite parent, Object partService) {
+
+		invokeCreateIn(parent, INTEGRATION_SHELL_TYPE, 2, partService);
+	}
+
+	public static void createWizardPanel(Composite parent, Object partService) {
+
+		invokeCreateIn(parent, WIZARD_TYPE, 2, partService);
+	}
+
+	public static void createBatchResultsPanel(Composite parent) {
+
+		invokeCreateIn(parent, BATCH_RESULTS_SHELL_TYPE, 1);
+	}
+
+	public static void createSimpleBatchPanel(Composite parent) {
+
+		invokeCreateIn(parent, BATCH_SHELL_TYPE, 1);
+	}
+
+	public static void createParallelPanel(Composite parent) {
+
+		invokeCreateIn(parent, PARALLEL_SHELL_TYPE, 1);
+	}
+
+	public static void createReportPanel(Composite parent, Object partService) {
+
+		invokeCreateIn(parent, REPORT_SHELL_TYPE, 2, partService);
+	}
+
+	private static void invokeCreateIn(Composite parent, String typeName, int parameterCount, Object... extra) {
+
+		try {
+			prepare(parent);
+			Class<?> type = loadBundleClass(BAIJIU_BUNDLE_ID, typeName);
+			Method createIn = findCreateIn(type, parameterCount);
+			if(createIn == null) {
+				throw new IllegalStateException("未找到 " + typeName + ".createIn(Composite, …)。");
+			}
+			if(parameterCount == 1) {
+				createIn.invoke(null, parent);
+			} else {
+				createIn.invoke(null, parent, extra.length > 0 ? extra[0] : null);
+			}
 			layout(parent);
 		} catch(Throwable t) {
 			showError(parent, t);

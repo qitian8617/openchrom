@@ -32,6 +32,12 @@ public class BaijiuShellParts_1_Test {
 		assertFalse(BaijiuShellParts.showChromatogram(null, null, null));
 		assertFalse(BaijiuShellParts.showAnalysis(null, null, null));
 		assertFalse(BaijiuShellParts.showSequence(null, null, null));
+		assertFalse(BaijiuShellParts.showIntegration(null, null, null));
+		assertFalse(BaijiuShellParts.showWizard(null, null, null));
+		assertFalse(BaijiuShellParts.showBatchResults(null, null, null));
+		assertFalse(BaijiuShellParts.showSimpleBatch(null, null, null));
+		assertFalse(BaijiuShellParts.showParallel(null, null, null));
+		assertFalse(BaijiuShellParts.showReport(null, null, null));
 		assertFalse(BaijiuShellParts.isGcConsoleHidden(null, null));
 		assertFalse(BaijiuShellParts.toggleGcConsole(null, null, null));
 		BaijiuShellParts.setGcConsoleVisible(null, null, null, false);

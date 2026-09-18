@@ -8,7 +8,7 @@ The shared model still lives in the reverse-control plugin so **开始分析** o
 
 ## Where it lives
 
-- **Dedicated shell 厂工作台:** sequence table is the **right-hand home column** (not only a dialog). **白酒工作台** action **进样序列** still opens the same editor (community: dialog).
+- **Dedicated shell 厂工作台:** sequence table is a **left-hand workflow tab** (not only a dialog). Right-hand **白酒操作 → 进样序列** selects that tab. Community: dialog.
 - Reverse-control **Main** shows a compact read-only **当前针** strip (type / id / name / status) and **在白酒工作台打开序列**. There is **no** **序列** navigation tab on the GC panel.
 - Baijiu **简单批量** is unchanged: quantitative matrix on already-saved `.ocb` files picked by the operator.
 - Baijiu **批处理结果** (item 8) reads the **current / loaded sequence**: DONE vials with chromatogram paths are quantified; incomplete vials stay listed (see Baijiu `GCWS-BATCH-RESULTS.md`).

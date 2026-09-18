@@ -19,8 +19,9 @@ import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuShellParts;
 
 /**
- * Plant toolbar check item: show or hide the reverse-control sash. Does not
- * clone a second GC console (#37 singleton).
+ * Plant toolbar check item: show or hide the reverse-control window. Does not
+ * clone a second GC console (#37 singleton). Closing the window hides it;
+ * this command shows it again.
  */
 public class ToggleGcConsoleHandler {
 

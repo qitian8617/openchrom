@@ -60,31 +60,54 @@ public final class BaijiuParallelShell {
 
 	public static void open(Shell parent, File needleA, File needleB, String sampleId) {
 
+		Shell shell = new Shell(parent, SWT.SHELL_TRIM | SWT.APPLICATION_MODAL);
+		shell.setText(BaijiuTerms.PARALLEL);
+		shell.setLayout(new GridLayout(1, false));
+		shell.setSize(920, 620);
+		createIn(shell, needleA, needleB, sampleId);
+		shell.open();
+		Display display = parent.getDisplay();
+		while(!shell.isDisposed()) {
+			if(!display.readAndDispatch()) {
+				display.sleep();
+			}
+		}
+	}
+
+	public static void createIn(Composite parent) {
+
+		createIn(parent, null, null, "");
+	}
+
+	public static void createIn(Composite parent, File needleA, File needleB, String sampleId) {
+
+		if(parent == null || parent.isDisposed()) {
+			return;
+		}
+		if(!(parent.getLayout() instanceof GridLayout)) {
+			parent.setLayout(new GridLayout(1, false));
+		}
 		BaijiuMethodSettings settings = BaijiuPreferences.loadMethod();
 		BaijiuSampleInfo template = new BaijiuSampleInfo();
 		BaijiuPreferences.loadSampleDefaults(template);
 		if(sampleId != null && !sampleId.isBlank()) {
 			template.setSampleNo(sampleId);
 		}
+		Shell host = parent.getShell();
 
-		Shell shell = new Shell(parent, SWT.SHELL_TRIM | SWT.APPLICATION_MODAL);
-		shell.setText(BaijiuTerms.PARALLEL);
-		shell.setLayout(new GridLayout(1, false));
-		shell.setSize(920, 620);
-
-		Label hint = new Label(shell, SWT.WRAP);
+		Label hint = new Label(parent, SWT.WRAP);
 		hint.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		hint.setText("同一样品进两针，看均值与简单相对偏差。甲醇标出。针 A / 针 B 可各选一个 .ocb；演示可用两次 sample-nongxiang.ocb。\nSame sample, two needles: mean and simple relative deviation. Methanol is highlighted. " + BaijiuCalibrationGate.OPERATOR_HINT);
 
-		Label formula = new Label(shell, SWT.WRAP);
+		Label formula = new Label(parent, SWT.WRAP);
 		formula.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		formula.setText(BaijiuParallelEngine.FORMULA_TEXT + "\n" + BaijiuParallelEngine.SCOPE_NOTE);
 
-		Label method = new Label(shell, SWT.WRAP);
+		Label method = new Label(parent, SWT.WRAP);
 		method.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		method.setText("方法：" + settings.getMethodName() + "    内标：" + settings.getIstdName());
 
-		Composite header = new Composite(shell, SWT.NONE);
+		Composite header = new Composite(parent, SWT.NONE);
 		header.setLayout(new GridLayout(4, false));
 		header.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
@@ -109,7 +132,7 @@ public final class BaijiuParallelShell {
 
 		final File[] files = new File[]{needleA, needleB};
 
-		Table table = new Table(shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
+		Table table = new Table(parent, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
 		table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
@@ -120,18 +143,18 @@ public final class BaijiuParallelShell {
 		addColumn(table, "相对偏差 %", 100);
 		addColumn(table, "说明", 220);
 
-		Label status = new Label(shell, SWT.WRAP);
+		Label status = new Label(parent, SWT.WRAP);
 		status.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		status.setText("选择两针后点「计算均值与偏差」。");
 
-		Composite buttons = new Composite(shell, SWT.NONE);
+		Composite buttons = new Composite(parent, SWT.NONE);
 		buttons.setLayout(new GridLayout(4, false));
 		buttons.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
 		Button pickA = new Button(buttons, SWT.PUSH);
 		pickA.setText("选择针 A .ocb");
 		pickA.addListener(SWT.Selection, e -> {
-			File chosen = chooseFile(shell, "选择针 A 色谱图");
+			File chosen = chooseFile(host, "选择针 A 色谱图");
 			if(chosen != null) {
 				files[0] = chosen;
 				fileALabel.setText("针 A：" + chosen.getName());
@@ -140,7 +163,7 @@ public final class BaijiuParallelShell {
 		Button pickB = new Button(buttons, SWT.PUSH);
 		pickB.setText("选择针 B .ocb");
 		pickB.addListener(SWT.Selection, e -> {
-			File chosen = chooseFile(shell, "选择针 B 色谱图");
+			File chosen = chooseFile(host, "选择针 B 色谱图");
 			if(chosen != null) {
 				files[1] = chosen;
 				fileBLabel.setText("针 B：" + chosen.getName());
@@ -151,15 +174,15 @@ public final class BaijiuParallelShell {
 		run.setText("计算均值与偏差");
 		run.addListener(SWT.Selection, e -> {
 			if(files[0] == null || files[1] == null) {
-				warn(shell, "请先为针 A 和针 B 各选一个 .ocb（演示可两次选择 sample-nongxiang.ocb）。\nChoose a chromatogram for needle A and needle B (the demo file may be used twice).");
+				warn(host, "请先为针 A 和针 B 各选一个 .ocb（演示可两次选择 sample-nongxiang.ocb）。\nChoose a chromatogram for needle A and needle B (the demo file may be used twice).");
 				return;
 			}
-			if(BaijiuLicenseShell.blockQuantify(shell)) {
+			if(BaijiuLicenseShell.blockQuantify(host)) {
 				return;
 			}
 			String calibrationBlock = BaijiuCalibrationGate.blockingMessage(settings);
 			if(calibrationBlock != null) {
-				warn(shell, calibrationBlock);
+				warn(host, calibrationBlock);
 				return;
 			}
 			try {
@@ -169,7 +192,7 @@ public final class BaijiuParallelShell {
 				IChromatogram chromatogramA = BaijiuChromatogramFiles.loadCsd(files[0], null);
 				IChromatogram chromatogramB = BaijiuChromatogramFiles.loadCsd(files[1], null);
 				if(chromatogramA == null || chromatogramB == null) {
-					warn(shell, "没有读入色谱图。请确认文件为工作站 .ocb。\nCould not load chromatograms. Confirm workstation .ocb files.");
+					warn(host, "没有读入色谱图。请确认文件为工作站 .ocb。\nCould not load chromatograms. Confirm workstation .ocb files.");
 					return;
 				}
 				BaijiuBatchRow rowA = BaijiuBatchEngine.analyze(chromatogramA, files[0], settings, template, true);
@@ -178,23 +201,17 @@ public final class BaijiuParallelShell {
 				fill(table, result, settings);
 				status.setText(result.getMessage());
 				if(!result.isSuccess()) {
-					warn(shell, result.getMessage());
+					warn(host, result.getMessage());
 				}
 			} catch(RuntimeException ex) {
-				warn(shell, "平行样计算失败：" + (ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage()));
+				warn(host, "平行样计算失败：" + (ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage()));
 			}
 		});
 
-		Button close = new Button(buttons, SWT.PUSH);
-		close.setText("关闭");
-		close.addListener(SWT.Selection, e -> shell.close());
-
-		shell.open();
-		Display display = parent.getDisplay();
-		while(!shell.isDisposed()) {
-			if(!display.readAndDispatch()) {
-				display.sleep();
-			}
+		if(parent instanceof Shell dialog) {
+			Button close = new Button(buttons, SWT.PUSH);
+			close.setText("关闭");
+			close.addListener(SWT.Selection, e -> dialog.close());
 		}
 	}
 

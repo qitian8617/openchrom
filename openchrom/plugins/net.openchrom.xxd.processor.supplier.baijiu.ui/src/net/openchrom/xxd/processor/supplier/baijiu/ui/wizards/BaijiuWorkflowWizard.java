@@ -14,7 +14,15 @@ import org.eclipse.chemclipse.model.selection.IChromatogramSelection;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jface.wizard.WizardPage;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.layout.FillLayout;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.TabFolder;
+import org.eclipse.swt.widgets.TabItem;
 
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuAnalysisEngine;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuAnalysisResult;
@@ -54,6 +62,44 @@ public class BaijiuWorkflowWizard extends Wizard {
 		methodPage = new BaijiuWizardMethodPage(this);
 		processPage = new BaijiuWizardProcessPage(this);
 		resultPage = new BaijiuWizardResultPage(this);
+	}
+
+	/**
+	 * Embed the three wizard pages in a left-stack Part. Community still uses
+	 * {@link org.eclipse.jface.wizard.WizardDialog}.
+	 */
+	public static void createIn(Composite parent, EPartService partService) {
+
+		if(parent == null || parent.isDisposed()) {
+			return;
+		}
+		BaijiuWorkflowWizard wizard = new BaijiuWorkflowWizard(ChromatogramBridge.resolve(partService), partService);
+		wizard.createEmbedded(parent);
+	}
+
+	void createEmbedded(Composite parent) {
+
+		addPages();
+		parent.setLayout(new GridLayout(1, false));
+		Label title = new Label(parent, SWT.WRAP);
+		title.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		title.setText(getWindowTitle() + " — 页签代替对话框。熟练操作员可直接用「白酒分析」。");
+		TabFolder tabs = new TabFolder(parent, SWT.NONE);
+		tabs.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		embed(tabs, methodPage);
+		embed(tabs, processPage);
+		embed(tabs, resultPage);
+	}
+
+	private static void embed(TabFolder tabs, WizardPage page) {
+
+		Composite host = new Composite(tabs, SWT.NONE);
+		host.setLayout(new FillLayout());
+		page.createControl(host);
+		TabItem item = new TabItem(tabs, SWT.NONE);
+		String label = page.getTitle();
+		item.setText(label == null || label.isBlank() ? page.getName() : label);
+		item.setControl(host);
 	}
 
 	@Override

@@ -107,9 +107,8 @@ public class BaijiuShellSelection_1_Test {
 		assertNotEquals(workbench.maldi, workbench.stackNode.selectedProxy());
 
 		BaijiuShellSelection.selectInParent(workbench.sequence);
-		assertEquals(workbench.sequence, workbench.workflowNode.selectedProxy());
-		assertEquals(workbench.workflow, workbench.plantTopNode.selectedProxy());
-		assertEquals(workbench.plantTop, workbench.plantSashNode.selectedProxy());
+		assertEquals(workbench.sequence, workbench.chromStackNode.selectedProxy());
+		assertEquals(workbench.chromStack, workbench.plantSashNode.selectedProxy());
 		assertEquals(workbench.plant, workbench.stackNode.selectedProxy());
 		assertNotEquals(workbench.maldiSash, workbench.plantSashNode.selectedProxy());
 		assertFalse(workbench.maldiSashNode.visible);
@@ -119,16 +118,18 @@ public class BaijiuShellSelection_1_Test {
 	public void gcToggleSelectsVisibleWorkflowNotHiddenConsole() {
 
 		FakeWorkbench workbench = FakeWorkbench.plantWithMaldiSelected();
-		workbench.plantTopNode.selected = workbench.gcStackNode;
+		workbench.gcWindowNode.visible = false;
+		workbench.gcWindowNode.tags.add(BaijiuShellChrome.GC_CONSOLE_HIDDEN_TAG);
 		workbench.gcStackNode.visible = false;
 		workbench.gcStackNode.tags.add(BaijiuShellChrome.GC_CONSOLE_HIDDEN_TAG);
 
 		BaijiuShellSelection.clearHiddenSelections(workbench.all());
-		assertEquals(workbench.workflow, workbench.plantTopNode.selectedProxy());
-		assertNotEquals(workbench.gcStack, workbench.plantTopNode.selectedProxy());
+		assertEquals(workbench.chromStack, workbench.plantSashNode.selectedProxy());
+		assertNotEquals(workbench.gcStack, workbench.plantSashNode.selectedProxy());
 
 		BaijiuShellSelection.selectInParent(workbench.gcPart);
-		assertEquals(workbench.workflow, workbench.plantTopNode.selectedProxy());
+		assertFalse(workbench.gcWindowNode.visible);
+		assertEquals(workbench.chromStack, workbench.plantSashNode.selectedProxy());
 	}
 
 	private static final class FakeWorkbench {
@@ -141,11 +142,12 @@ public class BaijiuShellSelection_1_Test {
 		final FakeNode plantNode;
 		final FakeNode plantSashNode;
 		final FakeNode chromStackNode;
-		final FakeNode plantTopNode;
+		final FakeNode gcWindowNode;
 		final FakeNode gcStackNode;
 		final FakeNode gcPartNode;
 		final FakeNode workflowNode;
 		final FakeNode sequenceNode;
+		final FakeNode workbenchNode;
 		final FakeNode maldiNode;
 		final FakeNode maldiSashNode;
 		final FakeNode maldiPartNode;
@@ -157,11 +159,12 @@ public class BaijiuShellSelection_1_Test {
 		final MUIElement plant;
 		final MUIElement plantSash;
 		final MUIElement chromStack;
-		final MUIElement plantTop;
+		final MUIElement gcWindow;
 		final MUIElement gcStack;
 		final MUIElement gcPart;
 		final MUIElement workflow;
 		final MUIElement sequence;
+		final MUIElement workbench;
 		final MUIElement maldi;
 		final MUIElement maldiSash;
 		final MUIElement maldiPart;
@@ -175,11 +178,12 @@ public class BaijiuShellSelection_1_Test {
 			plantNode = child(stackNode, BaijiuShellChrome.PERSPECTIVE_ID);
 			plantSashNode = child(plantNode, BaijiuShellChrome.PLANT_SASH_ID);
 			chromStackNode = child(plantSashNode, BaijiuShellChrome.CHROMATOGRAM_STACK_ID);
-			plantTopNode = child(plantSashNode, BaijiuShellChrome.PLANT_TOP_SASH_ID);
-			gcStackNode = child(plantTopNode, BaijiuShellChrome.GC_HOME_STACK_ID);
+			sequenceNode = child(chromStackNode, BaijiuShellChrome.SEQUENCE_HOME_PART_ID);
+			workflowNode = child(plantSashNode, BaijiuShellChrome.WORKFLOW_STACK_ID);
+			workbenchNode = child(workflowNode, BaijiuShellChrome.WORKBENCH_HOME_PART_ID);
+			gcWindowNode = child(windowNode, BaijiuShellChrome.GC_WINDOW_ID);
+			gcStackNode = child(gcWindowNode, BaijiuShellChrome.GC_HOME_STACK_ID);
 			gcPartNode = child(gcStackNode, BaijiuShellChrome.GC_HOME_PART_ID);
-			workflowNode = child(plantTopNode, BaijiuShellChrome.WORKFLOW_STACK_ID);
-			sequenceNode = child(workflowNode, BaijiuShellChrome.SEQUENCE_HOME_PART_ID);
 			maldiNode = child(stackNode, MALDI_PERSPECTIVE);
 			maldiSashNode = child(maldiNode, MALDI_SASH);
 			maldiPartNode = child(maldiSashNode, "org.eclipse.chemclipse.ux.extension.xxd.ui.part.massspectrum");
@@ -191,11 +195,12 @@ public class BaijiuShellSelection_1_Test {
 			plant = proxy(plantNode);
 			plantSash = proxy(plantSashNode);
 			chromStack = proxy(chromStackNode);
-			plantTop = proxy(plantTopNode);
+			gcWindow = proxy(gcWindowNode);
 			gcStack = proxy(gcStackNode);
 			gcPart = proxy(gcPartNode);
 			workflow = proxy(workflowNode);
 			sequence = proxy(sequenceNode);
+			workbench = proxy(workbenchNode);
 			maldi = proxy(maldiNode);
 			maldiSash = proxy(maldiSashNode);
 			maldiPart = proxy(maldiPartNode);
@@ -205,10 +210,10 @@ public class BaijiuShellSelection_1_Test {
 			stackNode.selected = maldiNode;
 			maldiNode.selected = maldiSashNode;
 			maldiSashNode.selected = maldiPartNode;
-			plantSashNode.selected = plantTopNode;
-			plantTopNode.selected = gcStackNode;
+			plantSashNode.selected = chromStackNode;
+			chromStackNode.selected = sequenceNode;
 			gcStackNode.selected = gcPartNode;
-			workflowNode.selected = sequenceNode;
+			workflowNode.selected = workbenchNode;
 			windowNode.selected = stackNode;
 			plantNode.selected = plantSashNode;
 		}
@@ -228,7 +233,7 @@ public class BaijiuShellSelection_1_Test {
 
 		List<MUIElement> all() {
 
-			return List.of(window, stack, plant, plantSash, chromStack, plantTop, gcStack, gcPart, workflow, sequence, maldi, maldiSash, maldiPart, welcome, welcomeView);
+			return List.of(window, stack, plant, plantSash, chromStack, gcWindow, gcStack, gcPart, workflow, sequence, workbench, maldi, maldiSash, maldiPart, welcome, welcomeView);
 		}
 
 		private FakeNode node(String id) {

@@ -2,7 +2,7 @@
 
 厂工程师决策（2026-09-17）：Phase 2 截图仍像经典 OpenChrom/Eclipse，**尚未**贴近厂/实验室 GC 工作站习惯。Phase 3 按批准项交付：
 
-1. **默认主屏** = **左侧固定谱图/采集** | **右侧操作侧栏选项卡**（白酒操作 / 进样序列 / 白酒分析）；反控（气/火/信号/就绪）停在右侧侧栏上方，可用工具条 **反控** 显示/隐藏；横 sash 可拖宽
+1. **默认主屏** = **左侧工作流页签**（谱图/采集 + 推荐积分 / 白酒分析 / 三步向导 / 进样序列 / 批处理结果 / 简单批量 / 平行样 / 预览报告） | **右侧固定白酒操作**（不可 Detach，横 sash 可拖宽）；**气相色谱控制台是独立窗口**，工具条 / 菜单 **反控** 显示/隐藏（单例，关窗即藏）
 2. **顶栏**只留 **文件 / 白酒 / 视图 / 帮助**（及最少必需）。**处理器 / 插件**按 id 隐藏；退路只写在文档里、日常踩不到
 3. **白酒分析做成页流程**（样品→校正→定量→报告），少叠研究对话框；复用 `baijiu.ui`，不 fork 引擎
 4. **厂工具条**大字动作：打开谱图、开始分析、推荐积分、定量/白酒分析、报告
@@ -20,7 +20,7 @@
 ┌─────────────────────────────────────────────────────────┐
 │  专用壳（本产品拥有）                                      │
 │  · 窗口标题「白酒 FID 工作站」                              │
-│  · 启动视角：厂工作台（左：固定谱图/采集；右：白酒操作 / 进样序列 / 白酒分析选项卡；反控可开关，停在侧栏上方）│
+│  · 启动视角：厂工作台（左：工作流页签；右：固定白酒操作；反控为独立窗口，工具条开关）│
 │  · 白酒分析页：样品→校正→定量→报告（宿主现有分析 UI）        │
 │  · 厂路径菜单/工具栏裁剪（id 隐藏；处理器/插件日常不可见）     │
 │  · 窗口布局可记住；重置走菜单或一次性 -clearPersistedState     │
@@ -49,7 +49,7 @@
 
 | 谁拥有 | 例子 | Phase 3 是否改代码 |
 |--------|------|-------------------|
-| **壳** | 厂工作台视角、分析页视角、菜单/工具栏裁剪、布局 epoch=15、顶栏「白酒」 | **改** branding 插件 + `.product` |
+| **壳** | 厂工作台视角、分析页视角、菜单/工具栏裁剪、布局 epoch=16、顶栏「白酒」 | **改** branding 插件 + `.product` |
 | **内核** | 打开 CSD、谱图编辑器、峰检测扩展点 | **不改** ChemClipse；不重写 community `.product` |
 | **业务插件** | `BaijiuAnalysisEngine`、许可门、GB 2757、反控面板 | **不复制引擎**；只 **新增 Part 宿主** 与开始分析命令 |
 
@@ -80,17 +80,17 @@ ChemClipse **内核特性本身** 仍带 MSD/WSD/NMR 菜单贡献——Phase 3 �
 
 | 步骤 | 入口（专用壳 Phase 3） | 实现落点 |
 |------|------------------------|----------|
-| 气/火/信号/就绪 | **厂工作台右侧侧栏上方反控 sash**（工具条 **反控** 显示/隐藏；默认可见） | 壳 `BaijiuGcHomePart` OSGi 加载 `TemperatureControlPanel`；软件不控气路 |
-| 当前针 + 序列表 | **厂工作台右侧侧栏「进样序列」页签** | 壳 `BaijiuSequenceHomePart` OSGi 加载 `BaijiuSequenceComposite` |
-| 打开谱图 | **打开谱图** 工具条 / **白酒 → 打开谱图** / 文件 → 打开 CSD | ChemClipse CSD；`.ocb`；打开后仍在 **左侧谱图 / 采集**（不与操作侧栏换边） |
+| 气/火/信号/就绪 | **独立气相色谱控制台窗口**（工具条 **反控** / 白酒菜单显示/隐藏；默认可见；关窗即藏、再开仍是同一窗口） | 壳 `BaijiuGcHomePart` OSGi 加载 `TemperatureControlPanel`；软件不控气路 |
+| 当前针 + 序列表 | **厂工作台左侧「进样序列」页签**（右侧「进样序列」按钮切到此页） | 壳 `BaijiuSequenceHomePart` OSGi 加载 `BaijiuSequenceComposite` |
+| 打开谱图 | **打开谱图** 工具条 / **白酒 → 打开谱图** / 文件 → 打开 CSD / 右侧「打开色谱图」 | ChemClipse CSD；`.ocb`；打开后仍在 **左侧谱图 / 采集**（不与白酒操作换边） |
 | 开始分析 | **开始分析** 工具条 / 白酒菜单 / 反控 Main「启动」 | `AcquisitionStartGate`（与 Main 同一 FID 门）；成功后左侧 **谱图 / 采集** 大图 |
-| 积分 | **推荐积分** | `baijiu.ui` 调内核一阶导数 + 梯形积分 |
-| 校正 / 定量 / 报告 | **定量/白酒分析** 进入厂工作台右侧 **白酒分析** 页签：样品→校正→定量→报告 | 同一份 `BaijiuAnalysisShell` UI，Part 宿主；不第二份 AnalysisEngine |
+| 积分 | **推荐积分** 左侧页签（右侧按钮切页） | `baijiu.ui` 调内核一阶导数 + 梯形积分 |
+| 校正 / 定量 / 报告 | **定量/白酒分析** 进入厂工作台左侧 **白酒分析** 页签：样品→校正→定量→报告 | 同一份 `BaijiuAnalysisShell` UI，Part 宿主；不第二份 AnalysisEngine |
 | 许可 | 白酒 → 许可 / 版本…；帮助 → 关于 | 现有 `*.bjlic` |
 
 原则：
 
-1. **启动就在厂工作台**（左：固定谱图/采集；右：白酒操作 / 进样序列 / 白酒分析选项卡；反控 sash 默认可关、停在侧栏上方）。不要 Welcome / MALDI / HPLC-DAD / Data Analysis。打开谱图或开始分析后谱图仍在**左侧** ChemClipse 编辑器 Area，操作页签留在右侧，不 Detach。
+1. **启动就在厂工作台**（左：工作流页签，默认谱图/采集空态；右：固定白酒操作，不可 Detach；气相色谱控制台是独立窗口，工具条 **反控** 开关）。不要 Welcome / MALDI / HPLC-DAD / Data Analysis。打开谱图或开始分析后谱图仍在**左侧** ChemClipse 编辑器 Area，白酒操作留在右侧。右侧按钮选中对应左侧页签，不另开浮动对话框。
 2. 研究菜单（处理器、插件、扫描鉴定、质谱打开、NMR）**不是厂路径**，按 id 藏。
 3. **顶栏日常：文件 / 白酒 / 视图 / 帮助**。色谱 / 窗口 / 处理器 / 插件默认隐藏。
 4. 色谱图画布仍是 ChemClipse 编辑器，只包在专用壳外框里。
@@ -115,6 +115,7 @@ ChemClipse **内核特性本身** 仍带 MSD/WSD/NMR 菜单贡献——Phase 3 �
 | **Phase 3 左谱图 / 右操作侧栏** | 对照操作员截图把 #40 **左右对调**：左固定谱图/采集 \| 右 PartStack（白酒操作 / 进样序列 / 白酒分析）；反控停在侧栏上方可开关；打开 CSD 仍在左侧；chrome epoch=13 | 不改社区白酒工作台；不 Detach；无 Part 的推荐积分/批处理/平行样/报告仍走工具条/菜单 |
 | **Phase 3 左空态 / 右侧三页签** | #41 后左侧 Area placeholder 无 CTabItem、冷启动一片灰；右侧若回退白酒工作台则只剩「白酒操作」。补 `BaijiuChromatogramHomePart` 空态页签、强制渲染三页签、禁止回退工作台视角；chrome epoch=14 | 不改社区产品；不恢复 MALDI must-be-visible |
 | **Phase 3 Welcome 选择中止** | #42 后 epoch 已到 14 但 `workbench.xmi` 仍无 plant-home Part：chrome 先藏 Welcome，E4 仍选中它 → `must be visible in the UI presentation` / `InjectionException`，厂工作台 reveal 未跑完。先选 `perspective.plantHome` 再藏 Welcome；缺 Part 时从 fragment 重建；chrome epoch=15 | 不改社区产品；不选 Welcome/MALDI/NMR |
+| **Phase 3 反控独立窗 / 左工作流页签** | 气相色谱控制台改为独立 `MTrimmedWindow`（工具条/菜单开关，关窗即藏）；右侧只留固定白酒操作；进样序列/白酒分析/推荐积分/向导/批处理/平行样/报告改左侧页签；右侧按钮切左页；chrome epoch=16 | 不改社区产品；不 Dock 反控回 plant sash；不 fork 分析引擎 |
 | **更后** | 可选：从专用壳卸 MSD/NMR 特性、自有色谱视图、Windows 安装包品牌 | 仍禁止 fork 定量/GB 2757 逻辑 |
 
 ---
@@ -177,7 +178,7 @@ Windows 上 **Run As → Eclipse Application** 与 **Export Product** 的逐步�
 
 | 情况 | 行为 |
 |------|------|
-| 第一次升到 Phase 3 chrome epoch（当前 = 13） | 自动清一次旧 `workbench.xmi`，然后记住新布局 |
+| 第一次升到 Phase 3 chrome epoch（当前 = 16） | 自动清一次旧 `workbench.xmi`，然后记住新布局 |
 | 操作员 **白酒 → 重置窗口布局** | 写标记，**下次启动**清布局 |
 | 工程师临时加启动参数 `-clearPersistedState` | 清一次（opt-in） |
 | `-Dnet.openchrom.baijiu.clearLayout=true` | 与菜单重置相同，本轮启动清一次 |
@@ -191,7 +192,7 @@ Windows 上 **Run As → Eclipse Application** 与 **Export Product** 的逐步�
 - ChemClipse 动态贡献的处理器项若改名，可能重新露出来；未知 id 故意不藏。研究菜单退路见上文 JVM 开关。
 - 窗口 → 视角里，**视图**菜单的 Select View / 选择视图在专用壳上隐藏（厂路径走「白酒」菜单激活已有 Part）。ChemClipse `SelectViewDialog` 会列出全部 `MPart`、不看 visible，所以不能只靠 id 隐藏。
 - 反控 Part 与社区浮动壳 **不要同时开两份**（会抢 `GcConnectionManager`）。专用壳菜单优先激活厂工作台 `…plantHome` 单例；社区走对话框。厂工作台用 **独立 elementId** 的 concrete Part，与 `sharedElements` 里那份反控/序列 **不是同一个实例**；日常只渲染厂工作台那一份。
-- 本仓 Cloud Agent 环境通常 **不能** 弹出 Windows SWT 工作站做点击验收；厂工程师按 README 在本机 PDE 验证。冷启动（epoch=15 会再清一次 `workbench.xmi`）后必须能看到厂工具条（打开谱图 / 反控）、**左侧** 谱图/采集（有页签与空态提示，不能再是空灰）、**右侧** 白酒操作（默认）/ 进样序列 / 白酒分析选项卡，反控 sash 默认可关（停在侧栏上方），**或页内可读错误 Label**。打开 CSD 必须出现在左侧，操作侧栏留在右侧，子窗口不 Detach。点击「进样序列」按钮应选中右侧序列页签。`.log` 不得再刷 Welcome `must be visible in the UI presentation`。
+- 本仓 Cloud Agent 环境通常 **不能** 弹出 Windows SWT 工作站做点击验收；厂工程师按 README 在本机 PDE 验证。冷启动（epoch=16 会再清一次 `workbench.xmi`）后必须能看到厂工具条（打开谱图 / 反控）、**左侧** 谱图/采集（有页签与空态提示，不能再是空灰）以及其它工作流页签、**右侧** 仅白酒操作（可拖宽、不 Detach），**气相色谱控制台独立窗口** 默认可关，**或页内可读错误 Label**。打开 CSD 必须出现在左侧，白酒操作留在右侧。点击右侧「进样序列」应选中**左侧**序列页签。关反控窗口后再点工具条 **反控** 应重新显示同一窗口。`.log` 不得再刷 Welcome `must be visible in the UI presentation`。
 - **谱图右键**：专用壳 `BaijiuShellMenus` 在 `SWT.Show` 时藏 Chromatogram Classifier / Column Parser / Noise Calculator 等研究项，并把 Reset Chart / Set Chart Range / Undo Selection / User Restriction 译成中文。不改 SWTChart / ChemClipse 源码，社区产品菜单不变。
 - **谱图峰标签 / 坐标轴**：ChemClipse `TargetReferenceLabelMarker` 主题默认 `Verdana-regular-8`，轴 tick 用 LineColor。厂屏上看不清时由 **专用壳** `BaijiuChromatogramReadability` + `plugin_customization.ini` + `baijiu-shell.css` 在启动时写成微软雅黑 13 磅粗体、近黑前景。不改 ChemClipse、不改社区产品。再调：首选项 → 常规 → 外观 → 颜色和字体 → Charts。
 

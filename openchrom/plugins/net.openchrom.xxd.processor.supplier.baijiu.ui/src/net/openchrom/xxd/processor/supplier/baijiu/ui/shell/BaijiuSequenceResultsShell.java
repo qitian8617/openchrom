@@ -71,22 +71,45 @@ public final class BaijiuSequenceResultsShell {
 
 	public static void open(Shell parent, List<BaijiuSequenceVial> vials, boolean runImmediately) {
 
+		Shell shell = new Shell(parent, SWT.SHELL_TRIM | SWT.APPLICATION_MODAL);
+		shell.setText(BaijiuTerms.BATCH_RESULTS);
+		shell.setLayout(new GridLayout(1, false));
+		shell.setSize(1280, 820);
+		createIn(shell, vials, runImmediately);
+		shell.open();
+		Display display = shell.getDisplay();
+		while(!shell.isDisposed()) {
+			if(!display.readAndDispatch()) {
+				display.sleep();
+			}
+		}
+	}
+
+	public static void createIn(Composite parent) {
+
+		createIn(parent, loadCurrentOrEmpty(), false);
+	}
+
+	public static void createIn(Composite parent, List<BaijiuSequenceVial> vials, boolean runImmediately) {
+
+		if(parent == null || parent.isDisposed()) {
+			return;
+		}
+		if(!(parent.getLayout() instanceof GridLayout)) {
+			parent.setLayout(new GridLayout(1, false));
+		}
 		BaijiuMethodSettings settings = BaijiuPreferences.loadMethod();
 		BaijiuSampleInfo template = new BaijiuSampleInfo();
 		BaijiuPreferences.loadSampleDefaults(template);
 		List<BaijiuSequenceVial> source = vials == null ? new ArrayList<>() : new ArrayList<>(vials);
 		List<BaijiuSequenceResultRow> rows = new ArrayList<>();
+		Shell host = parent.getShell();
 
-		Shell shell = new Shell(parent, SWT.SHELL_TRIM | SWT.APPLICATION_MODAL);
-		shell.setText(BaijiuTerms.BATCH_RESULTS);
-		shell.setLayout(new GridLayout(1, false));
-		shell.setSize(1280, 820);
-
-		Label hint = new Label(shell, SWT.WRAP);
+		Label hint = new Label(parent, SWT.WRAP);
 		hint.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		hint.setText("按当前（或打开的）进样序列汇总：每一针一行。已完成且有谱图路径的行按厂方法定量；未进样 / 已跳过 / 失败的行仍列出原因，不会悄悄丢掉。" + BaijiuCalibrationGate.OPERATOR_HINT + " 平行针在备注中写甲醇均值与相对偏差，详细仍用工作台「" + BaijiuTerms.PARALLEL + "」。离线演示：打开指向 demo .ocb 的序列 JSON。");
 
-		Composite header = new Composite(shell, SWT.NONE);
+		Composite header = new Composite(parent, SWT.NONE);
 		header.setLayout(new GridLayout(6, false));
 		header.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		Label method = new Label(header, SWT.NONE);
@@ -103,7 +126,7 @@ public final class BaijiuSequenceResultsShell {
 		summary.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 6, 1));
 		summary.setText(source.isEmpty() ? "尚未载入序列。可从当前进样序列生成，或打开已保存的序列 JSON（条目中的谱图路径可指向 demo .ocb）。" : "已载入 " + source.size() + " 行序列。");
 
-		Table table = new Table(shell, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
+		Table table = new Table(parent, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
 		table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
@@ -121,55 +144,50 @@ public final class BaijiuSequenceResultsShell {
 		addColumn(table, "GB 2757", 80);
 		addColumn(table, "备注", 280);
 
-		Composite buttons = new Composite(shell, SWT.NONE);
+		Composite buttons = new Composite(parent, SWT.NONE);
 		buttons.setLayout(new GridLayout(6, false));
 		buttons.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
 		Button fromCurrent = new Button(buttons, SWT.PUSH);
 		fromCurrent.setText("从当前序列生成结果表");
 		fromCurrent.addListener(SWT.Selection, e -> {
-			List<BaijiuSequenceVial> loaded = loadCurrent(shell);
+			List<BaijiuSequenceVial> loaded = loadCurrent(host);
 			if(loaded == null) {
 				return;
 			}
 			source.clear();
 			source.addAll(loaded);
-			runTable(shell, source, settings, template, abv, rows, table, summary);
+			runTable(host, source, settings, template, abv, rows, table, summary);
 		});
 
 		Button fromJson = new Button(buttons, SWT.PUSH);
 		fromJson.setText("打开序列 JSON…");
 		fromJson.addListener(SWT.Selection, e -> {
-			List<BaijiuSequenceVial> loaded = loadJson(shell);
+			List<BaijiuSequenceVial> loaded = loadJson(host);
 			if(loaded == null) {
 				return;
 			}
 			source.clear();
 			source.addAll(loaded);
-			runTable(shell, source, settings, template, abv, rows, table, summary);
+			runTable(host, source, settings, template, abv, rows, table, summary);
 		});
 
 		Button export = new Button(buttons, SWT.PUSH);
 		export.setText("导出汇总表");
-		export.addListener(SWT.Selection, e -> exportCsv(shell, rows, settings));
+		export.addListener(SWT.Selection, e -> exportCsv(host, rows, settings));
 
 		Button parallel = new Button(buttons, SWT.PUSH);
 		parallel.setText(BaijiuTerms.PARALLEL + "…");
-		parallel.addListener(SWT.Selection, e -> BaijiuParallelShell.open(shell));
+		parallel.addListener(SWT.Selection, e -> BaijiuParallelShell.open(host));
 
-		Button close = new Button(buttons, SWT.PUSH);
-		close.setText("关闭");
-		close.addListener(SWT.Selection, e -> shell.close());
-
-		shell.open();
-		if(runImmediately && !source.isEmpty() && BaijiuLicenseGate.allowsQuantifyAndReport()) {
-			runTable(shell, source, settings, template, abv, rows, table, summary);
+		if(parent instanceof Shell dialog) {
+			Button close = new Button(buttons, SWT.PUSH);
+			close.setText("关闭");
+			close.addListener(SWT.Selection, e -> dialog.close());
 		}
-		Display display = shell.getDisplay();
-		while(!shell.isDisposed()) {
-			if(!display.readAndDispatch()) {
-				display.sleep();
-			}
+
+		if(runImmediately && !source.isEmpty() && BaijiuLicenseGate.allowsQuantifyAndReport()) {
+			runTable(host, source, settings, template, abv, rows, table, summary);
 		}
 	}
 

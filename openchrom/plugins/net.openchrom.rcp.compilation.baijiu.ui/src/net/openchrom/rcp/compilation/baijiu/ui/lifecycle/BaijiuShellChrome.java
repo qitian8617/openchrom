@@ -22,7 +22,8 @@ import java.util.Set;
  * Normal plant top bar: 文件 / 白酒 / 视图 / 帮助. 处理器 / 插件 / 色谱 / 窗口
  * are hidden by id and by top-menu label. Select View / perspective switcher
  * are hidden so the plant home GC console cannot be cloned from the view
- * picker. Plant home sash: left fixed 谱图/采集 | right sidebar ops tabs.
+ * picker. Plant home sash: left workflow tabs (谱图/采集 + analysis pages) |
+ * right fixed 白酒操作 sidebar. GC console is an independent window.
  * Escape hatch (documented, not in the UI):
  * {@code -Dnet.openchrom.baijiu.showResearchMenus=true}.
  */
@@ -66,15 +67,37 @@ public final class BaijiuShellChrome {
 	public static final String CHROMATOGRAM_HOME_PART_ID = "net.openchrom.rcp.compilation.baijiu.ui.part.chromatogramHome";
 	public static final String CHROMATOGRAM_HOME_CONTRIBUTION_URI = "bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuChromatogramHomePart";
 	public static final String PLANT_SASH_ID = "net.openchrom.rcp.compilation.baijiu.ui.partsash.plantHome";
+	/**
+	 * Dead #41–#44 right-hand vertical sash (GC stacked above ops tabs).
+	 * Epoch 16 drops it; leftover xmi is hidden like {@link #PLANT_EDITOR_PLACEHOLDER_ID}.
+	 */
 	public static final String PLANT_TOP_SASH_ID = "net.openchrom.rcp.compilation.baijiu.ui.partsash.plantTop";
+	public static final String GC_WINDOW_ID = "net.openchrom.rcp.compilation.baijiu.ui.window.gcConsole";
+	public static final String GC_WINDOW_SASH_ID = "net.openchrom.rcp.compilation.baijiu.ui.partsash.gcConsole";
 	public static final String GC_HOME_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.gcHome";
 	public static final String SEQUENCE_HOME_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.sequenceHome";
+	/**
+	 * Right-hand fixed 白酒操作 sidebar. Sequence / analysis live on
+	 * {@link #CHROMATOGRAM_STACK_ID}.
+	 */
 	public static final String WORKFLOW_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.plantWorkflow";
 	/**
-	 * Left-hand 谱图/采集 host. Not a competing tab in
-	 * {@link #WORKFLOW_STACK_ID}; opening a CSD stays here.
+	 * Left-hand workflow/display tabs (谱图/采集 + 推荐积分 / 白酒分析 / …).
+	 * Opening a CSD still selects the editor Area placeholder here.
 	 */
 	public static final String CHROMATOGRAM_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.plantChromatogram";
+	public static final String INTEGRATION_HOME_PART_ID = "net.openchrom.rcp.compilation.baijiu.ui.part.integrationHome";
+	public static final String INTEGRATION_HOME_CONTRIBUTION_URI = "bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuIntegrationHomePart";
+	public static final String WIZARD_HOME_PART_ID = "net.openchrom.rcp.compilation.baijiu.ui.part.wizardHome";
+	public static final String WIZARD_HOME_CONTRIBUTION_URI = "bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuWizardHomePart";
+	public static final String BATCH_RESULTS_HOME_PART_ID = "net.openchrom.rcp.compilation.baijiu.ui.part.batchResultsHome";
+	public static final String BATCH_RESULTS_HOME_CONTRIBUTION_URI = "bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuBatchResultsHomePart";
+	public static final String SIMPLE_BATCH_HOME_PART_ID = "net.openchrom.rcp.compilation.baijiu.ui.part.simpleBatchHome";
+	public static final String SIMPLE_BATCH_HOME_CONTRIBUTION_URI = "bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuSimpleBatchHomePart";
+	public static final String PARALLEL_HOME_PART_ID = "net.openchrom.rcp.compilation.baijiu.ui.part.parallelHome";
+	public static final String PARALLEL_HOME_CONTRIBUTION_URI = "bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuParallelHomePart";
+	public static final String REPORT_HOME_PART_ID = "net.openchrom.rcp.compilation.baijiu.ui.part.reportHome";
+	public static final String REPORT_HOME_CONTRIBUTION_URI = "bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuReportHomePart";
 	public static final String EDITOR_AREA_ID = "org.eclipse.chemclipse.rcp.app.ui.editor";
 	/**
 	 * Live ChemClipse editor Area hosted as the plant-home 谱图/采集 surface
@@ -113,8 +136,10 @@ public final class BaijiuShellChrome {
 	 * perspective fallback).
 	 * Epoch 15: never select hidden Welcome (same E4 abort as #39 MALDI);
 	 * create/reveal plant-home fragment children if workbench.xmi omitted them.
+	 * Epoch 16: GC console is an independent window; right sidebar is 白酒操作
+	 * only; left stack hosts workflow pages as tabs.
 	 */
-	public static final int CHROME_EPOCH = 15;
+	public static final int CHROME_EPOCH = 16;
 	/**
 	 * Ids that must exist on the live model after plant-home reveal. Missing
 	 * any of these is the empty-left / community-button-column failure mode.
@@ -125,11 +150,32 @@ public final class BaijiuShellChrome {
 			CHROMATOGRAM_STACK_ID, //
 			CHROMATOGRAM_HOME_PART_ID, //
 			CHROMATOGRAM_PLACEHOLDER_ID, //
-			PLANT_TOP_SASH_ID, //
 			WORKFLOW_STACK_ID, //
 			WORKBENCH_HOME_PART_ID, //
 			SEQUENCE_HOME_PART_ID, //
-			ANALYSIS_HOME_PART_ID);
+			ANALYSIS_HOME_PART_ID, //
+			INTEGRATION_HOME_PART_ID, //
+			WIZARD_HOME_PART_ID, //
+			BATCH_RESULTS_HOME_PART_ID, //
+			SIMPLE_BATCH_HOME_PART_ID, //
+			PARALLEL_HOME_PART_ID, //
+			REPORT_HOME_PART_ID, //
+			GC_WINDOW_ID, //
+			GC_HOME_STACK_ID, //
+			GC_HOME_PART_ID);
+	/**
+	 * Left PartStack workflow pages (excluding the editor Area placeholder).
+	 */
+	public static final List<String> LEFT_WORKFLOW_PART_IDS = List.of( //
+			CHROMATOGRAM_HOME_PART_ID, //
+			INTEGRATION_HOME_PART_ID, //
+			ANALYSIS_HOME_PART_ID, //
+			WIZARD_HOME_PART_ID, //
+			SEQUENCE_HOME_PART_ID, //
+			BATCH_RESULTS_HOME_PART_ID, //
+			SIMPLE_BATCH_HOME_PART_ID, //
+			PARALLEL_HOME_PART_ID, //
+			REPORT_HOME_PART_ID);
 	/**
 	 * ChemClipse Application.e4xmi Save / Save All coolbar. Stays hidden
 	 * so the plant toolbar (打开谱图 / 反控) is the visible chrome. File
@@ -182,6 +228,7 @@ public final class BaijiuShellChrome {
 	 */
 	public static final List<String> HIDDEN_ELEMENT_IDS = List.of( //
 			PLANT_EDITOR_PLACEHOLDER_ID, //
+			PLANT_TOP_SASH_ID, //
 			FILE_TOOLBAR_ID, //
 			SAVE_TOOLITEM_ID, //
 			SAVE_ALL_TOOLITEM_ID, //
@@ -333,8 +380,15 @@ public final class BaijiuShellChrome {
 			WORKBENCH_PART_ID, //
 			WORKBENCH_HOME_PART_ID, //
 			CHROMATOGRAM_HOME_PART_ID, //
+			INTEGRATION_HOME_PART_ID, //
+			WIZARD_HOME_PART_ID, //
+			BATCH_RESULTS_HOME_PART_ID, //
+			SIMPLE_BATCH_HOME_PART_ID, //
+			PARALLEL_HOME_PART_ID, //
+			REPORT_HOME_PART_ID, //
 			PLANT_SASH_ID, //
-			PLANT_TOP_SASH_ID, //
+			GC_WINDOW_ID, //
+			GC_WINDOW_SASH_ID, //
 			GC_HOME_STACK_ID, //
 			SEQUENCE_HOME_STACK_ID, //
 			WORKFLOW_STACK_ID, //
@@ -376,7 +430,13 @@ public final class BaijiuShellChrome {
 			SEQUENCE_HOME_PART_ID, //
 			ANALYSIS_HOME_PART_ID, //
 			WORKBENCH_HOME_PART_ID, //
-			CHROMATOGRAM_HOME_PART_ID);
+			CHROMATOGRAM_HOME_PART_ID, //
+			INTEGRATION_HOME_PART_ID, //
+			WIZARD_HOME_PART_ID, //
+			BATCH_RESULTS_HOME_PART_ID, //
+			SIMPLE_BATCH_HOME_PART_ID, //
+			PARALLEL_HOME_PART_ID, //
+			REPORT_HOME_PART_ID);
 
 	/**
 	 * SWTChart / ChemClipse chart popup items that FID plant analysis still
@@ -648,6 +708,9 @@ public final class BaijiuShellChrome {
 		}
 		if(CHROMATOGRAM_HOME_PART_ID.equals(elementId) || CHROMATOGRAM_PLACEHOLDER_ID.equals(elementId) || EDITOR_AREA_ID.equals(elementId)) {
 			return CHROMATOGRAM_HOME_PART_ID;
+		}
+		if(INTEGRATION_HOME_PART_ID.equals(elementId) || WIZARD_HOME_PART_ID.equals(elementId) || BATCH_RESULTS_HOME_PART_ID.equals(elementId) || SIMPLE_BATCH_HOME_PART_ID.equals(elementId) || PARALLEL_HOME_PART_ID.equals(elementId) || REPORT_HOME_PART_ID.equals(elementId)) {
+			return elementId;
 		}
 		return null;
 	}

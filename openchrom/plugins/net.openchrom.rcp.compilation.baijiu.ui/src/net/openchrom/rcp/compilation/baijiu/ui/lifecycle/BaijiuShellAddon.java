@@ -39,8 +39,8 @@ import jakarta.inject.Inject;
  * throws E4 {@code must be visible in the UI presentation} wrapped in
  * {@code InjectionException} and aborts DI — plant-home reveal never ran and
  * the operator saw community-style 白酒工作台 (button column, empty left).
- * Left 谱图/采集 empty-state + editor Area; right sidebar tabs: 白酒操作 /
- * 进样序列 / 白酒分析; GC sash toggle docks above the sidebar.
+ * Left workflow tabs (谱图/采集 + analysis pages); right fixed 白酒操作;
+ * GC console is an independent window toggled from 反控.
  * Does not fall back to the community workbench perspective.
  */
 public class BaijiuShellAddon {
@@ -232,11 +232,17 @@ public class BaijiuShellAddon {
 		show(modelService.find(BaijiuShellChrome.OPEN_CHROMATOGRAM_TOOLITEM_ID, application));
 		show(modelService.find(BaijiuShellChrome.TOGGLE_GC_TOOLITEM_ID, application));
 		show(modelService.find(BaijiuShellChrome.PLANT_SASH_ID, application));
-		show(modelService.find(BaijiuShellChrome.PLANT_TOP_SASH_ID, application));
+		show(modelService.find(BaijiuShellChrome.GC_WINDOW_ID, application));
 		show(modelService.find(BaijiuShellChrome.GC_HOME_STACK_ID, application));
 		show(modelService.find(BaijiuShellChrome.SEQUENCE_HOME_STACK_ID, application));
 		show(modelService.find(BaijiuShellChrome.WORKFLOW_STACK_ID, application));
 		show(modelService.find(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, application));
+		show(modelService.find(BaijiuShellChrome.INTEGRATION_HOME_PART_ID, application));
+		show(modelService.find(BaijiuShellChrome.WIZARD_HOME_PART_ID, application));
+		show(modelService.find(BaijiuShellChrome.BATCH_RESULTS_HOME_PART_ID, application));
+		show(modelService.find(BaijiuShellChrome.SIMPLE_BATCH_HOME_PART_ID, application));
+		show(modelService.find(BaijiuShellChrome.PARALLEL_HOME_PART_ID, application));
+		show(modelService.find(BaijiuShellChrome.REPORT_HOME_PART_ID, application));
 		BaijiuShellParts.applyGcConsoleVisibility(application, modelService);
 		BaijiuShellParts.revealPlantToolbar(application, modelService);
 		BaijiuShellParts.syncGcToggleToolItem(application, modelService);
@@ -274,17 +280,32 @@ public class BaijiuShellAddon {
 		tagNoDetach(modelService.find(BaijiuShellChrome.ANALYSIS_HOME_PART_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.WORKBENCH_HOME_PART_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID, application));
+		tagNoDetach(modelService.find(BaijiuShellChrome.INTEGRATION_HOME_PART_ID, application));
+		tagNoDetach(modelService.find(BaijiuShellChrome.WIZARD_HOME_PART_ID, application));
+		tagNoDetach(modelService.find(BaijiuShellChrome.BATCH_RESULTS_HOME_PART_ID, application));
+		tagNoDetach(modelService.find(BaijiuShellChrome.SIMPLE_BATCH_HOME_PART_ID, application));
+		tagNoDetach(modelService.find(BaijiuShellChrome.PARALLEL_HOME_PART_ID, application));
+		tagNoDetach(modelService.find(BaijiuShellChrome.REPORT_HOME_PART_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.GC_HOME_STACK_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.SEQUENCE_HOME_STACK_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.WORKFLOW_STACK_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.PLANT_SASH_ID, application));
-		tagNoDetach(modelService.find(BaijiuShellChrome.PLANT_TOP_SASH_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.CHROMATOGRAM_PLACEHOLDER_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.GC_CONTROL_PART_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.SEQUENCE_PART_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.ANALYSIS_PART_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.WORKBENCH_PART_ID, application));
+		tagNoClosePartOnly(modelService.find(BaijiuShellChrome.GC_HOME_PART_ID, application));
+		tagNoClosePartOnly(modelService.find(BaijiuShellChrome.GC_HOME_STACK_ID, application));
+	}
+
+	private static void tagNoClosePartOnly(MUIElement element) {
+
+		if(element == null) {
+			return;
+		}
+		addTag(element, BaijiuShellChrome.NO_CLOSE_TAG);
 	}
 
 	private static void tagNoDetach(MUIElement element) {
