@@ -64,7 +64,7 @@ public class BaijiuShellChrome_1_Test {
 		assertEquals("白酒FID工作站", BaijiuShellChrome.APPLICATION_NAME_VM);
 		assertFalse(BaijiuShellChrome.APPLICATION_NAME_VM.contains(" "));
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome", BaijiuShellChrome.PERSPECTIVE_ID);
-		assertEquals(19, BaijiuShellChrome.CHROME_EPOCH);
+		assertEquals(20, BaijiuShellChrome.CHROME_EPOCH);
 		assertEquals("org.eclipse.chemclipse.ux.extension.ui.perspective.welcome", BaijiuShellChrome.WELCOME_PERSPECTIVE_ID);
 		assertTrue(BaijiuShellChrome.isHiddenResearchPerspective(BaijiuShellChrome.WELCOME_PERSPECTIVE_ID));
 		assertTrue(BaijiuShellChrome.isHiddenResearchPerspective(BaijiuShellChrome.MALDI_PERSPECTIVE_ID));
@@ -97,6 +97,17 @@ public class BaijiuShellChrome_1_Test {
 		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID));
 		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.CHROMATOGRAM_PLACEHOLDER_ID));
 		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.EDITOR_AREA_ID));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.PERSPECTIVE_STACK_ID));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.PRIMARY_PERSPECTIVE_STACK_ID));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.COMPAT_PERSPECTIVE_STACK_ID));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.MAIN_WINDOW_ID));
+		assertTrue(BaijiuShellChrome.isPerspectiveStackId(BaijiuShellChrome.PERSPECTIVE_STACK_ID));
+		assertTrue(BaijiuShellChrome.isPerspectiveStackId(BaijiuShellChrome.PRIMARY_PERSPECTIVE_STACK_ID));
+		assertTrue(BaijiuShellChrome.isPerspectiveStackId(BaijiuShellChrome.COMPAT_PERSPECTIVE_STACK_ID));
+		assertFalse(BaijiuShellChrome.isPerspectiveStackId(BaijiuShellChrome.PERSPECTIVE_ID));
+		assertFalse(BaijiuShellChrome.isPerspectiveStackId(null));
+		assertTrue(BaijiuShellChrome.KEEP_ELEMENT_IDS.contains(BaijiuShellChrome.PERSPECTIVE_STACK_ID));
+		assertTrue(BaijiuShellChrome.PERSPECTIVE_STACK_IDS.contains(BaijiuShellChrome.PRIMARY_PERSPECTIVE_STACK_ID));
 		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.PLANT_TOOLBAR_ID));
 		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.TRIMBAR_TOP_ID));
 		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.TOGGLE_GC_TOOLITEM_ID));

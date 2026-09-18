@@ -39,6 +39,16 @@
    <extension
          id="net.openchrom.rcp.compilation.baijiu.ui.fragment"
          point="org.eclipse.e4.workbench.model">
+      <processor
+            apply="always"
+            beforefragment="true"
+            class="net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuPerspectiveStackProcessor">
+      </processor>
+      <processor
+            apply="always"
+            beforefragment="false"
+            class="net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuPlantHomeModelProcessor">
+      </processor>
       <fragment
             apply="always"
             uri="fragment.e4xmi">

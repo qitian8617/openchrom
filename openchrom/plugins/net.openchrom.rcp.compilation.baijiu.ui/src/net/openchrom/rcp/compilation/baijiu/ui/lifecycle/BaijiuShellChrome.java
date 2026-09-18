@@ -126,7 +126,18 @@ public final class BaijiuShellChrome {
 	public static final String TOGGLE_GC_TOOLITEM_ID = "net.openchrom.rcp.compilation.baijiu.ui.toolbar.toggleGcConsole";
 	public static final String OPEN_CHROMATOGRAM_TOOLITEM_ID = "net.openchrom.rcp.compilation.baijiu.ui.toolbar.openChromatogram";
 	public static final String GC_CONSOLE_HIDDEN_TAG = "BaijiuGcConsoleHidden";
+	/**
+	 * ChemClipse {@code Application.e4xmi} PerspectiveStack. Fragments target
+	 * this id; the live product may instead expose the Eclipse compatibility
+	 * stacks below after {@code workbench.xmi} rebuild / 3.x layer.
+	 */
 	public static final String PERSPECTIVE_STACK_ID = "org.eclipse.chemclipse.rcp.app.ui.perspectivestack.main";
+	public static final String PRIMARY_PERSPECTIVE_STACK_ID = "org.eclipse.e4.primaryPerspectiveStack";
+	public static final String COMPAT_PERSPECTIVE_STACK_ID = "PerspectiveStack";
+	public static final List<String> PERSPECTIVE_STACK_IDS = List.of( //
+			PERSPECTIVE_STACK_ID, //
+			PRIMARY_PERSPECTIVE_STACK_ID, //
+			COMPAT_PERSPECTIVE_STACK_ID);
 	public static final String MAIN_WINDOW_ID = "org.eclipse.chemclipse.rcp.app.ui.trimmedwindow.main";
 	public static final String PERSPECTIVE_PROPERTY = "application.perspective";
 	public static final String MAIN_MENU_ID = "org.eclipse.chemclipse.rcp.app.ui.menu.main";
@@ -159,8 +170,12 @@ public final class BaijiuShellChrome {
 	 * Epoch 19: do not createGui the ChemClipse editor Area into the left
 	 * stack on cold start (nested empty frames). The Area placeholder stays
 	 * in the model unrendered; CSD still embeds into 谱图/采集.
+	 * Epoch 20: attach plant home to the live window PerspectiveStack (not
+	 * only {@link #PERSPECTIVE_STACK_ID} via {@code EModelService.find}).
+	 * Epoch 19 rebuild left plantHome missing when the fragment parent id
+	 * was absent from the restored model — empty left gray.
 	 */
-	public static final int CHROME_EPOCH = 19;
+	public static final int CHROME_EPOCH = 20;
 	/**
 	 * Ids that must exist on the live model after plant-home reveal. Missing
 	 * any of these is the empty-left / community-button-column failure mode.
@@ -414,6 +429,10 @@ public final class BaijiuShellChrome {
 			SEQUENCE_HOME_STACK_ID, //
 			WORKFLOW_STACK_ID, //
 			CHROMATOGRAM_STACK_ID, //
+			PERSPECTIVE_STACK_ID, //
+			PRIMARY_PERSPECTIVE_STACK_ID, //
+			COMPAT_PERSPECTIVE_STACK_ID, //
+			MAIN_WINDOW_ID, //
 			EDITOR_AREA_ID, //
 			CHROMATOGRAM_PLACEHOLDER_ID, //
 			"net.openchrom.xxd.processor.supplier.baijiu.ui.menu.workbench", //
@@ -734,6 +753,11 @@ public final class BaijiuShellChrome {
 			return elementId;
 		}
 		return null;
+	}
+
+	public static boolean isPerspectiveStackId(String elementId) {
+
+		return elementId != null && !elementId.isBlank() && PERSPECTIVE_STACK_IDS.contains(elementId);
 	}
 
 	public static boolean isGcConsoleHidden(List<String> tags) {

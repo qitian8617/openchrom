@@ -25,6 +25,7 @@ public class BaijiuShellAddon_1_Test {
 		BaijiuShellAddon.recoverPlantHome(null, null);
 		BaijiuShellParts.suppressE4GcWindow(null, null);
 		BaijiuShellModel.ensurePlantHome(null, null);
+		BaijiuShellModel.ensureChemclipsePerspectiveStack(null, null);
 		BaijiuShellSelection.selectPlantHomeIfPresent(null, null);
 		BaijiuShellSelection.rejectHiddenSelection(null, null);
 		BaijiuShellSelection.selectInParent(null);
