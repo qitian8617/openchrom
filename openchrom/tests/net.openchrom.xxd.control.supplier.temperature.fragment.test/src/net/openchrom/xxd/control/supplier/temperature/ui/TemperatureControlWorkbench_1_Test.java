@@ -29,6 +29,8 @@ public class TemperatureControlWorkbench_1_Test {
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.partstack.plantChromatogram", TemperatureControlIds.PLANT_CHROMATOGRAM_STACK_ID);
 		assertEquals("org.eclipse.chemclipse.rcp.app.ui.editor", TemperatureControlIds.EDITOR_AREA_ID);
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.toolbar.toggleGcConsole", TemperatureControlIds.TOGGLE_GC_TOOLITEM_ID);
+		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.window.gcConsole", TemperatureControlIds.PLANT_GC_WINDOW_ID);
+		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.partstack.gcHome", TemperatureControlIds.PLANT_GC_STACK_ID);
 	}
 
 	@Test

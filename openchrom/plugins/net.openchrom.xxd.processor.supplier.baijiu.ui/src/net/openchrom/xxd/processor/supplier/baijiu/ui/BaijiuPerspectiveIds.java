@@ -28,6 +28,12 @@ public final class BaijiuPerspectiveIds {
 	public static final String CHROMATOGRAM_PLACEHOLDER_ID = "net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantChromatogram";
 	public static final String CHROMATOGRAM_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.plantChromatogram";
 	public static final String EDITOR_AREA_ID = "org.eclipse.chemclipse.rcp.app.ui.editor";
+	public static final String INTEGRATION_HOME_PART_ID = "net.openchrom.rcp.compilation.baijiu.ui.part.integrationHome";
+	public static final String WIZARD_HOME_PART_ID = "net.openchrom.rcp.compilation.baijiu.ui.part.wizardHome";
+	public static final String BATCH_RESULTS_HOME_PART_ID = "net.openchrom.rcp.compilation.baijiu.ui.part.batchResultsHome";
+	public static final String SIMPLE_BATCH_HOME_PART_ID = "net.openchrom.rcp.compilation.baijiu.ui.part.simpleBatchHome";
+	public static final String PARALLEL_HOME_PART_ID = "net.openchrom.rcp.compilation.baijiu.ui.part.parallelHome";
+	public static final String REPORT_HOME_PART_ID = "net.openchrom.rcp.compilation.baijiu.ui.part.reportHome";
 	/**
 	 * Dedicated-shell perspectives (branding fragment). Community product does
 	 * not contribute these ids; handlers fall back to the workbench dialogs.

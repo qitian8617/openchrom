@@ -24,6 +24,12 @@ public class BaijiuWorkbenchParts_1_Test {
 		assertFalse(BaijiuWorkbenchParts.showWorkbench(null, null, null));
 		assertFalse(BaijiuWorkbenchParts.showSequence(null, null, null));
 		assertFalse(BaijiuWorkbenchParts.showChromatogram(null, null, null));
+		assertFalse(BaijiuWorkbenchParts.showIntegration(null, null, null));
+		assertFalse(BaijiuWorkbenchParts.showWizard(null, null, null));
+		assertFalse(BaijiuWorkbenchParts.showBatchResults(null, null, null));
+		assertFalse(BaijiuWorkbenchParts.showSimpleBatch(null, null, null));
+		assertFalse(BaijiuWorkbenchParts.showParallel(null, null, null));
+		assertFalse(BaijiuWorkbenchParts.showReport(null, null, null));
 		assertFalse(BaijiuWorkbenchParts.switchPerspective(null, null, null, BaijiuPerspectiveIds.ANALYSIS_PERSPECTIVE_ID));
 		assertFalse(BaijiuWorkbenchParts.showPart(null, null, null, BaijiuPerspectiveIds.SEQUENCE_PART_ID));
 		assertFalse(BaijiuWorkbenchParts.showPart(null, null, null, BaijiuPerspectiveIds.SEQUENCE_HOME_PART_ID));
@@ -39,6 +45,12 @@ public class BaijiuWorkbenchParts_1_Test {
 		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui.part.workbench.plantHome", BaijiuPerspectiveIds.WORKBENCH_HOME_PART_ID);
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantChromatogram", BaijiuPerspectiveIds.CHROMATOGRAM_PLACEHOLDER_ID);
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.partstack.plantChromatogram", BaijiuPerspectiveIds.CHROMATOGRAM_STACK_ID);
+		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.part.integrationHome", BaijiuPerspectiveIds.INTEGRATION_HOME_PART_ID);
+		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.part.wizardHome", BaijiuPerspectiveIds.WIZARD_HOME_PART_ID);
+		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.part.batchResultsHome", BaijiuPerspectiveIds.BATCH_RESULTS_HOME_PART_ID);
+		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.part.simpleBatchHome", BaijiuPerspectiveIds.SIMPLE_BATCH_HOME_PART_ID);
+		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.part.parallelHome", BaijiuPerspectiveIds.PARALLEL_HOME_PART_ID);
+		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.part.reportHome", BaijiuPerspectiveIds.REPORT_HOME_PART_ID);
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome", BaijiuPerspectiveIds.PLANT_HOME_PERSPECTIVE_ID);
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.perspective.analysis", BaijiuPerspectiveIds.ANALYSIS_PERSPECTIVE_ID);
 		assertTrue(BaijiuPerspectiveIds.matches(BaijiuPerspectiveIds.PLANT_HOME_PERSPECTIVE_ID, null));

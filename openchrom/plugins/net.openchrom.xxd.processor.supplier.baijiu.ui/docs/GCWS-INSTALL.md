@@ -4,7 +4,7 @@
 
 Two install vehicles (both kept):
 
-1. **Dedicated product (target operator UI, 方案 B Phase 3):** `openchrom.compilation.baijiu.product` — window title **白酒 FID 工作站**, starts on **厂工作台** (left fixed 谱图/采集; right sidebar tabs 白酒操作 / 进样序列 / 白酒分析; reverse-control sash toggled from the plant toolbar, docked above the sidebar). See [白酒FID专用壳架构.md](白酒FID专用壳架构.md) and `products/net.openchrom.rcp.compilation.baijiu.product/README.txt`.
+1. **Dedicated product (target operator UI, 方案 B Phase 3):** `openchrom.compilation.baijiu.product` — window title **白酒 FID 工作站**, starts on **厂工作台** (left workflow tabs 谱图/采集 + analysis pages; right fixed 白酒操作 sidebar; reverse-control independent window toggled from the plant toolbar). See [白酒FID专用壳架构.md](白酒FID专用壳架构.md) and `products/net.openchrom.rcp.compilation.baijiu.product/README.txt`.
 2. **Install New Software into community OpenChrom** (still supported): export `baijiu.pilot.feature` as below. This is not a rewrite of the community `.product`, not NSIS/Inno for all of OpenChrom, not a hardware dongle, not an activation server, and not Part 11.
 
 Acceptance: **本机导出验证** — an engineer on a Windows workstation can **either** Run/Export the dedicated product **or** export the pilot feature, install it, enter a sample license, and open 白酒分析.
@@ -62,7 +62,7 @@ Need the OpenChrom PDE workspace that already compiles `baijiu.ui` (**JavaSE-21*
 
 Phase 3 plant UI (dedicated product only):
 
-- Starts on **厂工作台**. Horizontal sash (resizable): **left** fixed **谱图 / 采集** (ChemClipse editor Area, not closable, does not swap sides when opening a CSD); **right** PartStack of plant ops tabs **白酒操作** (default) / **进样序列** / **白酒分析**. Reverse-control (气/火/信号/就绪, current vial) docks **above the sidebar** and is shown/hidden by toolbar **反控** (check item, default visible; hide remembered via `BaijiuGcConsoleHidden`). Community install still opens the floating dialog.
+- Starts on **厂工作台**. Horizontal sash (resizable): **left** PartStack of workflow tabs **谱图 / 采集** (ChemClipse editor Area + empty-state, not closable, does not swap sides when opening a CSD) plus 推荐积分 / 白酒分析 / 三步向导 / 进样序列 / 批处理结果 / 简单批量 / 平行样 / 预览报告; **right** fixed **白酒操作** sidebar (NoDetach). Reverse-control is an **independent window** shown/hidden by toolbar **反控** (check item, default visible; close hides, reopen shows the same singleton; hide remembered via `BaijiuGcConsoleHidden`). Community install still opens the floating dialog.
 - Plant-home hosts are branding Parts (`BaijiuGcHomePart` / `BaijiuSequenceHomePart` / `BaijiuAnalysisHomePart` / `BaijiuWorkbenchHomePart`) that OSGi-load the real panels. Chromatogram host is `placeholder.plantChromatogram` in `partstack.plantChromatogram` → ChemClipse Area (not the dead `placeholder.plantEditor`, not a right-side tab). Cold start must show the plant toolbar (打开谱图 / 反控) plus FID controls and/or the sequence table, **or a readable error Label** — never blank gray.
 - Top menu **文件 / 白酒 / 视图 / 帮助**. 处理器 / 插件 are hidden. Toolbar: **打开谱图**、**反控**、开始分析、推荐积分、定量/白酒分析、报告. **开始分析** / Main「启动」 keeps the live chart on the **left** 谱图/采集 surface after a successful start.
 - 白酒分析 is a page (样品→校正→定量→报告) on the dedicated shell; community still uses the dialog.
@@ -152,7 +152,7 @@ After a valid license, continue demo `操作步骤.txt` **A–J** (method packag
 
 ## D. Engineer verify list (本机导出验证)
 
-- [ ] **Dedicated product:** Run As / Export `openchrom.compilation.baijiu.product`; title 白酒 FID 工作站; starts on **厂工作台** (toolbar 打开谱图 + 反控; **left** 谱图·采集; **right** tabs 白酒操作 / 进样序列 / 白酒分析; FID console sash default visible above the sidebar, or a readable error Label — never blank gray); opening a CSD stays on the **left**; **开始分析** Start keeps 谱图/采集 on the left; top bar without 处理器/插件; restart keeps layout; `baijiu.ui` still JavaSE-21
+- [ ] **Dedicated product:** Run As / Export `openchrom.compilation.baijiu.product`; title 白酒 FID 工作站; starts on **厂工作台** (toolbar 打开谱图 + 反控; **left** 谱图·采集 workflow tabs; **right** 白酒操作 only; FID console independent window default visible, or a readable error Label — never blank gray); opening a CSD stays on the **left**; **开始分析** Start keeps 谱图/采集 on the left; top bar without 处理器/插件; restart keeps layout; `baijiu.ui` still JavaSE-21
 - [ ] **Community path:** Export Deployable Features of **Baijiu FID Pilot** to a folder (or Tycho `sites/baijiu-fid-pilot/target/repository`)
 - [ ] On a community OpenChrom, Install New Software from that folder; restart
 - [ ] About / Installation Details shows feature **1.6.32.*** qualifier

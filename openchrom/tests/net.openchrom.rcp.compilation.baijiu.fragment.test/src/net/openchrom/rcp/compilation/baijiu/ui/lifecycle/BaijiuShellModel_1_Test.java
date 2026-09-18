@@ -30,6 +30,8 @@ public class BaijiuShellModel_1_Test {
 		assertTrue(missing.contains(BaijiuShellChrome.SEQUENCE_HOME_PART_ID));
 		assertTrue(missing.contains(BaijiuShellChrome.ANALYSIS_HOME_PART_ID));
 		assertTrue(missing.contains(BaijiuShellChrome.CHROMATOGRAM_PLACEHOLDER_ID));
+		assertTrue(missing.contains(BaijiuShellChrome.GC_WINDOW_ID));
+		assertTrue(missing.contains(BaijiuShellChrome.INTEGRATION_HOME_PART_ID));
 		assertTrue(missing.size() >= BaijiuShellChrome.PLANT_HOME_REQUIRED_ELEMENT_IDS.size());
 	}
 
@@ -49,5 +51,8 @@ public class BaijiuShellModel_1_Test {
 		assertTrue(BaijiuShellChrome.PLANT_HOME_REQUIRED_ELEMENT_IDS.contains(BaijiuShellChrome.WORKBENCH_HOME_PART_ID));
 		assertTrue(BaijiuShellChrome.PLANT_HOME_REQUIRED_ELEMENT_IDS.contains(BaijiuShellChrome.SEQUENCE_HOME_PART_ID));
 		assertTrue(BaijiuShellChrome.PLANT_HOME_REQUIRED_ELEMENT_IDS.contains(BaijiuShellChrome.ANALYSIS_HOME_PART_ID));
+		assertTrue(BaijiuShellChrome.PLANT_HOME_REQUIRED_ELEMENT_IDS.contains(BaijiuShellChrome.GC_WINDOW_ID));
+		assertTrue(BaijiuShellChrome.PLANT_HOME_REQUIRED_ELEMENT_IDS.contains(BaijiuShellChrome.INTEGRATION_HOME_PART_ID));
+		assertTrue(BaijiuShellChrome.PLANT_HOME_REQUIRED_ELEMENT_IDS.contains(BaijiuShellChrome.REPORT_HOME_PART_ID));
 	}
 }

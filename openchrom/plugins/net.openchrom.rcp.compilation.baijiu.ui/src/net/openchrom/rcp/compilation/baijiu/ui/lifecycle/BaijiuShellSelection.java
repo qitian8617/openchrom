@@ -55,7 +55,7 @@ public final class BaijiuShellSelection {
 
 	/**
 	 * Select {@code element} in its parent chain. Does not unhide chrome-hidden
-	 * research perspectives/sashes. Stops at a user-hidden GC console sash so
+	 * research perspectives/sashes. Stops at a user-hidden GC console window so
 	 * 反控 off cannot re-select that stack. No-op when {@code element} is
 	 * research UI.
 	 */
@@ -343,10 +343,12 @@ public final class BaijiuShellSelection {
 				|| BaijiuShellChrome.WORKBENCH_HOME_PART_ID.equals(elementId) //
 				|| BaijiuShellChrome.SEQUENCE_HOME_PART_ID.equals(elementId) //
 				|| BaijiuShellChrome.GC_HOME_STACK_ID.equals(elementId) //
+				|| BaijiuShellChrome.GC_WINDOW_ID.equals(elementId) //
 				|| BaijiuShellChrome.PLANT_SASH_ID.equals(elementId) //
 				|| BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID.equals(elementId) //
 				|| BaijiuShellChrome.CHROMATOGRAM_PLACEHOLDER_ID.equals(elementId) //
-				|| BaijiuShellChrome.ANALYSIS_HOME_PART_ID.equals(elementId);
+				|| BaijiuShellChrome.ANALYSIS_HOME_PART_ID.equals(elementId) //
+				|| BaijiuShellChrome.LEFT_WORKFLOW_PART_IDS.contains(elementId);
 	}
 
 	private static boolean hasHiddenResearchAncestor(MUIElement element) {
@@ -367,7 +369,11 @@ public final class BaijiuShellSelection {
 
 	private static boolean isUserHiddenGcConsole(MUIElement element) {
 
-		if(element == null || !BaijiuShellChrome.GC_HOME_STACK_ID.equals(element.getElementId())) {
+		if(element == null) {
+			return false;
+		}
+		String id = element.getElementId();
+		if(!BaijiuShellChrome.GC_HOME_STACK_ID.equals(id) && !BaijiuShellChrome.GC_WINDOW_ID.equals(id)) {
 			return false;
 		}
 		try {

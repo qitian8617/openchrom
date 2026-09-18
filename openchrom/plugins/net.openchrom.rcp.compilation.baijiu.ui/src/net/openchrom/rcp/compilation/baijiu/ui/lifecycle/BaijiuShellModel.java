@@ -23,14 +23,15 @@ import org.eclipse.e4.ui.model.application.ui.basic.MBasicFactory;
 import org.eclipse.e4.ui.model.application.ui.basic.MPart;
 import org.eclipse.e4.ui.model.application.ui.basic.MPartSashContainer;
 import org.eclipse.e4.ui.model.application.ui.basic.MPartStack;
+import org.eclipse.e4.ui.model.application.ui.basic.MTrimmedWindow;
 import org.eclipse.e4.ui.workbench.modeling.EModelService;
 
 /**
  * Ensures the plant-home perspective from {@code fragment.e4xmi} is in the
  * live application model. Stale {@code workbench.xmi} or a failed fragment
  * import (Welcome still selected, chrome abort) can leave the sash empty;
- * this rebuilds left 谱图/采集 + right ops tabs so gray void is not steady
- * state.
+ * this rebuilds left workflow tabs + right 白酒操作 sidebar and the
+ * independent GC console window so gray void is not steady state.
  */
 public final class BaijiuShellModel {
 
@@ -58,7 +59,7 @@ public final class BaijiuShellModel {
 		boolean built = buildPlantHomeTree(application, modelService, perspective);
 		List<String> missing = missingPlantHomeIds(application, modelService);
 		if(!built || !missing.isEmpty()) {
-			BaijiuShellLog.warn("Plant home Parts missing after ensure: " + missing + ". Left 谱图/采集 and right 白酒操作/进样序列/白酒分析 must exist. Marking persisted state for reset.");
+			BaijiuShellLog.warn("Plant home Parts missing after ensure: " + missing + ". Left workflow tabs, right 白酒操作, and GC console window must exist. Marking persisted state for reset.");
 			requestResetQuietly();
 			return false;
 		}
@@ -125,24 +126,67 @@ public final class BaijiuShellModel {
 			return false;
 		}
 		MPartStack chromatogramStack = stack(application, modelService, sash, BaijiuShellChrome.CHROMATOGRAM_STACK_ID, "7400");
-		MPartSashContainer top = sash(application, modelService, sash, BaijiuShellChrome.PLANT_TOP_SASH_ID, false, "2600");
-		if(chromatogramStack == null || top == null) {
+		MPartStack workflow = stack(application, modelService, sash, BaijiuShellChrome.WORKFLOW_STACK_ID, "2600");
+		if(chromatogramStack == null || workflow == null) {
 			return false;
 		}
 		MPart chromatogramHome = part(application, modelService, chromatogramStack, BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID, BaijiuShellChrome.CHROMATOGRAM_HOME_CONTRIBUTION_URI, "谱图 / 采集", ICON_CSD);
 		placeholder(application, modelService, chromatogramStack, BaijiuShellChrome.CHROMATOGRAM_PLACEHOLDER_ID, BaijiuShellChrome.EDITOR_AREA_ID);
-		MPartStack gcStack = stack(application, modelService, top, BaijiuShellChrome.GC_HOME_STACK_ID, "3800");
-		MPartStack workflow = stack(application, modelService, top, BaijiuShellChrome.WORKFLOW_STACK_ID, "6200");
-		if(gcStack != null) {
-			part(application, modelService, gcStack, BaijiuShellChrome.GC_HOME_PART_ID, BaijiuShellChrome.GC_HOME_CONTRIBUTION_URI, "气相色谱控制台", ICON_PREFERENCES);
-		}
-		if(workflow == null) {
-			return chromatogramHome != null;
-		}
+		MPart integration = part(application, modelService, chromatogramStack, BaijiuShellChrome.INTEGRATION_HOME_PART_ID, BaijiuShellChrome.INTEGRATION_HOME_CONTRIBUTION_URI, "推荐积分", ICON_PEAK);
+		MPart analysis = part(application, modelService, chromatogramStack, BaijiuShellChrome.ANALYSIS_HOME_PART_ID, BaijiuShellChrome.ANALYSIS_HOME_CONTRIBUTION_URI, "白酒分析", ICON_PEAK);
+		MPart wizard = part(application, modelService, chromatogramStack, BaijiuShellChrome.WIZARD_HOME_PART_ID, BaijiuShellChrome.WIZARD_HOME_CONTRIBUTION_URI, "三步向导", ICON_PEAK);
+		MPart sequence = part(application, modelService, chromatogramStack, BaijiuShellChrome.SEQUENCE_HOME_PART_ID, BaijiuShellChrome.SEQUENCE_HOME_CONTRIBUTION_URI, "进样序列", ICON_PEAK);
+		MPart batchResults = part(application, modelService, chromatogramStack, BaijiuShellChrome.BATCH_RESULTS_HOME_PART_ID, BaijiuShellChrome.BATCH_RESULTS_HOME_CONTRIBUTION_URI, "批处理结果", ICON_PEAK);
+		MPart simpleBatch = part(application, modelService, chromatogramStack, BaijiuShellChrome.SIMPLE_BATCH_HOME_PART_ID, BaijiuShellChrome.SIMPLE_BATCH_HOME_CONTRIBUTION_URI, "简单批量", ICON_PEAK);
+		MPart parallel = part(application, modelService, chromatogramStack, BaijiuShellChrome.PARALLEL_HOME_PART_ID, BaijiuShellChrome.PARALLEL_HOME_CONTRIBUTION_URI, "平行样", ICON_PEAK);
+		MPart report = part(application, modelService, chromatogramStack, BaijiuShellChrome.REPORT_HOME_PART_ID, BaijiuShellChrome.REPORT_HOME_CONTRIBUTION_URI, "预览报告", ICON_PEAK);
 		MPart workbench = part(application, modelService, workflow, BaijiuShellChrome.WORKBENCH_HOME_PART_ID, BaijiuShellChrome.WORKBENCH_HOME_CONTRIBUTION_URI, "白酒操作", ICON_PEAK);
-		MPart sequence = part(application, modelService, workflow, BaijiuShellChrome.SEQUENCE_HOME_PART_ID, BaijiuShellChrome.SEQUENCE_HOME_CONTRIBUTION_URI, "进样序列", ICON_PEAK);
-		MPart analysis = part(application, modelService, workflow, BaijiuShellChrome.ANALYSIS_HOME_PART_ID, BaijiuShellChrome.ANALYSIS_HOME_CONTRIBUTION_URI, "白酒分析", ICON_PEAK);
-		return chromatogramHome != null && workbench != null && sequence != null && analysis != null;
+		MPart gc = ensureGcConsoleWindow(application, modelService);
+		return chromatogramHome != null && workbench != null && sequence != null && analysis != null && integration != null && wizard != null && batchResults != null && simpleBatch != null && parallel != null && report != null && gc != null;
+	}
+
+	private static MPart ensureGcConsoleWindow(MApplication application, EModelService modelService) {
+
+		MTrimmedWindow window = gcWindow(application, modelService);
+		if(window == null) {
+			return null;
+		}
+		MPartSashContainer sash = sash(application, modelService, window, BaijiuShellChrome.GC_WINDOW_SASH_ID, true, null);
+		if(sash == null) {
+			return null;
+		}
+		MPartStack stack = stack(application, modelService, sash, BaijiuShellChrome.GC_HOME_STACK_ID, null);
+		if(stack == null) {
+			return null;
+		}
+		return part(application, modelService, stack, BaijiuShellChrome.GC_HOME_PART_ID, BaijiuShellChrome.GC_HOME_CONTRIBUTION_URI, "气相色谱控制台", ICON_PREFERENCES);
+	}
+
+	private static MTrimmedWindow gcWindow(MApplication application, EModelService modelService) {
+
+		MUIElement found = modelService.find(BaijiuShellChrome.GC_WINDOW_ID, application);
+		if(found instanceof MTrimmedWindow existing) {
+			existing.setToBeRendered(true);
+			if(!BaijiuShellChrome.isGcConsoleHidden(existing.getTags())) {
+				existing.setVisible(true);
+			}
+			return existing;
+		}
+		MTrimmedWindow created = create(MTrimmedWindow.class);
+		if(created == null) {
+			return null;
+		}
+		created.setElementId(BaijiuShellChrome.GC_WINDOW_ID);
+		created.setLabel("气相色谱控制台");
+		created.setIconURI(ICON_PREFERENCES);
+		created.setX(120);
+		created.setY(80);
+		created.setWidth(980);
+		created.setHeight(720);
+		created.setVisible(true);
+		created.setToBeRendered(true);
+		addChild(application, created, false);
+		return created;
 	}
 
 	private static MPartSashContainer sash(MApplication application, EModelService modelService, MElementContainer<?> parent, String id, boolean horizontal, String containerData) {
@@ -315,6 +359,9 @@ public final class BaijiuShellModel {
 			}
 			if(type == MPart.class) {
 				return (T)MBasicFactory.INSTANCE.createPart();
+			}
+			if(type == MTrimmedWindow.class) {
+				return (T)MBasicFactory.INSTANCE.createTrimmedWindow();
 			}
 		} catch(RuntimeException | LinkageError e) {
 			return null;

@@ -14,6 +14,8 @@ import org.eclipse.chemclipse.model.selection.IChromatogramSelection;
 import org.eclipse.e4.core.contexts.Active;
 import org.eclipse.e4.core.di.annotations.Execute;
 import org.eclipse.e4.core.di.annotations.Optional;
+import org.eclipse.e4.ui.model.application.MApplication;
+import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.MessageBox;
@@ -24,6 +26,7 @@ import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuAnalysisResult;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuMethodSettings;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuPreferences;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuSampleInfo;
+import net.openchrom.xxd.processor.supplier.baijiu.ui.BaijiuWorkbenchParts;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.ChromatogramBridge;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuLicenseShell;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuReportShell;
@@ -31,8 +34,15 @@ import net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuReportShell;
 public class OpenBaijiuReportHandler {
 
 	@Execute
-	public void execute(@Active Shell shell, @Optional EPartService partService) {
+	public void execute(@Active Shell shell, @Optional EPartService partService, @Optional MApplication application, @Optional EModelService modelService) {
 
+		try {
+			if(BaijiuWorkbenchParts.showReport(application, modelService, partService)) {
+				return;
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// community dialog below
+		}
 		if(BaijiuLicenseShell.blockQuantify(shell)) {
 			return;
 		}

@@ -88,6 +88,42 @@ public final class BaijiuWorkbenchParts {
 				|| showPart(application, modelService, partService, BaijiuPerspectiveIds.SEQUENCE_PART_ID);
 	}
 
+	public static boolean showIntegration(MApplication application, EModelService modelService, EPartService partService) {
+
+		return showLeftWorkflowTab(application, modelService, partService, BaijiuPerspectiveIds.INTEGRATION_HOME_PART_ID);
+	}
+
+	public static boolean showWizard(MApplication application, EModelService modelService, EPartService partService) {
+
+		return showLeftWorkflowTab(application, modelService, partService, BaijiuPerspectiveIds.WIZARD_HOME_PART_ID);
+	}
+
+	public static boolean showBatchResults(MApplication application, EModelService modelService, EPartService partService) {
+
+		return showLeftWorkflowTab(application, modelService, partService, BaijiuPerspectiveIds.BATCH_RESULTS_HOME_PART_ID);
+	}
+
+	public static boolean showSimpleBatch(MApplication application, EModelService modelService, EPartService partService) {
+
+		return showLeftWorkflowTab(application, modelService, partService, BaijiuPerspectiveIds.SIMPLE_BATCH_HOME_PART_ID);
+	}
+
+	public static boolean showParallel(MApplication application, EModelService modelService, EPartService partService) {
+
+		return showLeftWorkflowTab(application, modelService, partService, BaijiuPerspectiveIds.PARALLEL_HOME_PART_ID);
+	}
+
+	public static boolean showReport(MApplication application, EModelService modelService, EPartService partService) {
+
+		return showLeftWorkflowTab(application, modelService, partService, BaijiuPerspectiveIds.REPORT_HOME_PART_ID);
+	}
+
+	static boolean showLeftWorkflowTab(MApplication application, EModelService modelService, EPartService partService, String partId) {
+
+		switchPerspective(application, modelService, partService, BaijiuPerspectiveIds.PLANT_HOME_PERSPECTIVE_ID);
+		return showPart(application, modelService, partService, partId);
+	}
+
 	public static boolean switchPerspective(MApplication application, EModelService modelService, EPartService partService, String perspectiveId) {
 
 		if(application == null || modelService == null || perspectiveId == null || perspectiveId.isBlank()) {

@@ -68,6 +68,12 @@ public class BaijiuHomePanels_1_Test {
 		assertTrue(BaijiuHomePanels.SEQUENCE_ACCESS_TYPE.endsWith(".sequence.InjectionSequenceAccess"));
 		assertTrue(BaijiuHomePanels.ANALYSIS_SHELL_TYPE.endsWith(".shell.BaijiuAnalysisShell"));
 		assertTrue(BaijiuHomePanels.WORKBENCH_PART_TYPE.endsWith(".parts.BaijiuWorkbenchPart"));
+		assertTrue(BaijiuHomePanels.INTEGRATION_SHELL_TYPE.endsWith(".shell.BaijiuIntegrationShell"));
+		assertTrue(BaijiuHomePanels.WIZARD_TYPE.endsWith(".wizards.BaijiuWorkflowWizard"));
+		assertTrue(BaijiuHomePanels.BATCH_SHELL_TYPE.endsWith(".shell.BaijiuBatchShell"));
+		assertTrue(BaijiuHomePanels.PARALLEL_SHELL_TYPE.endsWith(".shell.BaijiuParallelShell"));
+		assertTrue(BaijiuHomePanels.BATCH_RESULTS_SHELL_TYPE.endsWith(".shell.BaijiuSequenceResultsShell"));
+		assertTrue(BaijiuHomePanels.REPORT_SHELL_TYPE.endsWith(".shell.BaijiuReportShell"));
 		assertEquals("谱图/采集", BaijiuHomePanels.CHROMATOGRAM_EMPTY_TITLE);
 		assertTrue(BaijiuHomePanels.CHROMATOGRAM_EMPTY_HINT.contains("打开色谱图"), BaijiuHomePanels.CHROMATOGRAM_EMPTY_HINT);
 		assertTrue(BaijiuHomePanels.CHROMATOGRAM_EMPTY_HINT.contains("打开谱图"), BaijiuHomePanels.CHROMATOGRAM_EMPTY_HINT);
@@ -85,6 +91,12 @@ public class BaijiuHomePanels_1_Test {
 		BaijiuHomePanels.createAnalysisShell(null, null);
 		BaijiuHomePanels.createWorkbenchPanel(null, null, null, null, null);
 		BaijiuHomePanels.createChromatogramEmptyState(null);
+		BaijiuHomePanels.createIntegrationPanel(null, null);
+		BaijiuHomePanels.createWizardPanel(null, null);
+		BaijiuHomePanels.createBatchResultsPanel(null);
+		BaijiuHomePanels.createSimpleBatchPanel(null);
+		BaijiuHomePanels.createParallelPanel(null);
+		BaijiuHomePanels.createReportPanel(null, null);
 	}
 
 	@Test
@@ -95,6 +107,12 @@ public class BaijiuHomePanels_1_Test {
 		new BaijiuAnalysisHomePart().create(null);
 		new BaijiuWorkbenchHomePart().create(null);
 		new BaijiuChromatogramHomePart().create(null);
+		new BaijiuIntegrationHomePart().create(null);
+		new BaijiuWizardHomePart().create(null);
+		new BaijiuBatchResultsHomePart().create(null);
+		new BaijiuSimpleBatchHomePart().create(null);
+		new BaijiuParallelHomePart().create(null);
+		new BaijiuReportHomePart().create(null);
 		new BaijiuGcHomePart((Composite)null);
 		new BaijiuSequenceHomePart((Composite)null);
 		new BaijiuAnalysisHomePart((Composite)null);

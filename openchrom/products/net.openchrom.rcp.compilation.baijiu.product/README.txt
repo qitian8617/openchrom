@@ -42,11 +42,12 @@ Run As → Eclipse Application (Windows engineer)
    「白酒 FID 工作站」 via product name / shell chrome.
 6. Expect window title 白酒 FID 工作站, start on **厂工作台**:
    plant toolbar always visible (打开谱图, 反控 check item, 开始分析, …);
-   **left** fixed 谱图/采集 (ChemClipse editor Area; opening a CSD stays here);
-   **right** PartStack tabs 白酒操作 (default) / 进样序列 / 白酒分析;
-   reverse-control sash docks above the sidebar (气/火/信号/就绪 + 当前针) default visible,
-   hidden by toolbar 反控 (remembered). Chromatogram / live acquisition is
-   the left 谱图/采集 host (placeholder.plantChromatogram), not a competing
+   **left** workflow tabs (谱图/采集 ChemClipse editor Area; opening a CSD stays here;
+   plus 推荐积分 / 白酒分析 / 三步向导 / 进样序列 / 批处理结果 / 简单批量 / 平行样 / 预览报告);
+   **right** fixed 白酒操作 sidebar (NoDetach, resizable sash);
+   reverse-control is an independent window (气/火/信号/就绪 + 当前针) default visible,
+   hidden by toolbar 反控 or by closing the window (remembered). Chromatogram / live
+   acquisition is the left 谱图/采集 host (placeholder.plantChromatogram), not a competing
    right tab and not the dead placeholder.plantEditor.
    Plant-home stacks host **branding-bundle Parts**
    (`BaijiuGcHomePart` / `BaijiuSequenceHomePart` / `BaijiuAnalysisHomePart` /
@@ -86,7 +87,7 @@ Reset layout
 - 白酒 → 重置窗口布局, then restart.
 - Or add -clearPersistedState **once** to the launch / shortcut.
 - Or -Dnet.openchrom.baijiu.clearLayout=true for that start.
-Phase 3 also clears workbench.xmi once when the chrome epoch advances (now 15).
+Phase 3 also clears workbench.xmi once when the chrome epoch advances (now 16).
 
 Research-menu escape hatch (engineers only, not in the UI)
 ----------------------------------------------------------
@@ -135,20 +136,21 @@ Verify on the engineer PC
 -------------------------
 [ ] .product opens; Run As starts; title 白酒 FID 工作站
 [ ] Default perspective 厂工作台: toolbar 打开谱图 + 反控 visible;
-    **left** 谱图/采集 tab with empty-state hint (not blank gray);
-    **right** tabs 白酒操作 / 进样序列 / 白酒分析; reverse-control
-    sash default visible above the sidebar
+    **left** 谱图/采集 tab with empty-state hint (not blank gray) plus other
+    workflow tabs; **right** 白酒操作 only (resizable, no Detach);
+    reverse-control independent window default visible
     (or a readable white-on-dark error Label inside the tab — never blank gray)
 [ ] After 白酒 → 重置窗口布局 and relaunch: main client is NOT empty gray; reverse-control and/or sequence table still visible
-[ ] First launch after this PR (epoch 15) auto-clears workbench.xmi once
+[ ] First launch after this PR (epoch 16) auto-clears workbench.xmi once
 [ ] After that launch, persisted workbench.xmi contains chromatogramHome / plantChromatogram / workbench.plantHome / sequence.plantHome / analysis.plantHome / perspective.plantHome
 [ ] Product .log does NOT flood IllegalArgumentException Welcome “must be visible in the UI presentation”
 [ ] Top bar 文件 / 白酒 / 视图 / 帮助; no 处理器 / 插件 / 色谱图 / 窗口
 [ ] Toolbar: 打开谱图、反控、开始分析、推荐积分、定量/白酒分析、报告
-[ ] 反控 check item hides/shows the GC sash (no second console; does not restore GC|Sequence as the only chrome)
+[ ] 反控 check item hides/shows the GC window (no second console; closing the window hides it; toolbar reopen shows the same window)
 [ ] 开始分析 / Main「启动」 uses the same FID gate as Main (blocks when disconnected)
     and shows the live chart on the **left** 谱图 / 采集
-[ ] 定量/白酒分析 opens the plant-home **right** 白酒分析 tab (样品→校正→定量→报告); demo .ocb still works
+[ ] 定量/白酒分析 opens the plant-home **left** 白酒分析 tab (样品→校正→定量→报告); demo .ocb still works
+[ ] Right 白酒操作 buttons select the matching **left** tab (进样序列 / 推荐积分 / 批处理 / 平行样 / 预览报告 / 三步向导) — no extra floating dialog when the Part exists
 [ ] Restart keeps sash / window size / GC hide tag (no forced -clearPersistedState)
 [ ] Reset via 白酒 → 重置窗口布局 then restart restores default
 [ ] Toolbar 打开谱图 and File → 打开 CSD 文件 open demo .ocb on the **left** 谱图/采集; they do not swap sides with 白酒分析 / 白酒操作

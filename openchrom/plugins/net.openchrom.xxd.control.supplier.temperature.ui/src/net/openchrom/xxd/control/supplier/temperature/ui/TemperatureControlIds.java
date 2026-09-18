@@ -35,6 +35,7 @@ public final class TemperatureControlIds {
 	 */
 	public static final String PLANT_HOME_PERSPECTIVE_ID = "net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome";
 	public static final String PLANT_GC_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.gcHome";
+	public static final String PLANT_GC_WINDOW_ID = "net.openchrom.rcp.compilation.baijiu.ui.window.gcConsole";
 	public static final String PLANT_WORKFLOW_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.plantWorkflow";
 	public static final String PLANT_CHROMATOGRAM_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.plantChromatogram";
 	public static final String CHROMATOGRAM_PLACEHOLDER_ID = "net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantChromatogram";

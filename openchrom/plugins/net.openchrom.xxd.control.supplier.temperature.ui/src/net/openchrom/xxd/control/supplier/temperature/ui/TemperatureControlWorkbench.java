@@ -21,6 +21,7 @@ import org.eclipse.e4.ui.model.application.ui.menu.MItem;
 import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService.PartState;
+import org.eclipse.swt.widgets.Shell;
 
 /**
  * Activates the reverse-control part when a dedicated-shell placeholder has
@@ -136,23 +137,44 @@ public final class TemperatureControlWorkbench {
 		if(application == null || modelService == null) {
 			return;
 		}
+		MUIElement window = modelService.find(TemperatureControlIds.PLANT_GC_WINDOW_ID, application);
 		MUIElement stack = modelService.find(TemperatureControlIds.PLANT_GC_STACK_ID, application);
-		if(stack == null) {
+		MUIElement target = window != null ? window : stack;
+		if(target == null) {
 			return;
 		}
-		stack.setToBeRendered(true);
-		stack.setVisible(true);
+		target.setToBeRendered(true);
+		target.setVisible(true);
+		unhideGcTag(target);
+		if(stack != null && stack != target) {
+			stack.setToBeRendered(true);
+			stack.setVisible(true);
+			unhideGcTag(stack);
+		}
+		Object widget = target.getWidget();
+		if(widget instanceof Shell shell && !shell.isDisposed()) {
+			shell.setMinimized(false);
+			shell.setVisible(true);
+			shell.setActive();
+		}
+		MUIElement toggle = modelService.find(TemperatureControlIds.TOGGLE_GC_TOOLITEM_ID, application);
+		if(toggle instanceof MItem item) {
+			item.setSelected(true);
+		}
+	}
+
+	private static void unhideGcTag(MUIElement element) {
+
+		if(element == null) {
+			return;
+		}
 		try {
-			List<String> tags = stack.getTags();
+			List<String> tags = element.getTags();
 			if(tags != null) {
 				tags.remove(TemperatureControlIds.GC_CONSOLE_HIDDEN_TAG);
 			}
 		} catch(RuntimeException | LinkageError e) {
 			// ignore
-		}
-		MUIElement toggle = modelService.find(TemperatureControlIds.TOGGLE_GC_TOOLITEM_ID, application);
-		if(toggle instanceof MItem item) {
-			item.setSelected(true);
 		}
 	}
 

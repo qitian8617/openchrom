@@ -10,7 +10,11 @@
 package net.openchrom.xxd.processor.supplier.baijiu.ui.shell;
 
 import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.chemclipse.model.core.IChromatogram;
+import org.eclipse.chemclipse.model.selection.IChromatogramSelection;
+import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTError;
 import org.eclipse.swt.browser.Browser;
@@ -20,16 +24,20 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.FileDialog;
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
+import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuAnalysisEngine;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuAnalysisResult;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuMethodSettings;
+import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuPreferences;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuReportExport;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuReportHtml;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuReportSupport;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuSampleInfo;
+import net.openchrom.xxd.processor.supplier.baijiu.ui.ChromatogramBridge;
 
 public final class BaijiuReportShell {
 
@@ -38,23 +46,136 @@ public final class BaijiuReportShell {
 
 	public static void open(Shell parent, BaijiuSampleInfo sample, BaijiuMethodSettings settings, BaijiuAnalysisResult result) {
 
-		String generatedAt = BaijiuReportSupport.generatedAt();
-		String html = BaijiuReportHtml.render(sample, settings, result, generatedAt);
 		Shell shell = new Shell(parent, SWT.SHELL_TRIM | SWT.APPLICATION_MODAL);
 		shell.setText("\u767d\u9152\u5206\u6790\u62a5\u544a");
 		shell.setLayout(new GridLayout(1, false));
 		shell.setSize(1000, 780);
+		createIn(shell, sample, settings, result);
+		shell.open();
+		Display display = parent.getDisplay();
+		while(!shell.isDisposed()) {
+			if(!display.readAndDispatch()) {
+				display.sleep();
+			}
+		}
+	}
 
-		Composite buttons = new Composite(shell, SWT.NONE);
+	public static void createIn(Composite parent, EPartService partService) {
+
+		if(parent == null || parent.isDisposed()) {
+			return;
+		}
+		if(!(parent.getLayout() instanceof GridLayout)) {
+			parent.setLayout(new GridLayout(1, false));
+		}
+		Shell host = parent.getShell();
+		AtomicReference<BaijiuSampleInfo> sampleRef = new AtomicReference<>(new BaijiuSampleInfo());
+		AtomicReference<BaijiuMethodSettings> settingsRef = new AtomicReference<>(BaijiuPreferences.loadMethod());
+		AtomicReference<BaijiuAnalysisResult> resultRef = new AtomicReference<>();
+		AtomicReference<String> htmlRef = new AtomicReference<>("");
+		AtomicReference<String> generatedRef = new AtomicReference<>(BaijiuReportSupport.generatedAt());
+
+		Composite buttons = new Composite(parent, SWT.NONE);
 		buttons.setLayout(new GridLayout(6, false));
 		buttons.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
-		Browser browser = createBrowser(shell);
+		Label status = new Label(parent, SWT.WRAP);
+		status.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		status.setText("尚未生成。打开谱图后点「生成报告」。");
+
+		Browser browser = createBrowser(parent);
+		Text fallback = null;
+		if(browser != null) {
+			browser.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		} else {
+			fallback = new Text(parent, SWT.BORDER | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL);
+			fallback.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		}
+		Browser printable = browser;
+		Text fallbackText = fallback;
+
+		Button generate = new Button(buttons, SWT.PUSH);
+		generate.setText("生成报告");
+		generate.addListener(SWT.Selection, e -> {
+			if(BaijiuLicenseShell.blockQuantify(host)) {
+				return;
+			}
+			IChromatogramSelection selection = ChromatogramBridge.resolve(partService);
+			IChromatogram chromatogram = selection == null ? null : selection.getChromatogram();
+			BaijiuMethodSettings settings = BaijiuPreferences.loadMethod();
+			BaijiuSampleInfo sample = chromatogram == null ? new BaijiuSampleInfo() : BaijiuSampleInfo.from(chromatogram);
+			BaijiuPreferences.loadSampleDefaults(sample);
+			BaijiuAnalysisResult result = BaijiuAnalysisEngine.quantify(chromatogram, sample, settings);
+			sampleRef.set(sample);
+			settingsRef.set(settings);
+			resultRef.set(result);
+			if(!result.isSuccess()) {
+				status.setText(result.getMessage());
+				warn(host, result.getMessage());
+				return;
+			}
+			String generatedAt = BaijiuReportSupport.generatedAt();
+			String html = BaijiuReportHtml.render(sample, settings, result, generatedAt);
+			generatedRef.set(generatedAt);
+			htmlRef.set(html);
+			status.setText("已按当前谱图生成报告。");
+			if(printable != null && !printable.isDisposed()) {
+				printable.setText(html);
+			} else if(fallbackText != null && !fallbackText.isDisposed()) {
+				fallbackText.setText(html);
+			}
+		});
+
+		Button print = new Button(buttons, SWT.PUSH);
+		print.setText("\u6253\u5370 / \u53e6\u5b58\u4e3a PDF");
+		print.setEnabled(printable != null);
+		print.addListener(SWT.Selection, e -> {
+			if(printable != null) {
+				printable.execute("window.print();");
+			}
+		});
+
+		Button saveHtml = new Button(buttons, SWT.PUSH);
+		saveHtml.setText("\u4fdd\u5b58 HTML");
+		saveHtml.addListener(SWT.Selection, e -> save(host, htmlRef.get(), "*.html", "baijiu-report.html", SaveKind.HTML, sampleRef.get(), settingsRef.get(), resultRef.get(), generatedRef.get()));
+
+		Button saveCsv = new Button(buttons, SWT.PUSH);
+		saveCsv.setText("\u5bfc\u51fa CSV");
+		saveCsv.addListener(SWT.Selection, e -> save(host, htmlRef.get(), "*.csv", "baijiu-results.csv", SaveKind.CSV, sampleRef.get(), settingsRef.get(), resultRef.get(), generatedRef.get()));
+
+		Button saveExcel = new Button(buttons, SWT.PUSH);
+		saveExcel.setText("\u5bfc\u51fa Excel(CSV)");
+		saveExcel.addListener(SWT.Selection, e -> save(host, htmlRef.get(), "*.csv", "baijiu-results-excel.csv", SaveKind.EXCEL_CSV, sampleRef.get(), settingsRef.get(), resultRef.get(), generatedRef.get()));
+
+		if(parent instanceof Shell dialog) {
+			Button close = new Button(buttons, SWT.PUSH);
+			close.setText("\u5173\u95ed");
+			close.addListener(SWT.Selection, e -> dialog.close());
+		}
+	}
+
+	static void createIn(Composite parent, BaijiuSampleInfo sample, BaijiuMethodSettings settings, BaijiuAnalysisResult result) {
+
+		if(parent == null || parent.isDisposed()) {
+			return;
+		}
+		if(!(parent.getLayout() instanceof GridLayout)) {
+			parent.setLayout(new GridLayout(1, false));
+		}
+		String generatedAt = BaijiuReportSupport.generatedAt();
+		String html = BaijiuReportHtml.render(sample, settings, result, generatedAt);
+		Shell host = parent.getShell();
+
+		Composite buttons = new Composite(parent, SWT.NONE);
+		buttons.setLayout(new GridLayout(6, false));
+		buttons.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+
+		Browser browser = createBrowser(parent);
 		if(browser != null) {
 			browser.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 			browser.setText(html);
 		} else {
-			Text fallback = new Text(shell, SWT.BORDER | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL);
+			Text fallback = new Text(parent, SWT.BORDER | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL);
 			fallback.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 			fallback.setText(html);
 		}
@@ -71,26 +192,20 @@ public final class BaijiuReportShell {
 
 		Button saveHtml = new Button(buttons, SWT.PUSH);
 		saveHtml.setText("\u4fdd\u5b58 HTML");
-		saveHtml.addListener(SWT.Selection, e -> save(shell, html, "*.html", "baijiu-report.html", SaveKind.HTML, sample, settings, result, generatedAt));
+		saveHtml.addListener(SWT.Selection, e -> save(host, html, "*.html", "baijiu-report.html", SaveKind.HTML, sample, settings, result, generatedAt));
 
 		Button saveCsv = new Button(buttons, SWT.PUSH);
 		saveCsv.setText("\u5bfc\u51fa CSV");
-		saveCsv.addListener(SWT.Selection, e -> save(shell, html, "*.csv", "baijiu-results.csv", SaveKind.CSV, sample, settings, result, generatedAt));
+		saveCsv.addListener(SWT.Selection, e -> save(host, html, "*.csv", "baijiu-results.csv", SaveKind.CSV, sample, settings, result, generatedAt));
 
 		Button saveExcel = new Button(buttons, SWT.PUSH);
 		saveExcel.setText("\u5bfc\u51fa Excel(CSV)");
-		saveExcel.addListener(SWT.Selection, e -> save(shell, html, "*.csv", "baijiu-results-excel.csv", SaveKind.EXCEL_CSV, sample, settings, result, generatedAt));
+		saveExcel.addListener(SWT.Selection, e -> save(host, html, "*.csv", "baijiu-results-excel.csv", SaveKind.EXCEL_CSV, sample, settings, result, generatedAt));
 
-		Button close = new Button(buttons, SWT.PUSH);
-		close.setText("\u5173\u95ed");
-		close.addListener(SWT.Selection, e -> shell.close());
-
-		shell.open();
-		Display display = parent.getDisplay();
-		while(!shell.isDisposed()) {
-			if(!display.readAndDispatch()) {
-				display.sleep();
-			}
+		if(parent instanceof Shell dialog) {
+			Button close = new Button(buttons, SWT.PUSH);
+			close.setText("\u5173\u95ed");
+			close.addListener(SWT.Selection, e -> dialog.close());
 		}
 	}
 
@@ -105,6 +220,14 @@ public final class BaijiuReportShell {
 
 	private static void save(Shell shell, String html, String extension, String fileName, SaveKind kind, BaijiuSampleInfo sample, BaijiuMethodSettings settings, BaijiuAnalysisResult result, String generatedAt) {
 
+		if((kind == SaveKind.CSV || kind == SaveKind.EXCEL_CSV) && (sample == null || settings == null || result == null || !result.isSuccess())) {
+			warn(shell, "\u6ca1\u6709\u53ef\u5bfc\u51fa\u7684\u62a5\u544a\u3002\nThere is no report to export.");
+			return;
+		}
+		if(kind == SaveKind.HTML && (html == null || html.isBlank())) {
+			warn(shell, "\u6ca1\u6709\u53ef\u4fdd\u5b58\u7684 HTML\u3002\nThere is no HTML to save.");
+			return;
+		}
 		FileDialog dialog = new FileDialog(shell, SWT.SAVE);
 		dialog.setFilterExtensions(new String[] {extension});
 		dialog.setFileName(fileName);
@@ -126,6 +249,17 @@ public final class BaijiuReportShell {
 			box.setMessage("\u4fdd\u5b58\u5931\u8d25 / Save failed\uff1a" + e.getMessage());
 			box.open();
 		}
+	}
+
+	private static void warn(Shell shell, String message) {
+
+		if(shell == null || shell.isDisposed()) {
+			return;
+		}
+		MessageBox box = new MessageBox(shell, SWT.ICON_WARNING);
+		box.setText("\u767d\u9152\u62a5\u544a");
+		box.setMessage(message == null ? "" : message);
+		box.open();
 	}
 
 	private enum SaveKind {
