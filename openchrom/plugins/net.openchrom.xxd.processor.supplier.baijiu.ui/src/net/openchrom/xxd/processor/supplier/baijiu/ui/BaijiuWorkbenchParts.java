@@ -64,6 +64,11 @@ public final class BaijiuWorkbenchParts {
 		if(placeholder != null) {
 			placeholder.setVisible(true);
 			placeholder.setToBeRendered(true);
+			MUIElement stack = modelService.find(BaijiuPerspectiveIds.CHROMATOGRAM_STACK_ID, application);
+			if(stack != null) {
+				stack.setVisible(true);
+				stack.setToBeRendered(true);
+			}
 			selectInParent(placeholder);
 			return true;
 		}

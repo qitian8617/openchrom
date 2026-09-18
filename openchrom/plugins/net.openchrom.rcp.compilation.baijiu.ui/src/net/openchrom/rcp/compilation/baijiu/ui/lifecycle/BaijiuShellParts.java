@@ -30,9 +30,10 @@ import org.eclipse.swt.widgets.Composite;
  * {@code BaijiuAnalysisHomePart}) so {@code @PostConstruct} runs in this
  * bundle. Those hosts OSGi-load the real SWT panels; rendering does not
  * depend on foreign-bundle {@code contributionURI}. Chromatogram / live
- * acquisition uses the ChemClipse editor Area placeholder in the workflow
- * stack. No Java dependency on baijiu.ui / temperature.ui (branding stays
- * soft).
+ * acquisition uses the ChemClipse editor Area placeholder in the
+ * <em>right</em> sash ({@code partstack.plantChromatogram}), not as a
+ * competing tab in the left workflow stack. No Java dependency on
+ * baijiu.ui / temperature.ui (branding stays soft).
  */
 public final class BaijiuShellParts {
 
@@ -41,9 +42,11 @@ public final class BaijiuShellParts {
 	}
 
 	/**
-	 * Show plant-home hosts. Sequence is activated last so the workflow
-	 * PartStack opens on 进样序列. GC sash follows the user hide-tag
-	 * (default visible). Returns true when at least one part is shown.
+	 * Show plant-home hosts. Sequence is activated last so the left
+	 * workflow PartStack opens on 进样序列. Chromatogram stays on the
+	 * right sash (not a competing tab). GC sash follows the user hide-tag
+	 * (default visible; docks left of the workflow tabs). Returns true
+	 * when at least one part is shown.
 	 */
 	public static boolean showPlantHomeParts(MApplication application, EModelService modelService, EPartService partService) {
 
@@ -83,6 +86,9 @@ public final class BaijiuShellParts {
 		}
 		placeholder.setVisible(true);
 		placeholder.setToBeRendered(true);
+		showElementAndAncestors(placeholder);
+		showElementAndAncestors(modelService.find(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, application));
+		showElementAndAncestors(modelService.find(BaijiuShellChrome.WORKFLOW_STACK_ID, application));
 		if(!BaijiuShellSelection.canSelect(placeholder) && hasHiddenResearchAncestor(placeholder)) {
 			return false;
 		}
@@ -221,11 +227,10 @@ public final class BaijiuShellParts {
 			return;
 		}
 		MUIElement placeholder = modelService.find(BaijiuShellChrome.CHROMATOGRAM_PLACEHOLDER_ID, application);
-		if(placeholder == null) {
-			return;
-		}
-		placeholder.setVisible(true);
-		placeholder.setToBeRendered(true);
+		showElementAndAncestors(placeholder);
+		showElementAndAncestors(modelService.find(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, application));
+		showElementAndAncestors(modelService.find(BaijiuShellChrome.PLANT_TOP_SASH_ID, application));
+		showElementAndAncestors(modelService.find(BaijiuShellChrome.WORKFLOW_STACK_ID, application));
 	}
 
 	private static void showElementAndAncestors(MUIElement element) {

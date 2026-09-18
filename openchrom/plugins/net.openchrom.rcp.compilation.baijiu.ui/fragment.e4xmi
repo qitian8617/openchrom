@@ -54,33 +54,45 @@
   <fragments xsi:type="fragment:StringModelFragment" xmi:id="_baijiuPlantHomeFrag" featurename="children" parentElementId="org.eclipse.chemclipse.rcp.app.ui.perspectivestack.main" positionInList="index:0">
     <elements xsi:type="advanced:Perspective" xmi:id="_baijiuPlantHome" elementId="net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome" label="%perspective.plantHome" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/preferences.gif">
       <children xsi:type="basic:PartSashContainer" xmi:id="_baijiuPlantSash" elementId="net.openchrom.rcp.compilation.baijiu.ui.partsash.plantHome" horizontal="true">
-        <children xsi:type="basic:PartStack" xmi:id="_baijiuPlantGcStack" elementId="net.openchrom.rcp.compilation.baijiu.ui.partstack.gcHome" containerData="3000">
+        <tags>NoMove</tags>
+        <tags>NoDetach</tags>
+        <children xsi:type="basic:PartSashContainer" xmi:id="_baijiuPlantTopSash" elementId="net.openchrom.rcp.compilation.baijiu.ui.partsash.plantTop" horizontal="true" containerData="4000">
           <tags>NoMove</tags>
           <tags>NoDetach</tags>
-          <tags>NoClose</tags>
-          <children xsi:type="basic:Part" xmi:id="_baijiuGcHomePart" elementId="net.openchrom.xxd.control.supplier.temperature.ui.part.control.plantHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuGcHomePart" label="%part.gcHome" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/preferences.gif" closeable="false">
+          <children xsi:type="basic:PartStack" xmi:id="_baijiuPlantGcStack" elementId="net.openchrom.rcp.compilation.baijiu.ui.partstack.gcHome" containerData="3800">
             <tags>NoMove</tags>
             <tags>NoDetach</tags>
             <tags>NoClose</tags>
+            <children xsi:type="basic:Part" xmi:id="_baijiuGcHomePart" elementId="net.openchrom.xxd.control.supplier.temperature.ui.part.control.plantHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuGcHomePart" label="%part.gcHome" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/preferences.gif" closeable="false">
+              <tags>NoMove</tags>
+              <tags>NoDetach</tags>
+              <tags>NoClose</tags>
+            </children>
+          </children>
+          <children xsi:type="basic:PartStack" xmi:id="_baijiuPlantWorkflowStack" elementId="net.openchrom.rcp.compilation.baijiu.ui.partstack.plantWorkflow" containerData="6200">
+            <tags>NoMove</tags>
+            <tags>NoDetach</tags>
+            <tags>NoClose</tags>
+            <children xsi:type="basic:Part" xmi:id="_baijiuSeqHomePart" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.part.sequence.plantHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuSequenceHomePart" label="%part.sequenceHome" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/peak.gif" closeable="false">
+              <tags>NoMove</tags>
+              <tags>NoDetach</tags>
+              <tags>NoClose</tags>
+            </children>
+            <children xsi:type="basic:Part" xmi:id="_baijiuAnaHomePart" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.part.analysis.plantHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuAnalysisHomePart" label="%part.analysisHome" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/peak.gif" closeable="false">
+              <tags>NoMove</tags>
+              <tags>NoDetach</tags>
+              <tags>NoClose</tags>
+            </children>
           </children>
         </children>
-        <children xsi:type="basic:PartStack" xmi:id="_baijiuPlantWorkflowStack" elementId="net.openchrom.rcp.compilation.baijiu.ui.partstack.plantWorkflow" containerData="7000">
+        <children xsi:type="basic:PartStack" xmi:id="_baijiuPlantChromStack" elementId="net.openchrom.rcp.compilation.baijiu.ui.partstack.plantChromatogram" containerData="6000">
           <tags>NoMove</tags>
           <tags>NoDetach</tags>
           <tags>NoClose</tags>
-          <children xsi:type="basic:Part" xmi:id="_baijiuSeqHomePart" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.part.sequence.plantHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuSequenceHomePart" label="%part.sequenceHome" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/peak.gif" closeable="false">
-            <tags>NoMove</tags>
-            <tags>NoDetach</tags>
-            <tags>NoClose</tags>
-          </children>
-          <children xsi:type="basic:Part" xmi:id="_baijiuAnaHomePart" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.part.analysis.plantHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuAnalysisHomePart" label="%part.analysisHome" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/peak.gif" closeable="false">
-            <tags>NoMove</tags>
-            <tags>NoDetach</tags>
-            <tags>NoClose</tags>
-          </children>
           <children xsi:type="advanced:Placeholder" xmi:id="_baijiuPlantChromPh" elementId="net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantChromatogram" label="%part.chromatogramHome" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/importChromatogramCSD.gif" ref="_impEditor">
             <tags>NoMove</tags>
             <tags>NoDetach</tags>
+            <tags>NoClose</tags>
           </children>
         </children>
       </children>
@@ -89,9 +101,18 @@
   <fragments xsi:type="fragment:StringModelFragment" xmi:id="_baijiuAnalysisPerspFrag" featurename="children" parentElementId="org.eclipse.chemclipse.rcp.app.ui.perspectivestack.main">
     <elements xsi:type="advanced:Perspective" xmi:id="_baijiuAnalysisPersp" elementId="net.openchrom.rcp.compilation.baijiu.ui.perspective.analysis" label="%perspective.analysis" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/peak.gif">
       <children xsi:type="basic:PartSashContainer" xmi:id="_baijiuAnalysisSash" elementId="net.openchrom.rcp.compilation.baijiu.ui.partsash.analysis" horizontal="true">
-        <children xsi:type="advanced:Placeholder" xmi:id="_baijiuAnalysisEditorPh" elementId="net.openchrom.rcp.compilation.baijiu.ui.placeholder.analysisEditor" containerData="4000" ref="_impEditor"/>
-        <children xsi:type="basic:PartStack" xmi:id="_baijiuAnalysisStack" elementId="net.openchrom.rcp.compilation.baijiu.ui.partstack.analysis" containerData="6000">
+        <tags>NoMove</tags>
+        <tags>NoDetach</tags>
+        <children xsi:type="basic:PartStack" xmi:id="_baijiuAnalysisStack" elementId="net.openchrom.rcp.compilation.baijiu.ui.partstack.analysis" containerData="4000">
+          <tags>NoMove</tags>
+          <tags>NoDetach</tags>
+          <tags>NoClose</tags>
           <children xsi:type="advanced:Placeholder" xmi:id="_baijiuAnalysisPh" elementId="net.openchrom.rcp.compilation.baijiu.ui.placeholder.analysis" ref="_impAnaPart"/>
+        </children>
+        <children xsi:type="advanced:Placeholder" xmi:id="_baijiuAnalysisEditorPh" elementId="net.openchrom.rcp.compilation.baijiu.ui.placeholder.analysisEditor" containerData="6000" ref="_impEditor">
+          <tags>NoMove</tags>
+          <tags>NoDetach</tags>
+          <tags>NoClose</tags>
         </children>
       </children>
     </elements>
@@ -99,9 +120,18 @@
   <fragments xsi:type="fragment:StringModelFragment" xmi:id="_baijiuGcPerspFrag" featurename="children" parentElementId="org.eclipse.chemclipse.rcp.app.ui.perspectivestack.main">
     <elements xsi:type="advanced:Perspective" xmi:id="_baijiuGcPersp" elementId="net.openchrom.rcp.compilation.baijiu.ui.perspective.gcControl" label="%perspective.gcControl" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/preferences.gif">
       <children xsi:type="basic:PartSashContainer" xmi:id="_baijiuGcSash" elementId="net.openchrom.rcp.compilation.baijiu.ui.partsash.gcControl" horizontal="true">
-        <children xsi:type="advanced:Placeholder" xmi:id="_baijiuGcEditorPh" elementId="net.openchrom.rcp.compilation.baijiu.ui.placeholder.gcEditor" containerData="6200" ref="_impEditor"/>
+        <tags>NoMove</tags>
+        <tags>NoDetach</tags>
         <children xsi:type="basic:PartStack" xmi:id="_baijiuGcStack" elementId="net.openchrom.rcp.compilation.baijiu.ui.partstack.gcControl" containerData="3800">
+          <tags>NoMove</tags>
+          <tags>NoDetach</tags>
+          <tags>NoClose</tags>
           <children xsi:type="advanced:Placeholder" xmi:id="_baijiuGcPerspPh" elementId="net.openchrom.rcp.compilation.baijiu.ui.placeholder.gcControl.perspective" ref="_impGcPart"/>
+        </children>
+        <children xsi:type="advanced:Placeholder" xmi:id="_baijiuGcEditorPh" elementId="net.openchrom.rcp.compilation.baijiu.ui.placeholder.gcEditor" containerData="6200" ref="_impEditor">
+          <tags>NoMove</tags>
+          <tags>NoDetach</tags>
+          <tags>NoClose</tags>
         </children>
       </children>
     </elements>
