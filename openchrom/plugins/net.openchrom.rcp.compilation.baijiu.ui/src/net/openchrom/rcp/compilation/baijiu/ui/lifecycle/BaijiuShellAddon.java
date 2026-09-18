@@ -448,8 +448,8 @@ public class BaijiuShellAddon {
 			perspective.setVisible(true);
 			perspective.setToBeRendered(true);
 			BaijiuShellSelection.selectInParent(perspective);
-			MUIElement stackElement = modelService.find(BaijiuShellChrome.PERSPECTIVE_STACK_ID, application);
-			if(stackElement instanceof MPerspectiveStack stack && BaijiuShellSelection.canSelect(perspective)) {
+			MPerspectiveStack stack = BaijiuShellModel.findOrCreatePerspectiveStack(application, modelService);
+			if(stack != null && BaijiuShellSelection.canSelect(perspective)) {
 				try {
 					stack.setSelectedElement(perspective);
 				} catch(RuntimeException | LinkageError e) {

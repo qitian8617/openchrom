@@ -40,6 +40,10 @@ public class BaijiuShellModel_1_Test {
 	public void factoryCreateUnknownTypeIsNull() {
 
 		assertTrue(BaijiuShellModel.create(Object.class) == null);
+		assertTrue(BaijiuShellModel.findPerspectiveStack(null, null) == null);
+		assertTrue(BaijiuShellModel.findOrCreatePerspectiveStack(null, null) == null);
+		assertTrue(BaijiuShellModel.scorePerspectiveStack(BaijiuShellChrome.PERSPECTIVE_STACK_ID, false, true, true, true) > BaijiuShellModel.scorePerspectiveStack("PerspectiveStack", false, true, true, true));
+		assertTrue(BaijiuShellModel.scorePerspectiveStack("PerspectiveStack", true, true, true, true) > BaijiuShellModel.scorePerspectiveStack(BaijiuShellChrome.PERSPECTIVE_STACK_ID, false, false, false, true));
 	}
 
 	@Test

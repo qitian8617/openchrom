@@ -88,7 +88,7 @@ Reset layout
 - 白酒 → 重置窗口布局, then restart.
 - Or add -clearPersistedState **once** to the launch / shortcut.
 - Or -Dnet.openchrom.baijiu.clearLayout=true for that start.
-Phase 3 also clears workbench.xmi once when the chrome epoch advances (now 16).
+Phase 3 also clears workbench.xmi once when the chrome epoch advances (now 20).
 
 Research-menu escape hatch (engineers only, not in the UI)
 ----------------------------------------------------------
@@ -143,8 +143,8 @@ Verify on the engineer PC
     until 反控 / 白酒 menu; FID console 600×1024 when opened
     (or a readable white-on-dark error Label inside the tab — never blank gray)
 [ ] After 白酒 → 重置窗口布局 and relaunch: main client is NOT empty gray; reverse-control stays closed until 反控
-[ ] First launch after this PR (epoch 19) auto-clears workbench.xmi once
-    so cold start does not flash nested empty editor frames in 谱图/采集
+[ ] First launch after this PR (epoch 20) auto-clears workbench.xmi once
+    so plant home attaches to the live perspective stack (not empty left gray)
 [ ] After that launch, persisted workbench.xmi contains chromatogramHome / plantChromatogram / workbench.plantHome / sequence.plantHome / analysis.plantHome / perspective.plantHome
 [ ] Product .log does NOT flood IllegalArgumentException Welcome “must be visible in the UI presentation”
 [ ] Top bar 文件 / 白酒 / 视图 / 帮助; no 处理器 / 插件 / 色谱图 / 窗口

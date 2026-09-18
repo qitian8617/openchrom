@@ -234,7 +234,10 @@ public class BaijiuPilotPackaging_1_Test {
 		assertNotNull(chrome);
 		String chromeSrc = Files.readString(chrome, StandardCharsets.UTF_8);
 		assertTrue(chromeSrc.contains("CSD_EDITOR_PART_ID"), chromeSrc);
-		assertTrue(chromeSrc.contains("CHROME_EPOCH = 19"), chromeSrc);
+		assertTrue(chromeSrc.contains("CHROME_EPOCH = 20"), chromeSrc);
+		assertTrue(chromeSrc.contains("PERSPECTIVE_STACK_IDS"), chromeSrc);
+		assertTrue(chromeSrc.contains("org.eclipse.e4.primaryPerspectiveStack"), chromeSrc);
+		assertTrue(chromeSrc.contains("isPerspectiveStackId"), chromeSrc);
 		assertTrue(chromeSrc.contains("WELCOME_PERSPECTIVE_ID"), chromeSrc);
 		assertTrue(chromeSrc.contains("PLANT_HOME_REQUIRED_ELEMENT_IDS"), chromeSrc);
 		assertTrue(chromeSrc.contains("isHiddenResearchPerspective"), chromeSrc);
@@ -300,6 +303,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(addonSrc.contains("hideResearchElements"), addonSrc);
 		assertTrue(addonSrc.contains("reassignAwayFrom"), addonSrc);
 		assertTrue(addonSrc.contains("clearHiddenSelections"), addonSrc);
+		assertTrue(addonSrc.contains("findOrCreatePerspectiveStack"), addonSrc);
 		assertTrue(addonSrc.contains("ensurePlantHome"), addonSrc);
 		assertTrue(addonSrc.contains("selectPlantHomeIfPresent"), addonSrc);
 		assertTrue(addonSrc.contains("rejectHiddenSelection"), addonSrc);
@@ -322,6 +326,13 @@ public class BaijiuPilotPackaging_1_Test {
 		assertNotNull(model, "plant-home fragment recovery");
 		String modelSrc = Files.readString(model, StandardCharsets.UTF_8);
 		assertTrue(modelSrc.contains("ensurePlantHome"), modelSrc);
+		assertTrue(modelSrc.contains("findPerspectiveStack"), modelSrc);
+		assertTrue(modelSrc.contains("findOrCreatePerspectiveStack"), modelSrc);
+		assertTrue(modelSrc.contains("createPerspectiveStack"), modelSrc);
+		assertTrue(modelSrc.contains("stack.getChildren().contains(plant)"), modelSrc);
+		assertFalse(modelSrc.contains("getParent() != stack"), "MElementContainer vs MPerspectiveStack is incomparable on Java 21");
+		assertTrue(modelSrc.contains("org.eclipse.e4.primaryPerspectiveStack") || chromeSrc.contains("org.eclipse.e4.primaryPerspectiveStack"), modelSrc);
+		assertFalse(modelSrc.contains("Perspective stack " + "org.eclipse.chemclipse.rcp.app.ui.perspectivestack.main not found; cannot attach plant home."), "must not give up when only the ChemClipse stack id is missing from EModelService.find");
 		assertTrue(modelSrc.contains("missingPlantHomeIds"), modelSrc);
 		assertTrue(modelSrc.contains("CHROMATOGRAM_HOME_PART_ID"), modelSrc);
 		assertTrue(modelSrc.contains("WORKBENCH_HOME_PART_ID"), modelSrc);
