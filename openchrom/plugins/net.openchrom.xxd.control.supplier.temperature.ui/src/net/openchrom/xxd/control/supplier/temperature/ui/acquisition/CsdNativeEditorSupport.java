@@ -195,12 +195,12 @@ public final class CsdNativeEditorSupport {
 
 	private static MPartStack resolveEditorStack(EModelService modelService, MApplication application) {
 
-		MUIElement plant = modelService.find(TemperatureControlIds.PLANT_CHROMATOGRAM_STACK_ID, application);
-		if(plant instanceof MPartStack stack) {
-			return stack;
-		}
 		MUIElement primary = modelService.find(IPerspectiveAndViewIds.EDITOR_PART_STACK_ID, application);
 		if(primary instanceof MPartStack stack) {
+			return stack;
+		}
+		MUIElement plant = modelService.find(TemperatureControlIds.PLANT_CHROMATOGRAM_STACK_ID, application);
+		if(plant instanceof MPartStack stack) {
 			return stack;
 		}
 		return null;

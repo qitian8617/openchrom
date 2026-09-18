@@ -29,7 +29,6 @@ import org.eclipse.e4.ui.model.application.ui.basic.MPart;
 import org.eclipse.e4.ui.model.application.ui.basic.MPartStack;
 import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
-import org.eclipse.e4.ui.workbench.modeling.EPartService.PartState;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.FileDialog;
@@ -40,7 +39,7 @@ import net.openchrom.xxd.processor.supplier.baijiu.ui.Activator;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.BaijiuWorkbenchParts;
 
 /**
- * Opens a CSD chromatogram into the plant-home left 谱图/采集 stack. Uses an
+ * Opens a CSD chromatogram into the plant-home left 谱图/采集 page. Uses an
  * SWT {@link FileDialog} rather than the ChemClipse data-explorer wizard:
  * that wizard builds the workbench preference tree (Data Explorer settings
  * pages) and trips missing parent categories such as
@@ -121,12 +120,10 @@ public class OpenBaijiuChromatogramHandler {
 
 		MApplication application = context.get(MApplication.class);
 		EModelService modelService = context.get(EModelService.class);
-		EPartService partService = context.get(EPartService.class);
 		if(application == null || modelService == null) {
 			return false;
 		}
-		MPartStack stack = BaijiuWorkbenchParts.findPlantEditorStack(application, modelService);
-		if(stack == null) {
+		if(BaijiuWorkbenchParts.findPlantChromatogramStack(application, modelService) == null) {
 			return false;
 		}
 		MPart part = modelService.createModelElement(MPart.class);
@@ -148,13 +145,11 @@ public class OpenBaijiuChromatogramHandler {
 		part.setCloseable(true);
 		part.setVisible(true);
 		part.setToBeRendered(true);
-		stack.getChildren().add(part);
-		if(partService != null) {
-			try {
-				partService.showPart(part, PartState.ACTIVATE);
-			} catch(RuntimeException | LinkageError e) {
-				// stack selection below
-			}
+		MPartStack stack = BaijiuWorkbenchParts.findPrimaryEditorStack(application, modelService);
+		if(stack != null && !stack.getChildren().contains(part)) {
+			stack.getChildren().add(part);
+		} else {
+			BaijiuWorkbenchParts.addToSharedElements(application, part);
 		}
 		return true;
 	}

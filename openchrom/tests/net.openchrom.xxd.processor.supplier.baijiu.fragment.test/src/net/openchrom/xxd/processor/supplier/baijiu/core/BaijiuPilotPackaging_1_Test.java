@@ -355,6 +355,11 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(partsSrc.contains("hostOpenCsdEditors"), partsSrc);
 		assertFalse(partsSrc.contains("getParent() != plantStack"), "MElementContainer<MUIElement> vs MPartStack is incomparable on Java 21");
 		assertTrue(partsSrc.contains("plantStack.getChildren().contains(part)"), partsSrc);
+		assertTrue(partsSrc.contains("plantStack.getChildren().remove(part)"), partsSrc);
+		assertTrue(partsSrc.contains("embedCsdEditor"), partsSrc);
+		assertTrue(partsSrc.contains("createGui(part, host"), partsSrc);
+		assertTrue(partsSrc.contains("BaijiuHomePanels.hostEditor"), partsSrc);
+		assertTrue(partsSrc.contains("dockOffWorkflowTabs"), partsSrc);
 		assertTrue(partsSrc.contains("persistGcConsoleHidden"), partsSrc);
 		assertTrue(partsSrc.contains("Never open the OS window during chrome apply"), partsSrc);
 		assertTrue(partsSrc.contains("if(!hosted)"), partsSrc);
@@ -405,6 +410,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(homePanelsSrc.contains("createWorkbenchPanel"), homePanelsSrc);
 		assertTrue(homePanelsSrc.contains("BaijiuWorkbenchPart"), homePanelsSrc);
 		assertTrue(homePanelsSrc.contains("createChromatogramEmptyState"), homePanelsSrc);
+		assertTrue(homePanelsSrc.contains("hostEditor"), homePanelsSrc);
 		assertTrue(homePanelsSrc.contains("createIntegrationPanel"), homePanelsSrc);
 		assertTrue(homePanelsSrc.contains("createWizardPanel"), homePanelsSrc);
 		assertTrue(homePanelsSrc.contains("createBatchResultsPanel"), homePanelsSrc);
@@ -448,6 +454,7 @@ public class BaijiuPilotPackaging_1_Test {
 		String chromHomeSrc = Files.readString(chromHomePart, StandardCharsets.UTF_8);
 		assertTrue(chromHomeSrc.contains("@PostConstruct"), chromHomeSrc);
 		assertTrue(chromHomeSrc.contains("createChromatogramEmptyState"), chromHomeSrc);
+		assertTrue(chromHomeSrc.contains("embeds the ChromatogramEditorCSD"), chromHomeSrc);
 		assertTrue(chromHomeSrc.contains("catch(Throwable"), chromHomeSrc);
 
 		Path intHomePart = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/parts/BaijiuIntegrationHomePart.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/parts/BaijiuIntegrationHomePart.java");
@@ -509,6 +516,10 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(gcWorkbenchSrc.contains("hostOpenCsdEditors"), gcWorkbenchSrc);
 		assertFalse(gcWorkbenchSrc.contains("getParent() != plantStack"), "MElementContainer<MUIElement> vs MPartStack is incomparable on Java 21");
 		assertTrue(gcWorkbenchSrc.contains("plantStack.getChildren().contains(part)"), gcWorkbenchSrc);
+		assertTrue(gcWorkbenchSrc.contains("plantStack.getChildren().remove(part)"), gcWorkbenchSrc);
+		assertTrue(gcWorkbenchSrc.contains("embedCsdEditor"), gcWorkbenchSrc);
+		assertTrue(gcWorkbenchSrc.contains("CHROMATOGRAM_HOME_PART_ID"), gcWorkbenchSrc);
+		assertTrue(gcWorkbenchSrc.contains("createGui(part, host"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("if(!hosted)"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("PLANT_CHROMATOGRAM_STACK_ID"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("unhideGcConsole"), gcWorkbenchSrc);
@@ -535,6 +546,11 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(seqWorkbenchSrc.contains("hostOpenCsdEditors"), seqWorkbenchSrc);
 		assertFalse(seqWorkbenchSrc.contains("getParent() != plantStack"), "MElementContainer<MUIElement> vs MPartStack is incomparable on Java 21");
 		assertTrue(seqWorkbenchSrc.contains("plantStack.getChildren().contains(part)"), seqWorkbenchSrc);
+		assertTrue(seqWorkbenchSrc.contains("plantStack.getChildren().remove(part)"), seqWorkbenchSrc);
+		assertTrue(seqWorkbenchSrc.contains("embedCsdEditor"), seqWorkbenchSrc);
+		assertTrue(seqWorkbenchSrc.contains("findPlantChromatogramStack"), seqWorkbenchSrc);
+		assertTrue(seqWorkbenchSrc.contains("findPrimaryEditorStack"), seqWorkbenchSrc);
+		assertTrue(seqWorkbenchSrc.contains("CHROMATOGRAM_HOME_PART_ID"), seqWorkbenchSrc);
 		assertTrue(seqWorkbenchSrc.contains("if(!hosted && placeholder != null)"), seqWorkbenchSrc);
 		assertTrue(seqWorkbenchSrc.contains("findPlantEditorStack"), seqWorkbenchSrc);
 		assertTrue(seqWorkbenchSrc.contains("CHROMATOGRAM_PLACEHOLDER_ID"), seqWorkbenchSrc);
@@ -638,6 +654,9 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(handlerSrc.contains("ChromatogramEditorCSD"), handlerSrc);
 		assertTrue(handlerSrc.contains("showPlantChromatogram"), handlerSrc);
 		assertTrue(handlerSrc.contains("BaijiuShellParts"), handlerSrc);
+		assertTrue(handlerSrc.contains("findPrimaryEditorStack"), handlerSrc);
+		assertTrue(handlerSrc.contains("addToSharedElements"), handlerSrc);
+		assertTrue(handlerSrc.contains("findPlantChromatogramStack"), handlerSrc);
 
 		Path cdfPrefs = locate("openchrom/plugins/net.openchrom.csd.converter.supplier.cdf.ui/plugin.xml", "plugins/net.openchrom.csd.converter.supplier.cdf.ui/plugin.xml");
 		assertNotNull(cdfPrefs);

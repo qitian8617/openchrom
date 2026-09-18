@@ -91,6 +91,7 @@ public class BaijiuHomePanels_1_Test {
 		BaijiuHomePanels.createAnalysisShell(null, null);
 		BaijiuHomePanels.createWorkbenchPanel(null, null, null, null, null);
 		BaijiuHomePanels.createChromatogramEmptyState(null);
+		BaijiuHomePanels.hostEditor(null, null);
 		BaijiuHomePanels.createIntegrationPanel(null, null);
 		BaijiuHomePanels.createWizardPanel(null, null);
 		BaijiuHomePanels.createBatchResultsPanel(null);

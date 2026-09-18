@@ -92,7 +92,8 @@ public final class BaijiuShellChrome {
 	public static final String WORKFLOW_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.plantWorkflow";
 	/**
 	 * Left-hand workflow/display tabs (谱图/采集 + 推荐积分 / 白酒分析 / …).
-	 * Opening a CSD still selects the editor Area placeholder here.
+	 * Opening a CSD embeds the editor into {@link #CHROMATOGRAM_HOME_PART_ID}
+	 * so the chart is the 谱图/采集 page, not a sibling tab.
 	 */
 	public static final String CHROMATOGRAM_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.plantChromatogram";
 	public static final String INTEGRATION_HOME_PART_ID = "net.openchrom.rcp.compilation.baijiu.ui.part.integrationHome";
@@ -153,8 +154,8 @@ public final class BaijiuShellChrome {
 	 * / MDI child of the FID TrimmedWindow. The model TrimmedWindow stays
 	 * unrendered (sibling under MApplication) for ids / hide-tag only.
 	 * Epoch 18: GC Shell stays closed on cold start (toolbar 反控 unchecked;
-	 * hide tag default). Opening a CSD hosts the editor on the left
-	 * 谱图/采集 stack instead of the empty-state Part.
+	 * hide tag default). Opening a CSD embeds ChromatogramEditorCSD into the
+	 * left 谱图/采集 Part instead of a sibling workflow tab.
 	 */
 	public static final int CHROME_EPOCH = 18;
 	/**

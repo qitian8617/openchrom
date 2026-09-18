@@ -42,7 +42,8 @@ Run As → Eclipse Application (Windows engineer)
    「白酒 FID 工作站」 via product name / shell chrome.
 6. Expect window title 白酒 FID 工作站, start on **厂工作台**:
    plant toolbar always visible (打开谱图, 反控 check item, 开始分析, …);
-   **left** workflow tabs (谱图/采集 ChemClipse editor Area; opening a CSD stays here;
+   **left** workflow tabs (谱图/采集 empty-state Part; opening a CSD embeds the
+   ChemClipse chart inside that page, not as a sibling tab;
    plus 推荐积分 / 白酒分析 / 三步向导 / 进样序列 / 批处理结果 / 简单批量 / 平行样 / 预览报告);
    **right** fixed 白酒操作 sidebar (NoDetach, resizable sash);
    reverse-control is an independent window (气/火/信号/就绪 + 当前针) default hidden,

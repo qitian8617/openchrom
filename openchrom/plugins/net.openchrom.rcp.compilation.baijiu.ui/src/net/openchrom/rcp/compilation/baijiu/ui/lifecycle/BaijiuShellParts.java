@@ -25,6 +25,9 @@ import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService.PartState;
 import org.eclipse.e4.ui.workbench.modeling.IWindowCloseHandler;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
+
+import net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuHomePanels;
 
 /**
  * Activates plant-home parts by element id. Prefers the concrete Parts hosted
@@ -34,10 +37,10 @@ import org.eclipse.swt.widgets.Composite;
  * {@code BaijiuChromatogramHomePart}) so {@code @PostConstruct} runs in this
  * bundle. Those hosts OSGi-load the real SWT panels; rendering does not
  * depend on foreign-bundle {@code contributionURI}. Chromatogram / live
- * acquisition uses the ChemClipse editor Area placeholder in the
- * <em>left</em> sash ({@code partstack.plantChromatogram}), not as a
- * competing tab in the right 白酒操作 sidebar. A concrete empty-state Part
- * sits first in that stack so cold start is not a blank gray void. The GC
+ * acquisition embeds the ChemClipse CSD editor into the left 谱图/采集 Part
+ * ({@code part.chromatogramHome}), not as a competing tab in that workflow
+ * stack and not as a tab in the right 白酒操作 sidebar. A concrete empty-state
+ * Part sits first in that stack so cold start is not a blank gray void. The GC
  * console is a singleton top-level SWT Shell ({@code BaijiuGcConsoleShell}),
  * not a sash child and not a rendered E4 TrimmedWindow. No Java
  * dependency on baijiu.ui / temperature.ui (branding stays soft).
@@ -92,7 +95,7 @@ public final class BaijiuShellParts {
 	 * Force the plant-home part widgets to be created. {@code showPart}
 	 * can leave a selected tab whose client Composite never ran
 	 * {@code @PostConstruct}. Ends by selecting 白酒操作 on the right and
-	 * either an open CSD editor or the 谱图/采集 empty-state on the left.
+	 * 谱图/采集 on the left (empty-state, or the embedded CSD chart).
 	 */
 	public static void forceCreatePlantHomeGuis(MApplication application, EModelService modelService) {
 
@@ -356,6 +359,9 @@ public final class BaijiuShellParts {
 		if(editors == null || editors.isEmpty()) {
 			return false;
 		}
+		forceCreateGui(application, modelService, BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID);
+		MPart home = findPart(modelService, application, BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID);
+		Composite host = homeWidget(home);
 		boolean hosted = false;
 		for(MPart part : editors) {
 			if(part == null) {
@@ -363,28 +369,130 @@ public final class BaijiuShellParts {
 			}
 			part.setVisible(true);
 			part.setToBeRendered(true);
-			if(!plantStack.getChildren().contains(part)) {
+			if(plantStack.getChildren().contains(part)) {
 				try {
-					MElementContainer<MUIElement> parent = part.getParent();
-					if(parent != null) {
-						parent.getChildren().remove(part);
-					}
-					plantStack.getChildren().add(part);
+					plantStack.getChildren().remove(part);
 				} catch(RuntimeException | LinkageError e) {
 					continue;
 				}
 			}
-			BaijiuShellSelection.selectInParent(part);
-			if(partService != null) {
-				try {
-					partService.showPart(part, PartState.ACTIVATE);
-				} catch(RuntimeException | LinkageError e) {
-					// selection above
-				}
+			if(!dockOffWorkflowTabs(application, modelService, plantStack, part)) {
+				continue;
+			}
+			if(!embedCsdEditor(application, partService, part, host)) {
+				continue;
 			}
 			hosted = true;
 		}
+		if(hosted && home != null) {
+			BaijiuShellSelection.selectInParent(home);
+		}
 		return hosted;
+	}
+
+	static boolean dockOffWorkflowTabs(MApplication application, EModelService modelService, MPartStack plantStack, MPart part) {
+
+		if(part == null) {
+			return false;
+		}
+		try {
+			MElementContainer<MUIElement> parent = part.getParent();
+			if(parent != null) {
+				return true;
+			}
+		} catch(RuntimeException | LinkageError e) {
+			return false;
+		}
+		MUIElement primary = modelService == null ? null : modelService.find(BaijiuShellChrome.PRIMARY_EDITOR_STACK_ID, application);
+		if(primary instanceof MPartStack dataStack && dataStack != plantStack && !dataStack.getChildren().contains(part)) {
+			try {
+				dataStack.getChildren().add(part);
+				return true;
+			} catch(RuntimeException | LinkageError e) {
+				// sharedElements below
+			}
+		}
+		return addToSharedElements(application, part);
+	}
+
+	static boolean addToSharedElements(MApplication application, MPart part) {
+
+		if(application == null || part == null) {
+			return false;
+		}
+		try {
+			List<MWindow> windows = application.getChildren();
+			if(windows == null) {
+				return false;
+			}
+			for(MWindow window : windows) {
+				if(window == null) {
+					continue;
+				}
+				List<MUIElement> shared = window.getSharedElements();
+				if(shared == null) {
+					continue;
+				}
+				if(!shared.contains(part)) {
+					shared.add(part);
+				}
+				return true;
+			}
+		} catch(RuntimeException | LinkageError e) {
+			return false;
+		}
+		return false;
+	}
+
+	static boolean embedCsdEditor(MApplication application, EPartService partService, MPart part, Composite host) {
+
+		if(part == null) {
+			return false;
+		}
+		if(host != null && !host.isDisposed()) {
+			Object widget = part.getWidget();
+			if(widget instanceof Control control && !control.isDisposed()) {
+				BaijiuHomePanels.hostEditor(host, control);
+				return true;
+			}
+			IPresentationEngine engine = presentationEngine(application, part);
+			if(engine != null) {
+				try {
+					IEclipseContext context = application == null ? null : application.getContext();
+					Object created = engine.createGui(part, host, context);
+					BaijiuHomePanels.hostEditor(host, part.getWidget() != null ? part.getWidget() : created);
+					if(part.getWidget() != null || created != null) {
+						return true;
+					}
+				} catch(RuntimeException | LinkageError e) {
+					// showPart below
+				}
+			}
+		}
+		if(partService != null) {
+			try {
+				partService.showPart(part, PartState.CREATE);
+			} catch(RuntimeException | LinkageError e) {
+				try {
+					partService.showPart(part, PartState.ACTIVATE);
+				} catch(RuntimeException | LinkageError e2) {
+					// widget reparent below
+				}
+			}
+		}
+		if(host != null && !host.isDisposed() && part.getWidget() instanceof Control control && !control.isDisposed()) {
+			BaijiuHomePanels.hostEditor(host, control);
+			return true;
+		}
+		return part.getWidget() != null || part.getObject() != null;
+	}
+
+	static Composite homeWidget(MPart home) {
+
+		if(home != null && home.getWidget() instanceof Composite composite && !composite.isDisposed()) {
+			return composite;
+		}
+		return null;
 	}
 
 	static void revealChromatogramPlaceholder(MApplication application, EModelService modelService) {
