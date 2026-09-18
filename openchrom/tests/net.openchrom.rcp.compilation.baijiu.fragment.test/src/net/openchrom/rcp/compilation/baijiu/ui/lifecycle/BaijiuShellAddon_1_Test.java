@@ -22,6 +22,10 @@ public class BaijiuShellAddon_1_Test {
 		BaijiuShellAddon.dropDeadPlantEditorPlaceholder(null, null);
 		BaijiuShellAddon.hideTopWindowMenus(null, null);
 		BaijiuShellAddon.tagPlantHomeSingletons(null, null);
+		BaijiuShellAddon.recoverPlantHome(null, null);
+		BaijiuShellModel.ensurePlantHome(null, null);
+		BaijiuShellSelection.selectPlantHomeIfPresent(null, null);
+		BaijiuShellSelection.rejectHiddenSelection(null, null);
 		BaijiuShellSelection.selectInParent(null);
 		BaijiuShellSelection.clearHiddenSelections(null, null);
 		BaijiuShellParts.forceCreatePlantHomeGuis(null, null);

@@ -33,18 +33,15 @@ import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 
 /**
- * After ChemClipse fragments attach, hide research chrome, select the plant
- * home (left 谱图/采集 empty-state + editor Area; right sidebar tabs: 白酒操作 /
- * 进样序列 / 白酒分析; GC sash toggle docks above the sidebar),
- * {@code showPart(..., ACTIVATE)} the branding plant-home Parts, then
- * {@code IPresentationEngine.createGui} so the client is not an empty gray
- * sash after {@code -clearPersistedState}. The left stack hosts a concrete
- * empty-state Part so cold start shows a labeled tab and Chinese hint; opening
- * a CSD selects {@code placeholder.plantChromatogram}. Does not fall back to
- * the community workbench perspective (that left an empty editor + only
- * 白酒操作). Plant-home Part classes live in this bundle and OSGi-load
- * temperature.ui / baijiu.ui panels. Does not depend on those Java types
- * (soft; no plugin cycle).
+ * After ChemClipse fragments attach: ensure plant-home exists, <em>then</em>
+ * select {@code perspective.plantHome} while Welcome is still visible, <em>then</em>
+ * hide research chrome (Welcome / MALDI / NMR). Selecting a hidden Welcome
+ * throws E4 {@code must be visible in the UI presentation} wrapped in
+ * {@code InjectionException} and aborts DI — plant-home reveal never ran and
+ * the operator saw community-style 白酒工作台 (button column, empty left).
+ * Left 谱图/采集 empty-state + editor Area; right sidebar tabs: 白酒操作 /
+ * 进样序列 / 白酒分析; GC sash toggle docks above the sidebar.
+ * Does not fall back to the community workbench perspective.
  */
 public class BaijiuShellAddon {
 
@@ -56,24 +53,49 @@ public class BaijiuShellAddon {
 	@PostConstruct
 	public void start(IEventBroker eventBroker) {
 
-		applyChrome(application, modelService);
-		BaijiuChromatogramReadability.apply();
-		BaijiuShellMenus.install();
+		try {
+			applyChrome(application, modelService);
+		} catch(RuntimeException | LinkageError e) {
+			BaijiuShellLog.warn("BaijiuShellAddon @PostConstruct chrome apply failed; plant home reveal will retry", e);
+		}
+		try {
+			BaijiuChromatogramReadability.apply();
+			BaijiuShellMenus.install();
+		} catch(RuntimeException | LinkageError e) {
+			BaijiuShellLog.warn("Baijiu shell menu/readability install failed", e);
+		}
 		if(eventBroker == null) {
 			return;
 		}
+		eventBroker.subscribe(UIEvents.ElementContainer.TOPIC_SELECTEDELEMENT, event -> {
+			try {
+				Object selected = event.getProperty(UIEvents.EventTags.NEW_VALUE);
+				Object container = event.getProperty(UIEvents.EventTags.ELEMENT);
+				BaijiuShellSelection.rejectHiddenSelection(container, selected);
+				if(selected instanceof MUIElement element && BaijiuShellSelection.isForbiddenSelection(element.getElementId())) {
+					BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
+				}
+			} catch(RuntimeException | LinkageError e) {
+				// never let a selection bounce abort the workbench
+			}
+		});
 		eventBroker.subscribe(UIEvents.UILifeCycle.APP_STARTUP_COMPLETE, new EventHandler() {
 
 			@Override
 			public void handleEvent(Event event) {
 
 				eventBroker.unsubscribe(this);
-				BaijiuChromatogramReadability.apply();
-				BaijiuShellMenus.install();
-				applyChrome(application, modelService);
-				selectBaijiuPerspective(application, modelService);
-				schedulePlantHomeRender(application, modelService);
-				scheduleWindowMenuHide(application, modelService);
+				try {
+					BaijiuChromatogramReadability.apply();
+					BaijiuShellMenus.install();
+					applyChrome(application, modelService);
+					selectBaijiuPerspective(application, modelService);
+					schedulePlantHomeRender(application, modelService);
+					scheduleWindowMenuHide(application, modelService);
+				} catch(RuntimeException | LinkageError e) {
+					BaijiuShellLog.warn("Baijiu APP_STARTUP_COMPLETE chrome failed; recovering plant home", e);
+					recoverPlantHome(application, modelService);
+				}
 			}
 		});
 	}
@@ -83,27 +105,59 @@ public class BaijiuShellAddon {
 		if(application == null || modelService == null) {
 			return;
 		}
+		try {
+			applyChromeUnguarded(application, modelService);
+		} catch(RuntimeException | LinkageError e) {
+			BaijiuShellLog.warn("Baijiu chrome hide/select aborted (often Welcome still selected after hide). Recovering plant home so the left sash is not empty gray.", e);
+			recoverPlantHome(application, modelService);
+		}
+	}
+
+	private static void applyChromeUnguarded(MApplication application, EModelService modelService) {
+
 		MUIElement window = modelService.find(BaijiuShellChrome.MAIN_WINDOW_ID, application);
 		if(window instanceof MWindow trimmed) {
 			trimmed.setLabel(BaijiuShellChrome.WINDOW_TITLE);
 		}
 		dropDeadPlantEditorPlaceholder(application, modelService);
+		BaijiuShellModel.ensurePlantHome(application, modelService);
+		revealPlantParts(application, modelService);
+		BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
 		List<MUIElement> elements = modelService.findElements(application, null, MUIElement.class, null);
 		if(elements == null) {
 			hideTopWindowMenus(application, modelService);
 			revealPlantParts(application, modelService);
-			BaijiuShellSelection.selectInParent(modelService.find(BaijiuShellChrome.PERSPECTIVE_ID, application));
+			BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
 			return;
 		}
-		hideResearchElements(elements);
+		hideResearchElements(application, modelService, elements);
 		hideTopWindowMenus(application, modelService);
 		revealPlantParts(application, modelService);
 		BaijiuShellSelection.clearHiddenSelections(elements);
-		BaijiuShellSelection.selectInParent(modelService.find(BaijiuShellChrome.PERSPECTIVE_ID, application));
+		BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
 		tagPlantHomeSingletons(application, modelService);
 		BaijiuShellParts.revealPlantToolbar(application, modelService);
 		BaijiuShellParts.applyGcConsoleVisibility(application, modelService);
 		BaijiuShellParts.syncGcToggleToolItem(application, modelService);
+	}
+
+	static void recoverPlantHome(MApplication application, EModelService modelService) {
+
+		if(application == null || modelService == null) {
+			return;
+		}
+		try {
+			dropDeadPlantEditorPlaceholder(application, modelService);
+			BaijiuShellModel.ensurePlantHome(application, modelService);
+			revealPlantParts(application, modelService);
+			BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
+			BaijiuShellParts.showPlantHomeParts(application, modelService, partService(application));
+			BaijiuShellParts.forceCreatePlantHomeGuis(application, modelService);
+			BaijiuShellSelection.clearHiddenSelections(application, modelService);
+			BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
+		} catch(RuntimeException | LinkageError e) {
+			BaijiuShellLog.warn("Plant-home recovery failed", e);
+		}
 	}
 
 	static void selectBaijiuPerspective(MApplication application, EModelService modelService) {
@@ -111,25 +165,44 @@ public class BaijiuShellAddon {
 		if(application == null || modelService == null) {
 			return;
 		}
+		try {
+			selectBaijiuPerspectiveUnguarded(application, modelService);
+		} catch(RuntimeException | LinkageError e) {
+			BaijiuShellLog.warn("selectBaijiuPerspective aborted (Welcome/MALDI select-after-hide). Recovering plant home.", e);
+			recoverPlantHome(application, modelService);
+		}
+	}
+
+	private static void selectBaijiuPerspectiveUnguarded(MApplication application, EModelService modelService) {
+
 		dropDeadPlantEditorPlaceholder(application, modelService);
+		BaijiuShellModel.ensurePlantHome(application, modelService);
 		revealPlantParts(application, modelService);
+		BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
 		EPartService partService = partService(application);
 		MPerspective perspective = findPerspective(application, modelService, BaijiuShellChrome.PERSPECTIVE_ID);
-		boolean plantHome = perspective != null;
 		if(perspective == null) {
-			perspective = findPerspective(application, modelService, BaijiuShellChrome.WORKBENCH_PERSPECTIVE_ID);
-		}
-		if(perspective == null) {
+			BaijiuShellLog.warn("Plant home perspective " + BaijiuShellChrome.PERSPECTIVE_ID + " still missing after ensurePlantHome. Not falling back to community 白酒工作台 (that left an empty editor + only 白酒操作).");
+			BaijiuShellModel.requestResetQuietly();
 			return;
 		}
 		switchTo(application, modelService, partService, perspective);
-		if(plantHome) {
-			BaijiuShellParts.showPlantHomeParts(application, modelService, partService);
+		boolean shown = BaijiuShellParts.showPlantHomeParts(application, modelService, partService);
+		BaijiuShellParts.forceCreatePlantHomeGuis(application, modelService);
+		if(!shown || !BaijiuShellModel.plantHomeSurfacePresent(application, modelService)) {
+			BaijiuShellLog.warn("showPlantHomeParts did not expose required plant ids " + BaijiuShellModel.missingPlantHomeIds(application, modelService) + "; retrying create/reveal.");
+			BaijiuShellModel.ensurePlantHome(application, modelService);
+			revealPlantParts(application, modelService);
+			BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
+			shown = BaijiuShellParts.showPlantHomeParts(application, modelService, partService);
 			BaijiuShellParts.forceCreatePlantHomeGuis(application, modelService);
-		} else {
-			showWorkbenchParts(application, modelService, partService);
+		}
+		if(!shown || !BaijiuShellModel.plantHomeSurfacePresent(application, modelService)) {
+			BaijiuShellLog.warn("Plant home Parts still missing after retry: " + BaijiuShellModel.missingPlantHomeIds(application, modelService) + ". Requesting " + BaijiuShellLayout.RESET_PROGRAM_ARG + ".");
+			BaijiuShellModel.requestResetQuietly();
 		}
 		BaijiuShellSelection.clearHiddenSelections(application, modelService);
+		BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
 		hideTopWindowMenus(application, modelService);
 	}
 
@@ -285,19 +358,23 @@ public class BaijiuShellAddon {
 
 	private static void schedulePlantHomeRender(MApplication application, EModelService modelService) {
 
+		Runnable render = () -> {
+			recoverPlantHome(application, modelService);
+			BaijiuShellParts.forceCreatePlantHomeGuis(application, modelService);
+		};
 		try {
 			Display display = Display.getCurrent();
 			if(display == null || display.isDisposed()) {
-				BaijiuShellParts.forceCreatePlantHomeGuis(application, modelService);
+				render.run();
 				return;
 			}
 			display.asyncExec(() -> {
 				if(!display.isDisposed()) {
-					BaijiuShellParts.forceCreatePlantHomeGuis(application, modelService);
+					render.run();
 				}
 			});
 		} catch(RuntimeException | LinkageError e) {
-			BaijiuShellParts.forceCreatePlantHomeGuis(application, modelService);
+			render.run();
 		}
 	}
 
@@ -319,20 +396,16 @@ public class BaijiuShellAddon {
 		}
 	}
 
-	private static boolean showWorkbenchParts(MApplication application, EModelService modelService, EPartService partService) {
-
-		boolean gc = BaijiuShellParts.showPart(application, modelService, partService, BaijiuShellChrome.GC_CONTROL_PART_ID, BaijiuShellChrome.GC_CONTROL_PLACEHOLDER_ID);
-		boolean sequence = BaijiuShellParts.showPart(application, modelService, partService, BaijiuShellChrome.SEQUENCE_PART_ID, null);
-		return gc || sequence;
-	}
-
 	/**
 	 * Hide research chrome, but reassign stack/sash {@code selectedElement}
-	 * <em>before</em> {@code setVisible(false)}. E4 throws if a hidden MALDI
-	 * {@code PartSashContainer} remains the selected child.
+	 * to {@code perspective.plantHome} <em>before</em> {@code setVisible(false)}.
+	 * E4 throws {@code must be visible in the UI presentation} if Welcome
+	 * (or MALDI/NMR) remains the selected child after hide — that abort
+	 * skipped plant-home reveal and left the community 白酒操作 column.
 	 */
-	private static void hideResearchElements(List<MUIElement> elements) {
+	private static void hideResearchElements(MApplication application, EModelService modelService, List<MUIElement> elements) {
 
+		BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
 		List<MUIElement> toHide = new ArrayList<>();
 		for(MUIElement element : elements) {
 			if(element != null && shouldHideElement(element)) {
@@ -340,31 +413,43 @@ public class BaijiuShellAddon {
 			}
 		}
 		BaijiuShellSelection.reassignAwayFrom(toHide);
+		BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
 		for(MUIElement element : toHide) {
-			element.setVisible(false);
-			element.setToBeRendered(false);
+			try {
+				BaijiuShellSelection.deselectFromParent(element);
+				element.setVisible(false);
+				element.setToBeRendered(false);
+			} catch(RuntimeException | LinkageError e) {
+				BaijiuShellLog.warn("Hiding research element " + (element == null ? "?" : element.getElementId()) + " threw; continuing chrome apply", e);
+			}
 		}
+		BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
 	}
 
 	private static void switchTo(MApplication application, EModelService modelService, EPartService partService, MPerspective perspective) {
 
-		perspective.setVisible(true);
-		perspective.setToBeRendered(true);
-		BaijiuShellSelection.selectInParent(perspective);
-		MUIElement stackElement = modelService.find(BaijiuShellChrome.PERSPECTIVE_STACK_ID, application);
-		if(stackElement instanceof MPerspectiveStack stack && BaijiuShellSelection.canSelect(perspective)) {
-			try {
-				stack.setSelectedElement(perspective);
-			} catch(RuntimeException | LinkageError e) {
-				BaijiuShellSelection.selectInParent(perspective);
+		try {
+			perspective.setVisible(true);
+			perspective.setToBeRendered(true);
+			BaijiuShellSelection.selectInParent(perspective);
+			MUIElement stackElement = modelService.find(BaijiuShellChrome.PERSPECTIVE_STACK_ID, application);
+			if(stackElement instanceof MPerspectiveStack stack && BaijiuShellSelection.canSelect(perspective)) {
+				try {
+					stack.setSelectedElement(perspective);
+				} catch(RuntimeException | LinkageError e) {
+					BaijiuShellSelection.selectInParent(perspective);
+				}
 			}
-		}
-		if(partService != null) {
-			try {
-				partService.switchPerspective(perspective);
-			} catch(RuntimeException | LinkageError e) {
-				// stack selection above is enough
+			if(partService != null) {
+				try {
+					partService.switchPerspective(perspective);
+				} catch(RuntimeException | LinkageError e) {
+					// stack selection above is enough
+				}
 			}
+		} catch(RuntimeException | LinkageError e) {
+			BaijiuShellLog.warn("switchTo plant home threw; stack selection will retry", e);
+			BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
 		}
 	}
 
@@ -399,7 +484,7 @@ public class BaijiuShellAddon {
 		if(element instanceof MMenu && BaijiuShellChrome.shouldHideTopMenu(elementId, label, element.getTags())) {
 			return true;
 		}
-		return false;
+		return BaijiuShellChrome.isHiddenResearchPerspective(elementId);
 	}
 
 	private static void hideWindowMenuChildren(MUIElement menuElement) {

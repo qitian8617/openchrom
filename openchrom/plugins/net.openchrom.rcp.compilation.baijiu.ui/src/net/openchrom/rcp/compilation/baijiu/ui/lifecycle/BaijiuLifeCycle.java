@@ -45,7 +45,12 @@ public class BaijiuLifeCycle {
 		if(window instanceof MWindow trimmed) {
 			trimmed.setLabel(BaijiuShellChrome.WINDOW_TITLE);
 		}
-		BaijiuShellAddon.applyChrome(application, modelService);
+		try {
+			BaijiuShellAddon.applyChrome(application, modelService);
+		} catch(RuntimeException | LinkageError e) {
+			BaijiuShellLog.warn("LifeCycle processAdditions chrome apply failed", e);
+			BaijiuShellAddon.recoverPlantHome(application, modelService);
+		}
 		BaijiuChromatogramReadability.apply();
 	}
 }

@@ -38,7 +38,43 @@ public class BaijiuShellSelection_1_Test {
 		BaijiuShellSelection.reassignAwayFrom(List.of());
 		BaijiuShellSelection.clearHiddenSelections(null, null);
 		BaijiuShellSelection.clearHiddenSelections((List<MUIElement>)null);
+		BaijiuShellSelection.selectPlantHomeIfPresent(null, null);
+		BaijiuShellSelection.rejectHiddenSelection(null, null);
 		assertFalse(BaijiuShellSelection.canSelect(null));
+		assertTrue(BaijiuShellSelection.isForbiddenSelection(BaijiuShellChrome.WELCOME_PERSPECTIVE_ID));
+	}
+
+	@Test
+	public void doesNotSelectHiddenWelcomePerspective() {
+
+		FakeWorkbench workbench = FakeWorkbench.plantWithWelcomeSelected();
+		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.WELCOME_PERSPECTIVE_ID));
+		assertTrue(BaijiuShellChrome.isHiddenResearchPerspective(BaijiuShellChrome.WELCOME_PERSPECTIVE_ID));
+		assertFalse(BaijiuShellSelection.canSelect(workbench.welcome));
+		assertTrue(BaijiuShellSelection.canSelect(workbench.plant));
+		assertEquals(workbench.welcome, workbench.stackNode.selectedProxy());
+
+		BaijiuShellSelection.reassignAwayFrom(List.of(workbench.welcome, workbench.welcomeView));
+		assertEquals(workbench.plant, workbench.stackNode.selectedProxy());
+		assertNotEquals(workbench.welcome, workbench.stackNode.selectedProxy());
+
+		workbench.welcomeNode.visible = false;
+		workbench.welcomeNode.rendered = false;
+		workbench.welcomeViewNode.visible = false;
+		workbench.welcomeViewNode.rendered = false;
+
+		BaijiuShellSelection.clearHiddenSelections(workbench.all());
+		assertEquals(workbench.plant, workbench.stackNode.selectedProxy());
+		assertNotEquals(workbench.welcome, workbench.stackNode.selectedProxy());
+
+		BaijiuShellSelection.selectInParent(workbench.welcome);
+		assertFalse(workbench.welcomeNode.visible);
+		assertNotEquals(workbench.welcome, workbench.stackNode.selectedProxy());
+		assertEquals(workbench.plant, workbench.stackNode.selectedProxy());
+
+		BaijiuShellSelection.rejectHiddenSelection(workbench.stack, workbench.welcome);
+		assertEquals(workbench.plant, workbench.stackNode.selectedProxy());
+		assertNotEquals(workbench.welcome, workbench.stackNode.selectedProxy());
 	}
 
 	@Test
@@ -113,6 +149,8 @@ public class BaijiuShellSelection_1_Test {
 		final FakeNode maldiNode;
 		final FakeNode maldiSashNode;
 		final FakeNode maldiPartNode;
+		final FakeNode welcomeNode;
+		final FakeNode welcomeViewNode;
 
 		final MUIElement window;
 		final MUIElement stack;
@@ -127,6 +165,8 @@ public class BaijiuShellSelection_1_Test {
 		final MUIElement maldi;
 		final MUIElement maldiSash;
 		final MUIElement maldiPart;
+		final MUIElement welcome;
+		final MUIElement welcomeView;
 
 		private FakeWorkbench() {
 
@@ -143,6 +183,8 @@ public class BaijiuShellSelection_1_Test {
 			maldiNode = child(stackNode, MALDI_PERSPECTIVE);
 			maldiSashNode = child(maldiNode, MALDI_SASH);
 			maldiPartNode = child(maldiSashNode, "org.eclipse.chemclipse.ux.extension.xxd.ui.part.massspectrum");
+			welcomeNode = child(stackNode, BaijiuShellChrome.WELCOME_PERSPECTIVE_ID);
+			welcomeViewNode = child(welcomeNode, "org.eclipse.chemclipse.ux.extension.ui.part.welcomeView");
 
 			window = proxy(windowNode);
 			stack = proxy(stackNode);
@@ -157,6 +199,8 @@ public class BaijiuShellSelection_1_Test {
 			maldi = proxy(maldiNode);
 			maldiSash = proxy(maldiSashNode);
 			maldiPart = proxy(maldiPartNode);
+			welcome = proxy(welcomeNode);
+			welcomeView = proxy(welcomeViewNode);
 
 			stackNode.selected = maldiNode;
 			maldiNode.selected = maldiSashNode;
@@ -174,9 +218,17 @@ public class BaijiuShellSelection_1_Test {
 			return new FakeWorkbench();
 		}
 
+		static FakeWorkbench plantWithWelcomeSelected() {
+
+			FakeWorkbench workbench = new FakeWorkbench();
+			workbench.stackNode.selected = workbench.welcomeNode;
+			workbench.welcomeNode.selected = workbench.welcomeViewNode;
+			return workbench;
+		}
+
 		List<MUIElement> all() {
 
-			return List.of(window, stack, plant, plantSash, chromStack, plantTop, gcStack, gcPart, workflow, sequence, maldi, maldiSash, maldiPart);
+			return List.of(window, stack, plant, plantSash, chromStack, plantTop, gcStack, gcPart, workflow, sequence, maldi, maldiSash, maldiPart, welcome, welcomeView);
 		}
 
 		private FakeNode node(String id) {

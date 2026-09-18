@@ -86,7 +86,7 @@ Reset layout
 - 白酒 → 重置窗口布局, then restart.
 - Or add -clearPersistedState **once** to the launch / shortcut.
 - Or -Dnet.openchrom.baijiu.clearLayout=true for that start.
-Phase 3 also clears workbench.xmi once when the chrome epoch advances (now 12).
+Phase 3 also clears workbench.xmi once when the chrome epoch advances (now 15).
 
 Research-menu escape hatch (engineers only, not in the UI)
 ----------------------------------------------------------
@@ -140,7 +140,9 @@ Verify on the engineer PC
     sash default visible above the sidebar
     (or a readable white-on-dark error Label inside the tab — never blank gray)
 [ ] After 白酒 → 重置窗口布局 and relaunch: main client is NOT empty gray; reverse-control and/or sequence table still visible
-[ ] First launch after this PR (epoch 14) auto-clears workbench.xmi once
+[ ] First launch after this PR (epoch 15) auto-clears workbench.xmi once
+[ ] After that launch, persisted workbench.xmi contains chromatogramHome / plantChromatogram / workbench.plantHome / sequence.plantHome / analysis.plantHome / perspective.plantHome
+[ ] Product .log does NOT flood IllegalArgumentException Welcome “must be visible in the UI presentation”
 [ ] Top bar 文件 / 白酒 / 视图 / 帮助; no 处理器 / 插件 / 色谱图 / 窗口
 [ ] Toolbar: 打开谱图、反控、开始分析、推荐积分、定量/白酒分析、报告
 [ ] 反控 check item hides/shows the GC sash (no second console; does not restore GC|Sequence as the only chrome)
