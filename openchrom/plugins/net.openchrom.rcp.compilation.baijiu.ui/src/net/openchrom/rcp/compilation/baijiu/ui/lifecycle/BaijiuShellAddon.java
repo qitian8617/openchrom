@@ -77,7 +77,13 @@ public class BaijiuShellAddon {
 						BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
 					} else if(BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID.equals(element.getElementId())) {
 						BaijiuShellParts.hostOpenCsdEditors(application, modelService, partService(application));
+						schedulePlantWindowChrome(application, modelService);
+					} else if(BaijiuShellChrome.CSD_EDITOR_PART_ID.equals(element.getElementId())) {
+						schedulePlantWindowChrome(application, modelService);
 					}
+				}
+				if(container instanceof MUIElement stack && BaijiuShellChrome.CHROMATOGRAM_STACK_ID.equals(stack.getElementId())) {
+					schedulePlantWindowChrome(application, modelService);
 				}
 			} catch(RuntimeException | LinkageError e) {
 				// never let a selection bounce abort the workbench
@@ -96,6 +102,7 @@ public class BaijiuShellAddon {
 					selectBaijiuPerspective(application, modelService);
 					schedulePlantHomeRender(application, modelService);
 					scheduleWindowMenuHide(application, modelService);
+					schedulePlantWindowChrome(application, modelService);
 				} catch(RuntimeException | LinkageError e) {
 					BaijiuShellLog.warn("Baijiu APP_STARTUP_COMPLETE chrome failed; recovering plant home", e);
 					recoverPlantHome(application, modelService);
@@ -138,10 +145,12 @@ public class BaijiuShellAddon {
 		hideResearchElements(application, modelService, elements);
 		hideTopWindowMenus(application, modelService);
 		revealPlantParts(application, modelService);
+		BaijiuShellParts.revealPlantWindowChrome(application, modelService);
 		BaijiuShellSelection.clearHiddenSelections(elements);
 		BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
 		tagPlantHomeSingletons(application, modelService);
 		BaijiuShellParts.revealPlantToolbar(application, modelService);
+		BaijiuShellParts.revealPlantWindowChrome(application, modelService);
 		BaijiuShellParts.applyGcConsoleVisibility(application, modelService);
 		BaijiuShellParts.syncGcToggleToolItem(application, modelService);
 	}
@@ -160,6 +169,7 @@ public class BaijiuShellAddon {
 			BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
 			BaijiuShellParts.showPlantHomeParts(application, modelService, partService(application));
 			BaijiuShellParts.forceCreatePlantHomeGuis(application, modelService);
+			BaijiuShellParts.revealPlantWindowChrome(application, modelService);
 			BaijiuShellSelection.clearHiddenSelections(application, modelService);
 			BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
 		} catch(RuntimeException | LinkageError e) {
@@ -213,6 +223,7 @@ public class BaijiuShellAddon {
 		BaijiuShellSelection.clearHiddenSelections(application, modelService);
 		BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
 		hideTopWindowMenus(application, modelService);
+		BaijiuShellParts.revealPlantWindowChrome(application, modelService);
 	}
 
 	static void revealPlantParts(MApplication application, EModelService modelService) {
@@ -231,7 +242,13 @@ public class BaijiuShellAddon {
 		show(modelService.find(BaijiuShellChrome.WORKBENCH_HOME_PART_ID, application));
 		show(modelService.find(BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID, application));
 		BaijiuShellParts.parkChromatogramEditorArea(application, modelService);
+		show(modelService.find(BaijiuShellChrome.MAIN_MENU_ID, application));
+		show(modelService.find(BaijiuShellChrome.ECLIPSE_MAIN_MENU_ID, application));
+		show(modelService.find(BaijiuShellChrome.FILE_MENU_ID, application));
+		show(modelService.find(BaijiuShellChrome.HELP_MENU_ID, application));
+		show(modelService.find(BaijiuShellChrome.VIEW_MENU_ID, application));
 		show(modelService.find(BaijiuShellChrome.BAIJIU_MENU_ID, application));
+		show(modelService.find(BaijiuShellChrome.ECLIPSE_MAIN_TOOLBAR_ID, application));
 		show(modelService.find(BaijiuShellChrome.PLANT_TOOLBAR_ID, application));
 		show(modelService.find(BaijiuShellChrome.TRIMBAR_TOP_ID, application));
 		show(modelService.find(BaijiuShellChrome.OPEN_CHROMATOGRAM_TOOLITEM_ID, application));
@@ -248,6 +265,7 @@ public class BaijiuShellAddon {
 		show(modelService.find(BaijiuShellChrome.REPORT_HOME_PART_ID, application));
 		BaijiuShellParts.applyGcConsoleVisibility(application, modelService);
 		BaijiuShellParts.revealPlantToolbar(application, modelService);
+		BaijiuShellParts.revealPlantWindowChrome(application, modelService);
 		BaijiuShellParts.syncGcToggleToolItem(application, modelService);
 	}
 
@@ -340,44 +358,51 @@ public class BaijiuShellAddon {
 	/**
 	 * Walk the main menu's top {@code MMenu} children and hide 窗口 / Window,
 	 * including Eclipse 3.x ActionSet contributions whose id does not match
-	 * ChemClipse {@code ...menu.window}.
+	 * ChemClipse {@code ...menu.window}. Never hide {@link BaijiuShellChrome#PLANT_WINDOW_CHROME_IDS}
+	 * (the menu bar / 文件 / 白酒 / 视图 / 帮助).
 	 */
 	static void hideTopWindowMenus(MApplication application, EModelService modelService) {
 
-		if(application == null || modelService == null || BaijiuShellChrome.researchMenusVisible()) {
+		if(application == null || modelService == null) {
 			return;
 		}
-		hideRestrictedMenuChildren(findMenu(modelService, application, BaijiuShellChrome.MAIN_MENU_ID));
-		hideRestrictedMenuChildren(findMenu(modelService, application, BaijiuShellChrome.ECLIPSE_MAIN_MENU_ID));
-		List<MWindow> windows = modelService.findElements(application, null, MWindow.class, null);
-		if(windows != null) {
-			for(MWindow window : windows) {
-				if(window != null) {
-					hideRestrictedMenuChildren(window.getMainMenu());
+		if(!BaijiuShellChrome.researchMenusVisible()) {
+			hideRestrictedMenuChildren(findMenu(modelService, application, BaijiuShellChrome.MAIN_MENU_ID));
+			hideRestrictedMenuChildren(findMenu(modelService, application, BaijiuShellChrome.ECLIPSE_MAIN_MENU_ID));
+			List<MWindow> windows = modelService.findElements(application, null, MWindow.class, null);
+			if(windows != null) {
+				for(MWindow window : windows) {
+					if(window != null) {
+						hideRestrictedMenuChildren(window.getMainMenu());
+					}
+				}
+			}
+			List<MMenu> menus = modelService.findElements(application, null, MMenu.class, null);
+			if(menus != null) {
+				for(MMenu menu : menus) {
+					if(menu != null && !BaijiuShellChrome.isPlantWindowChrome(menu.getElementId()) && BaijiuShellChrome.shouldHideTopMenu(menu.getElementId(), labelOf(menu), menu.getTags())) {
+						hide(menu);
+					}
+				}
+			}
+			List<MMenuContribution> contributions = application.getMenuContributions();
+			if(contributions != null) {
+				for(MMenuContribution contribution : contributions) {
+					if(contribution == null) {
+						continue;
+					}
+					if(BaijiuShellChrome.isPlantWindowChrome(contribution.getElementId())) {
+						continue;
+					}
+					if(BaijiuShellChrome.shouldHideMainMenuChild(contribution.getParentId(), null, contribution.getTags()) //
+							|| BaijiuShellChrome.shouldHideMainMenuChild(contribution.getElementId(), labelOf(contribution), contribution.getTags())) {
+						hide(contribution);
+					}
+					hideWindowMenuElements(contribution.getChildren());
 				}
 			}
 		}
-		List<MMenu> menus = modelService.findElements(application, null, MMenu.class, null);
-		if(menus != null) {
-			for(MMenu menu : menus) {
-				if(menu != null && BaijiuShellChrome.shouldHideTopMenu(menu.getElementId(), labelOf(menu), menu.getTags())) {
-					hide(menu);
-				}
-			}
-		}
-		List<MMenuContribution> contributions = application.getMenuContributions();
-		if(contributions != null) {
-			for(MMenuContribution contribution : contributions) {
-				if(contribution == null) {
-					continue;
-				}
-				if(BaijiuShellChrome.shouldHideMainMenuChild(contribution.getParentId(), null, contribution.getTags()) //
-						|| BaijiuShellChrome.shouldHideMainMenuChild(contribution.getElementId(), labelOf(contribution), contribution.getTags())) {
-					hide(contribution);
-				}
-				hideWindowMenuElements(contribution.getChildren());
-			}
-		}
+		BaijiuShellParts.revealPlantWindowChrome(application, modelService);
 	}
 
 	private static void schedulePlantHomeRender(MApplication application, EModelService modelService) {
@@ -420,6 +445,25 @@ public class BaijiuShellAddon {
 		}
 	}
 
+	private static void schedulePlantWindowChrome(MApplication application, EModelService modelService) {
+
+		Runnable reveal = () -> BaijiuShellParts.revealPlantWindowChrome(application, modelService);
+		try {
+			Display display = Display.getCurrent();
+			if(display == null || display.isDisposed()) {
+				reveal.run();
+				return;
+			}
+			display.asyncExec(() -> {
+				if(!display.isDisposed()) {
+					reveal.run();
+				}
+			});
+		} catch(RuntimeException | LinkageError e) {
+			reveal.run();
+		}
+	}
+
 	/**
 	 * Hide research chrome, but reassign stack/sash {@code selectedElement}
 	 * to {@code perspective.plantHome} <em>before</em> {@code setVisible(false)}.
@@ -432,7 +476,7 @@ public class BaijiuShellAddon {
 		BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
 		List<MUIElement> toHide = new ArrayList<>();
 		for(MUIElement element : elements) {
-			if(element != null && shouldHideElement(element)) {
+			if(element != null && shouldHideElement(element) && !BaijiuShellChrome.isPlantWindowChrome(element.getElementId())) {
 				toHide.add(element);
 			}
 		}
@@ -501,6 +545,9 @@ public class BaijiuShellAddon {
 	private static boolean shouldHideElement(MUIElement element) {
 
 		String elementId = element.getElementId();
+		if(BaijiuShellChrome.isPlantWindowChrome(elementId)) {
+			return false;
+		}
 		String label = labelOf(element);
 		if(BaijiuShellChrome.shouldHide(elementId, label)) {
 			return true;
@@ -566,6 +613,9 @@ public class BaijiuShellAddon {
 	private static void hide(MUIElement element) {
 
 		if(element == null) {
+			return;
+		}
+		if(BaijiuShellChrome.isPlantWindowChrome(element.getElementId()) || BaijiuShellChrome.KEEP_ELEMENT_IDS.contains(element.getElementId())) {
 			return;
 		}
 		BaijiuShellSelection.deselectFromParent(element);

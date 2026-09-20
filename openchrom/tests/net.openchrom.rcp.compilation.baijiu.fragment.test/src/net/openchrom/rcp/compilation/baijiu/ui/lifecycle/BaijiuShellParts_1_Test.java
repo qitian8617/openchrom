@@ -55,6 +55,7 @@ public class BaijiuShellParts_1_Test {
 		BaijiuShellParts.applyGcConsoleVisibility(null, null);
 		BaijiuShellParts.suppressE4GcWindow(null, null);
 		BaijiuShellParts.revealPlantToolbar(null, null);
+		BaijiuShellParts.revealPlantWindowChrome(null, null);
 		BaijiuShellParts.syncGcToggleToolItem(null, null);
 		BaijiuShellParts.forceCreatePlantHomeGuis(null, null);
 		BaijiuShellParts.parkChromatogramEditorArea(null, null);

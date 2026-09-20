@@ -142,6 +142,8 @@ public final class BaijiuShellChrome {
 	public static final String PERSPECTIVE_PROPERTY = "application.perspective";
 	public static final String MAIN_MENU_ID = "org.eclipse.chemclipse.rcp.app.ui.menu.main";
 	public static final String ECLIPSE_MAIN_MENU_ID = "org.eclipse.ui.main.menu";
+	public static final String FILE_MENU_ID = "org.eclipse.chemclipse.rcp.app.ui.menu.file";
+	public static final String HELP_MENU_ID = "org.eclipse.chemclipse.rcp.app.ui.menu.help";
 	public static final String BAIJIU_MENU_ID = "net.openchrom.rcp.compilation.baijiu.ui.menu.baijiu";
 	public static final String PLANT_TOOLBAR_ID = "net.openchrom.rcp.compilation.baijiu.ui.toolbar.plant";
 	public static final String RESET_LAYOUT_COMMAND_ID = "net.openchrom.rcp.compilation.baijiu.ui.command.resetLayout";
@@ -177,8 +179,14 @@ public final class BaijiuShellChrome {
 	 * Epoch 21: keep ChromatogramEditorCSD in {@link #CHROMATOGRAM_STACK_ID}
 	 * (not a stolen {@code setParent} widget). The editor part id is KEEP so
 	 * selection/chrome does not bounce it as research {@code xxd.ui.part.*}.
+	 * Epoch 22: selecting that CSD as the stack {@code selectedElement} made
+	 * the Eclipse 3.x compatibility layer replace the TrimmedWindow main
+	 * menu / top trim with the editor's (empty or 色谱-only) action bars.
+	 * Rebuild {@code workbench.xmi} so a persisted {@code visible=false} /
+	 * {@code toBeRendered=false} main menu or {@code trimbar.top} is not
+	 * restored. Chrome apply now force-shows {@link #PLANT_WINDOW_CHROME_IDS}.
 	 */
-	public static final int CHROME_EPOCH = 21;
+	public static final int CHROME_EPOCH = 22;
 	/**
 	 * Ids that must exist on the live model after plant-home reveal. Missing
 	 * any of these is the empty-left / community-button-column failure mode.
@@ -241,6 +249,29 @@ public final class BaijiuShellChrome {
 	public static final String CHROMATOGRAM_MENU_ID = "org.eclipse.chemclipse.ux.extension.ui.menu.chromatogram";
 	public static final String VIEW_MENU_ID = "org.eclipse.chemclipse.rcp.app.ui.menu.view";
 	/**
+	 * Window chrome the plant product must keep painted. Hide classic file
+	 * coolbar <em>items</em> / perspectives toolbar / research menus — never
+	 * the menu bar, the entire top trim, or {@link #PLANT_TOOLBAR_ID}.
+	 * Selecting ChromatogramEditorCSD in {@link #CHROMATOGRAM_STACK_ID}
+	 * makes the Eclipse 3.x layer swap TrimmedWindow {@code mainMenu} and
+	 * the top coolbar for the editor's action bars; those are empty once
+	 * 色谱 / {@link #FILE_TOOLBAR_ID} are hidden, so the operator sees only
+	 * the chart's own SWT toolbar. Force-show these ids after chrome apply
+	 * and after the CSD tab is selected.
+	 */
+	public static final List<String> PLANT_WINDOW_CHROME_IDS = List.of( //
+			MAIN_MENU_ID, //
+			ECLIPSE_MAIN_MENU_ID, //
+			FILE_MENU_ID, //
+			BAIJIU_MENU_ID, //
+			VIEW_MENU_ID, //
+			HELP_MENU_ID, //
+			TRIMBAR_TOP_ID, //
+			ECLIPSE_MAIN_TOOLBAR_ID, //
+			PLANT_TOOLBAR_ID, //
+			OPEN_CHROMATOGRAM_TOOLITEM_ID, //
+			TOGGLE_GC_TOOLITEM_ID);
+	/**
 	 * AbstractChromatogramEditor looks these up on mouse/toolbar. Hiding them
 	 * ({@code toBeRendered=false}) throws {@code NotDefinedException} and can
 	 * abort editor UI. Keep them defined; strip 色谱 from the main menu via
@@ -285,7 +316,6 @@ public final class BaijiuShellChrome {
 			PERSPECTIVE_SWITCHER_TOOLITEM_ID, //
 			SELECT_VIEW_TOOLITEM_ID, //
 			RESET_PERSPECTIVE_TOOLITEM_ID, //
-			ECLIPSE_MAIN_TOOLBAR_ID, //
 			"org.eclipse.ui.WorkingSetActionSet", //
 			"org.eclipse.ui.actionSet.openFiles", //
 			"org.eclipse.ui.NavigateActionSet", //
@@ -393,12 +423,13 @@ public final class BaijiuShellChrome {
 	 * chromatogram fallback (一阶导数 / 梯形积分) when the escape hatch is on.
 	 */
 	public static final Set<String> KEEP_ELEMENT_IDS = Set.of( //
-			"org.eclipse.chemclipse.rcp.app.ui.menu.file", //
-			"org.eclipse.chemclipse.rcp.app.ui.menu.help", //
+			FILE_MENU_ID, //
+			HELP_MENU_ID, //
 			VIEW_MENU_ID, //
 			CSD_EDITOR_PART_ID, //
 			MAIN_MENU_ID, //
 			ECLIPSE_MAIN_MENU_ID, //
+			ECLIPSE_MAIN_TOOLBAR_ID, //
 			"org.eclipse.chemclipse.rcp.app.ui.menu.item.about", //
 			"org.eclipse.chemclipse.rcp.app.ui.menu.item.quit", //
 			"org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.save", //
@@ -550,6 +581,11 @@ public final class BaijiuShellChrome {
 		return Boolean.parseBoolean(System.getProperty(RESEARCH_MENUS_PROPERTY));
 	}
 
+	public static boolean isPlantWindowChrome(String elementId) {
+
+		return elementId != null && !elementId.isBlank() && PLANT_WINDOW_CHROME_IDS.contains(elementId);
+	}
+
 	public static boolean shouldHide(String elementId) {
 
 		return shouldHide(elementId, null);
@@ -577,7 +613,7 @@ public final class BaijiuShellChrome {
 	public static boolean shouldHide(String elementId, String label) {
 
 		if(elementId != null && !elementId.isBlank()) {
-			if(EDITOR_REQUIRED_MENU_IDS.contains(elementId) || KEEP_ELEMENT_IDS.contains(elementId)) {
+			if(isPlantWindowChrome(elementId) || EDITOR_REQUIRED_MENU_IDS.contains(elementId) || KEEP_ELEMENT_IDS.contains(elementId)) {
 				return false;
 			}
 			if(researchMenusVisible() && (RESEARCH_ESCAPE_IDS.contains(elementId) || isWindowMenuId(elementId))) {
@@ -633,7 +669,7 @@ public final class BaijiuShellChrome {
 		if(researchMenusVisible()) {
 			return false;
 		}
-		if(elementId != null && !elementId.isBlank() && KEEP_ELEMENT_IDS.contains(elementId)) {
+		if(elementId != null && !elementId.isBlank() && (isPlantWindowChrome(elementId) || KEEP_ELEMENT_IDS.contains(elementId))) {
 			return false;
 		}
 		if(shouldHide(elementId, label) || shouldHideTopMenu(elementId, label, tags)) {

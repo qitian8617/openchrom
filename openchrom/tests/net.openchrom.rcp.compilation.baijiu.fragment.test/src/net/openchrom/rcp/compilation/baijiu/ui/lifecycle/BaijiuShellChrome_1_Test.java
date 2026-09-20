@@ -65,7 +65,7 @@ public class BaijiuShellChrome_1_Test {
 		assertEquals("白酒FID工作站", BaijiuShellChrome.APPLICATION_NAME_VM);
 		assertFalse(BaijiuShellChrome.APPLICATION_NAME_VM.contains(" "));
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome", BaijiuShellChrome.PERSPECTIVE_ID);
-		assertEquals(21, BaijiuShellChrome.CHROME_EPOCH);
+		assertEquals(22, BaijiuShellChrome.CHROME_EPOCH);
 		assertEquals("org.eclipse.chemclipse.ux.extension.ui.perspective.welcome", BaijiuShellChrome.WELCOME_PERSPECTIVE_ID);
 		assertTrue(BaijiuShellChrome.isHiddenResearchPerspective(BaijiuShellChrome.WELCOME_PERSPECTIVE_ID));
 		assertTrue(BaijiuShellChrome.isHiddenResearchPerspective(BaijiuShellChrome.MALDI_PERSPECTIVE_ID));
@@ -109,6 +109,13 @@ public class BaijiuShellChrome_1_Test {
 		assertFalse(BaijiuShellChrome.isPerspectiveStackId(null));
 		assertTrue(BaijiuShellChrome.KEEP_ELEMENT_IDS.contains(BaijiuShellChrome.PERSPECTIVE_STACK_ID));
 		assertTrue(BaijiuShellChrome.PERSPECTIVE_STACK_IDS.contains(BaijiuShellChrome.PRIMARY_PERSPECTIVE_STACK_ID));
+		assertTrue(BaijiuShellChrome.KEEP_ELEMENT_IDS.contains(BaijiuShellChrome.MAIN_MENU_ID));
+		assertTrue(BaijiuShellChrome.KEEP_ELEMENT_IDS.contains(BaijiuShellChrome.ECLIPSE_MAIN_MENU_ID));
+		assertTrue(BaijiuShellChrome.KEEP_ELEMENT_IDS.contains(BaijiuShellChrome.PLANT_TOOLBAR_ID));
+		assertTrue(BaijiuShellChrome.KEEP_ELEMENT_IDS.contains(BaijiuShellChrome.TRIMBAR_TOP_ID));
+		assertTrue(BaijiuShellChrome.KEEP_ELEMENT_IDS.contains(BaijiuShellChrome.ECLIPSE_MAIN_TOOLBAR_ID));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.MAIN_MENU_ID));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.ECLIPSE_MAIN_MENU_ID));
 		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.PLANT_TOOLBAR_ID));
 		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.TRIMBAR_TOP_ID));
 		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.TOGGLE_GC_TOOLITEM_ID));
@@ -119,7 +126,7 @@ public class BaijiuShellChrome_1_Test {
 		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.SAVE_ALL_TOOLITEM_ID));
 		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.PERSPECTIVES_TOOLBAR_ID));
 		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.RESET_PERSPECTIVE_TOOLITEM_ID));
-		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.ECLIPSE_MAIN_TOOLBAR_ID));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.ECLIPSE_MAIN_TOOLBAR_ID), "do not hide the entire top coolbar (plant toolbar lives there after CSD)");
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.ui.WorkingSetActionSet"));
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.ui.newWizard"));
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.ui.file.print"));
@@ -202,6 +209,22 @@ public class BaijiuShellChrome_1_Test {
 		assertTrue(BaijiuShellChrome.shouldHideMainMenuChild(BaijiuShellChrome.CHROMATOGRAM_MENU_ID, "色谱", null));
 		assertTrue(BaijiuShellChrome.EDITOR_REQUIRED_MENU_IDS.contains(BaijiuShellChrome.CHROMATOGRAM_MENU_ID));
 		assertTrue(BaijiuShellChrome.EDITOR_REQUIRED_MENU_IDS.contains(BaijiuShellChrome.VIEW_MENU_ID));
+		assertTrue(BaijiuShellChrome.isPlantWindowChrome(BaijiuShellChrome.MAIN_MENU_ID));
+		assertTrue(BaijiuShellChrome.isPlantWindowChrome(BaijiuShellChrome.ECLIPSE_MAIN_MENU_ID));
+		assertTrue(BaijiuShellChrome.isPlantWindowChrome(BaijiuShellChrome.FILE_MENU_ID));
+		assertTrue(BaijiuShellChrome.isPlantWindowChrome(BaijiuShellChrome.BAIJIU_MENU_ID));
+		assertTrue(BaijiuShellChrome.isPlantWindowChrome(BaijiuShellChrome.VIEW_MENU_ID));
+		assertTrue(BaijiuShellChrome.isPlantWindowChrome(BaijiuShellChrome.HELP_MENU_ID));
+		assertTrue(BaijiuShellChrome.isPlantWindowChrome(BaijiuShellChrome.TRIMBAR_TOP_ID));
+		assertTrue(BaijiuShellChrome.isPlantWindowChrome(BaijiuShellChrome.ECLIPSE_MAIN_TOOLBAR_ID));
+		assertTrue(BaijiuShellChrome.isPlantWindowChrome(BaijiuShellChrome.PLANT_TOOLBAR_ID));
+		assertTrue(BaijiuShellChrome.PLANT_WINDOW_CHROME_IDS.contains(BaijiuShellChrome.MAIN_MENU_ID));
+		assertTrue(BaijiuShellChrome.PLANT_WINDOW_CHROME_IDS.contains(BaijiuShellChrome.PLANT_TOOLBAR_ID));
+		assertFalse(BaijiuShellChrome.isPlantWindowChrome(BaijiuShellChrome.FILE_TOOLBAR_ID));
+		assertFalse(BaijiuShellChrome.isPlantWindowChrome(BaijiuShellChrome.CHROMATOGRAM_MENU_ID));
+		assertFalse(BaijiuShellChrome.isPlantWindowChrome(BaijiuShellChrome.PERSPECTIVES_TOOLBAR_ID));
+		assertFalse(BaijiuShellChrome.shouldHideMainMenuChild(BaijiuShellChrome.MAIN_MENU_ID, null, null));
+		assertFalse(BaijiuShellChrome.shouldHideMainMenuChild(BaijiuShellChrome.ECLIPSE_MAIN_MENU_ID, "Window", null), "main menu bar is not the 窗口 item");
 	}
 
 	@Test

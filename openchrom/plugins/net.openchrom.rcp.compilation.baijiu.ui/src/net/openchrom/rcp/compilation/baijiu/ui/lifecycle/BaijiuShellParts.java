@@ -17,10 +17,14 @@ import org.eclipse.e4.core.contexts.IEclipseContext;
 import org.eclipse.e4.ui.model.application.MApplication;
 import org.eclipse.e4.ui.model.application.ui.MElementContainer;
 import org.eclipse.e4.ui.model.application.ui.MUIElement;
+import org.eclipse.e4.ui.model.application.ui.SideValue;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPlaceholder;
 import org.eclipse.e4.ui.model.application.ui.basic.MPart;
 import org.eclipse.e4.ui.model.application.ui.basic.MPartStack;
+import org.eclipse.e4.ui.model.application.ui.basic.MTrimBar;
+import org.eclipse.e4.ui.model.application.ui.basic.MTrimmedWindow;
 import org.eclipse.e4.ui.model.application.ui.basic.MWindow;
+import org.eclipse.e4.ui.model.application.ui.menu.MMenu;
 import org.eclipse.e4.ui.workbench.IPresentationEngine;
 import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
@@ -82,7 +86,7 @@ public final class BaijiuShellParts {
 		boolean workbench = showPart(application, modelService, partService, BaijiuShellChrome.WORKBENCH_HOME_PART_ID, null);
 		boolean chromatogram = revealChromatogramHost(application, modelService, partService);
 		forceCreatePlantHomeGuis(application, modelService);
-		revealPlantToolbar(application, modelService);
+		revealPlantWindowChrome(application, modelService);
 		syncGcToggleToolItem(application, modelService);
 		if(!BaijiuShellModel.plantHomeSurfacePresent(application, modelService)) {
 			return false;
@@ -277,22 +281,41 @@ public final class BaijiuShellParts {
 		if(application == null || modelService == null) {
 			return;
 		}
-		showElementAndAncestors(modelService.find(BaijiuShellChrome.TRIMBAR_TOP_ID, application));
+		forceShowChrome(modelService.find(BaijiuShellChrome.ECLIPSE_MAIN_TOOLBAR_ID, application));
+		forceShowChrome(modelService.find(BaijiuShellChrome.TRIMBAR_TOP_ID, application));
 		MUIElement toolbar = modelService.find(BaijiuShellChrome.PLANT_TOOLBAR_ID, application);
 		showElementAndAncestors(toolbar);
-		showElementAndAncestors(modelService.find(BaijiuShellChrome.OPEN_CHROMATOGRAM_TOOLITEM_ID, application));
-		showElementAndAncestors(modelService.find(BaijiuShellChrome.TOGGLE_GC_TOOLITEM_ID, application));
+		forceShowChrome(modelService.find(BaijiuShellChrome.OPEN_CHROMATOGRAM_TOOLITEM_ID, application));
+		forceShowChrome(modelService.find(BaijiuShellChrome.TOGGLE_GC_TOOLITEM_ID, application));
 		if(toolbar instanceof MElementContainer<?> container) {
 			List<?> children = container.getChildren();
 			if(children != null) {
 				for(Object child : children) {
 					if(child instanceof MUIElement element) {
-						element.setVisible(true);
-						element.setToBeRendered(true);
+						forceShowChrome(element);
 					}
 				}
 			}
 		}
+	}
+
+	/**
+	 * Re-paint 文件 / 白酒 / 视图 / 帮助 and the plant toolbar after chrome
+	 * hide and after ChromatogramEditorCSD is selected in the left stack.
+	 * Eclipse compatibility otherwise replaces the TrimmedWindow menu and
+	 * top trim with the editor's empty action bars.
+	 */
+	public static void revealPlantWindowChrome(MApplication application, EModelService modelService) {
+
+		if(application == null || modelService == null) {
+			return;
+		}
+		for(String id : BaijiuShellChrome.PLANT_WINDOW_CHROME_IDS) {
+			forceShowChrome(modelService.find(id, application));
+		}
+		reattachWindowMainMenu(application, modelService);
+		showTopTrimBars(application, modelService);
+		revealPlantToolbar(application, modelService);
 	}
 
 	public static void syncGcToggleToolItem(MApplication application, EModelService modelService) {
@@ -351,6 +374,7 @@ public final class BaijiuShellParts {
 		if(hosted && last != null) {
 			hideEmptyChromatogramHome(home, true);
 			BaijiuShellSelection.selectInParent(last);
+			revealPlantWindowChrome(application, modelService);
 		} else {
 			hideEmptyChromatogramHome(home, false);
 		}
@@ -612,10 +636,132 @@ public final class BaijiuShellParts {
 			if(isParkedEditorArea(walk)) {
 				break;
 			}
-			walk.setVisible(true);
-			walk.setToBeRendered(true);
+			forceShowChrome(walk);
 			walk = walk.getParent();
 		}
+	}
+
+	private static void forceShowChrome(MUIElement element) {
+
+		if(element == null || isParkedEditorArea(element)) {
+			return;
+		}
+		removeTag(element, IPresentationEngine.HIDDEN_EXPLICITLY);
+		element.setVisible(true);
+		element.setToBeRendered(true);
+	}
+
+	private static void reattachWindowMainMenu(MApplication application, EModelService modelService) {
+
+		MMenu plantMenu = findMenu(modelService, application, BaijiuShellChrome.MAIN_MENU_ID);
+		if(plantMenu == null) {
+			plantMenu = findMenu(modelService, application, BaijiuShellChrome.ECLIPSE_MAIN_MENU_ID);
+		}
+		forceShowChrome(plantMenu);
+		if(plantMenu instanceof MElementContainer<?> container) {
+			List<?> children = container.getChildren();
+			if(children != null) {
+				for(Object child : children) {
+					if(child instanceof MUIElement element && BaijiuShellChrome.isPlantWindowChrome(element.getElementId())) {
+						forceShowChrome(element);
+					}
+				}
+			}
+		}
+		List<MWindow> windows = application.getChildren();
+		if(windows == null) {
+			return;
+		}
+		for(MWindow window : windows) {
+			if(window == null || BaijiuShellChrome.GC_WINDOW_ID.equals(window.getElementId())) {
+				continue;
+			}
+			MMenu current = window.getMainMenu();
+			if(plantMenu != null && current != plantMenu) {
+				try {
+					window.setMainMenu(plantMenu);
+					current = plantMenu;
+				} catch(RuntimeException | LinkageError e) {
+					// older E4 / already the window menu
+				}
+			}
+			forceShowChrome(current);
+			if(current instanceof MElementContainer<?> container) {
+				List<?> children = container.getChildren();
+				if(children != null) {
+					for(Object child : children) {
+						if(child instanceof MUIElement element && BaijiuShellChrome.isPlantWindowChrome(element.getElementId())) {
+							forceShowChrome(element);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	private static void showTopTrimBars(MApplication application, EModelService modelService) {
+
+		List<MWindow> windows = application.getChildren();
+		if(windows == null) {
+			return;
+		}
+		for(MWindow window : windows) {
+			if(!(window instanceof MTrimmedWindow trimmed) || BaijiuShellChrome.GC_WINDOW_ID.equals(window.getElementId())) {
+				continue;
+			}
+			List<MTrimBar> bars = trimmed.getTrimBars();
+			if(bars == null) {
+				continue;
+			}
+			for(MTrimBar bar : bars) {
+				if(bar == null) {
+					continue;
+				}
+				if(isTopPlantTrim(bar)) {
+					forceShowChrome(bar);
+				}
+			}
+		}
+	}
+
+	private static boolean isTopPlantTrim(MTrimBar bar) {
+
+		String id = bar.getElementId();
+		if(BaijiuShellChrome.shouldHide(id)) {
+			return false;
+		}
+		if(BaijiuShellChrome.isPlantWindowChrome(id)) {
+			return true;
+		}
+		if(!(bar instanceof MElementContainer<?> container)) {
+			try {
+				return bar.getSide() == SideValue.TOP;
+			} catch(RuntimeException | LinkageError e) {
+				return false;
+			}
+		}
+		List<?> children = container.getChildren();
+		if(children != null) {
+			for(Object child : children) {
+				if(child instanceof MUIElement element && BaijiuShellChrome.PLANT_TOOLBAR_ID.equals(element.getElementId())) {
+					return true;
+				}
+			}
+		}
+		try {
+			return bar.getSide() == SideValue.TOP;
+		} catch(RuntimeException | LinkageError e) {
+			return false;
+		}
+	}
+
+	private static MMenu findMenu(EModelService modelService, MApplication application, String menuId) {
+
+		MUIElement found = modelService.find(menuId, application);
+		if(found instanceof MMenu menu) {
+			return menu;
+		}
+		return null;
 	}
 
 	private static void addTag(MUIElement element, String tag) {
