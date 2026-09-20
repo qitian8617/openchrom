@@ -235,6 +235,8 @@ public class BaijiuPilotPackaging_1_Test {
 		String chromeSrc = Files.readString(chrome, StandardCharsets.UTF_8);
 		assertTrue(chromeSrc.contains("CSD_EDITOR_PART_ID"), chromeSrc);
 		assertTrue(chromeSrc.contains("CHROME_EPOCH = 31"), chromeSrc);
+		assertTrue(chromeSrc.contains("VIEW_MENU_RESEARCH_SHOW_VIEW_LABELS"), chromeSrc);
+		assertTrue(chromeSrc.contains("显示视图"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldAppendMenuChild"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldCreateGuiForPlantChrome"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldRestoreChromeAfterChildrenChange"), chromeSrc);
@@ -538,6 +540,10 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(partsSrc.contains("ensureEditorRequiredMenus"), partsSrc);
 		assertTrue(partsSrc.contains("applyEditorRequiredMenuVisibility"), partsSrc);
 		assertTrue(partsSrc.contains("ensureViewMenuContents"), partsSrc);
+		assertTrue(partsSrc.contains("paintSelectViewItem"), partsSrc);
+		assertTrue(partsSrc.contains("clearSelectViewIcon"), partsSrc);
+		assertTrue(partsSrc.contains("clearSelectViewWidgetImage"), partsSrc);
+		assertTrue(partsSrc.contains("setIconURI(\"\")"), partsSrc);
 		assertTrue(partsSrc.contains("ensureFileMenuContents"), partsSrc);
 		assertTrue(partsSrc.contains("ensureHelpMenuContents"), partsSrc);
 		assertTrue(partsSrc.contains("PLANT_ABOUT_MENU_ID"), partsSrc);
@@ -923,6 +929,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(shellMenusSrc.contains("shouldHideBaijiuCascadeChild"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("shouldHideViewMenuChild"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("ensureSelectViewOpensOnClick"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("clearSelectViewImage"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("setImage(null)"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("SWT.Selection"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("BaijiuOpenSelectViewHandler"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("BaijiuAboutHandler"), shellMenusSrc);

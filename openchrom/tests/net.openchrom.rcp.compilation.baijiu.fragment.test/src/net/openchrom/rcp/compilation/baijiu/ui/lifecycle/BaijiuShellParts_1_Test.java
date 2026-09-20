@@ -63,6 +63,9 @@ public class BaijiuShellParts_1_Test {
 		BaijiuShellParts.ensureEditorRequiredMenus(null, null);
 		BaijiuShellParts.applyEditorRequiredMenuVisibility(null);
 		BaijiuShellParts.ensureViewMenuContents(null, null, null);
+		BaijiuShellParts.paintSelectViewItem(null);
+		BaijiuShellParts.clearSelectViewIcon(null);
+		BaijiuShellParts.clearSelectViewWidgetImage(null);
 		BaijiuShellParts.ensureFileMenuContents(null, null, null);
 		BaijiuShellParts.ensureHelpMenuContents(null, null, null);
 		BaijiuShellParts.ensurePlantToolbarContents(null, null, null);
@@ -143,7 +146,7 @@ public class BaijiuShellParts_1_Test {
 		}
 		assertTrue(selectView != null);
 		assertEquals(BaijiuShellChrome.SELECT_VIEW_TITLE_ZH, selectView.getLabel());
-		assertTrue(selectView instanceof org.eclipse.e4.ui.model.application.ui.menu.MDirectMenuItem direct && BaijiuShellChrome.SELECT_VIEW_DIRECT_HANDLER_URI.equals(direct.getContributionURI()), "headless ensure creates DirectMenuItem fallback");
+		assertTrue(selectView instanceof org.eclipse.e4.ui.model.application.ui.menu.MDirectMenuItem direct && BaijiuShellChrome.SELECT_VIEW_DIRECT_HANDLER_URI.equals(direct.getContributionURI()) && (direct.getIconURI() == null || direct.getIconURI().isEmpty()), "headless ensure creates label-only DirectMenuItem fallback");
 		MMenu chromatogram = null;
 		for(Object child : main.getChildren()) {
 			if(child instanceof MMenu menu && BaijiuShellChrome.CHROMATOGRAM_MENU_ID.equals(menu.getElementId())) {
@@ -192,6 +195,7 @@ public class BaijiuShellParts_1_Test {
 		assertTrue(liveSelect != null);
 		assertEquals(BaijiuShellChrome.SELECT_VIEW_TITLE_ZH, liveSelect.getLabel());
 		assertTrue(liveSelect.isVisible());
+		assertTrue(liveSelect instanceof org.eclipse.e4.ui.model.application.ui.menu.MDirectMenuItem item && (item.getIconURI() == null || item.getIconURI().isEmpty()), "选择视图 stays label-only after ensure");
 		assertTrue(BaijiuShellParts.isExecutableSelectViewItem(liveSelect), "dummy handled 选择视图 is replaced with DirectMenuItem");
 		assertFalse(overview.isVisible(), "GroupHandler 概览 must not paint");
 		assertFalse(overview.isToBeRendered());
@@ -356,6 +360,63 @@ public class BaijiuShellParts_1_Test {
 		BaijiuShellParts.ensureViewMenuContents(null, null, kept);
 		assertEquals(1, BaijiuShellParts.countMenuChildrenWithId(kept, BaijiuShellChrome.SELECT_VIEW_MENU_ID));
 		assertFalse(overview.isVisible(), "research cascade stays defined but unpainted");
+	}
+
+	@Test
+	public void selectViewItemStaysLabelOnlyWhenChemClipseReattachesIcon() {
+
+		MMenu view = MMenuFactory.INSTANCE.createMenu();
+		view.setElementId(BaijiuShellChrome.VIEW_MENU_ID);
+		view.setLabel("视图");
+		org.eclipse.e4.ui.model.application.ui.menu.MDirectMenuItem select = MMenuFactory.INSTANCE.createDirectMenuItem();
+		select.setElementId(BaijiuShellChrome.SELECT_VIEW_MENU_ID);
+		select.setLabel("Select View");
+		select.setContributionURI(BaijiuShellChrome.SELECT_VIEW_DIRECT_HANDLER_URI);
+		select.setIconURI("platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/missingSelectView.gif");
+		view.getChildren().add(select);
+		org.eclipse.e4.ui.model.application.ui.menu.MHandledMenuItem showView = org.eclipse.e4.ui.model.application.ui.menu.MMenuFactory.INSTANCE.createHandledMenuItem();
+		showView.setElementId(BaijiuShellChrome.ECLIPSE_SHOW_VIEW_COMMAND_ID);
+		showView.setLabel("显示视图");
+		showView.setVisible(true);
+		showView.setToBeRendered(true);
+		view.getChildren().add(showView);
+
+		BaijiuShellParts.ensureViewMenuContents(null, null, view);
+		assertEquals(1, BaijiuShellParts.countMenuChildrenWithId(view, BaijiuShellChrome.SELECT_VIEW_MENU_ID));
+		assertTrue(view.getChildren().contains(select));
+		assertEquals(BaijiuShellChrome.SELECT_VIEW_TITLE_ZH, select.getLabel());
+		assertTrue(select.getIconURI() == null || select.getIconURI().isEmpty(), "cold start must strip the missing ChemClipse icon");
+		assertTrue(BaijiuShellParts.isExecutableSelectViewItem(select));
+		assertTrue(BaijiuShellChrome.SELECT_VIEW_DIRECT_HANDLER_URI.equals(select.getContributionURI()));
+		assertFalse(showView.isVisible(), "research 显示视图 must stay unpainted");
+		assertFalse(showView.isToBeRendered());
+		assertTrue(view.getChildren().contains(showView), "显示视图 stays defined, hide-only");
+
+		select.setIconURI("platform:/plugin/org.eclipse.ui/icons/full/obj16/missing.gif");
+		showView.setVisible(true);
+		showView.setToBeRendered(true);
+		BaijiuShellParts.ensureViewMenuContents(null, null, view);
+		assertTrue(select.getIconURI() == null || select.getIconURI().isEmpty(), "second-launch ChemClipse icon reattach must clear again");
+		assertEquals(BaijiuShellChrome.SELECT_VIEW_TITLE_ZH, select.getLabel());
+		assertTrue(BaijiuShellParts.isExecutableSelectViewItem(select));
+		assertFalse(showView.isVisible(), "reinjected 显示视图 must hide again");
+
+		select.setIconURI("platform:/plugin/broken");
+		BaijiuShellParts.sanitizeViewMenuChildren(view);
+		assertTrue(select.getIconURI() == null || select.getIconURI().isEmpty());
+		assertEquals(BaijiuShellChrome.SELECT_VIEW_TITLE_ZH, select.getLabel());
+
+		org.eclipse.e4.ui.model.application.ui.menu.MHandledMenuItem handled = org.eclipse.e4.ui.model.application.ui.menu.MMenuFactory.INSTANCE.createHandledMenuItem();
+		handled.setElementId(BaijiuShellChrome.SELECT_VIEW_MENU_ID);
+		handled.setLabel("Select View");
+		handled.setIconURI("platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/selectView.gif");
+		BaijiuShellParts.clearSelectViewIcon(handled);
+		assertTrue(handled.getIconURI() == null || handled.getIconURI().isEmpty());
+		BaijiuShellParts.clearSelectViewIcon(handled);
+		assertTrue(handled.getIconURI() == null || handled.getIconURI().isEmpty(), "clearing an already empty iconURI is a no-op");
+		BaijiuShellParts.paintSelectViewItem(handled);
+		assertEquals(BaijiuShellChrome.SELECT_VIEW_TITLE_ZH, handled.getLabel());
+		assertTrue(handled.getIconURI() == null || handled.getIconURI().isEmpty());
 	}
 
 	@Test

@@ -46,6 +46,7 @@ import org.eclipse.e4.ui.workbench.modeling.IWindowCloseHandler;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Menu;
+import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Widget;
 
@@ -1563,7 +1564,9 @@ public final class BaijiuShellParts {
 	 * JFace MenuManager omits an empty 视图 cascade. Keep Select View as a
 	 * visible child so the top-level label paints. Prefer a commanded
 	 * ChemClipse item over a dummy; DirectMenuItem fallback opens the
-	 * same dialog when the command is not in the model yet.
+	 * same dialog when the command is not in the model yet. Icon URI is
+	 * cleared every pass: ChemClipse's missing command image paints a red
+	 * square on cold start, and later contributions can re-attach it.
 	 */
 	static void ensureViewMenuContents(EModelService modelService, MApplication application, MMenu viewMenu) {
 
@@ -1579,10 +1582,7 @@ public final class BaijiuShellParts {
 		}
 		select = ensureSelectViewExecutable(modelService, application, viewMenu, select);
 		if(select instanceof MMenuElement item) {
-			forceShowChrome(select);
-			if(select instanceof MUILabel labeled) {
-				labeled.setLabel(BaijiuShellChrome.SELECT_VIEW_TITLE_ZH);
-			}
+			paintSelectViewItem(select);
 			attachMenuElement(viewMenu, item);
 		}
 		dedupePlantMenuChildren(viewMenu);
@@ -1592,20 +1592,73 @@ public final class BaijiuShellParts {
 			if(children != null) {
 				for(Object child : children) {
 					if(child instanceof MUIElement element && BaijiuShellChrome.SELECT_VIEW_MENU_ID.equals(element.getElementId())) {
-						forceShowChrome(element);
-						if(element instanceof MUILabel labeled) {
-							labeled.setLabel(BaijiuShellChrome.SELECT_VIEW_TITLE_ZH);
-						}
+						paintSelectViewItem(element);
 						if(element instanceof MHandledMenuItem handled) {
 							bindSelectViewCommand(modelService, application, handled);
+							paintSelectViewItem(handled);
 						} else if(element instanceof MDirectMenuItem direct) {
 							bindSelectViewDirectHandler(direct);
+							paintSelectViewItem(direct);
 						}
 					}
 				}
 			}
 		} catch(RuntimeException | LinkageError e) {
 			// view children not readable
+		}
+	}
+
+	/**
+	 * 选择视图 is label-only. Empty {@code iconURI} plus a null SWT image
+	 * so a missing ChemClipse command icon cannot paint a red square.
+	 * Idempotent: later fragment merges that restore an icon are cleared
+	 * on the next chrome sanitize without rebuilding {@code workbench.xmi}.
+	 */
+	static void paintSelectViewItem(MUIElement element) {
+
+		if(element == null) {
+			return;
+		}
+		forceShowChrome(element);
+		if(element instanceof MUILabel labeled) {
+			try {
+				labeled.setLabel(BaijiuShellChrome.SELECT_VIEW_TITLE_ZH);
+			} catch(RuntimeException | LinkageError e) {
+				// label not writable
+			}
+			clearSelectViewIcon(labeled);
+		}
+		clearSelectViewWidgetImage(element);
+	}
+
+	static void clearSelectViewIcon(MUILabel labeled) {
+
+		if(labeled == null) {
+			return;
+		}
+		try {
+			String uri = labeled.getIconURI();
+			if(uri != null && uri.isEmpty()) {
+				return;
+			}
+			labeled.setIconURI("");
+		} catch(RuntimeException | LinkageError e) {
+			// iconURI not writable
+		}
+	}
+
+	static void clearSelectViewWidgetImage(MUIElement element) {
+
+		if(element == null) {
+			return;
+		}
+		try {
+			Object widget = element.getWidget();
+			if(widget instanceof MenuItem item) {
+				BaijiuShellMenus.clearSelectViewImage(item);
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// widget not an SWT MenuItem / already closing
 		}
 	}
 
@@ -1665,6 +1718,7 @@ public final class BaijiuShellParts {
 
 		if(select instanceof MHandledMenuItem handled) {
 			bindSelectViewCommand(modelService, application, handled);
+			paintSelectViewItem(handled);
 			if(isExecutableSelectViewItem(handled)) {
 				return handled;
 			}
@@ -1677,8 +1731,10 @@ public final class BaijiuShellParts {
 		}
 		if(select instanceof MDirectMenuItem direct) {
 			bindSelectViewDirectHandler(direct);
+			paintSelectViewItem(direct);
 			return direct;
 		}
+		paintSelectViewItem(select);
 		return select;
 	}
 
@@ -1717,11 +1773,13 @@ public final class BaijiuShellParts {
 			handled.setLabel(BaijiuShellChrome.SELECT_VIEW_TITLE_ZH);
 			handled.setToBeRendered(true);
 			handled.setVisible(true);
+			clearSelectViewIcon(handled);
 			try {
 				handled.setCommand(command);
 			} catch(RuntimeException | LinkageError e) {
 				return createSelectViewDirectItem(modelService);
 			}
+			paintSelectViewItem(handled);
 			return handled;
 		}
 		return createSelectViewDirectItem(modelService);
@@ -1768,7 +1826,9 @@ public final class BaijiuShellParts {
 		item.setLabel(BaijiuShellChrome.SELECT_VIEW_TITLE_ZH);
 		item.setToBeRendered(true);
 		item.setVisible(true);
+		clearSelectViewIcon(item);
 		bindSelectViewDirectHandler(item);
+		paintSelectViewItem(item);
 		return item;
 	}
 
@@ -1928,11 +1988,8 @@ public final class BaijiuShellParts {
 				}
 				if(BaijiuShellChrome.shouldHideViewMenuChild(element.getElementId(), labelOf(element))) {
 					hideMenuChild(element);
-				} else if(BaijiuShellChrome.isViewMenuKeepId(element.getElementId())) {
-					forceShowChrome(element);
-					if(element instanceof MUILabel labeled) {
-						labeled.setLabel(BaijiuShellChrome.SELECT_VIEW_TITLE_ZH);
-					}
+				} else if(BaijiuShellChrome.isViewMenuKeepId(element.getElementId()) || BaijiuShellChrome.isViewMenuKeepLabel(labelOf(element))) {
+					paintSelectViewItem(element);
 				}
 			}
 		} catch(RuntimeException | LinkageError e) {
