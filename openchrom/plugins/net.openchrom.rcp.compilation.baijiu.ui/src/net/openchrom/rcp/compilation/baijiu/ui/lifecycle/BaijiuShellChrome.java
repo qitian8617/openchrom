@@ -192,8 +192,14 @@ public final class BaijiuShellChrome {
 	 * so FID overlay is not treated as {@code xxd.ui.part.*}. Leftover
 	 * Working Set / perspectives / plugins coolbar children are re-hidden
 	 * after plant-toolbar reveal.
+	 * Epoch 24: one-shot clear of workbench.xmi that persisted hidden main
+	 * menu / trim after #58 reveal. The durable fix is every-start
+	 * {@code revealPlantWindowChrome} (ignore persisted visibility for
+	 * {@link #PLANT_WINDOW_CHROME_IDS}) plus {@code @PreSave} normalize so
+	 * second/third launch keep 文件/白酒/视图/帮助 and toolbar.plant without
+	 * Clean. Do not rely on another epoch bump for the same loop.
 	 */
-	public static final int CHROME_EPOCH = 23;
+	public static final int CHROME_EPOCH = 24;
 	/**
 	 * Ids that must exist on the live model after plant-home reveal. Missing
 	 * any of these is the empty-left / community-button-column failure mode.
@@ -271,8 +277,9 @@ public final class BaijiuShellChrome {
 	 * makes the Eclipse 3.x layer swap TrimmedWindow {@code mainMenu} and
 	 * the top coolbar for the editor's action bars; those are empty once
 	 * 色谱 / {@link #FILE_TOOLBAR_ID} are hidden, so the operator sees only
-	 * the chart's own SWT toolbar. Force-show these ids after chrome apply
-	 * and after the CSD tab is selected.
+	 * the chart's own SWT toolbar. Force-show these ids on <em>every</em>
+	 * chrome apply, after the renderer, and again on {@code @PreSave} so
+	 * {@code workbench.xmi} cannot persist them hidden.
 	 */
 	public static final List<String> PLANT_WINDOW_CHROME_IDS = List.of( //
 			MAIN_MENU_ID, //
@@ -657,6 +664,44 @@ public final class BaijiuShellChrome {
 	public static boolean isPlantWindowChrome(String elementId) {
 
 		return elementId != null && !elementId.isBlank() && PLANT_WINDOW_CHROME_IDS.contains(elementId);
+	}
+
+	/**
+	 * Plant menu bar / top trim / toolbar.plant must paint even when
+	 * {@code workbench.xmi} restored {@code visible=false},
+	 * {@code toBeRendered=false}, or {@code HiddenExplicitly}. Chrome apply
+	 * and shutdown persist ignore that persisted hide.
+	 */
+	public static boolean ignoresPersistedVisibility(String elementId) {
+
+		return isPlantWindowChrome(elementId);
+	}
+
+	public static boolean mustForceShowPlantChrome(String elementId) {
+
+		return isPlantWindowChrome(elementId);
+	}
+
+	/**
+	 * Policy for {@code revealPlantWindowChrome}: plant chrome ids are
+	 * visible regardless of the flags/tags last written to workbench.xmi.
+	 */
+	public static boolean shouldForceShowDespitePersistedHide(String elementId, boolean persistedVisible, boolean persistedToBeRendered, List<String> persistedTags) {
+
+		if(mustForceShowPlantChrome(elementId)) {
+			return true;
+		}
+		if(!persistedVisible || !persistedToBeRendered) {
+			return false;
+		}
+		if(persistedTags != null) {
+			for(String tag : persistedTags) {
+				if("HiddenExplicitly".equals(tag)) {
+					return false;
+				}
+			}
+		}
+		return true;
 	}
 
 	public static boolean isPlantToolbarContribution(String elementId) {

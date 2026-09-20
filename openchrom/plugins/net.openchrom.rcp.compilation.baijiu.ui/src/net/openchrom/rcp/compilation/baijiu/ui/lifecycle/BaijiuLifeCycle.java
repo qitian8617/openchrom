@@ -13,6 +13,7 @@ import org.eclipse.e4.ui.model.application.MApplication;
 import org.eclipse.e4.ui.model.application.ui.MUIElement;
 import org.eclipse.e4.ui.model.application.ui.basic.MWindow;
 import org.eclipse.e4.ui.workbench.lifecycle.PostContextCreate;
+import org.eclipse.e4.ui.workbench.lifecycle.PreSave;
 import org.eclipse.e4.ui.workbench.lifecycle.ProcessAdditions;
 import org.eclipse.e4.ui.workbench.modeling.EModelService;
 
@@ -56,5 +57,20 @@ public class BaijiuLifeCycle {
 			BaijiuShellAddon.recoverPlantHome(application, modelService);
 		}
 		BaijiuChromatogramReadability.apply();
+	}
+
+	/**
+	 * Normalize plant chrome immediately before {@code workbench.xmi} is
+	 * written so a compatibility action-bar swap cannot persist hidden
+	 * 文件/白酒/视图/帮助 or toolbar.plant for the next launch.
+	 */
+	@PreSave
+	public void preSave(MApplication application, EModelService modelService) {
+
+		try {
+			BaijiuShellParts.revealPlantWindowChrome(application, modelService);
+		} catch(RuntimeException | LinkageError e) {
+			BaijiuShellLog.warn("LifeCycle preSave plant chrome persist failed", e);
+		}
 	}
 }

@@ -65,7 +65,7 @@ public class BaijiuShellChrome_1_Test {
 		assertEquals("白酒FID工作站", BaijiuShellChrome.APPLICATION_NAME_VM);
 		assertFalse(BaijiuShellChrome.APPLICATION_NAME_VM.contains(" "));
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome", BaijiuShellChrome.PERSPECTIVE_ID);
-		assertEquals(23, BaijiuShellChrome.CHROME_EPOCH);
+		assertEquals(24, BaijiuShellChrome.CHROME_EPOCH);
 		assertEquals("org.eclipse.chemclipse.ux.extension.ui.perspective.welcome", BaijiuShellChrome.WELCOME_PERSPECTIVE_ID);
 		assertTrue(BaijiuShellChrome.isHiddenResearchPerspective(BaijiuShellChrome.WELCOME_PERSPECTIVE_ID));
 		assertTrue(BaijiuShellChrome.isHiddenResearchPerspective(BaijiuShellChrome.MALDI_PERSPECTIVE_ID));
@@ -240,6 +240,25 @@ public class BaijiuShellChrome_1_Test {
 		assertFalse(BaijiuShellChrome.isPlantToolbarContribution("org.eclipse.ui.WorkingSetActionSet"));
 		assertFalse(BaijiuShellChrome.isPlantToolbarContribution(BaijiuShellChrome.PERSPECTIVES_TOOLBAR_ID));
 		assertFalse(BaijiuShellChrome.isPlantToolbarContribution(BaijiuShellChrome.FILE_TOOLBAR_ID));
+	}
+
+	@Test
+	public void plantChromeIsForceVisibleDespitePersistedHide() {
+
+		for(String id : BaijiuShellChrome.PLANT_WINDOW_CHROME_IDS) {
+			assertTrue(BaijiuShellChrome.mustForceShowPlantChrome(id), id);
+			assertTrue(BaijiuShellChrome.ignoresPersistedVisibility(id), id);
+			assertFalse(BaijiuShellChrome.shouldHide(id), id);
+			assertTrue(BaijiuShellChrome.shouldForceShowDespitePersistedHide(id, false, false, java.util.List.of("HiddenExplicitly")), id);
+		}
+		assertTrue(BaijiuShellChrome.shouldForceShowDespitePersistedHide(BaijiuShellChrome.MAIN_MENU_ID, false, false, null));
+		assertTrue(BaijiuShellChrome.shouldForceShowDespitePersistedHide(BaijiuShellChrome.PLANT_TOOLBAR_ID, false, false, java.util.List.of("HiddenExplicitly")));
+		assertTrue(BaijiuShellChrome.shouldForceShowDespitePersistedHide(BaijiuShellChrome.TRIMBAR_TOP_ID, false, false, java.util.List.of()));
+		assertFalse(BaijiuShellChrome.mustForceShowPlantChrome(BaijiuShellChrome.FILE_TOOLBAR_ID));
+		assertFalse(BaijiuShellChrome.ignoresPersistedVisibility(BaijiuShellChrome.PERSPECTIVES_TOOLBAR_ID));
+		assertFalse(BaijiuShellChrome.shouldForceShowDespitePersistedHide(BaijiuShellChrome.FILE_TOOLBAR_ID, false, false, java.util.List.of("HiddenExplicitly")));
+		assertTrue(BaijiuShellChrome.shouldForceShowDespitePersistedHide(BaijiuShellChrome.FILE_TOOLBAR_ID, true, true, java.util.List.of()));
+		assertFalse(BaijiuShellChrome.shouldForceShowDespitePersistedHide(BaijiuShellChrome.FILE_TOOLBAR_ID, true, true, java.util.List.of("HiddenExplicitly")));
 	}
 
 	@Test
