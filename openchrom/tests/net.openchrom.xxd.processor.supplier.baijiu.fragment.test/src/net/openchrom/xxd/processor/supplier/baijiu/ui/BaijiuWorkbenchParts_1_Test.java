@@ -41,8 +41,8 @@ public class BaijiuWorkbenchParts_1_Test {
 		assertFalse(BaijiuWorkbenchParts.selectionClearsHostedEditor());
 		BaijiuWorkbenchParts.restoreChromatogramEmptyState(null, null);
 		BaijiuWorkbenchParts.restoreChromatogramEmptyState((org.eclipse.swt.widgets.Composite)null);
-		assertFalse(BaijiuWorkbenchParts.dockOffWorkflowTabs(null, null, null, null));
 		assertFalse(BaijiuWorkbenchParts.dockIntoPlantChromatogramStack(null, null));
+		assertFalse(BaijiuWorkbenchParts.dockOffWorkflowTabs(null, null, null, null));
 		BaijiuWorkbenchParts.hostEditor(null, null);
 		assertEquals(null, BaijiuWorkbenchParts.homeWidget(null));
 		assertFalse(BaijiuWorkbenchParts.showIntegration(null, null, null));
