@@ -570,6 +570,15 @@ public class BaijiuPilotPackaging_1_Test {
 		assertFalse(partsSrc.contains("getParent() != plantStack"), "MElementContainer<MUIElement> vs MPartStack is incomparable on Java 21");
 		assertFalse(partsSrc.contains("parent == plantStack"), "Java 21: use plantStack.getChildren().contains(part) (#49/#56)");
 		assertFalse(partsSrc.contains("parent != plantStack"), "Java 21: do not compare getParent() to MPartStack");
+		assertFalse(partsSrc.contains("getParent() instanceof MToolBar"), "MElementContainer<MUIElement> vs MToolBar is incomparable on Java 21");
+		assertTrue(partsSrc.contains("toolbarContains"), partsSrc);
+		int recreateAt = partsSrc.indexOf("static void recreatePlantChromeWidgets");
+		assertTrue(recreateAt > 0, partsSrc);
+		int recreateEnd = partsSrc.indexOf("\n\tstatic void ensureEditorRequiredMenus", recreateAt);
+		assertTrue(recreateEnd > recreateAt, partsSrc);
+		String recreateBody = partsSrc.substring(recreateAt, recreateEnd);
+		assertFalse(recreateBody.contains("instanceof MToolBar plant)"), "duplicate local plant in recreatePlantChromeWidgets");
+		assertTrue(recreateBody.contains("instanceof MToolBar plantToolbar"), recreateBody);
 		assertTrue(partsSrc.contains("plantStack.getChildren().contains(part)"), partsSrc);
 		assertTrue(partsSrc.contains("dockIntoPlantChromatogramStack"), partsSrc);
 		assertTrue(partsSrc.contains("selectionClearsHostedEditor"), partsSrc);
@@ -738,9 +747,25 @@ public class BaijiuPilotPackaging_1_Test {
 		Path openSelectView = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/handlers/BaijiuOpenSelectViewHandler.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/handlers/BaijiuOpenSelectViewHandler.java");
 		assertNotNull(openSelectView, "视图 选择视图 DirectMenuItem fallback");
 		String openSelectViewSrc = Files.readString(openSelectView, StandardCharsets.UTF_8);
+		assertTrue(openSelectViewSrc.contains("package net.openchrom.rcp.compilation.baijiu.ui.handlers;"), openSelectViewSrc);
+		assertTrue(openSelectViewSrc.contains("public class BaijiuOpenSelectViewHandler"), openSelectViewSrc);
 		assertTrue(openSelectViewSrc.contains("@Execute"), openSelectViewSrc);
 		assertTrue(openSelectViewSrc.contains("SelectViewHandler"), openSelectViewSrc);
 		assertTrue(openSelectViewSrc.contains("executeFromShell"), openSelectViewSrc);
+
+		Path uiManifest = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/META-INF/MANIFEST.MF", "plugins/net.openchrom.rcp.compilation.baijiu.ui/META-INF/MANIFEST.MF");
+		assertNotNull(uiManifest);
+		assertTrue(Files.readString(uiManifest, StandardCharsets.UTF_8).contains("Export-Package: net.openchrom.rcp.compilation.baijiu.ui.handlers"), "PDE must export handlers so fragment.test can resolve BaijiuOpenSelectViewHandler");
+
+		Path uiBuild = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/build.properties", "plugins/net.openchrom.rcp.compilation.baijiu.ui/build.properties");
+		assertNotNull(uiBuild);
+		String uiBuildSrc = Files.readString(uiBuild, StandardCharsets.UTF_8);
+		assertTrue(uiBuildSrc.contains("source.. = src/"), uiBuildSrc);
+		assertTrue(uiBuildSrc.contains("jre.compilation.profile = JavaSE-21"), uiBuildSrc);
+
+		Path uiClasspath = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/.classpath", "plugins/net.openchrom.rcp.compilation.baijiu.ui/.classpath");
+		assertNotNull(uiClasspath);
+		assertTrue(Files.readString(uiClasspath, StandardCharsets.UTF_8).contains("kind=\"src\" path=\"src\""), "PDE source folder must include handlers");
 
 		Path gcPart = locate("openchrom/plugins/net.openchrom.xxd.control.supplier.temperature.ui/src/net/openchrom/xxd/control/supplier/temperature/ui/parts/TemperatureControlPart.java", "plugins/net.openchrom.xxd.control.supplier.temperature.ui/src/net/openchrom/xxd/control/supplier/temperature/ui/parts/TemperatureControlPart.java");
 		assertNotNull(gcPart);
@@ -881,6 +906,9 @@ public class BaijiuPilotPackaging_1_Test {
 		Path fragmentBuild = locate("openchrom/tests/net.openchrom.rcp.compilation.baijiu.fragment.test/build.properties", "tests/net.openchrom.rcp.compilation.baijiu.fragment.test/build.properties");
 		assertNotNull(fragmentBuild);
 		assertTrue(Files.readString(fragmentBuild, StandardCharsets.UTF_8).contains("jre.compilation.profile = JavaSE-21"));
+		Path fragmentMf = locate("openchrom/tests/net.openchrom.rcp.compilation.baijiu.fragment.test/META-INF/MANIFEST.MF", "tests/net.openchrom.rcp.compilation.baijiu.fragment.test/META-INF/MANIFEST.MF");
+		assertNotNull(fragmentMf);
+		assertTrue(Files.readString(fragmentMf, StandardCharsets.UTF_8).contains("Fragment-Host: net.openchrom.rcp.compilation.baijiu.ui"), "fragment.test must see host handlers");
 
 		Path baijiu = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/META-INF/MANIFEST.MF", "plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/META-INF/MANIFEST.MF");
 		assertNotNull(baijiu);
