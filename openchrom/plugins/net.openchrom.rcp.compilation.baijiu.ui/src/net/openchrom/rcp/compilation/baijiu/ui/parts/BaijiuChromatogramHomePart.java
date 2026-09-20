@@ -20,10 +20,10 @@ import jakarta.inject.Inject;
  * Area placeholder ({@code placeholder.plantChromatogram}) does not create a
  * CTabItem, so a PartStack that only hosts that Area is a blank gray void
  * until a CSD is open. This branding Part paints a labeled tab and a Chinese
- * hint immediately. Opening a CSD / 开始分析 embeds the ChromatogramEditorCSD
- * widget into this Part's Composite so the chart is the 谱图/采集 page —
- * not a sibling workflow tab. The Area placeholder is kept unrendered so
- * cold start does not flash nested empty editor frames.
+ * hint immediately. Opening a CSD selects ChromatogramEditorCSD in this
+ * PartStack (e4 child, not a stolen {@code setParent} widget). The Area
+ * placeholder is kept unrendered so cold start does not flash nested empty
+ * editor frames.
  */
 public class BaijiuChromatogramHomePart {
 

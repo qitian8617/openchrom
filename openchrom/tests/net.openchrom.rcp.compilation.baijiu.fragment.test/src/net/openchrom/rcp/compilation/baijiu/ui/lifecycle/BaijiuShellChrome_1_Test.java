@@ -31,7 +31,8 @@ public class BaijiuShellChrome_1_Test {
 		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.PROCESS_MENU_ID));
 		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.PLUGINS_MENU_ID));
 		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.PLUGINS_TOOLBAR_ID));
-		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.CHROMATOGRAM_MENU_ID));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.CHROMATOGRAM_MENU_ID), "editor context menu must stay defined");
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.CSD_EDITOR_PART_ID), "opened CSD must not be treated as research xxd.ui.part.*");
 		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.WINDOW_MENU_ID));
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.ui.menu.chromatogram.filter"));
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.ui.menu.chromatogram.identifier"));
@@ -64,7 +65,7 @@ public class BaijiuShellChrome_1_Test {
 		assertEquals("白酒FID工作站", BaijiuShellChrome.APPLICATION_NAME_VM);
 		assertFalse(BaijiuShellChrome.APPLICATION_NAME_VM.contains(" "));
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome", BaijiuShellChrome.PERSPECTIVE_ID);
-		assertEquals(20, BaijiuShellChrome.CHROME_EPOCH);
+		assertEquals(21, BaijiuShellChrome.CHROME_EPOCH);
 		assertEquals("org.eclipse.chemclipse.ux.extension.ui.perspective.welcome", BaijiuShellChrome.WELCOME_PERSPECTIVE_ID);
 		assertTrue(BaijiuShellChrome.isHiddenResearchPerspective(BaijiuShellChrome.WELCOME_PERSPECTIVE_ID));
 		assertTrue(BaijiuShellChrome.isHiddenResearchPerspective(BaijiuShellChrome.MALDI_PERSPECTIVE_ID));
@@ -198,6 +199,9 @@ public class BaijiuShellChrome_1_Test {
 		assertFalse(BaijiuShellChrome.shouldHideMainMenuChild("org.eclipse.chemclipse.rcp.app.ui.menu.file", "文件", null));
 		assertFalse(BaijiuShellChrome.shouldHideMainMenuChild("org.eclipse.chemclipse.rcp.app.ui.menu.help", "帮助", null));
 		assertFalse(BaijiuShellChrome.shouldHideMainMenuChild("org.eclipse.chemclipse.rcp.app.ui.menu.view", "视图", null));
+		assertTrue(BaijiuShellChrome.shouldHideMainMenuChild(BaijiuShellChrome.CHROMATOGRAM_MENU_ID, "色谱", null));
+		assertTrue(BaijiuShellChrome.EDITOR_REQUIRED_MENU_IDS.contains(BaijiuShellChrome.CHROMATOGRAM_MENU_ID));
+		assertTrue(BaijiuShellChrome.EDITOR_REQUIRED_MENU_IDS.contains(BaijiuShellChrome.VIEW_MENU_ID));
 	}
 
 	@Test

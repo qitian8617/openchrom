@@ -36,6 +36,8 @@ public class BaijiuShellParts_1_Test {
 		assertFalse(BaijiuShellParts.isParkedEditorArea(null));
 		assertFalse(BaijiuShellParts.embedCsdEditor(null, null, null, null));
 		assertFalse(BaijiuShellParts.dockOffWorkflowTabs(null, null, null, null));
+		assertFalse(BaijiuShellParts.dockIntoPlantChromatogramStack(null, null));
+		assertFalse(BaijiuShellParts.selectionClearsHostedEditor());
 		assertFalse(BaijiuShellParts.addToSharedElements(null, null));
 		assertEquals(null, BaijiuShellParts.homeWidget(null));
 		BaijiuShellParts.persistGcConsoleHidden(null, null);

@@ -39,9 +39,9 @@ import net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuHomePanels;
  * {@code BaijiuChromatogramHomePart}) so {@code @PostConstruct} runs in this
  * bundle. Those hosts OSGi-load the real SWT panels; rendering does not
  * depend on foreign-bundle {@code contributionURI}. Chromatogram / live
- * acquisition embeds the ChemClipse CSD editor into the left 谱图/采集 Part
- * ({@code part.chromatogramHome}), not as a competing tab in that workflow
- * stack and not as a tab in the right 白酒操作 sidebar. A concrete empty-state
+ * acquisition embeds the ChemClipse CSD editor into the left 谱图/采集
+ * PartStack ({@code partstack.plantChromatogram}) as a real e4 child, not a
+ * stolen widget inside {@code part.chromatogramHome}. A concrete empty-state
  * Part sits first in that stack so cold start is not a blank gray void. The GC
  * console is a singleton top-level SWT Shell ({@code BaijiuGcConsoleShell}),
  * not a sash child and not a rendered E4 TrimmedWindow. No Java
@@ -335,64 +335,53 @@ public final class BaijiuShellParts {
 		if(editors == null || editors.isEmpty()) {
 			return false;
 		}
-		forceCreateGui(application, modelService, BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID);
 		MPart home = findPart(modelService, application, BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID);
-		Composite host = homeWidget(home);
 		boolean hosted = false;
+		MPart last = null;
 		for(MPart part : editors) {
-			if(part == null) {
+			if(part == null || !hasCsdInput(part)) {
 				continue;
 			}
-			if(plantStack.getChildren().contains(part)) {
-				try {
-					plantStack.getChildren().remove(part);
-				} catch(RuntimeException | LinkageError e) {
-					continue;
-				}
-			}
-			if(!hasCsdInput(part)) {
-				dockOffWorkflowTabs(application, modelService, plantStack, part);
+			if(!hostCsdInPlantStack(partService, plantStack, part)) {
 				continue;
 			}
-			part.setVisible(true);
-			part.setToBeRendered(true);
-			if(!dockOffWorkflowTabs(application, modelService, plantStack, part)) {
-				continue;
-			}
-			if(!embedCsdEditor(application, partService, part, host)) {
-				continue;
-			}
+			last = part;
 			hosted = true;
 		}
-		if(hosted && home != null) {
-			BaijiuShellSelection.selectInParent(home);
+		if(hosted && last != null) {
+			hideEmptyChromatogramHome(home, true);
+			BaijiuShellSelection.selectInParent(last);
+		} else {
+			hideEmptyChromatogramHome(home, false);
 		}
 		return hosted;
 	}
 
-	static boolean dockOffWorkflowTabs(MApplication application, EModelService modelService, MPartStack plantStack, MPart part) {
+	static boolean dockIntoPlantChromatogramStack(MPartStack plantStack, MPart part) {
 
-		if(part == null) {
+		if(part == null || plantStack == null) {
 			return false;
 		}
 		try {
 			MElementContainer<MUIElement> parent = part.getParent();
-			if(parent != null) {
+			if(parent == plantStack) {
 				return true;
 			}
+			if(parent != null) {
+				parent.getChildren().remove(part);
+			}
+			if(!plantStack.getChildren().contains(part)) {
+				plantStack.getChildren().add(part);
+			}
+			return plantStack.getChildren().contains(part);
 		} catch(RuntimeException | LinkageError e) {
 			return false;
 		}
-		MUIElement primary = modelService == null ? null : modelService.find(BaijiuShellChrome.PRIMARY_EDITOR_STACK_ID, application);
-		if(primary instanceof MPartStack dataStack && dataStack != plantStack && !dataStack.getChildren().contains(part)) {
-			try {
-				dataStack.getChildren().add(part);
-				return true;
-			} catch(RuntimeException | LinkageError e) {
-				// sharedElements below
-			}
-		}
-		return addToSharedElements(application, part);
+	}
+
+	static boolean dockOffWorkflowTabs(MApplication application, EModelService modelService, MPartStack plantStack, MPart part) {
+
+		return dockIntoPlantChromatogramStack(plantStack, part);
 	}
 
 	static boolean addToSharedElements(MApplication application, MPart part) {
@@ -426,24 +415,64 @@ public final class BaijiuShellParts {
 
 	static boolean embedCsdEditor(MApplication application, EPartService partService, MPart part, Composite host) {
 
-		if(part == null) {
+		if(part == null || application == null) {
 			return false;
 		}
-		if(reparentEditorWidget(part, host)) {
-			return true;
+		EModelService modelService = null;
+		try {
+			if(application.getContext() != null) {
+				modelService = application.getContext().get(EModelService.class);
+			}
+		} catch(RuntimeException | LinkageError e) {
+			return false;
 		}
-		if(partService != null) {
+		MUIElement stackElement = modelService == null ? null : modelService.find(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, application);
+		if(!(stackElement instanceof MPartStack plantStack)) {
+			return false;
+		}
+		return hostCsdInPlantStack(partService, plantStack, part);
+	}
+
+	static boolean hostCsdInPlantStack(EPartService partService, MPartStack plantStack, MPart part) {
+
+		if(!dockIntoPlantChromatogramStack(plantStack, part)) {
+			return false;
+		}
+		part.setVisible(true);
+		part.setToBeRendered(true);
+		if(partService != null && part.getWidget() == null) {
 			try {
 				partService.showPart(part, PartState.CREATE);
 			} catch(RuntimeException | LinkageError e) {
 				try {
 					partService.showPart(part, PartState.ACTIVATE);
 				} catch(RuntimeException | LinkageError e2) {
-					return reparentEditorWidget(part, host);
+					// ChemClipse openEditor may already have constructed the widget
 				}
 			}
 		}
-		return reparentEditorWidget(part, host);
+		return plantStack.getChildren().contains(part);
+	}
+
+	static void hideEmptyChromatogramHome(MPart home, boolean hide) {
+
+		if(home == null) {
+			return;
+		}
+		home.setToBeRendered(true);
+		home.setVisible(!hide);
+		if(!hide && homeWidget(home) != null) {
+			BaijiuHomePanels.createChromatogramEmptyState(homeWidget(home));
+		}
+	}
+
+	/**
+	 * Selecting 谱图/采集 or a 白酒操作 button must not drop a hosted CSD
+	 * from {@code partstack.plantChromatogram}.
+	 */
+	public static boolean selectionClearsHostedEditor() {
+
+		return false;
 	}
 
 	static boolean reparentEditorWidget(MPart part, Composite host) {

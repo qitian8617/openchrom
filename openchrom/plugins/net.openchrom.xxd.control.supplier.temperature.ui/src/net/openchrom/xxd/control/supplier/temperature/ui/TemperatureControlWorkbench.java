@@ -154,63 +154,52 @@ public final class TemperatureControlWorkbench {
 			return false;
 		}
 		MPart home = findPart(modelService, application, TemperatureControlIds.CHROMATOGRAM_HOME_PART_ID);
-		ensurePartGui(application, home);
-		Composite host = homeWidget(home);
 		boolean hosted = false;
+		MPart last = null;
 		for(MPart part : editors) {
-			if(part == null) {
+			if(part == null || !hasCsdInput(part)) {
 				continue;
 			}
-			if(plantStack.getChildren().contains(part)) {
-				try {
-					plantStack.getChildren().remove(part);
-				} catch(RuntimeException | LinkageError e) {
-					continue;
-				}
-			}
-			if(!hasCsdInput(part)) {
-				dockOffWorkflowTabs(application, modelService, plantStack, part);
+			if(!hostCsdInPlantStack(partService, plantStack, part)) {
 				continue;
 			}
-			part.setVisible(true);
-			part.setToBeRendered(true);
-			if(!dockOffWorkflowTabs(application, modelService, plantStack, part)) {
-				continue;
-			}
-			if(!embedCsdEditor(application, partService, part, host)) {
-				continue;
-			}
+			last = part;
 			hosted = true;
 		}
-		if(hosted && home != null) {
-			selectInParent(home);
+		if(hosted && last != null) {
+			hideEmptyChromatogramHome(home, true);
+			selectInParent(last);
+		} else {
+			hideEmptyChromatogramHome(home, false);
 		}
 		return hosted;
 	}
 
-	static boolean dockOffWorkflowTabs(MApplication application, EModelService modelService, MPartStack plantStack, MPart part) {
+	static boolean dockIntoPlantChromatogramStack(MPartStack plantStack, MPart part) {
 
-		if(part == null) {
+		if(part == null || plantStack == null) {
 			return false;
 		}
 		try {
 			MElementContainer<MUIElement> parent = part.getParent();
-			if(parent != null) {
+			if(parent == plantStack) {
 				return true;
 			}
+			if(parent != null) {
+				parent.getChildren().remove(part);
+			}
+			if(!plantStack.getChildren().contains(part)) {
+				plantStack.getChildren().add(part);
+			}
+			return plantStack.getChildren().contains(part);
 		} catch(RuntimeException | LinkageError e) {
 			return false;
 		}
-		MUIElement primary = modelService == null ? null : modelService.find(TemperatureControlIds.PRIMARY_EDITOR_STACK_ID, application);
-		if(primary instanceof MPartStack dataStack && dataStack != plantStack && !dataStack.getChildren().contains(part)) {
-			try {
-				dataStack.getChildren().add(part);
-				return true;
-			} catch(RuntimeException | LinkageError e) {
-				// sharedElements below
-			}
-		}
-		return addToSharedElements(application, part);
+	}
+
+	static boolean dockOffWorkflowTabs(MApplication application, EModelService modelService, MPartStack plantStack, MPart part) {
+
+		return dockIntoPlantChromatogramStack(plantStack, part);
 	}
 
 	static boolean addToSharedElements(MApplication application, MPart part) {
@@ -244,45 +233,52 @@ public final class TemperatureControlWorkbench {
 
 	static boolean embedCsdEditor(MApplication application, EPartService partService, MPart part, Composite host) {
 
-		if(part == null) {
+		if(part == null || application == null) {
 			return false;
 		}
-		if(host != null && !host.isDisposed()) {
-			Object widget = part.getWidget();
-			if(widget instanceof Control control && !control.isDisposed()) {
-				hostEditor(host, control);
-				return true;
+		EModelService modelService = null;
+		try {
+			if(application.getContext() != null) {
+				modelService = application.getContext().get(EModelService.class);
 			}
-			IPresentationEngine engine = presentationEngine(application, part);
-			if(engine != null) {
-				try {
-					IEclipseContext context = application == null ? null : application.getContext();
-					Object created = engine.createGui(part, host, context);
-					hostEditor(host, part.getWidget() != null ? part.getWidget() : created);
-					if(part.getWidget() != null || created != null) {
-						return true;
-					}
-				} catch(RuntimeException | LinkageError e) {
-					// showPart below
-				}
-			}
+		} catch(RuntimeException | LinkageError e) {
+			return false;
 		}
-		if(partService != null) {
+		MUIElement stackElement = modelService == null ? null : modelService.find(TemperatureControlIds.PLANT_CHROMATOGRAM_STACK_ID, application);
+		if(!(stackElement instanceof MPartStack plantStack)) {
+			return false;
+		}
+		return hostCsdInPlantStack(partService, plantStack, part);
+	}
+
+	static boolean hostCsdInPlantStack(EPartService partService, MPartStack plantStack, MPart part) {
+
+		if(!dockIntoPlantChromatogramStack(plantStack, part)) {
+			return false;
+		}
+		part.setVisible(true);
+		part.setToBeRendered(true);
+		if(partService != null && part.getWidget() == null) {
 			try {
 				partService.showPart(part, PartState.CREATE);
 			} catch(RuntimeException | LinkageError e) {
 				try {
 					partService.showPart(part, PartState.ACTIVATE);
 				} catch(RuntimeException | LinkageError e2) {
-					// widget reparent below
+					// ChemClipse openEditor may already have constructed the widget
 				}
 			}
 		}
-		if(host != null && !host.isDisposed() && part.getWidget() instanceof Control control && !control.isDisposed()) {
-			hostEditor(host, control);
-			return true;
+		return plantStack.getChildren().contains(part);
+	}
+
+	static void hideEmptyChromatogramHome(MPart home, boolean hide) {
+
+		if(home == null) {
+			return;
 		}
-		return part.getWidget() != null || part.getObject() != null;
+		home.setToBeRendered(true);
+		home.setVisible(!hide);
 	}
 
 	static void hostEditor(Composite host, Object editorWidget) {
@@ -386,7 +382,7 @@ public final class TemperatureControlWorkbench {
 		try {
 			engine.createGui(part);
 		} catch(RuntimeException | LinkageError e) {
-			// embed still tries createGui(part, host)
+			// home part only; ChromatogramEditorCSD uses stack membership
 		}
 	}
 

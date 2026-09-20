@@ -99,17 +99,16 @@ public final class BaijiuWorkbenchParts {
 
 	/**
 	 * ChemClipse {@code org.eclipse.e4.primaryDataStack} when present; otherwise
-	 * the left 谱图/采集 workflow {@code partstack.plantChromatogram}. Callers
-	 * that create CSD parts should prefer {@link #findPrimaryEditorStack} so the
-	 * editor is not a sibling of 谱图/采集 / 推荐积分 / ….
+	 * the left 谱图/采集 workflow {@code partstack.plantChromatogram}. Open CSD
+	 * editors are hosted as children of {@link #findPlantChromatogramStack}.
 	 */
 	public static MPartStack findPlantEditorStack(MApplication application, EModelService modelService) {
 
-		MPartStack primary = findPrimaryEditorStack(application, modelService);
-		if(primary != null) {
-			return primary;
+		MPartStack plant = findPlantChromatogramStack(application, modelService);
+		if(plant != null) {
+			return plant;
 		}
-		return findPlantChromatogramStack(application, modelService);
+		return findPrimaryEditorStack(application, modelService);
 	}
 
 	public static MPartStack findPlantChromatogramStack(MApplication application, EModelService modelService) {
@@ -137,9 +136,9 @@ public final class BaijiuWorkbenchParts {
 	}
 
 	/**
-	 * Dock a created CSD editor off the left workflow tabs, force 谱图/采集
-	 * GUI, and embed the chart into that home Composite. Returns true only
-	 * when the editor was hosted (not merely added to a stack).
+	 * Dock a created CSD editor into the left 谱图/采集 PartStack and select
+	 * it. Does not {@code setParent} the editor widget into the empty-state
+	 * home Composite (e4 selection/layout steals that widget back).
 	 */
 	public static boolean hostCsdPart(MApplication application, EModelService modelService, EPartService partService, MPart part) {
 
@@ -150,30 +149,12 @@ public final class BaijiuWorkbenchParts {
 		if(plantStack == null) {
 			return false;
 		}
-		if(!dockOffWorkflowTabs(application, modelService, plantStack, part)) {
-			return false;
+		boolean hosted = hostCsdInPlantStack(partService, plantStack, part);
+		if(hosted) {
+			hideEmptyChromatogramHome(findPart(modelService, application, BaijiuPerspectiveIds.CHROMATOGRAM_HOME_PART_ID), true);
+			selectInParent(part);
 		}
-		MPart home = findPart(modelService, application, BaijiuPerspectiveIds.CHROMATOGRAM_HOME_PART_ID);
-		ensurePartGui(application, home);
-		if(partService != null && home != null && homeWidget(home) == null) {
-			try {
-				partService.showPart(home, PartState.CREATE);
-			} catch(RuntimeException | LinkageError e) {
-				try {
-					partService.showPart(home, PartState.ACTIVATE);
-				} catch(RuntimeException | LinkageError e2) {
-					// embed below
-				}
-			}
-			ensurePartGui(application, home);
-		}
-		Composite host = homeWidget(home);
-		boolean embedded = embedCsdEditor(application, partService, part, host);
-		boolean hosted = hostOpenCsdEditors(application, modelService, partService);
-		if((embedded || hosted) && home != null) {
-			selectInParent(home);
-		}
-		return embedded || hosted;
+		return hosted;
 	}
 
 	public static boolean hostOpenCsdEditors(MApplication application, EModelService modelService, EPartService partService) {
@@ -190,63 +171,57 @@ public final class BaijiuWorkbenchParts {
 			return false;
 		}
 		MPart home = findPart(modelService, application, BaijiuPerspectiveIds.CHROMATOGRAM_HOME_PART_ID);
-		ensurePartGui(application, home);
-		Composite host = homeWidget(home);
 		boolean hosted = false;
+		MPart last = null;
 		for(MPart part : editors) {
-			if(part == null) {
+			if(part == null || !hasCsdInput(part)) {
 				continue;
 			}
-			if(plantStack.getChildren().contains(part)) {
-				try {
-					plantStack.getChildren().remove(part);
-				} catch(RuntimeException | LinkageError e) {
-					continue;
-				}
-			}
-			if(!hasCsdInput(part)) {
-				dockOffWorkflowTabs(application, modelService, plantStack, part);
+			if(!hostCsdInPlantStack(partService, plantStack, part)) {
 				continue;
 			}
-			part.setVisible(true);
-			part.setToBeRendered(true);
-			if(!dockOffWorkflowTabs(application, modelService, plantStack, part)) {
-				continue;
-			}
-			if(!embedCsdEditor(application, partService, part, host)) {
-				continue;
-			}
+			last = part;
 			hosted = true;
 		}
-		if(hosted && home != null) {
-			selectInParent(home);
+		if(hosted && last != null) {
+			hideEmptyChromatogramHome(home, true);
+			selectInParent(last);
+		} else {
+			hideEmptyChromatogramHome(home, false);
 		}
 		return hosted;
 	}
 
-	static boolean dockOffWorkflowTabs(MApplication application, EModelService modelService, MPartStack plantStack, MPart part) {
+	/**
+	 * Move {@code part} into {@code plantStack} (left 谱图/采集). Removes it
+	 * from the right 白酒操作 stack / primary editor stack so the CSD is not
+	 * an orphan tab. Does not steal the SWT widget via {@code setParent}.
+	 */
+	static boolean dockIntoPlantChromatogramStack(MPartStack plantStack, MPart part) {
 
-		if(part == null) {
+		if(part == null || plantStack == null) {
 			return false;
 		}
 		try {
 			MElementContainer<MUIElement> parent = part.getParent();
-			if(parent != null) {
+			if(parent == plantStack) {
 				return true;
 			}
+			if(parent != null) {
+				parent.getChildren().remove(part);
+			}
+			if(!plantStack.getChildren().contains(part)) {
+				plantStack.getChildren().add(part);
+			}
+			return plantStack.getChildren().contains(part);
 		} catch(RuntimeException | LinkageError e) {
 			return false;
 		}
-		MPartStack dataStack = findPrimaryEditorStack(application, modelService);
-		if(dataStack != null && dataStack != plantStack && !dataStack.getChildren().contains(part)) {
-			try {
-				dataStack.getChildren().add(part);
-				return true;
-			} catch(RuntimeException | LinkageError e) {
-				// sharedElements below
-			}
-		}
-		return addToSharedElements(application, part);
+	}
+
+	static boolean dockOffWorkflowTabs(MApplication application, EModelService modelService, MPartStack plantStack, MPart part) {
+
+		return dockIntoPlantChromatogramStack(plantStack, part);
 	}
 
 	public static boolean addToSharedElements(MApplication application, MPart part) {
@@ -283,21 +258,65 @@ public final class BaijiuWorkbenchParts {
 		if(part == null) {
 			return false;
 		}
-		if(reparentEditorWidget(part, host)) {
-			return true;
+		MPartStack plantStack = findPlantChromatogramStack(application, modelServiceOf(application));
+		if(plantStack == null) {
+			return false;
 		}
-		if(partService != null) {
+		return hostCsdInPlantStack(partService, plantStack, part);
+	}
+
+	private static EModelService modelServiceOf(MApplication application) {
+
+		if(application == null || application.getContext() == null) {
+			return null;
+		}
+		try {
+			return application.getContext().get(EModelService.class);
+		} catch(RuntimeException | LinkageError e) {
+			return null;
+		}
+	}
+
+	static boolean hostCsdInPlantStack(EPartService partService, MPartStack plantStack, MPart part) {
+
+		if(!dockIntoPlantChromatogramStack(plantStack, part)) {
+			return false;
+		}
+		part.setVisible(true);
+		part.setToBeRendered(true);
+		if(partService != null && part.getWidget() == null) {
 			try {
 				partService.showPart(part, PartState.CREATE);
 			} catch(RuntimeException | LinkageError e) {
 				try {
 					partService.showPart(part, PartState.ACTIVATE);
 				} catch(RuntimeException | LinkageError e2) {
-					return reparentEditorWidget(part, host);
+					// ChemClipse openEditor may already have constructed the widget
 				}
 			}
 		}
-		return reparentEditorWidget(part, host);
+		return plantStack.getChildren().contains(part);
+	}
+
+	static void hideEmptyChromatogramHome(MPart home, boolean hide) {
+
+		if(home == null) {
+			return;
+		}
+		home.setToBeRendered(true);
+		home.setVisible(!hide);
+		if(!hide) {
+			restoreChromatogramEmptyState(homeWidget(home));
+		}
+	}
+
+	/**
+	 * Selecting 谱图/采集 or a 白酒操作 button must not drop a hosted CSD
+	 * from {@code partstack.plantChromatogram}.
+	 */
+	public static boolean selectionClearsHostedEditor() {
+
+		return false;
 	}
 
 	static boolean reparentEditorWidget(MPart part, Composite host) {
@@ -446,7 +465,7 @@ public final class BaijiuWorkbenchParts {
 		try {
 			engine.createGui(part);
 		} catch(RuntimeException | LinkageError e) {
-			// home part only; ChromatogramEditorCSD is hosted via reparent
+			// home part only; ChromatogramEditorCSD uses stack membership
 		}
 	}
 

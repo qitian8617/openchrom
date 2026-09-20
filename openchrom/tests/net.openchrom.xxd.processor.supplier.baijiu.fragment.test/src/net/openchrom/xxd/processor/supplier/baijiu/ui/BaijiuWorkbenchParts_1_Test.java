@@ -38,9 +38,11 @@ public class BaijiuWorkbenchParts_1_Test {
 		assertFalse(BaijiuWorkbenchParts.hostCsdPart(null, null, null, null));
 		assertFalse(BaijiuWorkbenchParts.embedCsdEditor(null, null, null, null));
 		assertFalse(BaijiuWorkbenchParts.createGuiIntoPlantHost());
+		assertFalse(BaijiuWorkbenchParts.selectionClearsHostedEditor());
 		BaijiuWorkbenchParts.restoreChromatogramEmptyState(null, null);
 		BaijiuWorkbenchParts.restoreChromatogramEmptyState((org.eclipse.swt.widgets.Composite)null);
 		assertFalse(BaijiuWorkbenchParts.dockOffWorkflowTabs(null, null, null, null));
+		assertFalse(BaijiuWorkbenchParts.dockIntoPlantChromatogramStack(null, null));
 		BaijiuWorkbenchParts.hostEditor(null, null);
 		assertEquals(null, BaijiuWorkbenchParts.homeWidget(null));
 		assertFalse(BaijiuWorkbenchParts.showIntegration(null, null, null));
@@ -58,9 +60,11 @@ public class BaijiuWorkbenchParts_1_Test {
 	public void embedDoesNotSucceedWhenCreateGuiWouldThrowDiException() {
 
 		assertFalse(BaijiuWorkbenchParts.createGuiIntoPlantHost(), "must not createGui ChromatogramEditorCSD into the plant Composite");
+		assertFalse(BaijiuWorkbenchParts.selectionClearsHostedEditor(), "selection must not drop a hosted CSD from partstack.plantChromatogram");
 		MPart part = stubPart(Map.of("file", "/tmp/sample.ocb"), "sample.ocb [CSD]");
 		EPartService parts = throwingPartService("Could not find satisfiable constructor in org.eclipse.chemclipse.ux.extension.xxd.ui.editors.ChromatogramEditorCSD");
 		assertFalse(BaijiuWorkbenchParts.embedCsdEditor(null, parts, part, null), "createGui/showPart DI failure is not a successful embed");
+		assertFalse(BaijiuWorkbenchParts.dockIntoPlantChromatogramStack(null, part));
 		assertFalse(BaijiuWorkbenchParts.reparentEditorWidget(part, null));
 	}
 

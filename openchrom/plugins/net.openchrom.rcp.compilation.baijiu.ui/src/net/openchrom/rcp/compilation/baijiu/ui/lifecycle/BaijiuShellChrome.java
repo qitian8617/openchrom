@@ -174,8 +174,11 @@ public final class BaijiuShellChrome {
 	 * only {@link #PERSPECTIVE_STACK_ID} via {@code EModelService.find}).
 	 * Epoch 19 rebuild left plantHome missing when the fragment parent id
 	 * was absent from the restored model — empty left gray.
+	 * Epoch 21: keep ChromatogramEditorCSD in {@link #CHROMATOGRAM_STACK_ID}
+	 * (not a stolen {@code setParent} widget). The editor part id is KEEP so
+	 * selection/chrome does not bounce it as research {@code xxd.ui.part.*}.
 	 */
-	public static final int CHROME_EPOCH = 20;
+	public static final int CHROME_EPOCH = 21;
 	/**
 	 * Ids that must exist on the live model after plant-home reveal. Missing
 	 * any of these is the empty-left / community-button-column failure mode.
@@ -236,6 +239,16 @@ public final class BaijiuShellChrome {
 	public static final String PROCESS_MENU_ID = "org.eclipse.chemclipse.ux.extension.ui.menu.process";
 	public static final String PLUGINS_MENU_ID = "org.eclipse.chemclipse.rcp.app.ui.menu.plugins";
 	public static final String CHROMATOGRAM_MENU_ID = "org.eclipse.chemclipse.ux.extension.ui.menu.chromatogram";
+	public static final String VIEW_MENU_ID = "org.eclipse.chemclipse.rcp.app.ui.menu.view";
+	/**
+	 * AbstractChromatogramEditor looks these up on mouse/toolbar. Hiding them
+	 * ({@code toBeRendered=false}) throws {@code NotDefinedException} and can
+	 * abort editor UI. Keep them defined; strip 色谱 from the main menu via
+	 * {@link #shouldHideMainMenuChild} labels instead.
+	 */
+	public static final Set<String> EDITOR_REQUIRED_MENU_IDS = Set.of( //
+			CHROMATOGRAM_MENU_ID, //
+			VIEW_MENU_ID);
 	/**
 	 * ChemClipse Application.e4xmi top-level Window menu. Eclipse 3.x
 	 * compatibility often contributes a second menu whose id is just
@@ -298,7 +311,6 @@ public final class BaijiuShellChrome {
 			PLUGINS_MENU_ID, //
 			PLUGINS_TOOLBAR_ID, //
 			PROCESS_MENU_ID, //
-			CHROMATOGRAM_MENU_ID, //
 			WINDOW_MENU_ID, //
 			ECLIPSE_WINDOW_MENU_ID, //
 			ECLIPSE_WINDOW_MENU_ALT_ID, //
@@ -383,7 +395,8 @@ public final class BaijiuShellChrome {
 	public static final Set<String> KEEP_ELEMENT_IDS = Set.of( //
 			"org.eclipse.chemclipse.rcp.app.ui.menu.file", //
 			"org.eclipse.chemclipse.rcp.app.ui.menu.help", //
-			"org.eclipse.chemclipse.rcp.app.ui.menu.view", //
+			VIEW_MENU_ID, //
+			CSD_EDITOR_PART_ID, //
 			MAIN_MENU_ID, //
 			ECLIPSE_MAIN_MENU_ID, //
 			"org.eclipse.chemclipse.rcp.app.ui.menu.item.about", //
@@ -564,7 +577,7 @@ public final class BaijiuShellChrome {
 	public static boolean shouldHide(String elementId, String label) {
 
 		if(elementId != null && !elementId.isBlank()) {
-			if(KEEP_ELEMENT_IDS.contains(elementId)) {
+			if(EDITOR_REQUIRED_MENU_IDS.contains(elementId) || KEEP_ELEMENT_IDS.contains(elementId)) {
 				return false;
 			}
 			if(researchMenusVisible() && (RESEARCH_ESCAPE_IDS.contains(elementId) || isWindowMenuId(elementId))) {
