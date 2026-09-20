@@ -26,6 +26,7 @@ public class BaijiuPlantHomeModelProcessor {
 		try {
 			BaijiuShellModel.ensureChemclipsePerspectiveStack(application, modelService);
 			BaijiuShellModel.ensurePlantHome(application, modelService);
+			BaijiuShellParts.revealPlantWindowChrome(application, modelService);
 		} catch(RuntimeException | LinkageError e) {
 			BaijiuShellLog.warn("Plant-home model processor failed; chrome apply will retry", e);
 		}

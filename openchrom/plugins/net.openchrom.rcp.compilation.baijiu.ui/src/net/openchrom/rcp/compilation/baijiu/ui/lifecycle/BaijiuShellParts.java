@@ -301,22 +301,35 @@ public final class BaijiuShellParts {
 
 	/**
 	 * Re-paint 文件 / 白酒 / 视图 / 帮助 and the plant toolbar after chrome
-	 * hide and after ChromatogramEditorCSD is selected in the left stack.
-	 * Eclipse compatibility otherwise replaces the TrimmedWindow menu and
-	 * top trim with the editor's empty action bars.
+	 * hide, after ChromatogramEditorCSD is selected, on every cold start
+	 * (persisted workbench.xmi may have hidden them), and on {@code @PreSave}
+	 * so shutdown cannot persist them hidden. Eclipse compatibility otherwise
+	 * replaces the TrimmedWindow menu and top trim with the editor's empty
+	 * action bars. Persisted {@code visible=false} / {@code HiddenExplicitly}
+	 * on {@link BaijiuShellChrome#PLANT_WINDOW_CHROME_IDS} is ignored.
 	 */
 	public static void revealPlantWindowChrome(MApplication application, EModelService modelService) {
 
 		if(application == null || modelService == null) {
 			return;
 		}
-		for(String id : BaijiuShellChrome.PLANT_WINDOW_CHROME_IDS) {
-			forceShowChrome(modelService.find(id, application));
-		}
+		forceShowPlantWindowChrome(application, modelService);
 		reattachWindowMainMenu(application, modelService);
 		showTopTrimBars(application, modelService);
 		revealPlantToolbar(application, modelService);
 		hideNonPlantTopTrim(application, modelService);
+		forceShowPlantWindowChrome(application, modelService);
+	}
+
+	private static void forceShowPlantWindowChrome(MApplication application, EModelService modelService) {
+
+		for(String id : BaijiuShellChrome.PLANT_WINDOW_CHROME_IDS) {
+			MUIElement found = modelService.find(id, application);
+			forceShowChrome(found);
+			if(found != null && BaijiuShellChrome.mustForceShowPlantChrome(found.getElementId())) {
+				forceCreateElement(application, modelService, found);
+			}
+		}
 	}
 
 	static void hideNonPlantTopTrim(MApplication application, EModelService modelService) {
@@ -346,7 +359,7 @@ public final class BaijiuShellParts {
 				hideNonPlantTrimChildren(ui);
 				continue;
 			}
-			if(BaijiuShellChrome.isPlantToolbarContribution(id)) {
+			if(BaijiuShellChrome.mustForceShowPlantChrome(id) || BaijiuShellChrome.isPlantToolbarContribution(id) || containsPlantChrome(ui)) {
 				forceShowChrome(ui);
 				hideNonPlantTrimChildren(ui);
 				continue;
@@ -354,6 +367,30 @@ public final class BaijiuShellParts {
 			ui.setVisible(false);
 			ui.setToBeRendered(false);
 		}
+	}
+
+	private static boolean containsPlantChrome(MUIElement element) {
+
+		if(element == null) {
+			return false;
+		}
+		String id = element.getElementId();
+		if(BaijiuShellChrome.mustForceShowPlantChrome(id) || BaijiuShellChrome.isPlantToolbarContribution(id)) {
+			return true;
+		}
+		if(!(element instanceof MElementContainer<?> container)) {
+			return false;
+		}
+		List<?> children = container.getChildren();
+		if(children == null) {
+			return false;
+		}
+		for(Object child : children) {
+			if(child instanceof MUIElement ui && containsPlantChrome(ui)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public static void syncGcToggleToolItem(MApplication application, EModelService modelService) {
@@ -687,6 +724,14 @@ public final class BaijiuShellParts {
 		removeTag(element, IPresentationEngine.HIDDEN_EXPLICITLY);
 		element.setVisible(true);
 		element.setToBeRendered(true);
+		try {
+			Object widget = element.getWidget();
+			if(widget instanceof Control control && !control.isDisposed()) {
+				control.setVisible(true);
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// headless fragment tests / widget not an SWT Control
+		}
 	}
 
 	private static void reattachWindowMainMenu(MApplication application, EModelService modelService) {

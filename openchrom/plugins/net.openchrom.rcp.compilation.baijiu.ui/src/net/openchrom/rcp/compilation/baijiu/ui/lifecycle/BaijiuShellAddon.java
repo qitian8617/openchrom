@@ -110,6 +110,13 @@ public class BaijiuShellAddon {
 				}
 			}
 		});
+		eventBroker.subscribe(UIEvents.UILifeCycle.APP_SHUTDOWN_STARTED, event -> {
+			try {
+				BaijiuShellParts.revealPlantWindowChrome(application, modelService);
+			} catch(RuntimeException | LinkageError e) {
+				BaijiuShellLog.warn("Baijiu APP_SHUTDOWN_STARTED plant chrome persist failed", e);
+			}
+		});
 	}
 
 	static void applyChrome(MApplication application, EModelService modelService) {
@@ -492,10 +499,18 @@ public class BaijiuShellAddon {
 		try {
 			Display display = Display.getCurrent();
 			if(display == null || display.isDisposed()) {
+				display = Display.getDefault();
+			}
+			if(display == null || display.isDisposed()) {
 				reveal.run();
 				return;
 			}
 			display.asyncExec(() -> {
+				if(!display.isDisposed()) {
+					reveal.run();
+				}
+			});
+			display.timerExec(300, () -> {
 				if(!display.isDisposed()) {
 					reveal.run();
 				}

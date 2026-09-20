@@ -234,7 +234,10 @@ public class BaijiuPilotPackaging_1_Test {
 		assertNotNull(chrome);
 		String chromeSrc = Files.readString(chrome, StandardCharsets.UTF_8);
 		assertTrue(chromeSrc.contains("CSD_EDITOR_PART_ID"), chromeSrc);
-		assertTrue(chromeSrc.contains("CHROME_EPOCH = 23"), chromeSrc);
+		assertTrue(chromeSrc.contains("CHROME_EPOCH = 24"), chromeSrc);
+		assertTrue(chromeSrc.contains("mustForceShowPlantChrome"), chromeSrc);
+		assertTrue(chromeSrc.contains("ignoresPersistedVisibility"), chromeSrc);
+		assertTrue(chromeSrc.contains("shouldForceShowDespitePersistedHide"), chromeSrc);
 		assertTrue(chromeSrc.contains("SELECT_VIEW_KEEP_ELEMENT_IDS"), chromeSrc);
 		assertTrue(chromeSrc.contains("SELECT_VIEW_KEEP_LABELS"), chromeSrc);
 		assertTrue(chromeSrc.contains("SELECT_VIEW_HIDE_LABELS"), chromeSrc);
@@ -302,6 +305,10 @@ public class BaijiuPilotPackaging_1_Test {
 		String lifeCycleSrc = Files.readString(lifeCycle, StandardCharsets.UTF_8);
 		assertTrue(lifeCycleSrc.contains("BaijiuChromatogramReadability.apply"), lifeCycleSrc);
 		assertTrue(lifeCycleSrc.contains("ensureChemclipsePerspectiveStack"), lifeCycleSrc);
+		assertTrue(lifeCycleSrc.contains("@PreSave") || lifeCycleSrc.contains("PreSave"), lifeCycleSrc);
+		assertTrue(lifeCycleSrc.contains("preSave"), lifeCycleSrc);
+		assertTrue(lifeCycleSrc.contains("revealPlantWindowChrome"), lifeCycleSrc);
+		assertTrue(lifeCycleSrc.contains("ensureChemclipsePerspectiveStack"), lifeCycleSrc);
 
 		Path addon = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellAddon.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellAddon.java");
 		assertNotNull(addon);
@@ -318,6 +325,9 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(addonSrc.contains("tagPlantHomeSingletons"), addonSrc);
 		assertTrue(addonSrc.contains("revealPlantToolbar"), addonSrc);
 		assertTrue(addonSrc.contains("revealPlantWindowChrome"), addonSrc);
+		assertTrue(addonSrc.contains("APP_SHUTDOWN_STARTED"), addonSrc);
+		assertTrue(addonSrc.contains("timerExec"), addonSrc);
+		assertTrue(addonSrc.contains("schedulePlantWindowChrome"), addonSrc);
 		assertTrue(addonSrc.contains("isPlantWindowChrome"), addonSrc);
 		assertTrue(addonSrc.contains("PLANT_WINDOW_CHROME_IDS") || chromeSrc.contains("PLANT_WINDOW_CHROME_IDS"), addonSrc);
 		assertTrue(addonSrc.contains("CSD_EDITOR_PART_ID"), addonSrc);
@@ -399,6 +409,9 @@ public class BaijiuPilotPackaging_1_Test {
 		String stackProcessorSrc = Files.readString(stackProcessor, StandardCharsets.UTF_8);
 		assertTrue(stackProcessorSrc.contains("ensureChemclipsePerspectiveStack"), stackProcessorSrc);
 		assertTrue(stackProcessorSrc.contains("PerspectiveApplicationAddon"), stackProcessorSrc);
+		Path plantProcessor = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuPlantHomeModelProcessor.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuPlantHomeModelProcessor.java");
+		assertNotNull(plantProcessor);
+		assertTrue(Files.readString(plantProcessor, StandardCharsets.UTF_8).contains("revealPlantWindowChrome"));
 		Path shellParts = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellParts.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellParts.java");
 		assertNotNull(shellParts);
 		String partsSrc = Files.readString(shellParts, StandardCharsets.UTF_8);
@@ -420,6 +433,9 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(partsSrc.contains("revealPlantWindowChrome"), partsSrc);
 		assertTrue(partsSrc.contains("hideNonPlantTopTrim"), partsSrc);
 		assertTrue(partsSrc.contains("isPlantToolbarContribution"), partsSrc);
+		assertTrue(partsSrc.contains("mustForceShowPlantChrome") || partsSrc.contains("forceShowPlantWindowChrome"), partsSrc);
+		assertTrue(partsSrc.contains("forceCreateElement"), partsSrc);
+		assertTrue(partsSrc.contains("containsPlantChrome"), partsSrc);
 		assertTrue(partsSrc.contains("HIDDEN_EXPLICITLY"), partsSrc);
 		assertTrue(partsSrc.contains("setMainMenu"), partsSrc);
 		assertTrue(partsSrc.contains("hostOpenCsdEditors"), partsSrc);
