@@ -20,6 +20,7 @@ public class BaijiuShellMenus_1_Test {
 
 		BaijiuShellMenus.install();
 		BaijiuShellMenus.sanitize(null);
+		BaijiuShellMenus.sanitizeMainMenuBar(null);
 		BaijiuShellMenus.sanitizeSelectView(null);
 		BaijiuShellMenus.sanitizeSelectViewTable(null);
 		BaijiuShellMenus.sanitizeSelectViewTree(null);

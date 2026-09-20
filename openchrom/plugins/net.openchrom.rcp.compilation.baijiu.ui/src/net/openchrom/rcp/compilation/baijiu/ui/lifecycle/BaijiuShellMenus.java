@@ -59,6 +59,10 @@ public final class BaijiuShellMenus {
 						sanitize(menu);
 					} else if(event.widget instanceof Shell shell && !shell.isDisposed()) {
 						sanitizeSelectView(shell);
+						Menu bar = shell.getMenuBar();
+						if(bar != null && !bar.isDisposed()) {
+							sanitizeMainMenuBar(bar);
+						}
 					} else if(event.widget instanceof Table table && !table.isDisposed()) {
 						sanitizeSelectViewTable(table);
 					} else if(event.widget instanceof Tree tree && !tree.isDisposed()) {
@@ -77,6 +81,10 @@ public final class BaijiuShellMenus {
 	static void sanitize(Menu menu) {
 
 		if(menu == null || menu.isDisposed()) {
+			return;
+		}
+		if((menu.getStyle() & SWT.BAR) != 0) {
+			sanitizeMainMenuBar(menu);
 			return;
 		}
 		boolean chart = BaijiuShellChrome.looksLikeChartMenu(labelsOf(menu, true));
@@ -117,6 +125,36 @@ public final class BaijiuShellMenus {
 		}
 		if(chart || stack) {
 			disposeExtraSeparators(menu);
+		}
+	}
+
+	/**
+	 * Compatibility / ChemClipse may paint 色谱图 on the SWT bar even when
+	 * the E4 contribution is {@code visible=false} and still defined for
+	 * GroupHandler. Dispose the label; keep 文件 / 白酒 / 视图 / 帮助.
+	 */
+	static void sanitizeMainMenuBar(Menu menu) {
+
+		if(menu == null || menu.isDisposed() || (menu.getStyle() & SWT.BAR) == 0) {
+			return;
+		}
+		MenuItem[] items = menu.getItems();
+		for(int i = items.length - 1; i >= 0; i--) {
+			MenuItem item = items[i];
+			if(item == null || item.isDisposed() || (item.getStyle() & SWT.SEPARATOR) != 0) {
+				continue;
+			}
+			String text = item.getText();
+			if(text == null || text.isBlank()) {
+				continue;
+			}
+			if(BaijiuShellChrome.shouldHideMainMenuBarItem(text)) {
+				try {
+					item.dispose();
+				} catch(RuntimeException e) {
+					// menu already closing
+				}
+			}
 		}
 	}
 
