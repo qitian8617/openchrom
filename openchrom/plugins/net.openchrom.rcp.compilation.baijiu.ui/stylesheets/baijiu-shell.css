@@ -6,7 +6,7 @@
  * Do NOT CSS-hide org.eclipse.ui.main.toolbar: after CSD editor action bars
  * attach, that id is the live top coolbar that hosts the plant toolbar.
  * Do NOT CSS-hide handledmenuitem.selectView: 视图 keeps the dialog; Java
- * allowlists 白酒操作 / 气相色谱控制台 / 色谱图叠加 / 进样序列.
+ * allowlists 白酒操作 / 色谱图叠加 / 进样序列 / 谱图/采集.
  *******************************************************************************/
 #org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.updates,
 #org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.updates,
@@ -21,11 +21,21 @@
 #org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.perspectiveSwitcher,
 #org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.selectView,
 #org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.resetperspective,
+#org.eclipse.chemclipse.rcp.app.ui.menu.item.import,
+#org.eclipse.chemclipse.rcp.app.ui.menu.item.export,
 #org.eclipse.chemclipse.ux.extension.msd.ui.handledmenuitem.openChromatogram,
 #org.eclipse.chemclipse.ux.extension.wsd.ui.handledmenuitem.openChromatogram,
 #org.eclipse.chemclipse.ux.extension.ui.menu.scan,
 #org.eclipse.chemclipse.ux.extension.ui.menu.peak,
 #org.eclipse.chemclipse.ux.extension.ui.menu.spectrum,
+#org.eclipse.chemclipse.ux.extension.xxd.ui.view.overview,
+#org.eclipse.chemclipse.ux.extension.xxd.ui.view.overlay,
+#org.eclipse.chemclipse.ux.extension.xxd.ui.view.scans,
+#org.eclipse.chemclipse.ux.extension.xxd.ui.view.peaks,
+#org.eclipse.chemclipse.ux.extension.xxd.ui.view.targets,
+#org.eclipse.chemclipse.ux.extension.xxd.ui.view.chromatogram,
+#org.eclipse.chemclipse.ux.extension.xxd.ui.view.istd,
+#org.eclipse.chemclipse.ux.extension.xxd.ui.view.misc,
 #org.eclipse.chemclipse.ux.extension.ui.toolbar.operations,
 #org.eclipse.chemclipse.ux.extension.ui.perspective.welcome,
 #org.eclipse.chemclipse.ux.extension.xxd.ui.perspective.main,

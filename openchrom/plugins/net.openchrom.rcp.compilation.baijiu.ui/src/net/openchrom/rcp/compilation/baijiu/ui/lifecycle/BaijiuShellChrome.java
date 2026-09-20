@@ -19,12 +19,22 @@ import java.util.Set;
  * {@code Application.e4xmi} plus well-known CSD/MSD/WSD/NMR fragments.
  * Unknown / renamed ChemClipse ids are left visible so launch cannot brick.
  * <p>
- * Normal plant top bar: 文件 / 白酒 / 视图 / 帮助. 处理器 / 插件 / 色谱 /
- * 色谱图 / 窗口 are hidden by id and by top-menu label (色谱图 stays
- * defined for ChemClipse GroupHandler lookup). 视图 keeps Select View; the dialog
- * is an allowlist (谱图/采集 / 进样序列 / 白酒操作 / 色谱图叠加) and its
- * chrome is Chinese (选择视图). 气相色谱控制台 is not a Select View or
- * 白酒-menu entry — open it from 显示/隐藏反控 / toolbar 反控.
+ * Branding: unused OpenChrom / ChemClipse research chrome must never
+ * reappear (open/close chromatogram, part activation, exception recovery,
+ * action-set contribution, workbench.xmi restore, compatibility swaps,
+ * timer reveal). Hide-when-we-remember is insufficient — plant allowlists
+ * plus continuous re-apply. Normal plant top bar: 文件 / 白酒 / 视图 / 帮助.
+ * 处理器 / 插件 / 色谱 / 色谱图 / 窗口 are hidden by id and by top-menu
+ * label (色谱图 stays defined for ChemClipse GroupHandler lookup). 视图
+ * keeps Select View only; ChemClipse research cascades (概览 / 叠加 / 扫描 /
+ * 峰 / 定性目标 / 内标 / 其他) stay defined under {@code menu.view} for
+ * GroupHandler lookup but never paint. The Select View dialog is an
+ * allowlist (谱图/采集 / 进样序列 / 白酒操作 / 色谱图叠加) and its chrome
+ * is Chinese (选择视图). 文件 is an allowlist (保存 / 另存为 / 关闭 /
+ * 全部关闭 / 退出). 白酒 and 帮助 are plant allowlists. 气相色谱控制台 is
+ * not a Select View or 白酒-menu entry — open it from 显示/隐藏反控 /
+ * toolbar 反控. Re-apply on every contribution ADD, about-to-show, part
+ * activation, and editor close; SWT sanitizer is last line of defense.
  * Perspective switcher stays hidden. Plant home sash: left workflow tabs
  * (谱图/采集 + analysis pages) | right fixed 白酒操作 sidebar. GC console is
  * a true top-level SWT Shell (600×1024), toggled from 反控 — never a
@@ -153,6 +163,17 @@ public final class BaijiuShellChrome {
 	public static final String MAIN_MENU_ID = "org.eclipse.chemclipse.rcp.app.ui.menu.main";
 	public static final String ECLIPSE_MAIN_MENU_ID = "org.eclipse.ui.main.menu";
 	public static final String FILE_MENU_ID = "org.eclipse.chemclipse.rcp.app.ui.menu.file";
+	/**
+	 * ChemClipse File → Save. {@code partService.savePart(part, false)} on
+	 * the dirty editor — no Save As dialog. Toolbar Save stays hidden.
+	 */
+	public static final String SAVE_MENU_ID = "org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.save";
+	public static final String SAVE_COMMAND_ID = "org.eclipse.chemclipse.rcp.app.ui.command.save";
+	public static final String SAVE_AS_MENU_ID = "org.eclipse.chemclipse.ux.extension.ui.handledmenuitem.saveAs";
+	public static final String CLOSE_MENU_ID = "org.eclipse.chemclipse.ux.extension.ui.handledmenuitem.close";
+	public static final String CLOSE_ALL_MENU_ID = "org.eclipse.chemclipse.ux.extension.ui.handledmenuitem.closeall";
+	public static final String QUIT_MENU_ID = "org.eclipse.chemclipse.rcp.app.ui.menu.item.quit";
+	public static final String ECLIPSE_SAVE_COMMAND_ID = "org.eclipse.ui.file.save";
 	public static final String HELP_MENU_ID = "org.eclipse.chemclipse.rcp.app.ui.menu.help";
 	public static final String BAIJIU_MENU_ID = "net.openchrom.rcp.compilation.baijiu.ui.menu.baijiu";
 	public static final String PLANT_TOOLBAR_ID = "net.openchrom.rcp.compilation.baijiu.ui.toolbar.plant";
@@ -230,8 +251,16 @@ public final class BaijiuShellChrome {
 	 * {@code createGui} on {@link #VIEW_MENU_ID} painted another SWT
 	 * bar item because cascade widgets stay null until Show). Rebuild
 	 * workbench.xmi that persisted duplicate {@code menu.view} children.
+	 * Epoch 28: GroupHandler {@code updateMenu} after CSD/OCB populate
+	 * {@code xxd.ui.view.*} children of {@link #VIEW_MENU_ID} (概览 / 叠加 /
+	 * 扫描 / 峰 / 定性目标 / 内标 / 其他) so they paint once non-empty.
+	 * Recreated empty {@link #FILE_MENU_ID} dropped ChemClipse Save.
+	 * Rebuild workbench.xmi that persisted those visible research children.
+	 * Continuous allowlist re-apply (ADD / Show / Arm / every ACTIVATE /
+	 * editor close / TOPIC_VISIBLE / recover) is runtime — same epoch;
+	 * do not rely on another bump for the same branding leak.
 	 */
-	public static final int CHROME_EPOCH = 27;
+	public static final int CHROME_EPOCH = 28;
 	/**
 	 * Ids that must exist on the live model after plant-home reveal. Missing
 	 * any of these is the empty-left / community-button-column failure mode.
@@ -423,6 +452,14 @@ public final class BaijiuShellChrome {
 			"org.eclipse.chemclipse.ux.extension.ui.menu.scan", //
 			"org.eclipse.chemclipse.ux.extension.ui.menu.peak", //
 			"org.eclipse.chemclipse.ux.extension.ui.menu.spectrum", //
+			"org.eclipse.chemclipse.ux.extension.xxd.ui.view.overview", //
+			"org.eclipse.chemclipse.ux.extension.xxd.ui.view.overlay", //
+			"org.eclipse.chemclipse.ux.extension.xxd.ui.view.scans", //
+			"org.eclipse.chemclipse.ux.extension.xxd.ui.view.peaks", //
+			"org.eclipse.chemclipse.ux.extension.xxd.ui.view.targets", //
+			"org.eclipse.chemclipse.ux.extension.xxd.ui.view.chromatogram", //
+			"org.eclipse.chemclipse.ux.extension.xxd.ui.view.istd", //
+			"org.eclipse.chemclipse.ux.extension.xxd.ui.view.misc", //
 			PERSPECTIVE_SWITCHER_MENU_ID, //
 			"org.eclipse.ui.views.showView", //
 			"org.eclipse.ui.views.showView.other", //
@@ -463,6 +500,10 @@ public final class BaijiuShellChrome {
 			"org.eclipse.chemclipse.ux.extension.xxd.ui.partdescriptor.", //
 			"org.eclipse.chemclipse.ux.extension.xxd.ui.perspective.", //
 			"org.eclipse.chemclipse.ux.extension.xxd.ui.inputpart.", //
+			"org.eclipse.chemclipse.ux.extension.xxd.ui.view.", //
+			"org.eclipse.chemclipse.ux.extension.xxd.ui.handledmenuitem.", //
+			"org.eclipse.chemclipse.ux.extension.xxd.ui.directmenuitem.", //
+			"org.eclipse.chemclipse.ux.extension.xxd.ui.menuseparator.", //
 			"org.eclipse.ui.views.", //
 			"org.eclipse.ui.console.", //
 			"org.eclipse.ui.internal.intro", //
@@ -503,9 +544,11 @@ public final class BaijiuShellChrome {
 			ECLIPSE_MAIN_MENU_ID, //
 			ECLIPSE_MAIN_TOOLBAR_ID, //
 			"org.eclipse.chemclipse.rcp.app.ui.menu.item.about", //
-			"org.eclipse.chemclipse.rcp.app.ui.menu.item.quit", //
-			"org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.save", //
-			"org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.saveAll", //
+			QUIT_MENU_ID, //
+			SAVE_MENU_ID, //
+			SAVE_AS_MENU_ID, //
+			CLOSE_MENU_ID, //
+			CLOSE_ALL_MENU_ID, //
 			"org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.preferences", //
 			"org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.resetperspective", //
 			"org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.about", //
@@ -622,6 +665,72 @@ public final class BaijiuShellChrome {
 			"install add-ons", "安装加载项", "install addons");
 
 	/**
+	 * Painted 视图 children. ChemClipse fragment still contributes
+	 * {@code xxd.ui.view.*} cascades so GroupHandler {@code getSubMenu}
+	 * does not throw {@code NotDefinedException}; they stay unpainted.
+	 */
+	public static final Set<String> VIEW_MENU_KEEP_ELEMENT_IDS = Set.of( //
+			SELECT_VIEW_MENU_ID);
+
+	public static final List<String> VIEW_MENU_KEEP_LABELS = List.of( //
+			"选择视图", "select view");
+
+	/**
+	 * ChemClipse GroupHandler cascades that reappear after CSD/OCB once
+	 * {@code updateMenu} fills them. Match English, Chinese, and the
+	 * ISTD long form.
+	 */
+	public static final List<String> VIEW_MENU_HIDE_LABELS = List.of( //
+			"概览", "overview", //
+			"叠加", "overlay", //
+			"扫描", "scans", "scan", //
+			"峰", "peaks", "peak", //
+			"定性目标", "targets", "target", //
+			"内标", "istd", "istd (internal standards)", "internal standards", //
+			"其他", "miscellaneous", "misc", //
+			"色谱图", "chromatogram");
+
+	public static final String RESEARCH_VIEW_MENU_PREFIX = "org.eclipse.chemclipse.ux.extension.xxd.ui.view.";
+
+	/**
+	 * Painted 文件 children. Import / Export / Save All / New / Open / Print
+	 * stay off. ChemClipse {@link #SAVE_MENU_ID} is the dirty-editor Save.
+	 */
+	public static final Set<String> FILE_MENU_KEEP_ELEMENT_IDS = Set.of( //
+			SAVE_MENU_ID, //
+			SAVE_AS_MENU_ID, //
+			CLOSE_MENU_ID, //
+			CLOSE_ALL_MENU_ID, //
+			QUIT_MENU_ID, //
+			"org.eclipse.ui.file.saveAs", //
+			"org.eclipse.ui.file.close", //
+			"org.eclipse.ui.file.closeAll", //
+			"org.eclipse.ui.file.exit");
+
+	public static final List<String> FILE_MENU_KEEP_LABELS = List.of( //
+			"保存", "save", //
+			"另存为", "save as", //
+			"关闭", "close", //
+			"全部关闭", "关闭全部", "close all", //
+			"退出", "quit", "exit");
+
+	public static final List<String> FILE_MENU_HIDE_LABELS = List.of( //
+			"全部保存", "save all", //
+			"导入", "import", //
+			"导出", "export", //
+			"打印", "print", //
+			"新建", "new", //
+			"打开", "open", "open file");
+
+	public static final List<String[]> FILE_MENU_KEEP_TRANSLATIONS = List.of( //
+			new String[]{"Save", "保存"}, //
+			new String[]{"Save As", "另存为..."}, //
+			new String[]{"Close", "关闭"}, //
+			new String[]{"Close All", "全部关闭"}, //
+			new String[]{"Quit", "退出"}, //
+			new String[]{"Exit", "退出"});
+
+	/**
 	 * Redundant 白酒 entries that only open the independent GC console.
 	 * {@link #TOGGLE_GC_MENU_ID} / toolbar 反控 stay.
 	 */
@@ -633,6 +742,52 @@ public final class BaijiuShellChrome {
 			"气相色谱控制台", "气相色谱工作台", //
 			"temperature control", "temperature control panel", //
 			"gc console", "gc workbench", "gc control");
+
+	/**
+	 * Painted 白酒 children. Prefix keep covers this branding fragment and
+	 * {@code baijiu.ui} contributions; GC-console duplicates stay on
+	 * {@link #BAIJIU_MENU_HIDE_ELEMENT_IDS}. Unknown ChemClipse labels never
+	 * paint.
+	 */
+	public static final List<String> BAIJIU_MENU_KEEP_ID_PREFIXES = List.of( //
+			"net.openchrom.rcp.compilation.baijiu.ui.menu.", //
+			"net.openchrom.xxd.processor.supplier.baijiu.ui.menu.");
+
+	public static final List<String> BAIJIU_MENU_KEEP_LABELS = List.of( //
+			"打开谱图", "open chromatogram", //
+			"开始分析", "start analysis", //
+			"推荐积分", "recommended integration", //
+			"定量/白酒分析", "白酒分析", "analysis", //
+			"报告", "preview report", "report", //
+			"进样序列", "injection sequence", //
+			"显示/隐藏反控", "toggle gc console", //
+			"切换厂工作台", "switch baijiu workbench", //
+			"许可", "许可 / 版本", "license", //
+			"重置窗口布局", "reset layout", //
+			"三步向导", "3-step wizard", //
+			"简单批量", "simple batch", //
+			"批处理结果", "batch results", //
+			"平行样", "parallel injections", //
+			"白酒操作", "baijiu actions", //
+			"白酒工作台", "baijiu workbench");
+
+	/**
+	 * Painted 帮助 children. Tutorials / Updates / Install Add-ons stay off.
+	 */
+	public static final Set<String> HELP_MENU_KEEP_ELEMENT_IDS = Set.of( //
+			"org.eclipse.chemclipse.rcp.app.ui.menu.item.about", //
+			"org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.preferences", //
+			"org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.resetperspective", //
+			"org.eclipse.ui.help.aboutAction", //
+			"org.eclipse.ui.help.helpContents", //
+			"org.eclipse.ui.help.helpSearch");
+
+	public static final List<String> HELP_MENU_KEEP_LABELS = List.of( //
+			"关于", "about", //
+			"首选项", "preferences", //
+			"帮助内容", "help contents", //
+			"搜索", "search", //
+			"重置透视图", "reset perspective");
 
 	public static final List<String[]> SELECT_VIEW_CHROME_TRANSLATIONS = List.of( //
 			new String[]{"Select View", SELECT_VIEW_TITLE_ZH}, //
@@ -908,7 +1063,7 @@ public final class BaijiuShellChrome {
 		if(elementId == null || elementId.isBlank()) {
 			return false;
 		}
-		return PLANT_TOP_MENU_IDS.contains(elementId) || EDITOR_REQUIRED_MENU_IDS.contains(elementId) || SELECT_VIEW_MENU_ID.equals(elementId);
+		return PLANT_TOP_MENU_IDS.contains(elementId) || EDITOR_REQUIRED_MENU_IDS.contains(elementId) || SELECT_VIEW_MENU_ID.equals(elementId) || SAVE_MENU_ID.equals(elementId);
 	}
 
 	/**
@@ -923,7 +1078,7 @@ public final class BaijiuShellChrome {
 		if(existingChildIds == null || existingChildIds.isEmpty()) {
 			return true;
 		}
-		if(PLANT_TOP_MENU_IDS.contains(newId) || EDITOR_REQUIRED_MENU_IDS.contains(newId) || SELECT_VIEW_MENU_ID.equals(newId) || MAIN_MENU_ID.equals(newId) || ECLIPSE_MAIN_MENU_ID.equals(newId)) {
+		if(PLANT_TOP_MENU_IDS.contains(newId) || EDITOR_REQUIRED_MENU_IDS.contains(newId) || SELECT_VIEW_MENU_ID.equals(newId) || SAVE_MENU_ID.equals(newId) || MAIN_MENU_ID.equals(newId) || ECLIPSE_MAIN_MENU_ID.equals(newId)) {
 			return !existingChildIds.contains(newId);
 		}
 		return true;
@@ -958,6 +1113,113 @@ public final class BaijiuShellChrome {
 			return false;
 		}
 		return "REMOVE".equalsIgnoreCase(type) || "MOVE".equalsIgnoreCase(type);
+	}
+
+	/**
+	 * GroupHandler {@code updateMenu} ADDs children to {@link #VIEW_MENU_ID}
+	 * / {@code xxd.ui.view.*}. Full chrome reveal here is the #64 视图 spam.
+	 * Re-hide those children only — never {@code createGui} cascades. Same
+	 * sanitize-only path for 文件 / 白酒 / 帮助 / main / trim / editor stack
+	 * so research chrome cannot paint after contribution ADD.
+	 */
+	public static boolean shouldSanitizePlantMenuChildrenAfterChange(String containerId, String changeType) {
+
+		if(!isPlantMenuContributionContainer(containerId)) {
+			return false;
+		}
+		if(changeType == null || changeType.isBlank()) {
+			return false;
+		}
+		String type = changeType.trim();
+		return "ADD".equalsIgnoreCase(type) || "CREATE".equalsIgnoreCase(type) || "REMOVE".equalsIgnoreCase(type) || "MOVE".equalsIgnoreCase(type);
+	}
+
+	public static boolean isPlantMenuContributionContainer(String elementId) {
+
+		if(elementId == null || elementId.isBlank()) {
+			return false;
+		}
+		if(VIEW_MENU_ID.equals(elementId) || FILE_MENU_ID.equals(elementId) || BAIJIU_MENU_ID.equals(elementId) || HELP_MENU_ID.equals(elementId)) {
+			return true;
+		}
+		if(MAIN_MENU_ID.equals(elementId) || ECLIPSE_MAIN_MENU_ID.equals(elementId) || CHROMATOGRAM_MENU_ID.equals(elementId)) {
+			return true;
+		}
+		if(TRIMBAR_TOP_ID.equals(elementId) || ECLIPSE_MAIN_TOOLBAR_ID.equals(elementId) || PLANT_TOOLBAR_ID.equals(elementId)) {
+			return true;
+		}
+		if(CHROMATOGRAM_STACK_ID.equals(elementId)) {
+			return true;
+		}
+		return isResearchViewMenuId(elementId);
+	}
+
+	public static boolean isResearchViewMenuId(String elementId) {
+
+		return elementId != null && !elementId.isBlank() && elementId.startsWith(RESEARCH_VIEW_MENU_PREFIX);
+	}
+
+	/**
+	 * Every part activation re-applies plant allowlists. Sanitize-only —
+	 * not {@code revealPlantWindowChrome} — so this cannot append 视图.
+	 */
+	public static boolean shouldSanitizeAfterPartActivation(String elementId) {
+
+		if(researchMenusVisible()) {
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * CSD/OCB close (and REMOVE_GUI of the editor) must re-hide research
+	 * chrome that GroupHandler filled while the chromatogram was open.
+	 */
+	public static boolean shouldSanitizeAfterEditorClose(String containerId, String elementId, String changeType) {
+
+		if(researchMenusVisible()) {
+			return false;
+		}
+		if(changeType == null || changeType.isBlank()) {
+			return false;
+		}
+		String type = changeType.trim();
+		boolean remove = "REMOVE".equalsIgnoreCase(type) || "REMOVE_GUI".equalsIgnoreCase(type);
+		if(!remove) {
+			return false;
+		}
+		if(CHROMATOGRAM_STACK_ID.equals(containerId) || CHROMATOGRAM_STACK_ID.equals(elementId)) {
+			return true;
+		}
+		return CSD_EDITOR_PART_ID.equals(elementId) || CHROMATOGRAM_HOME_PART_ID.equals(elementId);
+	}
+
+	/**
+	 * {@code TOPIC_VISIBLE} / {@code toBeRendered}: if research chrome
+	 * becomes painted, re-apply allowlists. Plant cascades becoming visible
+	 * also sanitize their children (GroupHandler may have filled them).
+	 */
+	public static boolean shouldSanitizeAfterVisibilityChange(String elementId, String label, boolean visible) {
+
+		if(researchMenusVisible() || !visible) {
+			return false;
+		}
+		if(VIEW_MENU_ID.equals(elementId) || FILE_MENU_ID.equals(elementId) || BAIJIU_MENU_ID.equals(elementId) || HELP_MENU_ID.equals(elementId) || MAIN_MENU_ID.equals(elementId) || ECLIPSE_MAIN_MENU_ID.equals(elementId)) {
+			return true;
+		}
+		if(isResearchViewMenuId(elementId) || isViewMenuHideLabel(label)) {
+			return true;
+		}
+		if(CHROMATOGRAM_MENU_ID.equals(elementId) || isChromatogramTopMenuLabel(label) || shouldHideTopLevelMenuLabel(elementId, label)) {
+			return true;
+		}
+		if(isResearchTopMenuLabel(label)) {
+			return true;
+		}
+		if(elementId != null && !elementId.isBlank() && !isPlantWindowChrome(elementId) && !isEditorRequiredMenu(elementId) && shouldHide(elementId, label)) {
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -1197,6 +1459,232 @@ public final class BaijiuShellChrome {
 	}
 
 	/**
+	 * 视图 cascade: only 选择视图 paints. {@code xxd.ui.view.*} stay as
+	 * children for GroupHandler lookup.
+	 */
+	public static boolean shouldHideViewMenuChild(String elementId, String label) {
+
+		if(researchMenusVisible()) {
+			return false;
+		}
+		if(isViewMenuKeepId(elementId) || isViewMenuKeepLabel(label)) {
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * 文件 cascade: 保存 / 另存为 / 关闭 / 全部关闭 / 退出. Import, Export,
+	 * Save All, New, Open, Print stay off even if action-sets re-inject.
+	 */
+	public static boolean shouldHideFileMenuChild(String elementId, String label) {
+
+		if(researchMenusVisible()) {
+			return false;
+		}
+		if(isFileMenuKeepId(elementId) || isFileMenuKeepLabel(label)) {
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Nested walk under 文件 / 视图 / 白酒 / 帮助 vs other top menus.
+	 */
+	public static boolean shouldHidePlantMenuChild(String parentId, String elementId, String label, List<String> tags) {
+
+		if(researchMenusVisible()) {
+			return false;
+		}
+		if(VIEW_MENU_ID.equals(parentId) || isResearchViewMenuId(parentId)) {
+			return shouldHideViewMenuChild(elementId, label);
+		}
+		if(FILE_MENU_ID.equals(parentId)) {
+			return shouldHideFileMenuChild(elementId, label);
+		}
+		if(BAIJIU_MENU_ID.equals(parentId)) {
+			return shouldHideBaijiuCascadeChild(elementId, label);
+		}
+		if(HELP_MENU_ID.equals(parentId)) {
+			return shouldHideHelpMenuChild(elementId, label);
+		}
+		return shouldHideMainMenuChild(elementId, label, tags);
+	}
+
+	/**
+	 * 白酒 cascade allowlist. {@link #shouldHideBaijiuMenuChild} remains a
+	 * GC-console denylist safe to call from any SWT menu.
+	 */
+	public static boolean shouldHideBaijiuCascadeChild(String elementId, String label) {
+
+		if(researchMenusVisible()) {
+			return false;
+		}
+		if(shouldHideBaijiuMenuChild(elementId, label)) {
+			return true;
+		}
+		if(isBaijiuMenuKeepId(elementId) || isBaijiuMenuKeepLabel(label)) {
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * 帮助 cascade allowlist. Tutorials / Updates / Install Add-ons stay off.
+	 */
+	public static boolean shouldHideHelpMenuChild(String elementId, String label) {
+
+		if(researchMenusVisible()) {
+			return false;
+		}
+		if(isHelpMenuKeepId(elementId) || isHelpMenuKeepLabel(label)) {
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * {@code MMenuContribution} targeting {@link #VIEW_MENU_ID} for
+	 * {@code xxd.ui.view.*} must stay defined (GroupHandler
+	 * {@code getSubMenu}). Hide the live children instead. File / 白酒 /
+	 * 帮助 contributions follow those allowlists.
+	 */
+	public static boolean shouldHideMenuContribution(String parentId, String elementId, String label, List<String> tags) {
+
+		if(researchMenusVisible()) {
+			return false;
+		}
+		if(isPlantWindowChrome(elementId) || isEditorRequiredMenu(elementId) || isViewMenuKeepId(elementId)) {
+			return false;
+		}
+		if(VIEW_MENU_ID.equals(parentId) && isResearchViewMenuId(elementId)) {
+			return false;
+		}
+		if(FILE_MENU_ID.equals(parentId)) {
+			return shouldHideFileMenuChild(elementId, label);
+		}
+		if(BAIJIU_MENU_ID.equals(parentId)) {
+			return shouldHideBaijiuCascadeChild(elementId, label);
+		}
+		if(HELP_MENU_ID.equals(parentId)) {
+			return shouldHideHelpMenuChild(elementId, label);
+		}
+		if(shouldHideMainMenuChild(parentId, null, tags) || shouldHideMainMenuChild(elementId, label, tags)) {
+			return true;
+		}
+		return false;
+	}
+
+	static boolean isViewMenuKeepId(String elementId) {
+
+		return elementId != null && !elementId.isBlank() && VIEW_MENU_KEEP_ELEMENT_IDS.contains(elementId);
+	}
+
+	static boolean isViewMenuKeepLabel(String label) {
+
+		if(label == null || label.isBlank()) {
+			return false;
+		}
+		String normalized = normalizeMenuLabel(label);
+		for(String keep : VIEW_MENU_KEEP_LABELS) {
+			if(normalized.equals(keep)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	static boolean isViewMenuHideLabel(String label) {
+
+		if(label == null || label.isBlank()) {
+			return false;
+		}
+		String normalized = normalizeMenuLabel(label);
+		for(String hide : VIEW_MENU_HIDE_LABELS) {
+			if(normalized.equals(hide)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	static boolean isFileMenuKeepId(String elementId) {
+
+		return elementId != null && !elementId.isBlank() && FILE_MENU_KEEP_ELEMENT_IDS.contains(elementId);
+	}
+
+	static boolean isFileMenuKeepLabel(String label) {
+
+		if(label == null || label.isBlank()) {
+			return false;
+		}
+		String normalized = normalizeMenuLabel(label);
+		for(String keep : FILE_MENU_KEEP_LABELS) {
+			if(normalized.equals(keep)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	static boolean isBaijiuMenuKeepId(String elementId) {
+
+		if(elementId == null || elementId.isBlank()) {
+			return false;
+		}
+		if(TOGGLE_GC_MENU_ID.equals(elementId) || TOGGLE_GC_TOOLITEM_ID.equals(elementId) || TOGGLE_GC_COMMAND_ID.equals(elementId)) {
+			return true;
+		}
+		if(BAIJIU_MENU_HIDE_ELEMENT_IDS.contains(elementId)) {
+			return false;
+		}
+		for(String prefix : BAIJIU_MENU_KEEP_ID_PREFIXES) {
+			if(elementId.startsWith(prefix)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	static boolean isBaijiuMenuKeepLabel(String label) {
+
+		if(label == null || label.isBlank()) {
+			return false;
+		}
+		String normalized = normalizeMenuLabel(label);
+		for(String keep : BAIJIU_MENU_KEEP_LABELS) {
+			if(normalized.equals(keep)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	static boolean isHelpMenuKeepId(String elementId) {
+
+		return elementId != null && !elementId.isBlank() && HELP_MENU_KEEP_ELEMENT_IDS.contains(elementId);
+	}
+
+	static boolean isHelpMenuKeepLabel(String label) {
+
+		if(label == null || label.isBlank()) {
+			return false;
+		}
+		String normalized = normalizeMenuLabel(label);
+		for(String keep : HELP_MENU_KEEP_LABELS) {
+			if(normalized.equals(keep)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public static String translateFileMenuItem(String label) {
+
+		return translateKeepLabel(label, FILE_MENU_KEEP_TRANSLATIONS);
+	}
+
+	/**
 	 * E4 walk-hide may set {@code visible=false} even when the id is on
 	 * {@link #KEEP_ELEMENT_IDS} (temperature {@code menu.open} is KEEP so
 	 * the command stays defined). Plant chrome / editor-required menus never
@@ -1208,6 +1696,9 @@ public final class BaijiuShellChrome {
 			return false;
 		}
 		if(TOGGLE_GC_MENU_ID.equals(elementId) || TOGGLE_GC_TOOLITEM_ID.equals(elementId) || TOGGLE_GC_COMMAND_ID.equals(elementId)) {
+			return false;
+		}
+		if(isViewMenuKeepId(elementId) || isFileMenuKeepId(elementId) || isBaijiuMenuKeepId(elementId) || isHelpMenuKeepId(elementId)) {
 			return false;
 		}
 		if(shouldHideBaijiuMenuChild(elementId, label)) {
