@@ -30,6 +30,7 @@ public class BaijiuWorkbenchParts_1_Test {
 		assertEquals(null, BaijiuWorkbenchParts.findPlantChromatogramStack(null, null));
 		assertEquals(null, BaijiuWorkbenchParts.findPrimaryEditorStack(null, null));
 		assertFalse(BaijiuWorkbenchParts.addToSharedElements(null, null));
+		assertFalse(BaijiuWorkbenchParts.hostCsdPart(null, null, null, null));
 		assertFalse(BaijiuWorkbenchParts.embedCsdEditor(null, null, null, null));
 		assertFalse(BaijiuWorkbenchParts.dockOffWorkflowTabs(null, null, null, null));
 		BaijiuWorkbenchParts.hostEditor(null, null);

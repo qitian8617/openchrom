@@ -449,7 +449,7 @@ public final class BaijiuShellParts {
 				}
 			}
 		}
-		if(partService != null) {
+		if(host != null && !host.isDisposed() && partService != null) {
 			try {
 				partService.showPart(part, PartState.CREATE);
 			} catch(RuntimeException | LinkageError e) {
@@ -464,7 +464,7 @@ public final class BaijiuShellParts {
 			BaijiuHomePanels.hostEditor(host, control);
 			return true;
 		}
-		return part.getWidget() != null || part.getObject() != null;
+		return false;
 	}
 
 	static Composite homeWidget(MPart home) {

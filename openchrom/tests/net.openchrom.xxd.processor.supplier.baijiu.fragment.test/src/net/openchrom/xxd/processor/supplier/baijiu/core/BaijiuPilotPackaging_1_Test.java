@@ -392,6 +392,11 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(partsSrc.contains("embedCsdEditor"), partsSrc);
 		assertTrue(partsSrc.contains("createGui(part, host"), partsSrc);
 		assertTrue(partsSrc.contains("BaijiuHomePanels.hostEditor"), partsSrc);
+		int embedAt = partsSrc.indexOf("static boolean embedCsdEditor");
+		assertTrue(embedAt > 0, partsSrc);
+		int embedEnd = partsSrc.indexOf("\n\tstatic ", embedAt + 10);
+		String embedBody = partsSrc.substring(embedAt, embedEnd > embedAt ? embedEnd : embedAt + 2500);
+		assertFalse(embedBody.contains("return part.getWidget() != null || part.getObject() != null"), "branding embed must not succeed only because MPart.setObject was set");
 		assertTrue(partsSrc.contains("dockOffWorkflowTabs"), partsSrc);
 		assertTrue(partsSrc.contains("persistGcConsoleHidden"), partsSrc);
 		assertTrue(partsSrc.contains("Never open the OS window during chrome apply"), partsSrc);
@@ -520,6 +525,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(wbPartSrc.contains("@PostConstruct"), wbPartSrc);
 		assertTrue(wbPartSrc.contains("openChromatogram"), wbPartSrc);
 		assertTrue(wbPartSrc.contains("OpenBaijiuChromatogramHandler.resolveContext"), wbPartSrc);
+		assertTrue(wbPartSrc.contains("executeRegisteredCommand"), wbPartSrc);
+		assertTrue(wbPartSrc.contains("catch(Throwable"), wbPartSrc);
 		assertFalse(wbPartSrc.contains("new OpenBaijiuChromatogramHandler().execute(shell, context)"), "must not capture create-time null context for 打开色谱图");
 
 		Path gcOsShell = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuGcConsoleShell.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuGcConsoleShell.java");
@@ -695,13 +702,26 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(handlerSrc.contains("ChromatogramEditorCSD"), handlerSrc);
 		assertTrue(handlerSrc.contains("showPlantChromatogram"), handlerSrc);
 		assertTrue(handlerSrc.contains("BaijiuShellParts"), handlerSrc);
-		assertTrue(handlerSrc.contains("findPrimaryEditorStack"), handlerSrc);
-		assertTrue(handlerSrc.contains("addToSharedElements"), handlerSrc);
 		assertTrue(handlerSrc.contains("findPlantChromatogramStack"), handlerSrc);
-		assertTrue(handlerSrc.contains("resolveContext"), handlerSrc);
-		assertTrue(handlerSrc.contains("activeShell"), handlerSrc);
+		assertTrue(handlerSrc.contains("hostCsdPart"), handlerSrc);
+		assertTrue(handlerSrc.contains("beginFileDialog"), handlerSrc);
+		assertTrue(handlerSrc.contains("fileDialogBlockReason"), handlerSrc);
+		assertTrue(handlerSrc.contains("executeRegisteredCommand"), handlerSrc);
+		assertTrue(handlerSrc.contains("hostedSuccessfully"), handlerSrc);
+		assertTrue(handlerSrc.contains("alert("), handlerSrc);
+		assertFalse(handlerSrc.contains("CSD FileDialog skipped"), "missing shell must not be a silent return");
 		assertFalse(handlerSrc.contains("请改用主菜单"), "plant 打开色谱图 must not redirect to a File menu stub");
 		assertFalse(handlerSrc.contains("打开 CSD 文件"), "plant 打开色谱图 must open FileDialog, not a menu-stub MessageBox");
+		assertTrue(handlerSrc.contains("\\u767d\\u9152 FID \\u8272\\u8c31\\u56fe"), "Chinese FileDialog names must be Unicode escapes");
+		assertFalse(handlerSrc.contains("setFilterNames(new String[] {\"白酒"), handlerSrc);
+
+		Path parts = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/BaijiuWorkbenchParts.java", "plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/BaijiuWorkbenchParts.java");
+		assertNotNull(parts);
+		String partsHostSrc = Files.readString(parts, StandardCharsets.UTF_8);
+		assertTrue(partsHostSrc.contains("hostCsdPart"), partsHostSrc);
+		assertTrue(partsHostSrc.contains("embedCsdEditor"), partsHostSrc);
+		assertTrue(partsHostSrc.contains("hostOpenCsdEditors"), partsHostSrc);
+		assertFalse(partsHostSrc.contains("return part.getWidget() != null || part.getObject() != null"), "embed must not succeed only because MPart.setObject was set");
 
 		Path cdfPrefs = locate("openchrom/plugins/net.openchrom.csd.converter.supplier.cdf.ui/plugin.xml", "plugins/net.openchrom.csd.converter.supplier.cdf.ui/plugin.xml");
 		assertNotNull(cdfPrefs);

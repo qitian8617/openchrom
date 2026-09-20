@@ -99,19 +99,25 @@ public class BaijiuWorkbenchPart {
 	}
 
 	/**
-	 * Resolve shell and {@link IEclipseContext} at click time. Plant home
-	 * often builds this column before E4 injects the captured context, so
-	 * using the create-time values would skip FileDialog hosting and show
-	 * a dead-end dialog.
+	 * Resolve shell and {@link IEclipseContext} at click time. Prefer the
+	 * registered E4 command (same path as toolbar 打开谱图). SWT swallows
+	 * listener Throwables, so failures always surface via MessageBox.
 	 */
 	private static void openChromatogram(Composite parent, IEclipseContext captured) {
 
 		Shell liveShell = null;
-		if(parent != null && !parent.isDisposed()) {
-			liveShell = parent.getShell();
+		try {
+			if(parent != null && !parent.isDisposed()) {
+				liveShell = parent.getShell();
+			}
+			IEclipseContext live = OpenBaijiuChromatogramHandler.resolveContext(captured);
+			if(OpenBaijiuChromatogramHandler.executeRegisteredCommand(live)) {
+				return;
+			}
+			new OpenBaijiuChromatogramHandler().execute(liveShell, live);
+		} catch(Throwable t) {
+			OpenBaijiuChromatogramHandler.alert(liveShell, t.getMessage() == null || t.getMessage().isBlank() ? t.getClass().getSimpleName() : t.getMessage());
 		}
-		IEclipseContext live = OpenBaijiuChromatogramHandler.resolveContext(captured);
-		new OpenBaijiuChromatogramHandler().execute(liveShell, live);
 	}
 
 	private static void button(Composite parent, String title, org.eclipse.swt.widgets.Listener listener) {
@@ -119,6 +125,13 @@ public class BaijiuWorkbenchPart {
 		Button button = new Button(parent, SWT.PUSH);
 		button.setText(title);
 		button.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		button.addListener(SWT.Selection, listener);
+		button.addListener(SWT.Selection, event -> {
+			try {
+				listener.handleEvent(event);
+			} catch(Throwable t) {
+				Shell shell = parent != null && !parent.isDisposed() ? parent.getShell() : null;
+				OpenBaijiuChromatogramHandler.alert(shell, t.getMessage() == null || t.getMessage().isBlank() ? t.getClass().getSimpleName() : t.getMessage());
+			}
+		});
 	}
 }
