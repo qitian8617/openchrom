@@ -12,11 +12,10 @@ package net.openchrom.xxd.processor.supplier.baijiu.ui.wizards;
 import org.eclipse.chemclipse.model.core.IChromatogram;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuPlantLayout;
 
 public class BaijiuWizardProcessPage extends WizardPage {
 
@@ -35,12 +34,9 @@ public class BaijiuWizardProcessPage extends WizardPage {
 	@Override
 	public void createControl(Composite parent) {
 
-		Composite root = new Composite(parent, SWT.NONE);
-		root.setLayout(new GridLayout(1, false));
-		chromatogramLabel = new Label(root, SWT.WRAP);
-		chromatogramLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		status = new Label(root, SWT.WRAP);
-		status.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		Composite root = BaijiuPlantLayout.tabBody(parent);
+		chromatogramLabel = BaijiuPlantLayout.hint(root, "");
+		status = BaijiuPlantLayout.hint(root, "");
 		Button reload = new Button(root, SWT.PUSH);
 		reload.setText("\u8bfb\u53d6\u5f53\u524d\u8c31\u56fe");
 		reload.addListener(SWT.Selection, e -> {
@@ -53,7 +49,7 @@ public class BaijiuWizardProcessPage extends WizardPage {
 			status.setText(wizard.integrate());
 			refresh();
 		});
-		setControl(root);
+		setControl(BaijiuPlantLayout.tabControlOf(root));
 		refresh();
 	}
 

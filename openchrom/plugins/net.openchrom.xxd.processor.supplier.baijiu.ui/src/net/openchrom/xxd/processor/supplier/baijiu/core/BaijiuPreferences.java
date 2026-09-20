@@ -53,6 +53,13 @@ public final class BaijiuPreferences {
 	private static final String ABV = "sample.abv";
 	private static final String ANALYST = "sample.analyst";
 	private static final String RAW = "sample.raw";
+	private static final String REPORT_UNIT = "report.unit";
+	private static final String REPORT_TITLE = "report.title";
+	private static final String REPORT_TESTER = "report.tester";
+	private static final String REPORT_AUDITOR = "report.auditor";
+	private static final String REPORT_REMARKS = "report.remarks";
+	private static final String PARALLEL_ALLOWED_RSD = "parallel.allowed.rsd";
+	public static final double DEFAULT_ALLOWED_RSD_PERCENT = 10.0d;
 
 	private BaijiuPreferences() {
 	}
@@ -213,6 +220,44 @@ public final class BaijiuPreferences {
 		prefs.putDouble(ABV, sample.getAbvPercent());
 		prefs.put(ANALYST, sample.getAnalyst());
 		prefs.put(RAW, sample.getRawMaterial().getId());
+		flush(prefs);
+	}
+
+	public static BaijiuReportHeader loadReportHeader() {
+
+		IEclipsePreferences prefs = prefs();
+		BaijiuReportHeader header = new BaijiuReportHeader();
+		header.setUnitName(prefs.get(REPORT_UNIT, ""));
+		header.setTitle(prefs.get(REPORT_TITLE, ""));
+		header.setTester(prefs.get(REPORT_TESTER, ""));
+		header.setAuditor(prefs.get(REPORT_AUDITOR, ""));
+		header.setRemarks(prefs.get(REPORT_REMARKS, ""));
+		return header;
+	}
+
+	public static void saveReportHeader(BaijiuReportHeader header) {
+
+		if(header == null) {
+			return;
+		}
+		IEclipsePreferences prefs = prefs();
+		prefs.put(REPORT_UNIT, header.getUnitName());
+		prefs.put(REPORT_TITLE, header.getTitle());
+		prefs.put(REPORT_TESTER, header.getTester());
+		prefs.put(REPORT_AUDITOR, header.getAuditor());
+		prefs.put(REPORT_REMARKS, header.getRemarks());
+		flush(prefs);
+	}
+
+	public static double loadAllowedRsdPercent() {
+
+		return prefs().getDouble(PARALLEL_ALLOWED_RSD, DEFAULT_ALLOWED_RSD_PERCENT);
+	}
+
+	public static void saveAllowedRsdPercent(double allowedRsdPercent) {
+
+		IEclipsePreferences prefs = prefs();
+		prefs.putDouble(PARALLEL_ALLOWED_RSD, allowedRsdPercent);
 		flush(prefs);
 	}
 

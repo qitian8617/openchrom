@@ -174,12 +174,8 @@ public final class BaijiuHomePanels {
 		try {
 			disposeChildren(parent);
 			parent.setLayout(new GridLayout(1, false));
-			Label title = new Label(parent, SWT.WRAP);
-			title.setText(CHROMATOGRAM_EMPTY_TITLE);
-			title.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-			Label hint = new Label(parent, SWT.WRAP);
-			hint.setText(CHROMATOGRAM_EMPTY_HINT);
-			hint.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+			Label title = wrapLabel(parent, CHROMATOGRAM_EMPTY_TITLE, false);
+			Label hint = wrapLabel(parent, CHROMATOGRAM_EMPTY_HINT, true);
 			applyEmptyStateColors(parent, title, hint);
 			layout(parent);
 		} catch(Throwable t) {
@@ -207,10 +203,10 @@ public final class BaijiuHomePanels {
 				if(child == null || child.isDisposed() || child == editor) {
 					continue;
 				}
-				if(editor != null && isAncestor(editor, child)) {
+				if(editor != null && (isAncestor(editor, child) || isAncestor(child, editor))) {
 					continue;
 				}
-				if(!(child instanceof Label)) {
+				if(!(child instanceof Label) && !isWrapHost(child)) {
 					continue;
 				}
 				try {
@@ -443,9 +439,8 @@ public final class BaijiuHomePanels {
 		}
 		try {
 			disposeChildren(parent);
-			parent.setLayout(new FillLayout());
-			Label label = new Label(parent, SWT.WRAP);
-			label.setText(text == null || text.isBlank() ? "厂工作台面板不可用。" : text);
+			parent.setLayout(new GridLayout(1, false));
+			Label label = wrapLabel(parent, text == null || text.isBlank() ? "厂工作台面板不可用。" : text, true);
 			applyDarkReadable(parent, label);
 			parent.layout(true, true);
 		} catch(Throwable ignored) {
@@ -466,6 +461,28 @@ public final class BaijiuHomePanels {
 		}
 	}
 
+	private static Label wrapLabel(Composite parent, String text, boolean grabVertical) {
+
+		Composite host = new Composite(parent, SWT.NONE);
+		host.setLayout(new FillLayout());
+		host.setLayoutData(wrapFill(grabVertical));
+		Label label = new Label(host, SWT.WRAP);
+		label.setText(text == null ? "" : text);
+		return label;
+	}
+
+	private static boolean isWrapHost(Control control) {
+
+		return control instanceof Composite composite && composite.getLayout() instanceof FillLayout;
+	}
+
+	private static GridData wrapFill(boolean grabVertical) {
+
+		GridData data = new GridData(SWT.FILL, grabVertical ? SWT.FILL : SWT.CENTER, true, grabVertical);
+		data.widthHint = 1;
+		return data;
+	}
+
 	private static void applyDarkReadable(Composite parent, Label label) {
 
 		Display display = parent.getDisplay();
@@ -475,6 +492,10 @@ public final class BaijiuHomePanels {
 		label.setForeground(display.getSystemColor(SWT.COLOR_WHITE));
 		label.setBackground(display.getSystemColor(SWT.COLOR_DARK_GRAY));
 		parent.setBackground(display.getSystemColor(SWT.COLOR_DARK_GRAY));
+		Composite host = label.getParent();
+		if(host != null && host != parent && !host.isDisposed()) {
+			host.setBackground(display.getSystemColor(SWT.COLOR_DARK_GRAY));
+		}
 	}
 
 	private static void applyEmptyStateColors(Composite parent, Label... labels) {
@@ -491,6 +512,10 @@ public final class BaijiuHomePanels {
 			if(label != null && !label.isDisposed()) {
 				label.setForeground(display.getSystemColor(SWT.COLOR_WIDGET_FOREGROUND));
 				label.setBackground(display.getSystemColor(SWT.COLOR_WIDGET_BACKGROUND));
+				Composite host = label.getParent();
+				if(host != null && host != parent && !host.isDisposed()) {
+					host.setBackground(display.getSystemColor(SWT.COLOR_WIDGET_BACKGROUND));
+				}
 			}
 		}
 	}

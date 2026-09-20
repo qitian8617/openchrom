@@ -18,7 +18,6 @@ import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTError;
 import org.eclipse.swt.browser.Browser;
-import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
@@ -35,6 +34,7 @@ import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuMethodSettings;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuPreferences;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuReportExport;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuReportHtml;
+import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuReportHeader;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuReportSupport;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuSampleInfo;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.ChromatogramBridge;
@@ -46,11 +46,16 @@ public final class BaijiuReportShell {
 
 	public static void open(Shell parent, BaijiuSampleInfo sample, BaijiuMethodSettings settings, BaijiuAnalysisResult result) {
 
+		open(parent, sample, settings, result, BaijiuPreferences.loadReportHeader());
+	}
+
+	public static void open(Shell parent, BaijiuSampleInfo sample, BaijiuMethodSettings settings, BaijiuAnalysisResult result, BaijiuReportHeader header) {
+
 		Shell shell = new Shell(parent, SWT.SHELL_TRIM | SWT.APPLICATION_MODAL);
 		shell.setText("\u767d\u9152\u5206\u6790\u62a5\u544a");
 		shell.setLayout(new GridLayout(1, false));
 		shell.setSize(1000, 780);
-		createIn(shell, sample, settings, result);
+		createIn(shell, sample, settings, result, header);
 		shell.open();
 		Display display = parent.getDisplay();
 		while(!shell.isDisposed()) {
@@ -65,31 +70,27 @@ public final class BaijiuReportShell {
 		if(parent == null || parent.isDisposed()) {
 			return;
 		}
-		if(!(parent.getLayout() instanceof GridLayout)) {
-			parent.setLayout(new GridLayout(1, false));
-		}
+		BaijiuPlantLayout.ensureGrid(parent);
+		Composite body = BaijiuPlantLayout.scrollBody(parent);
 		Shell host = parent.getShell();
 		AtomicReference<BaijiuSampleInfo> sampleRef = new AtomicReference<>(new BaijiuSampleInfo());
 		AtomicReference<BaijiuMethodSettings> settingsRef = new AtomicReference<>(BaijiuPreferences.loadMethod());
 		AtomicReference<BaijiuAnalysisResult> resultRef = new AtomicReference<>();
 		AtomicReference<String> htmlRef = new AtomicReference<>("");
 		AtomicReference<String> generatedRef = new AtomicReference<>(BaijiuReportSupport.generatedAt());
+		BaijiuReportHeaderForm headerForm = new BaijiuReportHeaderForm(body);
 
-		Composite buttons = new Composite(parent, SWT.NONE);
-		buttons.setLayout(new GridLayout(6, false));
-		buttons.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		Composite buttons = BaijiuPlantLayout.buttonRow(body);
 
-		Label status = new Label(parent, SWT.WRAP);
-		status.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		status.setText("尚未生成。打开谱图后点「生成报告」。");
+		Label status = BaijiuPlantLayout.hint(body, "尚未生成。打开谱图后点「生成报告」。");
 
-		Browser browser = createBrowser(parent);
+		Browser browser = createBrowser(body);
 		Text fallback = null;
 		if(browser != null) {
-			browser.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+			browser.setLayoutData(BaijiuPlantLayout.tableFill(320));
 		} else {
-			fallback = new Text(parent, SWT.BORDER | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL);
-			fallback.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+			fallback = new Text(body, SWT.BORDER | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL);
+			fallback.setLayoutData(BaijiuPlantLayout.tableFill(320));
 		}
 		Browser printable = browser;
 		Text fallbackText = fallback;
@@ -115,7 +116,8 @@ public final class BaijiuReportShell {
 				return;
 			}
 			String generatedAt = BaijiuReportSupport.generatedAt();
-			String html = BaijiuReportHtml.render(sample, settings, result, generatedAt);
+			BaijiuReportHeader header = headerForm.save();
+			String html = BaijiuReportHtml.render(sample, settings, result, generatedAt, header);
 			generatedRef.set(generatedAt);
 			htmlRef.set(html);
 			status.setText("已按当前谱图生成报告。");
@@ -156,27 +158,33 @@ public final class BaijiuReportShell {
 
 	static void createIn(Composite parent, BaijiuSampleInfo sample, BaijiuMethodSettings settings, BaijiuAnalysisResult result) {
 
+		createIn(parent, sample, settings, result, BaijiuPreferences.loadReportHeader());
+	}
+
+	static void createIn(Composite parent, BaijiuSampleInfo sample, BaijiuMethodSettings settings, BaijiuAnalysisResult result, BaijiuReportHeader header) {
+
 		if(parent == null || parent.isDisposed()) {
 			return;
 		}
-		if(!(parent.getLayout() instanceof GridLayout)) {
-			parent.setLayout(new GridLayout(1, false));
-		}
+		BaijiuPlantLayout.ensureGrid(parent);
+		Composite body = BaijiuPlantLayout.scrollBody(parent);
+		BaijiuReportHeader resolved = header == null ? BaijiuPreferences.loadReportHeader() : header;
 		String generatedAt = BaijiuReportSupport.generatedAt();
-		String html = BaijiuReportHtml.render(sample, settings, result, generatedAt);
+		String html = BaijiuReportHtml.render(sample, settings, result, generatedAt, resolved);
 		Shell host = parent.getShell();
 
-		Composite buttons = new Composite(parent, SWT.NONE);
-		buttons.setLayout(new GridLayout(6, false));
-		buttons.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		BaijiuReportHeaderForm headerForm = new BaijiuReportHeaderForm(body);
+		headerForm.load(resolved);
 
-		Browser browser = createBrowser(parent);
+		Composite buttons = BaijiuPlantLayout.buttonRow(body);
+
+		Browser browser = createBrowser(body);
 		if(browser != null) {
-			browser.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+			browser.setLayoutData(BaijiuPlantLayout.tableFill(320));
 			browser.setText(html);
 		} else {
-			Text fallback = new Text(parent, SWT.BORDER | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL);
-			fallback.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+			Text fallback = new Text(body, SWT.BORDER | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL);
+			fallback.setLayoutData(BaijiuPlantLayout.tableFill(320));
 			fallback.setText(html);
 		}
 
@@ -192,7 +200,11 @@ public final class BaijiuReportShell {
 
 		Button saveHtml = new Button(buttons, SWT.PUSH);
 		saveHtml.setText("\u4fdd\u5b58 HTML");
-		saveHtml.addListener(SWT.Selection, e -> save(host, html, "*.html", "baijiu-report.html", SaveKind.HTML, sample, settings, result, generatedAt));
+		saveHtml.addListener(SWT.Selection, e -> {
+			BaijiuReportHeader current = headerForm.save();
+			String next = BaijiuReportHtml.render(sample, settings, result, generatedAt, current);
+			save(host, next, "*.html", "baijiu-report.html", SaveKind.HTML, sample, settings, result, generatedAt);
+		});
 
 		Button saveCsv = new Button(buttons, SWT.PUSH);
 		saveCsv.setText("\u5bfc\u51fa CSV");

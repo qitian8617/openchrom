@@ -21,6 +21,11 @@ public final class BaijiuReportHtml {
 
 	public static String render(BaijiuSampleInfo sample, BaijiuMethodSettings settings, BaijiuAnalysisResult result, String generatedAt) {
 
+		return render(sample, settings, result, generatedAt, null);
+	}
+
+	public static String render(BaijiuSampleInfo sample, BaijiuMethodSettings settings, BaijiuAnalysisResult result, String generatedAt, BaijiuReportHeader header) {
+
 		if(sample == null) {
 			sample = new BaijiuSampleInfo();
 		}
@@ -28,11 +33,12 @@ public final class BaijiuReportHtml {
 			settings = BaijiuMethodSettings.defaultNongxiangFid();
 		}
 		String generated = generatedAt == null || generatedAt.isBlank() ? BaijiuReportSupport.generatedAt() : generatedAt;
-		String analyst = BaijiuReportSupport.analyst(sample, result);
+		String analyst = overlay(BaijiuReportSupport.analyst(sample, result), header == null ? "" : header.getTester());
 		String analysisDate = BaijiuReportSupport.analysisDate(sample, result);
+		String reportTitle = header == null || header.getTitle().isEmpty() ? BaijiuReportSupport.TITLE : header.getTitle();
 		StringBuilder html = new StringBuilder();
 		html.append("<!DOCTYPE html><html lang=\"zh-CN\"><head><meta charset=\"UTF-8\"/>");
-		html.append("<title>").append(escape(BaijiuReportSupport.TITLE)).append("</title>");
+		html.append("<title>").append(escape(reportTitle)).append("</title>");
 		html.append("<style>");
 		html.append("body{font-family:'Microsoft YaHei','SimSun',sans-serif;font-size:13px;color:#222;margin:24px;}");
 		html.append("h1{font-size:20px;margin:0 0 8px 0;}");
@@ -50,8 +56,16 @@ public final class BaijiuReportHtml {
 		html.append("@media print{button,.no-print{display:none;}body{margin:12px;}.verdict-box{page-break-inside:avoid;}@page{margin:12mm;}}");
 		html.append("</style></head><body>");
 		html.append("<p class=\"note no-print\">").append(escape(BaijiuReportSupport.PRINT_HINT)).append("</p>");
-		html.append("<h1>").append(escape(BaijiuReportSupport.TITLE)).append("</h1>");
+		html.append("<h1>").append(escape(reportTitle)).append("</h1>");
 		html.append("<div class=\"note\">").append(escape(BaijiuReportSupport.METHOD_SCOPE)).append("</div>");
+		if(header != null && !header.isBlank()) {
+			html.append("<table class=\"meta\">");
+			html.append(metaRow(BaijiuReportHeader.UNIT_LABEL, BaijiuReportSupport.display(header.getUnitName()), BaijiuReportHeader.TITLE_LABEL, BaijiuReportSupport.display(header.getTitle()), BaijiuReportHeader.TESTER_LABEL, BaijiuReportSupport.display(header.getTester()), BaijiuReportHeader.AUDITOR_LABEL, BaijiuReportSupport.display(header.getAuditor())));
+			if(!header.getRemarks().isEmpty()) {
+				html.append(metaRow(BaijiuReportHeader.REMARKS_LABEL, header.getRemarks(), "", "", "", "", "", ""));
+			}
+			html.append("</table>");
+		}
 
 		html.append("<h2>").append(escape(BaijiuReportSupport.SECTION_SAMPLE)).append("</h2>");
 		html.append("<table class=\"meta\">");
@@ -123,7 +137,8 @@ public final class BaijiuReportHtml {
 
 		html.append("<h2>").append(escape(BaijiuReportSupport.SECTION_OPERATOR)).append("</h2>");
 		html.append("<table class=\"meta\">");
-		html.append(metaRow(BaijiuReportSupport.ANALYST, analyst, BaijiuReportSupport.ANALYSIS_DATE, analysisDate, BaijiuReportSupport.GENERATED_AT, generated, "", ""));
+		String auditor = header == null ? "" : header.getAuditor();
+		html.append(metaRow(BaijiuReportSupport.ANALYST, analyst, BaijiuReportSupport.ANALYSIS_DATE, analysisDate, BaijiuReportSupport.GENERATED_AT, generated, auditor.isEmpty() ? "" : BaijiuReportHeader.AUDITOR_LABEL, auditor.isEmpty() ? "" : BaijiuReportSupport.display(auditor)));
 		html.append("</table>");
 		html.append("<p class=\"note\">").append(escape(BaijiuReportSupport.OPERATOR_NOTE)).append("</p>");
 
@@ -168,6 +183,14 @@ public final class BaijiuReportHtml {
 	private static String td(String text, boolean center) {
 
 		return "<td" + (center ? " style=\"text-align:center;\"" : "") + ">" + escape(text == null ? "" : text) + "</td>";
+	}
+
+	private static String overlay(String fallback, String preferred) {
+
+		if(preferred != null && !preferred.isBlank()) {
+			return preferred.trim();
+		}
+		return fallback;
 	}
 
 	private static String escape(String text) {

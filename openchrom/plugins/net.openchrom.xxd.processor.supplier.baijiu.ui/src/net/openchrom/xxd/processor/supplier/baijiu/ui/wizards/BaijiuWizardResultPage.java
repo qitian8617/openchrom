@@ -11,11 +11,10 @@ package net.openchrom.xxd.processor.supplier.baijiu.ui.wizards;
 
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuPlantLayout;
 
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuAnalysisResult;
 import net.openchrom.xxd.processor.supplier.baijiu.core.Gb2757Result;
@@ -37,19 +36,16 @@ public class BaijiuWizardResultPage extends WizardPage {
 	@Override
 	public void createControl(Composite parent) {
 
-		Composite root = new Composite(parent, SWT.NONE);
-		root.setLayout(new GridLayout(1, false));
-		status = new Label(root, SWT.WRAP);
-		status.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		gb = new Label(root, SWT.WRAP);
-		gb.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		Composite root = BaijiuPlantLayout.tabBody(parent);
+		status = BaijiuPlantLayout.hint(root, "");
+		gb = BaijiuPlantLayout.hint(root, "");
 		Button quantify = new Button(root, SWT.PUSH);
 		quantify.setText("\u5b9a\u91cf\u5e76\u5199\u56de\u5cf0\u8868");
 		quantify.addListener(SWT.Selection, e -> refresh(true));
 		Button report = new Button(root, SWT.PUSH);
 		report.setText("\u9884\u89c8\u62a5\u544a");
 		report.addListener(SWT.Selection, e -> wizard.previewReport(getShell()));
-		setControl(root);
+		setControl(BaijiuPlantLayout.tabControlOf(root));
 	}
 
 	@Override

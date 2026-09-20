@@ -10,17 +10,14 @@
 package net.openchrom.xxd.processor.supplier.baijiu.ui.wizards;
 
 import org.eclipse.jface.wizard.WizardPage;
-import org.eclipse.swt.SWT;
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuCalibrationGate;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuLicenseGate;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuMethodSettings;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuSampleInfo;
+import net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuPlantLayout;
 
 public class BaijiuWizardMethodPage extends WizardPage {
 
@@ -42,8 +39,7 @@ public class BaijiuWizardMethodPage extends WizardPage {
 	@Override
 	public void createControl(Composite parent) {
 
-		Composite root = new Composite(parent, SWT.NONE);
-		root.setLayout(new GridLayout(2, false));
+		Composite root = BaijiuPlantLayout.tabBody(parent);
 		BaijiuMethodSettings settings = wizard.getSettings();
 		BaijiuSampleInfo sample = wizard.getSample();
 		label(root, "\u65b9\u6cd5\uff1a" + settings.getMethodName() + "    \u67f1\uff1a" + settings.getColumnSummary());
@@ -52,12 +48,21 @@ public class BaijiuWizardMethodPage extends WizardPage {
 		label(root, license == null ? BaijiuLicenseGate.statusLine() : license);
 		String gate = BaijiuCalibrationGate.blockingMessage(settings);
 		label(root, gate == null ? BaijiuCalibrationGate.OPERATOR_HINT : gate);
-		sampleNo = field(root, "\u6837\u54c1\u7f16\u53f7", sample.getSampleNo());
-		liquorName = field(root, "\u9152\u540d", sample.getLiquorName());
-		batchNo = field(root, "\u6279\u53f7", sample.getBatchNo());
-		abv = field(root, "\u9152\u7cbe\u5ea6 %vol", sample.getAbvPercent() > 0.0d ? Double.toString(sample.getAbvPercent()) : "52");
-		analyst = field(root, "\u68c0\u6d4b\u4eba", sample.getAnalyst());
-		setControl(root);
+		Composite ids = BaijiuPlantLayout.row(root, 2);
+		sampleNo = BaijiuPlantLayout.labeledText(ids, "\u6837\u54c1\u7f16\u53f7", BaijiuPlantLayout.SAMPLE_ID);
+		sampleNo.setText(value(sample.getSampleNo()));
+		Composite names = BaijiuPlantLayout.row(root, 2);
+		liquorName = BaijiuPlantLayout.labeledText(names, "\u9152\u540d", BaijiuPlantLayout.SAMPLE_NAME);
+		liquorName.setText(value(sample.getLiquorName()));
+		Composite meta = BaijiuPlantLayout.row(root, 2);
+		batchNo = BaijiuPlantLayout.labeledText(meta, "\u6279\u53f7", BaijiuPlantLayout.SAMPLE_ID);
+		batchNo.setText(value(sample.getBatchNo()));
+		Composite people = BaijiuPlantLayout.row(root, 4);
+		abv = BaijiuPlantLayout.labeledText(people, "\u9152\u7cbe\u5ea6 %vol", BaijiuPlantLayout.ABV);
+		abv.setText(sample.getAbvPercent() > 0.0d ? Double.toString(sample.getAbvPercent()) : "52");
+		analyst = BaijiuPlantLayout.labeledText(people, "\u68c0\u6d4b\u4eba", BaijiuPlantLayout.PERSON);
+		analyst.setText(value(sample.getAnalyst()));
+		setControl(BaijiuPlantLayout.tabControlOf(root));
 	}
 
 	@Override
@@ -88,18 +93,11 @@ public class BaijiuWizardMethodPage extends WizardPage {
 
 	private static void label(Composite parent, String text) {
 
-		Label label = new Label(parent, SWT.WRAP);
-		label.setText(text);
-		label.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
+		BaijiuPlantLayout.hint(parent, text);
 	}
 
-	private static Text field(Composite parent, String title, String value) {
+	private static String value(String text) {
 
-		Label label = new Label(parent, SWT.NONE);
-		label.setText(title);
-		Text text = new Text(parent, SWT.BORDER);
-		text.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		text.setText(value == null ? "" : value);
-		return text;
+		return text == null ? "" : text;
 	}
 }

@@ -18,7 +18,6 @@ import org.eclipse.chemclipse.model.core.IPeak;
 import org.eclipse.chemclipse.model.selection.IChromatogramSelection;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -34,7 +33,6 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
 import org.eclipse.swt.widgets.Table;
-import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 
@@ -56,6 +54,7 @@ import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuQuantRow;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuRawMaterial;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuRecommendedIntegration;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuReportExport;
+import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuReportHeader;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuSampleInfo;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuTerms;
 import net.openchrom.xxd.processor.supplier.baijiu.core.Gb2757Result;
@@ -128,6 +127,7 @@ public final class BaijiuAnalysisShell {
 	private Table pointTable;
 	private Table fitTable;
 	private TabFolder tabs;
+	private BaijiuReportHeaderForm reportHeader;
 
 	private BaijiuAnalysisShell(IChromatogramSelection chromatogramSelection, EPartService partService) {
 
@@ -170,12 +170,7 @@ public final class BaijiuAnalysisShell {
 
 	private void createControls(Composite parent, boolean dialogChrome) {
 
-		Composite root = parent;
-		if(!(parent.getLayout() instanceof GridLayout)) {
-			parent.setLayout(new org.eclipse.swt.layout.FillLayout());
-			root = new Composite(parent, SWT.NONE);
-			root.setLayout(new GridLayout(1, false));
-		}
+		Composite root = BaijiuPlantLayout.pageBody(parent);
 		createWorkflowHeader(root);
 		tabs = new TabFolder(root, SWT.NONE);
 		tabs.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
@@ -199,13 +194,13 @@ public final class BaijiuAnalysisShell {
 		TabItem reportTab = new TabItem(tabs, SWT.NONE);
 		reportTab.setText("\u62a5\u544a");
 		reportTab.setControl(createReportTab(tabs));
+		BaijiuPlantLayout.constrainToClient(tabs);
 
-		Composite bottom = new Composite(root, SWT.NONE);
-		bottom.setLayout(new GridLayout(2, false));
+		Composite bottom = BaijiuPlantLayout.row(root, 1);
 		bottom.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		status = new Label(bottom, SWT.WRAP);
-		status.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		Button close = new Button(bottom, SWT.PUSH);
+		status = BaijiuPlantLayout.hint(bottom, "");
+		Composite closeRow = BaijiuPlantLayout.buttonRow(bottom);
+		Button close = new Button(closeRow, SWT.PUSH);
 		close.setText(dialogChrome ? "\u5173\u95ed" : "\u4fdd\u5b58\u65b9\u6cd5");
 		Composite saveRoot = root;
 		close.addListener(SWT.Selection, e -> {
@@ -230,9 +225,7 @@ public final class BaijiuAnalysisShell {
 
 	private void createWorkflowHeader(Composite parent) {
 
-		Composite row = new Composite(parent, SWT.NONE);
-		row.setLayout(new GridLayout(8, false));
-		row.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		Composite row = BaijiuPlantLayout.buttonRow(parent);
 		Label title = new Label(row, SWT.NONE);
 		title.setText("\u767d\u9152\u5206\u6790");
 		stepButton(row, "\u6837\u54c1", 0);
@@ -263,91 +256,78 @@ public final class BaijiuAnalysisShell {
 
 	private Composite createReportTab(Composite parent) {
 
-		Composite root = new Composite(parent, SWT.NONE);
-		root.setLayout(new GridLayout(1, false));
-		Label hint = new Label(root, SWT.WRAP);
-		hint.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		hint.setText("\u6837\u54c1 \u2192 \u6821\u6b63 \u2192 \u5b9a\u91cf \u5b8c\u6210\u540e\u9884\u89c8\u62a5\u544a\u3002\u8bb8\u53ef\u95e8\u4e0e\u5b9a\u91cf\u5f15\u64ce\u4e0d\u53d8\uff1b\u672c\u9875\u53ea\u6253\u5f00\u5df2\u6709\u62a5\u544a\u7a97\u3002");
-		Composite buttons = new Composite(root, SWT.NONE);
-		buttons.setLayout(new GridLayout(3, false));
+		Composite root = BaijiuPlantLayout.tabBody(parent);
+		BaijiuPlantLayout.hint(root, "\u6837\u54c1 \u2192 \u6821\u6b63 \u2192 \u5b9a\u91cf \u5b8c\u6210\u540e\u9884\u89c8\u62a5\u544a\u3002\u8bb8\u53ef\u95e8\u4e0e\u5b9a\u91cf\u5f15\u64ce\u4e0d\u53d8\uff1b\u672c\u9875\u53ea\u6253\u5f00\u5df2\u6709\u62a5\u544a\u7a97\u3002");
+		reportHeader = new BaijiuReportHeaderForm(root);
+		Composite buttons = BaijiuPlantLayout.buttonRow(root);
 		button(buttons, "\u9884\u89c8/\u6253\u5370\u62a5\u544a", e -> report(parent.getShell()));
 		button(buttons, "\u5bfc\u51fa\u7ed3\u679c CSV", e -> exportCsv(parent.getShell()));
 		button(buttons, "\u8bb8\u53ef / \u7248\u672c\u2026", e -> {
 			BaijiuLicenseShell.open(parent.getShell());
 			setStatus(BaijiuLicenseGate.statusLine());
 		});
-		return root;
+		return BaijiuPlantLayout.tabControlOf(root);
 	}
 
 	private Composite createSampleTab(Composite parent) {
 
-		ScrolledComposite scroll = new ScrolledComposite(parent, SWT.V_SCROLL);
-		scroll.setExpandHorizontal(true);
-		scroll.setExpandVertical(true);
-		Composite root = new Composite(scroll, SWT.NONE);
-		root.setLayout(new GridLayout(1, false));
-		scroll.setContent(root);
+		Composite root = BaijiuPlantLayout.tabBody(parent);
 
-		chromatogramLabel = new Label(root, SWT.WRAP);
-		chromatogramLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		Label glossary = new Label(root, SWT.WRAP);
-		glossary.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		glossary.setText(BaijiuTerms.GLOSSARY + " \u719f\u7ec3\u64cd\u4f5c\u5458\u53ef\u76f4\u63a5\u7528\u672c\u7a97\uff1b\u65b0\u64cd\u4f5c\u5458\u53ef\u8d70\u300c\u4e09\u6b65\u5411\u5bfc\u300d\u3002");
+		chromatogramLabel = BaijiuPlantLayout.hint(root, "");
+		BaijiuPlantLayout.hint(root, BaijiuTerms.GLOSSARY + " \u719f\u7ec3\u64cd\u4f5c\u5458\u53ef\u76f4\u63a5\u7528\u672c\u7a97\uff1b\u65b0\u64cd\u4f5c\u5458\u53ef\u8d70\u300c\u4e09\u6b65\u5411\u5bfc\u300d\u3002");
 
-		Group methodGroup = group(root, "\u6d53\u9999 FID \u65b9\u6cd5\u6458\u8981");
-		methodGroup.setLayout(new GridLayout(6, false));
-		methodName = labeledText(methodGroup, "\u65b9\u6cd5\u540d\u79f0");
-		columnSummary = labeledText(methodGroup, "\u8272\u8c31\u67f1");
-		((GridData)columnSummary.getLayoutData()).horizontalSpan = 3;
-		ovenProgram = labeledText(methodGroup, "\u7a0b\u5e8f\u5347\u6e29");
-		((GridData)ovenProgram.getLayoutData()).horizontalSpan = 5;
-		samplingHz = labeledText(methodGroup, "\u91c7\u6837 Hz");
-		runTimeMin = labeledText(methodGroup, "\u8dd1\u6837 min");
-		istdName = labeledText(methodGroup, "\u5185\u6807\u540d\u79f0");
-		aromaTemplate = labeledCombo(methodGroup, "\u9999\u578b\u6a21\u677f", labels(BaijiuAromaType.values()));
-		windowMin = labeledText(methodGroup, "RT \u7a97\u53e3 min");
+		Group methodGroup = BaijiuPlantLayout.group(root, "\u6d53\u9999 FID \u65b9\u6cd5\u6458\u8981", 1);
+		methodName = BaijiuPlantLayout.labeledText(methodGroup, "\u65b9\u6cd5\u540d\u79f0", BaijiuPlantLayout.METHOD);
+		columnSummary = BaijiuPlantLayout.labeledText(methodGroup, "\u8272\u8c31\u67f1", BaijiuPlantLayout.METHOD);
+		ovenProgram = BaijiuPlantLayout.labeledWrap(methodGroup, "\u7a0b\u5e8f\u5347\u6e29", 1, 40);
+		Composite methodShorts = BaijiuPlantLayout.row(methodGroup, 6);
+		samplingHz = BaijiuPlantLayout.labeledText(methodShorts, "\u91c7\u6837 Hz", BaijiuPlantLayout.NUMERIC);
+		runTimeMin = BaijiuPlantLayout.labeledText(methodShorts, "\u8dd1\u6837 min", BaijiuPlantLayout.NUMERIC);
+		windowMin = BaijiuPlantLayout.labeledText(methodShorts, "RT \u7a97\u53e3 min", BaijiuPlantLayout.NUMERIC);
+		Composite methodMeta = BaijiuPlantLayout.row(methodGroup, 4);
+		istdName = BaijiuPlantLayout.labeledText(methodMeta, "\u5185\u6807\u540d\u79f0", BaijiuPlantLayout.ISTD_NAME);
+		aromaTemplate = BaijiuPlantLayout.labeledCombo(methodMeta, "\u9999\u578b\u6a21\u677f", labels(BaijiuAromaType.values()), BaijiuPlantLayout.AROMA);
 
-		Group gasGroup = group(root, "\u6c14\u8def\uff08\u4ec5\u8bb0\u5f55\uff0c\u4e0d\u63a7\u5236\u4eea\u5668\uff09");
-		gasGroup.setLayout(new GridLayout(8, false));
-		carrierGas = labeledText(gasGroup, "\u8f7d\u6c14");
-		splitRatio = labeledText(gasGroup, "\u5206\u6d41");
-		injectorTemp = labeledText(gasGroup, "\u8fdb\u6837\u53e3 \u2103");
-		detectorTemp = labeledText(gasGroup, "\u68c0\u6d4b\u5668 \u2103");
+		Group gasGroup = BaijiuPlantLayout.group(root, "\u6c14\u8def\uff08\u4ec5\u8bb0\u5f55\uff0c\u4e0d\u63a7\u5236\u4eea\u5668\uff09", 1);
+		Composite gasRow = BaijiuPlantLayout.row(gasGroup, 4);
+		carrierGas = BaijiuPlantLayout.labeledText(gasRow, "\u8f7d\u6c14", BaijiuPlantLayout.GAS);
+		splitRatio = BaijiuPlantLayout.labeledText(gasRow, "\u5206\u6d41", BaijiuPlantLayout.GAS);
+		Composite gasTemps = BaijiuPlantLayout.row(gasGroup, 4);
+		injectorTemp = BaijiuPlantLayout.labeledText(gasTemps, "\u8fdb\u6837\u53e3 \u2103", BaijiuPlantLayout.NUMERIC);
+		detectorTemp = BaijiuPlantLayout.labeledText(gasTemps, "\u68c0\u6d4b\u5668 \u2103", BaijiuPlantLayout.NUMERIC);
 		carrierGas.setEditable(false);
 		splitRatio.setEditable(false);
 		injectorTemp.setEditable(false);
 		detectorTemp.setEditable(false);
-		Label gasHint = new Label(gasGroup, SWT.WRAP);
-		gasHint.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 8, 1));
-		gasHint.setText(BaijiuCatalog.GAS_PATH_NOTE);
+		BaijiuPlantLayout.hint(gasGroup, BaijiuCatalog.GAS_PATH_NOTE);
 
-		Group sampleGroup = group(root, "\u6837\u54c1\u4fe1\u606f");
-		sampleGroup.setLayout(new GridLayout(6, false));
-		sampleNo = labeledText(sampleGroup, "\u6837\u54c1\u7f16\u53f7");
-		liquorName = labeledText(sampleGroup, "\u9152\u540d");
-		batchNo = labeledText(sampleGroup, "\u6279\u53f7");
-		aroma = labeledCombo(sampleGroup, "\u9999\u578b", labels(BaijiuAromaType.values()));
-		abv = labeledText(sampleGroup, "\u9152\u7cbe\u5ea6 %vol");
-		analyst = labeledText(sampleGroup, "\u68c0\u6d4b\u4eba");
-		dateText = labeledText(sampleGroup, "\u68c0\u6d4b\u65e5\u671f");
-		rawMaterial = labeledCombo(sampleGroup, "\u7532\u9187\u9650\u91cf\u539f\u6599", new String[] {BaijiuRawMaterial.GRAIN.getLabel(), BaijiuRawMaterial.OTHER.getLabel()});
-		Label rawHint = new Label(sampleGroup, SWT.WRAP);
-		rawHint.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 4, 1));
-		rawHint.setText("\u539f\u6599\u7c7b\u578b\u4ec5\u7528\u4e8e GB 2757 \u7532\u9187\u9650\u91cf\uff0c\u4e0e\u9999\u578b\u65e0\u5173\u3002\u9152\u7cbe\u5ea6\u4e3a\u624b\u5de5\u5f55\u5165\u3002");
+		Group sampleGroup = BaijiuPlantLayout.group(root, "\u6837\u54c1\u4fe1\u606f", 1);
+		Composite idRow = BaijiuPlantLayout.row(sampleGroup, 4);
+		sampleNo = BaijiuPlantLayout.labeledText(idRow, "\u6837\u54c1\u7f16\u53f7", BaijiuPlantLayout.SAMPLE_ID);
+		liquorName = BaijiuPlantLayout.labeledText(idRow, "\u9152\u540d", BaijiuPlantLayout.SAMPLE_NAME);
+		Composite batchRow = BaijiuPlantLayout.row(sampleGroup, 4);
+		batchNo = BaijiuPlantLayout.labeledText(batchRow, "\u6279\u53f7", BaijiuPlantLayout.SAMPLE_ID);
+		aroma = BaijiuPlantLayout.labeledCombo(batchRow, "\u9999\u578b", labels(BaijiuAromaType.values()), BaijiuPlantLayout.AROMA);
+		Composite abvRow = BaijiuPlantLayout.row(sampleGroup, 6);
+		abv = BaijiuPlantLayout.labeledText(abvRow, "\u9152\u7cbe\u5ea6 %vol", BaijiuPlantLayout.ABV);
+		analyst = BaijiuPlantLayout.labeledText(abvRow, "\u68c0\u6d4b\u4eba", BaijiuPlantLayout.PERSON);
+		dateText = BaijiuPlantLayout.labeledText(abvRow, "\u68c0\u6d4b\u65e5\u671f", BaijiuPlantLayout.DATE);
+		Composite rawRow = BaijiuPlantLayout.row(sampleGroup, 2);
+		rawMaterial = BaijiuPlantLayout.labeledCombo(rawRow, "\u7532\u9187\u9650\u91cf\u539f\u6599", new String[] {BaijiuRawMaterial.GRAIN.getLabel(), BaijiuRawMaterial.OTHER.getLabel()}, BaijiuPlantLayout.SAMPLE_ID);
+		BaijiuPlantLayout.hint(sampleGroup, "\u539f\u6599\u7c7b\u578b\u4ec5\u7528\u4e8e GB 2757 \u7532\u9187\u9650\u91cf\uff0c\u4e0e\u9999\u578b\u65e0\u5173\u3002\u9152\u7cbe\u5ea6\u4e3a\u624b\u5de5\u5f55\u5165\u3002");
 
-		Group istdGroup = group(root, "\u5185\u6807\u6cd5\uff08\u4e0e\u6f14\u793a\u6df7\u6807\u7ea6\u5b9a\u4e00\u81f4\uff09");
-		istdGroup.setLayout(new GridLayout(6, false));
-		istdStock = labeledText(istdGroup, "\u5185\u6807\u8d2e\u5907\u6db2 g/L");
-		sampleMl = labeledText(istdGroup, "\u6837\u54c1\u4f53\u79ef mL");
-		istdMl = labeledText(istdGroup, "\u5185\u6807\u4f53\u79ef mL");
-		injectedIstd = new Label(istdGroup, SWT.NONE);
-		injectedIstd.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 6, 1));
+		Group istdGroup = BaijiuPlantLayout.group(root, "\u5185\u6807\u6cd5\uff08\u4e0e\u6f14\u793a\u6df7\u6807\u7ea6\u5b9a\u4e00\u81f4\uff09", 1);
+		Composite istdRow = BaijiuPlantLayout.row(istdGroup, 4);
+		istdStock = BaijiuPlantLayout.labeledText(istdRow, "\u5185\u6807\u8d2e\u5907\u6db2 g/L", BaijiuPlantLayout.NUMERIC);
+		sampleMl = BaijiuPlantLayout.labeledText(istdRow, "\u6837\u54c1\u4f53\u79ef mL", BaijiuPlantLayout.ABV);
+		Composite istdVol = BaijiuPlantLayout.row(istdGroup, 2);
+		istdMl = BaijiuPlantLayout.labeledText(istdVol, "\u5185\u6807\u4f53\u79ef mL", BaijiuPlantLayout.ABV);
+		injectedIstd = BaijiuPlantLayout.hint(istdGroup, "");
 		istdStock.addModifyListener(e -> updateInjectedLabel());
 		sampleMl.addModifyListener(e -> updateInjectedLabel());
 		istdMl.addModifyListener(e -> updateInjectedLabel());
 
-		Composite buttons = new Composite(root, SWT.NONE);
-		buttons.setLayout(new GridLayout(5, false));
+		Composite buttons = BaijiuPlantLayout.buttonRow(root);
 		button(buttons, "\u8bfb\u53d6\u5f53\u524d\u8c31\u56fe", e -> reloadChromatogram());
 		button(buttons, "\u63a8\u8350\u79ef\u5206", e -> recommendedIntegrate(parent.getShell()));
 		button(buttons, "\u7528\u5f53\u524d\u8c31\u56fe\u505a\u6821\u6b63", e -> calibrate(parent.getShell()));
@@ -361,181 +341,117 @@ public final class BaijiuAnalysisShell {
 			BaijiuLicenseShell.open(parent.getShell());
 			setStatus(BaijiuLicenseGate.statusLine());
 		});
-		Label calibrationHint = new Label(root, SWT.WRAP);
-		calibrationHint.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		calibrationHint.setText(BaijiuLicenseGate.OPERATOR_HINT + " " + BaijiuCalibrationGate.OPERATOR_HINT + " \u5355\u70b9\u4ecd\u7528\u300c\u7528\u5f53\u524d\u8c31\u56fe\u505a\u6821\u6b63\u300d\uff1b\u7532\u9187+\u4e3b\u916f\u4e5f\u53ef\u5728\u300c\u591a\u70b9\u6821\u6b63\u300d\u9875\u8bb0 \u2265 3 \u70b9\u5e76\u62df\u5408 R\u00b2\u3002");
+		BaijiuPlantLayout.hint(root, BaijiuLicenseGate.OPERATOR_HINT + " " + BaijiuCalibrationGate.OPERATOR_HINT + " \u5355\u70b9\u4ecd\u7528\u300c\u7528\u5f53\u524d\u8c31\u56fe\u505a\u6821\u6b63\u300d\uff1b\u7532\u9187+\u4e3b\u916f\u4e5f\u53ef\u5728\u300c\u591a\u70b9\u6821\u6b63\u300d\u9875\u8bb0 \u2265 3 \u70b9\u5e76\u62df\u5408 R\u00b2\u3002");
 
-		Group gbGroup = group(root, "GB 2757 \u7532\u9187\u5224\u5b9a");
-		gbGroup.setLayout(new GridLayout(1, false));
-		gbVerdict = new Label(gbGroup, SWT.WRAP);
-		gbVerdict.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		gbMeasured = new Label(gbGroup, SWT.WRAP);
-		gbMeasured.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		gbConversion = new Label(gbGroup, SWT.WRAP);
-		gbConversion.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		gbLimit = new Label(gbGroup, SWT.WRAP);
-		gbLimit.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		gbSource = new Label(gbGroup, SWT.WRAP);
-		gbSource.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		Group gbGroup = BaijiuPlantLayout.group(root, "GB 2757 \u7532\u9187\u5224\u5b9a", 1);
+		gbVerdict = BaijiuPlantLayout.hint(gbGroup, "");
+		gbMeasured = BaijiuPlantLayout.hint(gbGroup, "");
+		gbConversion = BaijiuPlantLayout.hint(gbGroup, "");
+		gbLimit = BaijiuPlantLayout.hint(gbGroup, "");
+		gbSource = BaijiuPlantLayout.hint(gbGroup, "");
 		clearGbPanel();
 
-		resultTable = new Table(root, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL);
-		GridData tableData = new GridData(SWT.FILL, SWT.FILL, true, true);
-		tableData.heightHint = 260;
-		resultTable.setLayoutData(tableData);
-		resultTable.setHeaderVisible(true);
-		resultTable.setLinesVisible(true);
+		resultTable = BaijiuPlantLayout.table(root, 220);
 		String[] columns = {"\u7ec4\u5206", "\u671f\u671bRT", "\u5339\u914dRT", "\u5cf0\u9762\u79ef", "\u54cd\u5e94\u56e0\u5b50", "\u542b\u91cf g/L", "\u5185\u6807", "\u8d85\u9650", "\u5907\u6ce8"};
 		int[] widths = {100, 70, 70, 80, 70, 80, 50, 70, 140};
 		for(int i = 0; i < columns.length; i++) {
-			TableColumn column = new TableColumn(resultTable, SWT.NONE);
-			column.setText(columns[i]);
-			column.setWidth(widths[i]);
+			BaijiuPlantLayout.column(resultTable, columns[i], widths[i]);
 		}
-
-		scroll.setMinSize(root.computeSize(SWT.DEFAULT, SWT.DEFAULT));
-		return scroll;
+		return BaijiuPlantLayout.tabControlOf(root);
 	}
 
 	private Composite createMethodTab(Composite parent) {
 
-		Composite root = new Composite(parent, SWT.NONE);
-		root.setLayout(new GridLayout(1, false));
-		Label hint = new Label(root, SWT.WRAP);
-		hint.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		hint.setText("\u5b9a\u7a3f\u6d53\u9999 FID \u65b9\u6cd5\u5305\uff1aXP-\u767d\u9152 C2 + \u4e59\u9178\u6b63\u4e01\u916f + 15 \u6df7\u6807\u3002\u53ef\u7f16\u8f91\u672c\u673a RT\u3001\u7a97\u53e3\u3001\u662f\u5426\u5b9a\u91cf\u3001\u662f\u5426\u7532\u9187\u5224\u5b9a\uff0c\u53e6\u5b58/\u52a0\u8f7d *.bjm\u3002\u4e0d\u5b9a\u91cf\u7684\u7ec4\u5206\u4ecd\u53ef\u5339\u914d\u51fa\u5cf0\uff0c\u4f46\u4e0d\u5199\u542b\u91cf\u3002\u7532\u9187\u5224\u5b9a\u6700\u591a\u52fe\u9009\u4e00\u4e2a\uff0c\u7528\u4e8e GB 2757\u3002\u9650\u91cf\u4e0d\u5199\u6b7b\u5728\u5224\u5b9a\u903b\u8f91\u4e2d\u3002");
+		Composite root = BaijiuPlantLayout.tabBody(parent);
+		BaijiuPlantLayout.hint(root, "\u5b9a\u7a3f\u6d53\u9999 FID \u65b9\u6cd5\u5305\uff1aXP-\u767d\u9152 C2 + \u4e59\u9178\u6b63\u4e01\u916f + 15 \u6df7\u6807\u3002\u53ef\u7f16\u8f91\u672c\u673a RT\u3001\u7a97\u53e3\u3001\u662f\u5426\u5b9a\u91cf\u3001\u662f\u5426\u7532\u9187\u5224\u5b9a\uff0c\u53e6\u5b58/\u52a0\u8f7d *.bjm\u3002\u4e0d\u5b9a\u91cf\u7684\u7ec4\u5206\u4ecd\u53ef\u5339\u914d\u51fa\u5cf0\uff0c\u4f46\u4e0d\u5199\u542b\u91cf\u3002\u7532\u9187\u5224\u5b9a\u6700\u591a\u52fe\u9009\u4e00\u4e2a\uff0c\u7528\u4e8e GB 2757\u3002\u9650\u91cf\u4e0d\u5199\u6b7b\u5728\u5224\u5b9a\u903b\u8f91\u4e2d\u3002");
 
-		Composite limits = new Composite(root, SWT.NONE);
-		limits.setLayout(new GridLayout(8, false));
-		limits.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		grainLimit = labeledText(limits, "\u7cae\u8c37\u7532\u9187\u9650\u91cf g/L\uff08100%vol\uff09");
-		otherLimit = labeledText(limits, "\u5176\u4ed6\u539f\u6599\u9650\u91cf g/L\uff08100%vol\uff09");
-		button(limits, "\u52a0\u8f7d\u5382\u65b9\u6cd5", e -> loadPlantMethod(parent.getShell()));
-		button(limits, "\u53e6\u5b58\u5382\u65b9\u6cd5", e -> savePlantMethod(parent.getShell()));
-		button(limits, "\u52a0\u8f7d\u9ed8\u8ba4\u6d53\u9999\u65b9\u6cd5\u5305", e -> restoreDefaultPackage(parent.getShell()));
+		Composite limits = BaijiuPlantLayout.row(root, 4);
+		grainLimit = BaijiuPlantLayout.labeledText(limits, "\u7cae\u8c37\u7532\u9187\u9650\u91cf g/L\uff08100%vol\uff09", BaijiuPlantLayout.NUMERIC);
+		otherLimit = BaijiuPlantLayout.labeledText(limits, "\u5176\u4ed6\u539f\u6599\u9650\u91cf g/L\uff08100%vol\uff09", BaijiuPlantLayout.NUMERIC);
+		Composite limitButtons = BaijiuPlantLayout.buttonRow(root);
+		button(limitButtons, "\u52a0\u8f7d\u5382\u65b9\u6cd5", e -> loadPlantMethod(parent.getShell()));
+		button(limitButtons, "\u53e6\u5b58\u5382\u65b9\u6cd5", e -> savePlantMethod(parent.getShell()));
+		button(limitButtons, "\u52a0\u8f7d\u9ed8\u8ba4\u6d53\u9999\u65b9\u6cd5\u5305", e -> restoreDefaultPackage(parent.getShell()));
 
-		methodTable = new Table(root, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL);
-		methodTable.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-		methodTable.setHeaderVisible(true);
-		methodTable.setLinesVisible(true);
+		methodTable = BaijiuPlantLayout.table(root, 240);
 		String[] columns = {"\u7ec4\u5206", "\u5382\u5546RT", "\u672c\u673aRT", "\u7a97\u53e3", BaijiuTerms.QUANTIFY, BaijiuTerms.METHANOL_JUDGMENT, "\u6df7\u6807 g/L", "RF", "\u8bf4\u660e"};
 		int[] widths = {110, 80, 80, 70, 70, 90, 90, 80, 200};
 		for(int i = 0; i < columns.length; i++) {
-			TableColumn column = new TableColumn(methodTable, SWT.NONE);
-			column.setText(columns[i]);
-			column.setWidth(widths[i]);
+			BaijiuPlantLayout.column(methodTable, columns[i], widths[i]);
 		}
 		methodTable.addListener(SWT.Selection, e -> loadSelectedCompound());
 
-		Composite editor = new Composite(root, SWT.NONE);
-		editor.setLayout(new GridLayout(16, false));
-		editor.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		editName = labeledText(editor, "\u7ec4\u5206\u540d");
-		editRt = labeledText(editor, "\u672c\u673aRT");
-		editWindow = labeledText(editor, "\u7a97\u53e3");
-		editMix = labeledText(editor, "\u6df7\u6807 g/L");
-		editRf = labeledText(editor, "RF");
-		editQuantify = labeledCheck(editor, BaijiuTerms.QUANTIFY);
-		editGb2757 = labeledCheck(editor, BaijiuTerms.METHANOL_JUDGMENT);
-		button(editor, "\u5e94\u7528\u9009\u4e2d\u884c", e -> applyCompoundEdit());
-		Label flagHint = new Label(root, SWT.WRAP);
-		flagHint.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		flagHint.setText("\u52fe\u9009\u300c" + BaijiuTerms.QUANTIFY + "\u300d\u624d\u5199\u542b\u91cf\uff1b\u5185\u6807\u56fa\u5b9a\u4e0d\u5b9a\u91cf\u3002\u300c" + BaijiuTerms.METHANOL_JUDGMENT + "\u300d\u6700\u591a\u4e00\u4e2a\uff0c\u9ed8\u8ba4\u4e3a\u76ee\u5f55\u7532\u9187\u3002\u70b9\u300c\u5e94\u7528\u9009\u4e2d\u884c\u300d\u540e\u53ef\u300c\u4fdd\u5b58\u65b9\u6cd5\u300d\u6216\u300c\u53e6\u5b58\u5382\u65b9\u6cd5\u300d\u3002");
-		return root;
+		Composite editor = BaijiuPlantLayout.row(root, 6);
+		editName = BaijiuPlantLayout.labeledText(editor, "\u7ec4\u5206\u540d", BaijiuPlantLayout.COMPOUND_NAME);
+		editRt = BaijiuPlantLayout.labeledText(editor, "\u672c\u673aRT", BaijiuPlantLayout.NUMERIC);
+		editWindow = BaijiuPlantLayout.labeledText(editor, "\u7a97\u53e3", BaijiuPlantLayout.NUMERIC);
+		Composite editorFlags = BaijiuPlantLayout.row(root, 8);
+		editMix = BaijiuPlantLayout.labeledText(editorFlags, "\u6df7\u6807 g/L", BaijiuPlantLayout.NUMERIC);
+		editRf = BaijiuPlantLayout.labeledText(editorFlags, "RF", BaijiuPlantLayout.NUMERIC);
+		editQuantify = labeledCheck(editorFlags, BaijiuTerms.QUANTIFY);
+		editGb2757 = labeledCheck(editorFlags, BaijiuTerms.METHANOL_JUDGMENT);
+		button(editorFlags, "\u5e94\u7528\u9009\u4e2d\u884c", e -> applyCompoundEdit());
+		BaijiuPlantLayout.hint(root, "\u52fe\u9009\u300c" + BaijiuTerms.QUANTIFY + "\u300d\u624d\u5199\u542b\u91cf\uff1b\u5185\u6807\u56fa\u5b9a\u4e0d\u5b9a\u91cf\u3002\u300c" + BaijiuTerms.METHANOL_JUDGMENT + "\u300d\u6700\u591a\u4e00\u4e2a\uff0c\u9ed8\u8ba4\u4e3a\u76ee\u5f55\u7532\u9187\u3002\u70b9\u300c\u5e94\u7528\u9009\u4e2d\u884c\u300d\u540e\u53ef\u300c\u4fdd\u5b58\u65b9\u6cd5\u300d\u6216\u300c\u53e6\u5b58\u5382\u65b9\u6cd5\u300d\u3002");
+		return BaijiuPlantLayout.tabControlOf(root);
 	}
 
 	private Composite createMatchTab(Composite parent) {
 
-		Composite root = new Composite(parent, SWT.NONE);
-		root.setLayout(new GridLayout(1, false));
-		Label hint = new Label(root, SWT.WRAP);
-		hint.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		hint.setText("\u4e0a\u8868\u4e3a\u671f\u671b\u7ec4\u5206\u7684\u5339\u914d\u7ed3\u679c\uff1b\u4e0b\u8868\u4e3a\u672a\u5339\u914d\u5cf0\u3002\u53ef\u5c06\u672a\u5339\u914d\u5cf0\u6307\u5b9a\u7ed9\u7ec4\u5206\uff0c\u6216\u4fee\u6539\u5cf0\u8d77\u6b62\u65f6\u95f4\u540e\u7acb\u5373\u91cd\u7b97\u5b9a\u91cf\u3002");
-		Composite quantRow = new Composite(root, SWT.NONE);
-		quantRow.setLayout(new GridLayout(2, false));
+		Composite root = BaijiuPlantLayout.tabBody(parent);
+		BaijiuPlantLayout.hint(root, "\u4e0a\u8868\u4e3a\u671f\u671b\u7ec4\u5206\u7684\u5339\u914d\u7ed3\u679c\uff1b\u4e0b\u8868\u4e3a\u672a\u5339\u914d\u5cf0\u3002\u53ef\u5c06\u672a\u5339\u914d\u5cf0\u6307\u5b9a\u7ed9\u7ec4\u5206\uff0c\u6216\u4fee\u6539\u5cf0\u8d77\u6b62\u65f6\u95f4\u540e\u7acb\u5373\u91cd\u7b97\u5b9a\u91cf\u3002");
+		Composite quantRow = BaijiuPlantLayout.row(root, 2);
 		button(quantRow, "\u5b9a\u91cf\u5e76\u5199\u56de\u5cf0\u8868", e -> quantify(parent.getShell(), true, true));
 
-		matchTable = new Table(root, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL);
-		GridData matchData = new GridData(SWT.FILL, SWT.FILL, true, true);
-		matchData.heightHint = 240;
-		matchTable.setLayoutData(matchData);
-		matchTable.setHeaderVisible(true);
-		matchTable.setLinesVisible(true);
+		matchTable = BaijiuPlantLayout.table(root, 220);
 		String[] matchColumns = {"\u671f\u671b\u7ec4\u5206", "\u671f\u671bRT", "\u5339\u914dRT", "\u9762\u79ef", "\u5185\u6807", "\u72b6\u6001"};
 		int[] matchWidths = {120, 80, 80, 90, 60, 140};
 		for(int i = 0; i < matchColumns.length; i++) {
-			TableColumn column = new TableColumn(matchTable, SWT.NONE);
-			column.setText(matchColumns[i]);
-			column.setWidth(matchWidths[i]);
+			BaijiuPlantLayout.column(matchTable, matchColumns[i], matchWidths[i]);
 		}
 		matchTable.addListener(SWT.Selection, e -> loadSelectedMatchedPeak());
 
-		Composite bounds = new Composite(root, SWT.NONE);
-		bounds.setLayout(new GridLayout(6, false));
-		bounds.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		peakStart = labeledText(bounds, "\u5cf0\u8d77\u70b9 min");
-		peakStop = labeledText(bounds, "\u5cf0\u7ec8\u70b9 min");
+		Composite bounds = BaijiuPlantLayout.row(root, 6);
+		peakStart = BaijiuPlantLayout.labeledText(bounds, "\u5cf0\u8d77\u70b9 min", BaijiuPlantLayout.NUMERIC);
+		peakStop = BaijiuPlantLayout.labeledText(bounds, "\u5cf0\u7ec8\u70b9 min", BaijiuPlantLayout.NUMERIC);
 		button(bounds, "\u5e94\u7528\u8fb9\u754c\u5e76\u91cd\u7b97", e -> applyPeakBounds(parent.getShell()));
 
 		Label unmatchedLabel = new Label(root, SWT.NONE);
 		unmatchedLabel.setText("\u672a\u5339\u914d\u5cf0");
-		unmatchedTable = new Table(root, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL);
-		GridData unmatchedData = new GridData(SWT.FILL, SWT.FILL, true, true);
-		unmatchedData.heightHint = 140;
-		unmatchedTable.setLayoutData(unmatchedData);
-		unmatchedTable.setHeaderVisible(true);
-		unmatchedTable.setLinesVisible(true);
+		unmatchedTable = BaijiuPlantLayout.table(root, 140);
 		String[] unmatchedColumns = {"RT min", "\u9762\u79ef"};
 		int[] unmatchedWidths = {100, 120};
 		for(int i = 0; i < unmatchedColumns.length; i++) {
-			TableColumn column = new TableColumn(unmatchedTable, SWT.NONE);
-			column.setText(unmatchedColumns[i]);
-			column.setWidth(unmatchedWidths[i]);
+			BaijiuPlantLayout.column(unmatchedTable, unmatchedColumns[i], unmatchedWidths[i]);
 		}
 		unmatchedTable.addListener(SWT.Selection, e -> loadSelectedUnmatchedPeak());
 
-		Composite assign = new Composite(root, SWT.NONE);
-		assign.setLayout(new GridLayout(4, false));
-		assign.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		assignCompound = labeledCombo(assign, "\u6307\u5b9a\u7ed9\u7ec4\u5206", compoundLabels());
+		Composite assign = BaijiuPlantLayout.row(root, 4);
+		assignCompound = BaijiuPlantLayout.labeledCombo(assign, "\u6307\u5b9a\u7ed9\u7ec4\u5206", compoundLabels(), BaijiuPlantLayout.SAMPLE_NAME);
 		button(assign, "\u6307\u5b9a\u9009\u4e2d\u672a\u5339\u914d\u5cf0", e -> assignUnmatched(parent.getShell()));
 		button(assign, "\u5237\u65b0\u5339\u914d", e -> {
 			collectAll();
 			fillMatchTables();
 			recalculateQuiet();
 		});
-		return root;
+		return BaijiuPlantLayout.tabControlOf(root);
 	}
 
 	private Composite createMultipointTab(Composite parent) {
 
-		ScrolledComposite scroll = new ScrolledComposite(parent, SWT.V_SCROLL);
-		scroll.setExpandHorizontal(true);
-		scroll.setExpandVertical(true);
-		Composite root = new Composite(scroll, SWT.NONE);
-		root.setLayout(new GridLayout(1, false));
-		scroll.setContent(root);
+		Composite root = BaijiuPlantLayout.tabBody(parent);
+		BaijiuPlantLayout.hint(root, "\u591a\u70b9\u6df7\u6807\u6821\u6b63\uff08\u8bd5\u70b9 P1\uff09\uff1a\u7532\u9187\u3001\u4e59\u9178\u4e59\u916f\u3001\u4e73\u9178\u4e59\u916f\u3001\u5df1\u9178\u4e59\u916f\u3002\u6bcf\u9488\u58f0\u660e\u6df7\u6807\u500d\u6570\uff08\u76f8\u5bf9\u65b9\u6cd5\u6df7\u6807 g/L\uff09\uff0c\u4ece\u5f53\u524d\u8c31\u56fe\u52a0\u70b9\uff1b\u2265 3 \u70b9\u540e\u300c\u62df\u5408\u300d\u7ebf\u6027\u66f2\u7ebf\u5e76\u663e\u793a\u659c\u7387/\u622a\u8ddd/R\u00b2\u3002\u6709\u6548 RF \u5199\u5165\u65e2\u6709 RF \u8868\uff0c\u5b9a\u91cf\u4e0e\u95e8\u95ea\u4e0d\u53d8\u3002\u5176\u4f59\u7ec4\u5206\u4ecd\u7528\u300c\u7528\u5f53\u524d\u8c31\u56fe\u505a\u6821\u6b63\u300d\u5355\u70b9 RF\u3002\u79bb\u7ebf\u6f14\u793a\u53ef\u7528\u540c\u4e00\u5f20 mix-15plus-istd.ocb\uff0c\u52fe\u9009\u6309\u500d\u6570\u7f29\u653e\u5f85\u6d4b\u5cf0\u9762\u79ef\u6216\u76f4\u63a5\u300c\u6f14\u793a\u4e09\u70b9\u300d\uff08 0.5 / 1.0 / 1.5\uff09\u3002\u8be6\u89c1 docs/GCWS-MULTIPOINT.md\u3002");
 
-		Label hint = new Label(root, SWT.WRAP);
-		hint.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		hint.setText("\u591a\u70b9\u6df7\u6807\u6821\u6b63\uff08\u8bd5\u70b9 P1\uff09\uff1a\u7532\u9187\u3001\u4e59\u9178\u4e59\u916f\u3001\u4e73\u9178\u4e59\u916f\u3001\u5df1\u9178\u4e59\u916f\u3002\u6bcf\u9488\u58f0\u660e\u6df7\u6807\u500d\u6570\uff08\u76f8\u5bf9\u65b9\u6cd5\u6df7\u6807 g/L\uff09\uff0c\u4ece\u5f53\u524d\u8c31\u56fe\u52a0\u70b9\uff1b\u2265 3 \u70b9\u540e\u300c\u62df\u5408\u300d\u7ebf\u6027\u66f2\u7ebf\u5e76\u663e\u793a\u659c\u7387/\u622a\u8ddd/R\u00b2\u3002\u6709\u6548 RF \u5199\u5165\u65e2\u6709 RF \u8868\uff0c\u5b9a\u91cf\u4e0e\u95e8\u95ea\u4e0d\u53d8\u3002\u5176\u4f59\u7ec4\u5206\u4ecd\u7528\u300c\u7528\u5f53\u524d\u8c31\u56fe\u505a\u6821\u6b63\u300d\u5355\u70b9 RF\u3002\u79bb\u7ebf\u6f14\u793a\u53ef\u7528\u540c\u4e00\u5f20 mix-15plus-istd.ocb\uff0c\u52fe\u9009\u6309\u500d\u6570\u7f29\u653e\u5f85\u6d4b\u5cf0\u9762\u79ef\u6216\u76f4\u63a5\u300c\u6f14\u793a\u4e09\u70b9\u300d\uff08 0.5 / 1.0 / 1.5\uff09\u3002\u8be6\u89c1 docs/GCWS-MULTIPOINT.md\u3002");
-
-		Composite level = new Composite(root, SWT.NONE);
-		level.setLayout(new GridLayout(6, false));
-		level.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		mixScale = labeledText(level, "\u672c\u9488\u6df7\u6807\u500d\u6570");
+		Composite level = BaijiuPlantLayout.row(root, 6);
+		mixScale = BaijiuPlantLayout.labeledText(level, "\u672c\u9488\u6df7\u6807\u500d\u6570", BaijiuPlantLayout.NUMERIC);
 		mixScale.setText("1.0");
-		mixLevelHint = new Label(level, SWT.WRAP);
-		mixLevelHint.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 4, 1));
+		mixLevelHint = BaijiuPlantLayout.hint(level, "", 4);
 		mixScale.addModifyListener(e -> updateMixLevelHint());
-		scaleAreas = new Button(level, SWT.CHECK);
+		scaleAreas = new Button(root, SWT.CHECK);
 		scaleAreas.setText("\u79bb\u7ebf\u6f14\u793a\uff1a\u6309\u500d\u6570\u7f29\u653e\u5f85\u6d4b\u5cf0\u9762\u79ef\uff08\u5185\u6807\u4e0d\u53d8\uff09");
-		scaleAreas.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 6, 1));
+		scaleAreas.setLayoutData(BaijiuPlantLayout.wrapHint());
 		updateMixLevelHint();
 
-		Composite actions = new Composite(root, SWT.NONE);
-		actions.setLayout(new GridLayout(6, false));
-		actions.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		Composite actions = BaijiuPlantLayout.buttonRow(root);
 		button(actions, "\u4ece\u5f53\u524d\u8c31\u56fe\u6dfb\u52a0\u6821\u6b63\u70b9", e -> addCalibrationPoint(parent.getShell()));
 		button(actions, "\u6f14\u793a\u4e09\u70b9\uff080.5/1.0/1.5\uff09", e -> addDemoCalibrationPoints(parent.getShell()));
 		button(actions, "\u66f4\u65b0\u9009\u4e2d\u70b9\u6d53\u5ea6", e -> updateSelectedPointScale(parent.getShell()));
@@ -543,40 +459,22 @@ public final class BaijiuAnalysisShell {
 		button(actions, "\u6e05\u7a7a\u6821\u6b63\u70b9", e -> clearCalibrationPoints(parent.getShell()));
 		button(actions, "\u62df\u5408", e -> fitMultipoint(parent.getShell()));
 
-		pointTable = new Table(root, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL);
-		GridData pointData = new GridData(SWT.FILL, SWT.FILL, true, true);
-		pointData.heightHint = 180;
-		pointTable.setLayoutData(pointData);
-		pointTable.setHeaderVisible(true);
-		pointTable.setLinesVisible(true);
+		pointTable = BaijiuPlantLayout.table(root, 180);
 		String[] pointColumns = {"#", "\u6807\u7b7e", "\u6765\u6e90", "\u500d\u6570", "\u7532\u9187 g/L", "\u7532\u9187 \u9762\u79ef\u6bd4", "\u4e59\u9178\u4e59\u916f", "\u4e73\u9178\u4e59\u916f", "\u5df1\u9178\u4e59\u916f"};
 		int[] pointWidths = {36, 60, 220, 60, 80, 90, 90, 90, 90};
 		for(int i = 0; i < pointColumns.length; i++) {
-			TableColumn column = new TableColumn(pointTable, SWT.NONE);
-			column.setText(pointColumns[i]);
-			column.setWidth(pointWidths[i]);
+			BaijiuPlantLayout.column(pointTable, pointColumns[i], pointWidths[i]);
 		}
 
-		fitTable = new Table(root, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL);
-		GridData fitData = new GridData(SWT.FILL, SWT.FILL, true, true);
-		fitData.heightHint = 140;
-		fitTable.setLayoutData(fitData);
-		fitTable.setHeaderVisible(true);
-		fitTable.setLinesVisible(true);
+		fitTable = BaijiuPlantLayout.table(root, 140);
 		String[] fitColumns = {"\u7ec4\u5206", "n", "\u659c\u7387", "\u622a\u8ddd", "R\u00b2", "\u6709\u6548 RF", "\u63d0\u793a"};
 		int[] fitWidths = {110, 40, 90, 90, 80, 90, 280};
 		for(int i = 0; i < fitColumns.length; i++) {
-			TableColumn column = new TableColumn(fitTable, SWT.NONE);
-			column.setText(fitColumns[i]);
-			column.setWidth(fitWidths[i]);
+			BaijiuPlantLayout.column(fitTable, fitColumns[i], fitWidths[i]);
 		}
 
-		multipointStatus = new Label(root, SWT.WRAP);
-		multipointStatus.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		multipointStatus.setText("x = \u542b\u91cf g/L\uff0c y = A\u5f85\u6d4b / A\u5185\u6807\u3002R\u00b2 < 0.99 \u4ec5\u63d0\u793a\uff0c\u4e0d\u963b\u6b62\u95e8\u95ea\u3002");
-
-		scroll.setMinSize(root.computeSize(SWT.DEFAULT, SWT.DEFAULT));
-		return scroll;
+		multipointStatus = BaijiuPlantLayout.hint(root, "x = \u542b\u91cf g/L\uff0c y = A\u5f85\u6d4b / A\u5185\u6807\u3002R\u00b2 < 0.99 \u4ec5\u63d0\u793a\uff0c\u4e0d\u963b\u6b62\u95e8\u95ea\u3002");
+		return BaijiuPlantLayout.tabControlOf(root);
 	}
 
 	private void loadFields() {
@@ -611,6 +509,11 @@ public final class BaijiuAnalysisShell {
 		windowMin.setText(format(settings.getDefaultWindowMin(), 3));
 		grainLimit.setText(Double.isNaN(settings.getGb2757GrainLimit100VolGL()) ? "" : format(settings.getGb2757GrainLimit100VolGL(), 2));
 		otherLimit.setText(Double.isNaN(settings.getGb2757OtherLimit100VolGL()) ? "" : format(settings.getGb2757OtherLimit100VolGL(), 2));
+		if(reportHeader != null && (BaijiuPreferences.loadReportHeader().getTester().isEmpty()) && !sample.getAnalyst().isEmpty()) {
+			BaijiuReportHeader header = BaijiuPreferences.loadReportHeader();
+			header.setTester(sample.getAnalyst());
+			reportHeader.load(header);
+		}
 	}
 
 	private void reloadChromatogram() {
@@ -929,7 +832,7 @@ public final class BaijiuAnalysisShell {
 			warn(shell, result == null ? "\u65e0\u6cd5\u51fa\u62a5\u544a\u3002" : result.getMessage());
 			return;
 		}
-		BaijiuReportShell.open(shell, sample, settings, result);
+		BaijiuReportShell.open(shell, sample, settings, result, reportHeader == null ? BaijiuPreferences.loadReportHeader() : reportHeader.save());
 	}
 
 	private void exportCsv(Shell shell) {
@@ -1306,6 +1209,9 @@ public final class BaijiuAnalysisShell {
 		settings.setDefaultWindowMin(parse(windowMin.getText(), settings.getDefaultWindowMin()));
 		settings.setGb2757GrainLimit100VolGL(parse(grainLimit.getText(), settings.getGb2757GrainLimit100VolGL()));
 		settings.setGb2757OtherLimit100VolGL(parse(otherLimit.getText(), settings.getGb2757OtherLimit100VolGL()));
+		if(reportHeader != null) {
+			reportHeader.save();
+		}
 		updateInjectedLabel();
 	}
 
@@ -1351,41 +1257,11 @@ public final class BaijiuAnalysisShell {
 		}
 	}
 
-	private static Group group(Composite parent, String title) {
-
-		Group group = new Group(parent, SWT.NONE);
-		group.setText(title);
-		group.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		return group;
-	}
-
-	private static Text labeledText(Composite parent, String title) {
-
-		Label label = new Label(parent, SWT.NONE);
-		label.setText(title);
-		Text text = new Text(parent, SWT.BORDER);
-		text.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		return text;
-	}
-
-	private static Combo labeledCombo(Composite parent, String title, String[] items) {
-
-		Label label = new Label(parent, SWT.NONE);
-		label.setText(title);
-		Combo combo = new Combo(parent, SWT.DROP_DOWN | SWT.READ_ONLY);
-		combo.setItems(items);
-		combo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		if(items.length > 0) {
-			combo.select(0);
-		}
-		return combo;
-	}
-
 	private static Button labeledCheck(Composite parent, String title) {
 
 		Button button = new Button(parent, SWT.CHECK);
 		button.setText(title);
-		button.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
+		button.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false));
 		return button;
 	}
 

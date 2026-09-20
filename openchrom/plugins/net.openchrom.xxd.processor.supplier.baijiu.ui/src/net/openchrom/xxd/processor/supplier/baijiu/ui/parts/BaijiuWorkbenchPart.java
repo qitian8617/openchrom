@@ -15,7 +15,6 @@ import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
@@ -36,6 +35,7 @@ import net.openchrom.xxd.processor.supplier.baijiu.ui.handlers.OpenBaijiuSequenc
 import net.openchrom.xxd.processor.supplier.baijiu.ui.handlers.OpenBaijiuWizardHandler;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.handlers.RunBaijiuIntegrationHandler;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuLicenseShell;
+import net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuPlantLayout;
 
 public class BaijiuWorkbenchPart {
 
@@ -64,38 +64,29 @@ public class BaijiuWorkbenchPart {
 			return;
 		}
 		Shell shell = parent.getShell();
-		parent.setLayout(new GridLayout(1, false));
-		Label title = new Label(parent, SWT.WRAP);
-		title.setText(BaijiuTerms.WORKBENCH);
-		title.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		Composite body = BaijiuPlantLayout.scrollBody(parent);
+		BaijiuPlantLayout.hint(body, BaijiuTerms.WORKBENCH);
+		BaijiuPlantLayout.hint(body, "\u65e5\u5e38\u8def\u5f84\uff1a\u8fdb\u6837\u5e8f\u5217 \u2192 \u6c14\u76f8\u8272\u8c31\u63a7\u5236\u53f0\u4e3b\u754c\u9762\u5f00\u59cb\u5206\u6790 \u2192 \u6253\u5f00\u8272\u8c31\u56fe \u2192 \u63a8\u8350\u79ef\u5206 \u2192 \u6df7\u6807\u6821\u6b63 \u2192 \u767d\u9152\u5206\u6790\u5b9a\u91cf \u2192 \u5e73\u884c\u6837 \u2192 \u6279\u5904\u7406\u7ed3\u679c \u2192 \u62a5\u544a\u3002\u65e0\u6709\u6548\u6df7\u6807 RF \u65f6\u4e0d\u4f1a\u5b9a\u91cf\u3002\u7814\u7a76\u7c7b\u5cf0\u68c0\u6d4b/\u79ef\u5206\u4ecd\u5728\u300c\u8272\u8c31\u300d\u83dc\u5355\uff0c\u672c\u5de5\u4f5c\u53f0\u4e0d\u5220\u9664 OpenChrom \u6838\u5fc3\u529f\u80fd\u3002");
 
-		Label path = new Label(parent, SWT.WRAP);
-		path.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		path.setText("\u65e5\u5e38\u8def\u5f84\uff1a\u8fdb\u6837\u5e8f\u5217 \u2192 \u6c14\u76f8\u8272\u8c31\u63a7\u5236\u53f0\u4e3b\u754c\u9762\u5f00\u59cb\u5206\u6790 \u2192 \u6253\u5f00\u8272\u8c31\u56fe \u2192 \u63a8\u8350\u79ef\u5206 \u2192 \u6df7\u6807\u6821\u6b63 \u2192 \u767d\u9152\u5206\u6790\u5b9a\u91cf \u2192 \u5e73\u884c\u6837 \u2192 \u6279\u5904\u7406\u7ed3\u679c \u2192 \u62a5\u544a\u3002\u65e0\u6709\u6548\u6df7\u6807 RF \u65f6\u4e0d\u4f1a\u5b9a\u91cf\u3002\u7814\u7a76\u7c7b\u5cf0\u68c0\u6d4b/\u79ef\u5206\u4ecd\u5728\u300c\u8272\u8c31\u300d\u83dc\u5355\uff0c\u672c\u5de5\u4f5c\u53f0\u4e0d\u5220\u9664 OpenChrom \u6838\u5fc3\u529f\u80fd\u3002");
+		button(body, "\u6253\u5f00\u8272\u8c31\u56fe", e -> openChromatogram(parent, context));
+		button(body, BaijiuTerms.RECOMMENDED_INTEGRATION, e -> new RunBaijiuIntegrationHandler().execute(shell, partService, application, modelService));
+		button(body, BaijiuTerms.APP, e -> new OpenBaijiuAnalysisHandler().execute(shell, partService, application, modelService));
+		button(body, "\u4e09\u6b65\u5411\u5bfc\uff08\u53ef\u9009\uff09", e -> new OpenBaijiuWizardHandler().execute(shell, partService, application, modelService));
+		button(body, BaijiuTerms.SEQUENCE, e -> new OpenBaijiuSequenceHandler().execute(shell, application, modelService, partService));
+		button(body, BaijiuTerms.BATCH_RESULTS, e -> new OpenBaijiuSequenceResultsHandler().execute(shell, application, modelService, partService));
+		button(body, BaijiuTerms.SIMPLE_BATCH, e -> new OpenBaijiuBatchHandler().execute(shell, application, modelService, partService));
+		button(body, BaijiuTerms.PARALLEL, e -> new OpenBaijiuParallelHandler().execute(shell, application, modelService, partService));
+		button(body, "\u9884\u89c8\u62a5\u544a", e -> new OpenBaijiuReportHandler().execute(shell, partService, application, modelService));
 
-		button(parent, "\u6253\u5f00\u8272\u8c31\u56fe", e -> openChromatogram(parent, context));
-		button(parent, BaijiuTerms.RECOMMENDED_INTEGRATION, e -> new RunBaijiuIntegrationHandler().execute(shell, partService, application, modelService));
-		button(parent, BaijiuTerms.APP, e -> new OpenBaijiuAnalysisHandler().execute(shell, partService, application, modelService));
-		button(parent, "\u4e09\u6b65\u5411\u5bfc\uff08\u53ef\u9009\uff09", e -> new OpenBaijiuWizardHandler().execute(shell, partService, application, modelService));
-		button(parent, BaijiuTerms.SEQUENCE, e -> new OpenBaijiuSequenceHandler().execute(shell, application, modelService, partService));
-		button(parent, BaijiuTerms.BATCH_RESULTS, e -> new OpenBaijiuSequenceResultsHandler().execute(shell, application, modelService, partService));
-		button(parent, BaijiuTerms.SIMPLE_BATCH, e -> new OpenBaijiuBatchHandler().execute(shell, application, modelService, partService));
-		button(parent, BaijiuTerms.PARALLEL, e -> new OpenBaijiuParallelHandler().execute(shell, application, modelService, partService));
-		button(parent, "\u9884\u89c8\u62a5\u544a", e -> new OpenBaijiuReportHandler().execute(shell, partService, application, modelService));
-
-		Label license = new Label(parent, SWT.WRAP);
-		license.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		license.setText(BaijiuLicenseGate.statusLine() + "\n\u63d2\u4ef6 " + BaijiuPluginInfo.bundleVersion());
-		button(parent, BaijiuTerms.LICENSE + " / \u7248\u672c\u2026", e -> {
+		Label license = BaijiuPlantLayout.hint(body, BaijiuLicenseGate.statusLine() + "\n\u63d2\u4ef6 " + BaijiuPluginInfo.bundleVersion());
+		button(body, BaijiuTerms.LICENSE + " / \u7248\u672c\u2026", e -> {
 			BaijiuLicenseShell.open(shell);
 			if(!license.isDisposed()) {
 				license.setText(BaijiuLicenseGate.statusLine() + "\n\u63d2\u4ef6 " + BaijiuPluginInfo.bundleVersion());
 			}
 		});
 
-		Label glossary = new Label(parent, SWT.WRAP);
-		glossary.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		glossary.setText(BaijiuTerms.GLOSSARY);
+		BaijiuPlantLayout.hint(body, BaijiuTerms.GLOSSARY);
 	}
 
 	/**
