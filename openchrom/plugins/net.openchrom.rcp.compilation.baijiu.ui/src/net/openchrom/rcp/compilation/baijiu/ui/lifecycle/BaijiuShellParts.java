@@ -11,10 +11,9 @@ package net.openchrom.rcp.compilation.baijiu.ui.lifecycle;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.e4.core.contexts.IEclipseContext;
@@ -31,6 +30,7 @@ import org.eclipse.e4.ui.model.application.ui.basic.MPartStack;
 import org.eclipse.e4.ui.model.application.ui.basic.MTrimBar;
 import org.eclipse.e4.ui.model.application.ui.basic.MTrimmedWindow;
 import org.eclipse.e4.ui.model.application.ui.basic.MWindow;
+import org.eclipse.e4.ui.model.application.ui.menu.MDirectMenuItem;
 import org.eclipse.e4.ui.model.application.ui.menu.MHandledMenuItem;
 import org.eclipse.e4.ui.model.application.ui.menu.MHandledToolItem;
 import org.eclipse.e4.ui.model.application.ui.menu.MMenu;
@@ -47,6 +47,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Widget;
 
 import net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuHomePanels;
 
@@ -458,7 +459,7 @@ public final class BaijiuShellParts {
 		}
 	}
 
-	static MWindow plantWindow(MApplication application, EModelService modelService) {
+	public static MWindow plantWindow(MApplication application, EModelService modelService) {
 
 		if(application == null) {
 			return null;
@@ -602,7 +603,18 @@ public final class BaijiuShellParts {
 			if(children == null) {
 				return;
 			}
-			Set<String> seen = new HashSet<>();
+			Map<String, MUIElement> winners = new HashMap<>();
+			for(int i = 0; i < children.size(); i++) {
+				Object child = children.get(i);
+				if(!(child instanceof MUIElement element)) {
+					continue;
+				}
+				String id = element.getElementId();
+				if(!BaijiuShellChrome.isSingletonMenuChildId(id)) {
+					continue;
+				}
+				winners.put(id, preferredPlantMenuChild(winners.get(id), element));
+			}
 			for(int i = 0; i < children.size();) {
 				Object child = children.get(i);
 				if(!(child instanceof MUIElement element)) {
@@ -614,14 +626,185 @@ public final class BaijiuShellParts {
 					i++;
 					continue;
 				}
-				if(!seen.add(id)) {
-					children.remove(i);
+				MUIElement winner = winners.get(id);
+				if(winner == element) {
+					i++;
 					continue;
 				}
-				i++;
+				adoptPlantMenuDuplicate(winner, element);
+				disposeMenuWidget(element);
+				children.remove(i);
 			}
 		} catch(RuntimeException | LinkageError e) {
 			// menu children not writable
+		}
+	}
+
+	static MUIElement preferredPlantMenuChild(MUIElement first, MUIElement second) {
+
+		if(first == null) {
+			return second;
+		}
+		if(second == null) {
+			return first;
+		}
+		return plantMenuChildScore(second) > plantMenuChildScore(first) ? second : first;
+	}
+
+	static int plantMenuChildScore(MUIElement element) {
+
+		if(element == null) {
+			return -1;
+		}
+		int score = 0;
+		if(commandOf(element) != null) {
+			score += 4;
+		}
+		if(element instanceof MDirectMenuItem direct) {
+			try {
+				String uri = direct.getContributionURI();
+				if(uri != null && !uri.isBlank()) {
+					score += 4;
+				}
+			} catch(RuntimeException | LinkageError e) {
+				// uri not readable
+			}
+		}
+		if(element instanceof MMenu menu) {
+			if(hasExecutableSelectViewChild(menu)) {
+				score += 3;
+			}
+			try {
+				List<?> children = menu.getChildren();
+				if(children != null && !children.isEmpty()) {
+					score += 1;
+				}
+			} catch(RuntimeException | LinkageError e) {
+				// children not readable
+			}
+		}
+		return score;
+	}
+
+	static boolean hasExecutableSelectViewChild(MMenu menu) {
+
+		if(menu == null) {
+			return false;
+		}
+		try {
+			List<?> children = menu.getChildren();
+			if(children == null) {
+				return false;
+			}
+			for(Object child : children) {
+				if(child instanceof MUIElement element && isExecutableSelectViewItem(element)) {
+					return true;
+				}
+			}
+		} catch(RuntimeException | LinkageError e) {
+			return false;
+		}
+		return false;
+	}
+
+	static boolean isExecutableSelectViewItem(MUIElement element) {
+
+		if(element == null) {
+			return false;
+		}
+		String id = element.getElementId();
+		if(!BaijiuShellChrome.SELECT_VIEW_MENU_ID.equals(id) && !BaijiuShellChrome.isViewMenuKeepLabel(labelOf(element))) {
+			return false;
+		}
+		if(commandOf(element) != null) {
+			return true;
+		}
+		if(element instanceof MDirectMenuItem direct) {
+			try {
+				String uri = direct.getContributionURI();
+				return uri != null && !uri.isBlank();
+			} catch(RuntimeException | LinkageError e) {
+				return false;
+			}
+		}
+		return false;
+	}
+
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	private static void adoptPlantMenuDuplicate(MUIElement keep, MUIElement drop) {
+
+		if(keep == null || drop == null || keep == drop) {
+			return;
+		}
+		if(keep instanceof MHandledMenuItem keepHandled && drop instanceof MHandledMenuItem dropHandled) {
+			try {
+				if(keepHandled.getCommand() == null && dropHandled.getCommand() != null) {
+					keepHandled.setCommand(dropHandled.getCommand());
+				}
+			} catch(RuntimeException | LinkageError e) {
+				// command not writable
+			}
+			return;
+		}
+		if(keep instanceof MDirectMenuItem keepDirect && drop instanceof MDirectMenuItem dropDirect) {
+			try {
+				if((keepDirect.getContributionURI() == null || keepDirect.getContributionURI().isBlank()) && dropDirect.getContributionURI() != null && !dropDirect.getContributionURI().isBlank()) {
+					keepDirect.setContributionURI(dropDirect.getContributionURI());
+				}
+			} catch(RuntimeException | LinkageError e) {
+				// uri not writable
+			}
+			return;
+		}
+		if(!(keep instanceof MMenu keepMenu) || !(drop instanceof MMenu dropMenu)) {
+			return;
+		}
+		try {
+			List dropChildren = dropMenu.getChildren();
+			List keepChildren = keepMenu.getChildren();
+			if(dropChildren == null || keepChildren == null) {
+				return;
+			}
+			List snapshot = new ArrayList(dropChildren);
+			for(Object child : snapshot) {
+				if(!(child instanceof MMenuElement element)) {
+					continue;
+				}
+				String id = element.getElementId();
+				if(id != null && !id.isBlank()) {
+					MUIElement existing = mainMenuChild(keepMenu, id);
+					if(existing != null) {
+						adoptPlantMenuDuplicate(existing, element);
+						continue;
+					}
+				}
+				dropChildren.remove(element);
+				if(!keepChildren.contains(element)) {
+					keepChildren.add(element);
+				}
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// menu children not writable
+		}
+	}
+
+	private static void disposeMenuWidget(MUIElement element) {
+
+		if(element == null) {
+			return;
+		}
+		try {
+			Object widget = element.getWidget();
+			if(widget instanceof Widget swt && !swt.isDisposed()) {
+				swt.dispose();
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// widget already gone
+		}
+		try {
+			element.setWidget(null);
+		} catch(RuntimeException | LinkageError e) {
+			// widget not writable
 		}
 	}
 
@@ -1282,23 +1465,23 @@ public final class BaijiuShellParts {
 
 	/**
 	 * JFace MenuManager omits an empty 视图 cascade. Keep Select View as a
-	 * visible child so the top-level label paints.
+	 * visible child so the top-level label paints. Prefer a commanded
+	 * ChemClipse item over a dummy; DirectMenuItem fallback opens the
+	 * same dialog when the command is not in the model yet.
 	 */
 	static void ensureViewMenuContents(EModelService modelService, MApplication application, MMenu viewMenu) {
 
 		if(viewMenu == null) {
 			return;
 		}
-		MUIElement select = mainMenuChild(viewMenu, BaijiuShellChrome.SELECT_VIEW_MENU_ID);
+		MUIElement select = bestSelectViewItem(viewMenu);
 		if(select == null && modelService != null && application != null) {
-			select = modelService.find(BaijiuShellChrome.SELECT_VIEW_MENU_ID, application);
+			select = findSelectViewElement(modelService, application);
 		}
 		if(select == null) {
 			select = createSelectViewItem(modelService, application);
 		}
-		if(select instanceof MHandledMenuItem handled) {
-			bindSelectViewCommand(modelService, application, handled);
-		}
+		select = ensureSelectViewExecutable(modelService, application, viewMenu, select);
 		if(select instanceof MMenuElement item) {
 			forceShowChrome(select);
 			if(select instanceof MUILabel labeled) {
@@ -1317,6 +1500,11 @@ public final class BaijiuShellParts {
 						if(element instanceof MUILabel labeled) {
 							labeled.setLabel(BaijiuShellChrome.SELECT_VIEW_TITLE_ZH);
 						}
+						if(element instanceof MHandledMenuItem handled) {
+							bindSelectViewCommand(modelService, application, handled);
+						} else if(element instanceof MDirectMenuItem direct) {
+							bindSelectViewDirectHandler(direct);
+						}
 					}
 				}
 			}
@@ -1325,7 +1513,125 @@ public final class BaijiuShellParts {
 		}
 	}
 
-	private static MHandledMenuItem createSelectViewItem(EModelService modelService, MApplication application) {
+	private static MUIElement bestSelectViewItem(MMenu viewMenu) {
+
+		MUIElement first = mainMenuChild(viewMenu, BaijiuShellChrome.SELECT_VIEW_MENU_ID);
+		MUIElement best = first;
+		try {
+			List<?> children = viewMenu.getChildren();
+			if(children != null) {
+				for(Object child : children) {
+					if(!(child instanceof MUIElement element)) {
+						continue;
+					}
+					if(!BaijiuShellChrome.SELECT_VIEW_MENU_ID.equals(element.getElementId()) && !BaijiuShellChrome.isViewMenuKeepLabel(labelOf(element))) {
+						continue;
+					}
+					best = preferredPlantMenuChild(best, element);
+				}
+			}
+		} catch(RuntimeException | LinkageError e) {
+			return first;
+		}
+		return best;
+	}
+
+	private static MUIElement findSelectViewElement(EModelService modelService, MApplication application) {
+
+		MUIElement found = findElement(modelService, application, BaijiuShellChrome.SELECT_VIEW_MENU_ID);
+		if(modelService == null || application == null) {
+			return found;
+		}
+		try {
+			List<MHandledMenuItem> handled = modelService.findElements(application, BaijiuShellChrome.SELECT_VIEW_MENU_ID, MHandledMenuItem.class, null);
+			if(handled != null) {
+				for(MHandledMenuItem item : handled) {
+					found = preferredPlantMenuChild(found, item);
+				}
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// older E4
+		}
+		try {
+			List<MDirectMenuItem> directs = modelService.findElements(application, BaijiuShellChrome.SELECT_VIEW_MENU_ID, MDirectMenuItem.class, null);
+			if(directs != null) {
+				for(MDirectMenuItem item : directs) {
+					found = preferredPlantMenuChild(found, item);
+				}
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// older E4
+		}
+		return found;
+	}
+
+	private static MUIElement ensureSelectViewExecutable(EModelService modelService, MApplication application, MMenu viewMenu, MUIElement select) {
+
+		if(select instanceof MHandledMenuItem handled) {
+			bindSelectViewCommand(modelService, application, handled);
+			if(isExecutableSelectViewItem(handled)) {
+				return handled;
+			}
+			MDirectMenuItem direct = createSelectViewDirectItem(modelService);
+			if(direct == null) {
+				return handled;
+			}
+			replaceMenuChild(viewMenu, handled, direct);
+			return direct;
+		}
+		if(select instanceof MDirectMenuItem direct) {
+			bindSelectViewDirectHandler(direct);
+			return direct;
+		}
+		return select;
+	}
+
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	private static void replaceMenuChild(MMenu parent, MUIElement oldChild, MMenuElement newChild) {
+
+		if(parent == null || oldChild == null || newChild == null || oldChild == newChild) {
+			return;
+		}
+		try {
+			List children = parent.getChildren();
+			if(children == null) {
+				return;
+			}
+			int index = children.indexOf(oldChild);
+			disposeMenuWidget(oldChild);
+			if(index >= 0) {
+				children.set(index, newChild);
+			} else if(!children.contains(newChild)) {
+				children.add(0, newChild);
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// menu children not writable
+		}
+	}
+
+	private static MMenuElement createSelectViewItem(EModelService modelService, MApplication application) {
+
+		MCommand command = findSelectViewCommand(modelService, application, null);
+		if(command != null) {
+			MHandledMenuItem handled = createHandledMenuItem(modelService);
+			if(handled == null) {
+				return createSelectViewDirectItem(modelService);
+			}
+			handled.setElementId(BaijiuShellChrome.SELECT_VIEW_MENU_ID);
+			handled.setLabel(BaijiuShellChrome.SELECT_VIEW_TITLE_ZH);
+			handled.setToBeRendered(true);
+			handled.setVisible(true);
+			try {
+				handled.setCommand(command);
+			} catch(RuntimeException | LinkageError e) {
+				return createSelectViewDirectItem(modelService);
+			}
+			return handled;
+		}
+		return createSelectViewDirectItem(modelService);
+	}
+
+	private static MHandledMenuItem createHandledMenuItem(EModelService modelService) {
 
 		MHandledMenuItem item = null;
 		if(modelService != null) {
@@ -1342,12 +1648,52 @@ public final class BaijiuShellParts {
 				return null;
 			}
 		}
+		return item;
+	}
+
+	private static MDirectMenuItem createSelectViewDirectItem(EModelService modelService) {
+
+		MDirectMenuItem item = null;
+		if(modelService != null) {
+			try {
+				item = modelService.createModelElement(MDirectMenuItem.class);
+			} catch(RuntimeException | LinkageError e) {
+				item = null;
+			}
+		}
+		if(item == null) {
+			try {
+				item = MMenuFactory.INSTANCE.createDirectMenuItem();
+			} catch(RuntimeException | LinkageError e) {
+				return null;
+			}
+		}
 		item.setElementId(BaijiuShellChrome.SELECT_VIEW_MENU_ID);
 		item.setLabel(BaijiuShellChrome.SELECT_VIEW_TITLE_ZH);
 		item.setToBeRendered(true);
 		item.setVisible(true);
-		bindSelectViewCommand(modelService, application, item);
+		bindSelectViewDirectHandler(item);
 		return item;
+	}
+
+	private static void bindSelectViewDirectHandler(MDirectMenuItem item) {
+
+		if(item == null) {
+			return;
+		}
+		try {
+			String uri = item.getContributionURI();
+			if(uri != null && !uri.isBlank()) {
+				return;
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// uri not readable
+		}
+		try {
+			item.setContributionURI(BaijiuShellChrome.SELECT_VIEW_DIRECT_HANDLER_URI);
+		} catch(RuntimeException | LinkageError e) {
+			// uri not writable
+		}
 	}
 
 	private static void bindSelectViewCommand(EModelService modelService, MApplication application, MHandledMenuItem item) {
@@ -1356,13 +1702,14 @@ public final class BaijiuShellParts {
 			return;
 		}
 		try {
-			if(item.getCommand() != null) {
+			MCommand existing = item.getCommand();
+			if(isSelectViewCommand(existing)) {
 				return;
 			}
 		} catch(RuntimeException | LinkageError e) {
 			// command not readable
 		}
-		MCommand command = findSelectViewCommand(modelService, application);
+		MCommand command = findSelectViewCommand(modelService, application, item);
 		if(command == null) {
 			return;
 		}
@@ -1373,19 +1720,59 @@ public final class BaijiuShellParts {
 		}
 	}
 
-	private static MCommand findSelectViewCommand(EModelService modelService, MApplication application) {
+	private static boolean isSelectViewCommand(MCommand command) {
 
-		MCommand fromItem = commandOf(findElement(modelService, application, BaijiuShellChrome.SELECT_VIEW_MENU_ID));
-		if(fromItem != null) {
-			return fromItem;
+		if(command == null) {
+			return false;
 		}
-		fromItem = commandOf(findElement(modelService, application, BaijiuShellChrome.SELECT_VIEW_TOOLITEM_ID));
-		if(fromItem != null) {
-			return fromItem;
+		try {
+			String id = command.getElementId();
+			return BaijiuShellChrome.SELECT_VIEW_COMMAND_ID.equals(id) || BaijiuShellChrome.ECLIPSE_SHOW_VIEW_COMMAND_ID.equals(id);
+		} catch(RuntimeException | LinkageError e) {
+			return false;
+		}
+	}
+
+	private static MCommand findSelectViewCommand(EModelService modelService, MApplication application, MHandledMenuItem exclude) {
+
+		MCommand fromTool = commandOf(findElement(modelService, application, BaijiuShellChrome.SELECT_VIEW_TOOLITEM_ID));
+		if(fromTool != null) {
+			return fromTool;
 		}
 		MCommand chemclipse = findCommand(modelService, application, BaijiuShellChrome.SELECT_VIEW_COMMAND_ID);
 		if(chemclipse != null) {
 			return chemclipse;
+		}
+		if(modelService != null && application != null) {
+			try {
+				List<MHandledMenuItem> items = modelService.findElements(application, BaijiuShellChrome.SELECT_VIEW_MENU_ID, MHandledMenuItem.class, null);
+				if(items != null) {
+					for(MHandledMenuItem item : items) {
+						if(item == exclude) {
+							continue;
+						}
+						MCommand command = commandOf(item);
+						if(command != null) {
+							return command;
+						}
+					}
+				}
+			} catch(RuntimeException | LinkageError e) {
+				// older E4
+			}
+			try {
+				List<MHandledToolItem> tools = modelService.findElements(application, BaijiuShellChrome.SELECT_VIEW_TOOLITEM_ID, MHandledToolItem.class, null);
+				if(tools != null) {
+					for(MHandledToolItem item : tools) {
+						MCommand command = commandOf(item);
+						if(command != null) {
+							return command;
+						}
+					}
+				}
+			} catch(RuntimeException | LinkageError e) {
+				// older E4
+			}
 		}
 		return findCommand(modelService, application, BaijiuShellChrome.ECLIPSE_SHOW_VIEW_COMMAND_ID);
 	}

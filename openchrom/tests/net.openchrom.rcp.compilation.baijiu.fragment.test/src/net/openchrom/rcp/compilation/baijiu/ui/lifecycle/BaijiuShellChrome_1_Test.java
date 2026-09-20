@@ -66,7 +66,7 @@ public class BaijiuShellChrome_1_Test {
 		assertEquals("白酒FID工作站", BaijiuShellChrome.APPLICATION_NAME_VM);
 		assertFalse(BaijiuShellChrome.APPLICATION_NAME_VM.contains(" "));
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome", BaijiuShellChrome.PERSPECTIVE_ID);
-		assertEquals(29, BaijiuShellChrome.CHROME_EPOCH);
+		assertEquals(30, BaijiuShellChrome.CHROME_EPOCH);
 		assertEquals("org.eclipse.chemclipse.ux.extension.ui.perspective.welcome", BaijiuShellChrome.WELCOME_PERSPECTIVE_ID);
 		assertTrue(BaijiuShellChrome.isHiddenResearchPerspective(BaijiuShellChrome.WELCOME_PERSPECTIVE_ID));
 		assertTrue(BaijiuShellChrome.isHiddenResearchPerspective(BaijiuShellChrome.MALDI_PERSPECTIVE_ID));
@@ -317,6 +317,10 @@ public class BaijiuShellChrome_1_Test {
 		assertTrue(BaijiuShellChrome.isTopLevelCascadeMenu(BaijiuShellChrome.VIEW_MENU_ID));
 		assertTrue(BaijiuShellChrome.isTopLevelCascadeMenu(BaijiuShellChrome.FILE_MENU_ID));
 		assertFalse(BaijiuShellChrome.isTopLevelCascadeMenu(BaijiuShellChrome.MAIN_MENU_ID));
+		assertFalse(BaijiuShellChrome.isTopLevelCascadeMenu(BaijiuShellChrome.SELECT_VIEW_MENU_ID), "选择视图 is a push item, not a bar cascade");
+		assertTrue(BaijiuShellChrome.shouldCreateGuiForPlantChrome(BaijiuShellChrome.SELECT_VIEW_MENU_ID, false), "rebound 选择视图 may createGui");
+		assertFalse(BaijiuShellChrome.shouldCreateGuiForPlantChrome(BaijiuShellChrome.SELECT_VIEW_MENU_ID, true));
+		assertTrue(BaijiuShellChrome.isSelectViewDirectHandlerUri(BaijiuShellChrome.SELECT_VIEW_DIRECT_HANDLER_URI));
 		assertFalse(BaijiuShellChrome.shouldCreateGuiForPlantChrome(BaijiuShellChrome.VIEW_MENU_ID, false), "createGui(view) appends another 视图");
 		assertFalse(BaijiuShellChrome.shouldCreateGuiForPlantChrome(BaijiuShellChrome.VIEW_MENU_ID, true));
 		assertFalse(BaijiuShellChrome.shouldCreateGuiForPlantChrome(BaijiuShellChrome.MAIN_MENU_ID, true), "already rendered menu bar");

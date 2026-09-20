@@ -88,6 +88,9 @@ public class BaijiuShellParts_1_Test {
 		BaijiuShellParts.ensureEditorRequiredMenus((MMenu)null);
 		BaijiuShellParts.dedupePlantMenuChildren(null);
 		assertEquals(0, BaijiuShellParts.countMenuChildrenWithId(null, BaijiuShellChrome.VIEW_MENU_ID));
+		assertFalse(BaijiuShellParts.hasExecutableSelectViewChild(null));
+		assertFalse(BaijiuShellParts.isExecutableSelectViewItem(null));
+		assertEquals(null, BaijiuShellParts.preferredPlantMenuChild(null, null));
 		assertFalse(BaijiuShellModel.plantHomeSurfacePresent(null, null));
 		assertTrue(BaijiuShellModel.missingPlantHomeIds(null, null).contains(BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID));
 		BaijiuShellSelection.selectInParent(null);
@@ -127,6 +130,7 @@ public class BaijiuShellParts_1_Test {
 		}
 		assertTrue(selectView != null);
 		assertEquals(BaijiuShellChrome.SELECT_VIEW_TITLE_ZH, selectView.getLabel());
+		assertTrue(selectView instanceof org.eclipse.e4.ui.model.application.ui.menu.MDirectMenuItem direct && BaijiuShellChrome.SELECT_VIEW_DIRECT_HANDLER_URI.equals(direct.getContributionURI()), "headless ensure creates DirectMenuItem fallback");
 		MMenu chromatogram = null;
 		for(Object child : main.getChildren()) {
 			if(child instanceof MMenu menu && BaijiuShellChrome.CHROMATOGRAM_MENU_ID.equals(menu.getElementId())) {
@@ -166,8 +170,16 @@ public class BaijiuShellParts_1_Test {
 		view.getChildren().add(overlay);
 		BaijiuShellParts.ensureViewMenuContents(null, null, view);
 		assertEquals(1, BaijiuShellParts.countMenuChildrenWithId(view, BaijiuShellChrome.SELECT_VIEW_MENU_ID));
-		assertEquals(BaijiuShellChrome.SELECT_VIEW_TITLE_ZH, select.getLabel());
-		assertTrue(select.isVisible());
+		org.eclipse.e4.ui.model.application.ui.menu.MMenuElement liveSelect = null;
+		for(org.eclipse.e4.ui.model.application.ui.menu.MMenuElement child : view.getChildren()) {
+			if(child != null && BaijiuShellChrome.SELECT_VIEW_MENU_ID.equals(child.getElementId())) {
+				liveSelect = child;
+			}
+		}
+		assertTrue(liveSelect != null);
+		assertEquals(BaijiuShellChrome.SELECT_VIEW_TITLE_ZH, liveSelect.getLabel());
+		assertTrue(liveSelect.isVisible());
+		assertTrue(BaijiuShellParts.isExecutableSelectViewItem(liveSelect), "dummy handled 选择视图 is replaced with DirectMenuItem");
 		assertFalse(overview.isVisible(), "GroupHandler 概览 must not paint");
 		assertFalse(overview.isToBeRendered());
 		assertFalse(overlay.isVisible());
@@ -246,6 +258,63 @@ public class BaijiuShellParts_1_Test {
 		BaijiuShellParts.sanitizeHelpMenuChildren(help);
 		assertTrue(about.isVisible());
 		assertFalse(tutorials.isVisible());
+	}
+
+	@Test
+	public void dedupePrefersExecutableSelectViewAndMergesViewChildren() {
+
+		MMenu view = MMenuFactory.INSTANCE.createMenu();
+		view.setElementId(BaijiuShellChrome.VIEW_MENU_ID);
+		org.eclipse.e4.ui.model.application.ui.menu.MHandledMenuItem dummy = MMenuFactory.INSTANCE.createHandledMenuItem();
+		dummy.setElementId(BaijiuShellChrome.SELECT_VIEW_MENU_ID);
+		dummy.setLabel("选择视图");
+		org.eclipse.e4.ui.model.application.ui.menu.MDirectMenuItem real = MMenuFactory.INSTANCE.createDirectMenuItem();
+		real.setElementId(BaijiuShellChrome.SELECT_VIEW_MENU_ID);
+		real.setLabel("Select View");
+		real.setContributionURI(BaijiuShellChrome.SELECT_VIEW_DIRECT_HANDLER_URI);
+		view.getChildren().add(dummy);
+		view.getChildren().add(real);
+		BaijiuShellParts.dedupePlantMenuChildren(view);
+		assertEquals(1, BaijiuShellParts.countMenuChildrenWithId(view, BaijiuShellChrome.SELECT_VIEW_MENU_ID));
+		assertTrue(view.getChildren().contains(real), "commanded/direct 选择视图 wins over dummy");
+		assertFalse(view.getChildren().contains(dummy));
+		assertTrue(BaijiuShellParts.isExecutableSelectViewItem(real));
+
+		MMenu main = MMenuFactory.INSTANCE.createMenu();
+		main.setElementId(BaijiuShellChrome.MAIN_MENU_ID);
+		MMenu emptyView = MMenuFactory.INSTANCE.createMenu();
+		emptyView.setElementId(BaijiuShellChrome.VIEW_MENU_ID);
+		emptyView.setLabel("视图");
+		MMenu fullView = MMenuFactory.INSTANCE.createMenu();
+		fullView.setElementId(BaijiuShellChrome.VIEW_MENU_ID);
+		fullView.setLabel("视图");
+		org.eclipse.e4.ui.model.application.ui.menu.MDirectMenuItem select = MMenuFactory.INSTANCE.createDirectMenuItem();
+		select.setElementId(BaijiuShellChrome.SELECT_VIEW_MENU_ID);
+		select.setLabel("选择视图");
+		select.setContributionURI(BaijiuShellChrome.SELECT_VIEW_DIRECT_HANDLER_URI);
+		fullView.getChildren().add(select);
+		MMenu overview = MMenuFactory.INSTANCE.createMenu();
+		overview.setElementId("org.eclipse.chemclipse.ux.extension.xxd.ui.view.overview");
+		overview.setLabel("概览");
+		fullView.getChildren().add(overview);
+		main.getChildren().add(emptyView);
+		main.getChildren().add(fullView);
+		BaijiuShellParts.dedupePlantMenuChildren(main);
+		assertEquals(1, BaijiuShellParts.countMenuChildrenWithId(main, BaijiuShellChrome.VIEW_MENU_ID));
+		MMenu kept = findView(main);
+		assertTrue(kept != null);
+		assertEquals(1, BaijiuShellParts.countMenuChildrenWithId(kept, BaijiuShellChrome.SELECT_VIEW_MENU_ID));
+		assertTrue(BaijiuShellParts.hasExecutableSelectViewChild(kept));
+		boolean overviewKept = false;
+		for(Object child : kept.getChildren()) {
+			if(child instanceof MMenu menu && "org.eclipse.chemclipse.ux.extension.xxd.ui.view.overview".equals(menu.getElementId())) {
+				overviewKept = true;
+			}
+		}
+		assertTrue(overviewKept, "GroupHandler 概览 cascade must move onto the surviving 视图");
+		BaijiuShellParts.ensureViewMenuContents(null, null, kept);
+		assertEquals(1, BaijiuShellParts.countMenuChildrenWithId(kept, BaijiuShellChrome.SELECT_VIEW_MENU_ID));
+		assertFalse(overview.isVisible(), "research cascade stays defined but unpainted");
 	}
 
 	@Test

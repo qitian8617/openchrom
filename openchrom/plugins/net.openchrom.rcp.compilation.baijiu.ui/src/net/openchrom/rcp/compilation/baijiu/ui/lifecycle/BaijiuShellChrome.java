@@ -285,8 +285,17 @@ public final class BaijiuShellChrome {
 	 * trim hide. Rebuild workbench.xmi. Runtime: bind Select View command,
 	 * restore plant toolbar items/icons, hide coolbar fillers, sanitize
 	 * menus not the Eclipse coolbar on every widget SET-null.
+	 * Epoch 30: 视图 → 选择视图 still a no-op on second open. Dummy
+	 * {@link #SELECT_VIEW_MENU_ID} (beforefragment, no command) won
+	 * first-wins dedupe over the ChemClipse item that had
+	 * {@link #SELECT_VIEW_COMMAND_ID}; the SWT 选择视图 then had no
+	 * Selection handler. Prefer commanded / DirectMenuItem duplicates,
+	 * merge 视图 children onto the survivor, DirectMenuItem fallback to
+	 * ChemClipse {@code SelectViewHandler}, and a SWT listener when the
+	 * painted item has none. Menu bar stays 文件 / 白酒 / 视图 / 帮助.
+	 * Toolbar person icons remain the secondary coolbar-filler hide.
 	 */
-	public static final int CHROME_EPOCH = 29;
+	public static final int CHROME_EPOCH = 30;
 	/**
 	 * Ids that must exist on the live model after plant-home reveal. Missing
 	 * any of these is the empty-left / community-button-column failure mode.
@@ -341,9 +350,12 @@ public final class BaijiuShellChrome {
 	/**
 	 * ChemClipse Select View handler. Recreated 视图 children must bind this
 	 * or 选择视图 is a no-op. Eclipse Show View is a last-resort fallback.
+	 * DirectMenuItem {@link #SELECT_VIEW_DIRECT_HANDLER_URI} opens the same
+	 * ChemClipse dialog when the handled item has no command.
 	 */
 	public static final String SELECT_VIEW_COMMAND_ID = "org.eclipse.chemclipse.rcp.app.ui.command.selectView";
 	public static final String ECLIPSE_SHOW_VIEW_COMMAND_ID = "org.eclipse.ui.views.showView";
+	public static final String SELECT_VIEW_DIRECT_HANDLER_URI = "bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.handlers.BaijiuOpenSelectViewHandler";
 	public static final String PERSPECTIVE_SWITCHER_MENU_ID = "org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.perspectiveSwitcher";
 	public static final String PERSPECTIVE_SWITCHER_TOOL_ID = PERSPECTIVE_SWITCHER_TOOLITEM_ID;
 	public static final String NO_MOVE_TAG = "NoMove";
@@ -1145,17 +1157,24 @@ public final class BaijiuShellChrome {
 	}
 
 	/**
-	 * File / 白酒 / 视图 / 帮助 / Select View are painted as children of
-	 * {@code menu.main}. A second {@code createGui} on the cascade itself
-	 * appends another SWT.BAR item (cascade {@code widget} stays null until
-	 * Show). Only the bar / trim / toolbar need createGui.
+	 * File / 白酒 / 视图 / 帮助 are painted as children of {@code menu.main}.
+	 * A second {@code createGui} on the cascade itself appends another
+	 * SWT.BAR item (cascade {@code widget} stays null until Show). Select
+	 * View is a push item inside 视图, not a top-level cascade — it may
+	 * {@code createGui} so a rebound command gets a Selection handler.
+	 * Only the bar / trim / toolbar / that push item need createGui.
 	 */
 	public static boolean isTopLevelCascadeMenu(String elementId) {
 
 		if(elementId == null || elementId.isBlank()) {
 			return false;
 		}
-		return FILE_MENU_ID.equals(elementId) || BAIJIU_MENU_ID.equals(elementId) || VIEW_MENU_ID.equals(elementId) || HELP_MENU_ID.equals(elementId) || SELECT_VIEW_MENU_ID.equals(elementId);
+		return FILE_MENU_ID.equals(elementId) || BAIJIU_MENU_ID.equals(elementId) || VIEW_MENU_ID.equals(elementId) || HELP_MENU_ID.equals(elementId);
+	}
+
+	public static boolean isSelectViewDirectHandlerUri(String contributionURI) {
+
+		return contributionURI != null && SELECT_VIEW_DIRECT_HANDLER_URI.equals(contributionURI);
 	}
 
 	/**
