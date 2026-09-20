@@ -19,8 +19,9 @@ import java.util.Set;
  * {@code Application.e4xmi} plus well-known CSD/MSD/WSD/NMR fragments.
  * Unknown / renamed ChemClipse ids are left visible so launch cannot brick.
  * <p>
- * Normal plant top bar: 文件 / 白酒 / 视图 / 帮助. 处理器 / 插件 / 色谱 / 窗口
- * are hidden by id and by top-menu label. 视图 keeps Select View; the dialog
+ * Normal plant top bar: 文件 / 白酒 / 视图 / 帮助. 处理器 / 插件 / 色谱 /
+ * 色谱图 / 窗口 are hidden by id and by top-menu label (色谱图 stays
+ * defined for ChemClipse GroupHandler lookup). 视图 keeps Select View; the dialog
  * is an allowlist (白酒操作 / 气相色谱控制台 / 色谱图叠加 / 进样序列).
  * Perspective switcher stays hidden. Plant home sash: left workflow tabs
  * (谱图/采集 + analysis pages) | right fixed 白酒操作 sidebar. GC console is
@@ -206,8 +207,18 @@ public final class BaijiuShellChrome {
 	 * or top trim. Recreate those contributions in the before-fragment
 	 * processor, attach them to the plant window, and {@code createGui}
 	 * after the Shell exists.
+	 * Epoch 26: 视图 still missing when the ChemClipse View stub had no
+	 * visible children (JFace MenuManager omits empty top menus). 色谱图
+	 * reappeared as a top-level label after CSD activate because
+	 * {@link #CHROMATOGRAM_MENU_ID} stayed defined for GroupHandler and
+	 * {@code shouldHideMainMenuChild} therefore skipped it — plus the
+	 * Chinese label is 色谱图, not 色谱. Separate lookup-defined from
+	 * painted: chromatogram stays a main-menu child with
+	 * {@code visible=false}/{@code toBeRendered=true}; 视图 gets Select
+	 * View so it paints. CSD action-bar swap re-attaches
+	 * {@link #PLANT_TOOLBAR_ID} without walk-hiding every chart toolitem.
 	 */
-	public static final int CHROME_EPOCH = 25;
+	public static final int CHROME_EPOCH = 26;
 	/**
 	 * Ids that must exist on the live model after plant-home reveal. Missing
 	 * any of these is the empty-left / community-button-column failure mode.
@@ -311,11 +322,22 @@ public final class BaijiuShellChrome {
 	 * <em>children</em> only — never put these ids on
 	 * {@link #HIDDEN_ELEMENT_IDS} or walk-hide the contribution itself.
 	 * {@link #CHROMATOGRAM_MENU_ID} stays defined for the same lookup; its
-	 * top-level 色谱 label stays off unless {@link #researchMenusVisible()}.
+	 * top-level 色谱 / 色谱图 label stays off unless {@link #researchMenusVisible()}.
 	 */
 	public static final Set<String> EDITOR_REQUIRED_MENU_IDS = Set.of( //
 			CHROMATOGRAM_MENU_ID, //
 			VIEW_MENU_ID);
+	/**
+	 * Painted plant top menus, in bar order. {@link #VIEW_MENU_ID} must
+	 * have at least one visible child (Select View) or JFace omits it.
+	 * {@link #CHROMATOGRAM_MENU_ID} is <em>not</em> in this list — defined
+	 * for lookup, not painted.
+	 */
+	public static final List<String> PLANT_TOP_MENU_IDS = List.of( //
+			FILE_MENU_ID, //
+			BAIJIU_MENU_ID, //
+			VIEW_MENU_ID, //
+			HELP_MENU_ID);
 	/**
 	 * ChemClipse Application.e4xmi top-level Window menu. Eclipse 3.x
 	 * compatibility often contributes a second menu whose id is just
@@ -589,8 +611,13 @@ public final class BaijiuShellChrome {
 	private static final Set<String> RESEARCH_LABELS = Set.of( //
 			"处理器", "process", "processor", "processors", //
 			"插件", "plug-in", "plug-ins", "plugins", //
-			"色谱", "chromatogram", //
+			"色谱", "色谱图", "chromatogram", //
 			"窗口", "window");
+	private static final Set<String> PLANT_TOP_MENU_LABELS = Set.of( //
+			"文件", "file", //
+			"白酒", "baijiu", //
+			"视图", "view", //
+			"帮助", "help");
 
 	/**
 	 * Shared reverse-control / sequence Parts that plant-home already hosts
@@ -683,6 +710,131 @@ public final class BaijiuShellChrome {
 	public static boolean isEditorRequiredMenu(String elementId) {
 
 		return elementId != null && !elementId.isBlank() && EDITOR_REQUIRED_MENU_IDS.contains(elementId);
+	}
+
+	/**
+	 * GroupHandler / editor lookups need the contribution as a child of
+	 * the live main menu. This is not the same as painting a top-level
+	 * label — {@link #CHROMATOGRAM_MENU_ID} is defined and hidden.
+	 */
+	public static boolean isDefinedForLookup(String elementId) {
+
+		return isEditorRequiredMenu(elementId);
+	}
+
+	/**
+	 * File / 白酒 / 视图 / 帮助 paint on the bar. Chromatogram does not,
+	 * even though {@link #isDefinedForLookup(String)} is true.
+	 */
+	public static boolean paintsAsTopLevelMainMenu(String elementId) {
+
+		if(elementId == null || elementId.isBlank()) {
+			return false;
+		}
+		if(researchMenusVisible() && (CHROMATOGRAM_MENU_ID.equals(elementId) || RESEARCH_ESCAPE_IDS.contains(elementId))) {
+			return true;
+		}
+		return PLANT_TOP_MENU_IDS.contains(elementId);
+	}
+
+	/**
+	 * E4 {@code visible} for editor-required menus. View paints; chromatogram
+	 * stays {@code visible=false} + {@code toBeRendered=true} unless the
+	 * research escape hatch is on.
+	 */
+	public static boolean editorRequiredMenuVisible(String elementId) {
+
+		if(elementId == null || elementId.isBlank()) {
+			return false;
+		}
+		if(VIEW_MENU_ID.equals(elementId)) {
+			return true;
+		}
+		if(CHROMATOGRAM_MENU_ID.equals(elementId)) {
+			return researchMenusVisible();
+		}
+		return paintsAsTopLevelMainMenu(elementId);
+	}
+
+	/**
+	 * Hide the chromatogram <em>label</em> without removing or
+	 * {@code toBeRendered=false}-ing the contribution. Duplicate 3.x
+	 * 色谱图 menus (other ids) still use {@link #shouldHideMainMenuChild}.
+	 */
+	public static boolean shouldHideTopLevelMenuLabel(String elementId, String label) {
+
+		if(researchMenusVisible()) {
+			return false;
+		}
+		if(paintsAsTopLevelMainMenu(elementId) || isPlantTopMenuLabel(label)) {
+			return false;
+		}
+		if(CHROMATOGRAM_MENU_ID.equals(elementId) || isChromatogramTopMenuLabel(label)) {
+			return true;
+		}
+		return isResearchTopMenuLabel(label);
+	}
+
+	/**
+	 * SWT menu-bar ({@code SWT.BAR}) items. Does not hard-hide E4 ids that
+	 * must stay defined for GroupHandler.
+	 */
+	public static boolean shouldHideMainMenuBarItem(String label) {
+
+		if(researchMenusVisible()) {
+			return false;
+		}
+		if(isPlantTopMenuLabel(label)) {
+			return false;
+		}
+		return isChromatogramTopMenuLabel(label) || isResearchTopMenuLabel(label);
+	}
+
+	public static boolean isPlantTopMenuLabel(String label) {
+
+		if(label == null || label.isBlank()) {
+			return false;
+		}
+		return PLANT_TOP_MENU_LABELS.contains(normalizeMenuLabel(label));
+	}
+
+	/**
+	 * ChemClipse localizes the chromatogram top menu as 色谱图 (not 色谱).
+	 * Exact match so 色谱图叠加 (Select View overlay) is not treated as the
+	 * research top menu.
+	 */
+	public static boolean isChromatogramTopMenuLabel(String label) {
+
+		if(label == null || label.isBlank()) {
+			return false;
+		}
+		String normalized = normalizeMenuLabel(label);
+		return "色谱".equals(normalized) || "色谱图".equals(normalized) || "chromatogram".equals(normalized);
+	}
+
+	/**
+	 * Top-trim children to walk-hide. Plant toolbar stays. Unknown / chart
+	 * toolitems are left alone so CSD action bars cannot start a hide/add
+	 * fight; known research coolbars (file / perspectives / working set)
+	 * still hide.
+	 */
+	public static boolean shouldHideTopTrimChild(String elementId) {
+
+		if(elementId == null || elementId.isBlank()) {
+			return false;
+		}
+		if(isPlantWindowChrome(elementId) || isPlantToolbarContribution(elementId) || isEditorRequiredMenu(elementId)) {
+			return false;
+		}
+		return shouldHide(elementId);
+	}
+
+	public static boolean isPlantChromeContainer(String elementId) {
+
+		if(elementId == null || elementId.isBlank()) {
+			return false;
+		}
+		return isPlantWindowChrome(elementId) || isEditorRequiredMenu(elementId) || MAIN_MENU_ID.equals(elementId) || ECLIPSE_MAIN_MENU_ID.equals(elementId) || TRIMBAR_TOP_ID.equals(elementId) || ECLIPSE_MAIN_TOOLBAR_ID.equals(elementId) || PLANT_TOOLBAR_ID.equals(elementId);
 	}
 
 	/**

@@ -11,14 +11,17 @@ package net.openchrom.rcp.compilation.baijiu.ui.lifecycle;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.e4.core.services.events.IEventBroker;
 import org.eclipse.e4.ui.model.application.MApplication;
 import org.eclipse.e4.ui.model.application.descriptor.basic.MPartDescriptor;
 import org.eclipse.e4.ui.model.application.ui.MUIElement;
 import org.eclipse.e4.ui.model.application.ui.MUILabel;
+import org.eclipse.e4.ui.model.application.ui.SideValue;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPerspective;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPerspectiveStack;
+import org.eclipse.e4.ui.model.application.ui.basic.MTrimBar;
 import org.eclipse.e4.ui.model.application.ui.basic.MWindow;
 import org.eclipse.e4.ui.model.application.ui.menu.MMenu;
 import org.eclipse.e4.ui.model.application.ui.menu.MMenuContribution;
@@ -48,6 +51,7 @@ public class BaijiuShellAddon {
 
 	private static final String WINDOW_MAIN_MENU_TOPIC = "org/eclipse/e4/ui/model/application/ui/basic/Window/mainMenu";
 	private static volatile boolean shuttingDown;
+	private static final AtomicInteger chromeGeneration = new AtomicInteger();
 
 	@Inject
 	private MApplication application;
@@ -127,13 +131,50 @@ public class BaijiuShellAddon {
 				if(shuttingDown) {
 					return;
 				}
-				Object next = event.getProperty(UIEvents.EventTags.NEW_VALUE);
-				if(next == null) {
+				schedulePlantWindowChrome(application, modelService);
+			});
+		} catch(RuntimeException | LinkageError e) {
+			// topic constant drift on older E4
+		}
+		try {
+			eventBroker.subscribe(UIEvents.UILifeCycle.ACTIVATE, event -> {
+				if(shuttingDown) {
+					return;
+				}
+				Object element = event.getProperty(UIEvents.EventTags.ELEMENT);
+				if(isCsdChromeActivation(element)) {
 					schedulePlantWindowChrome(application, modelService);
 				}
 			});
 		} catch(RuntimeException | LinkageError e) {
-			// topic constant drift on older E4
+			// older E4
+		}
+		try {
+			eventBroker.subscribe(UIEvents.UIElement.TOPIC_VISIBLE, event -> {
+				if(shuttingDown) {
+					return;
+				}
+				Object element = event.getProperty(UIEvents.EventTags.ELEMENT);
+				Object next = event.getProperty(UIEvents.EventTags.NEW_VALUE);
+				if(element instanceof MUIElement ui && BaijiuShellChrome.CHROMATOGRAM_MENU_ID.equals(ui.getElementId()) && Boolean.TRUE.equals(next) && !BaijiuShellChrome.researchMenusVisible()) {
+					schedulePlantWindowChrome(application, modelService);
+				}
+			});
+		} catch(RuntimeException | LinkageError e) {
+			// older E4
+		}
+		try {
+			eventBroker.subscribe(UIEvents.ElementContainer.TOPIC_CHILDREN, event -> {
+				if(shuttingDown) {
+					return;
+				}
+				Object container = event.getProperty(UIEvents.EventTags.ELEMENT);
+				if(isPlantChromeContainer(container)) {
+					schedulePlantWindowChrome(application, modelService);
+				}
+			});
+		} catch(RuntimeException | LinkageError e) {
+			// older E4
 		}
 	}
 
@@ -526,24 +567,59 @@ public class BaijiuShellAddon {
 				return;
 			}
 			final Display ui = display;
+			final int generation = chromeGeneration.incrementAndGet();
 			ui.asyncExec(() -> {
-				if(!ui.isDisposed()) {
+				if(!ui.isDisposed() && generation == chromeGeneration.get()) {
 					reveal.run();
 				}
 			});
-			ui.timerExec(300, () -> {
-				if(!ui.isDisposed()) {
+			ui.timerExec(200, () -> {
+				if(!ui.isDisposed() && !shuttingDown && generation == chromeGeneration.get()) {
+					reveal.run();
+				}
+			});
+			ui.timerExec(800, () -> {
+				if(!ui.isDisposed() && !shuttingDown && generation == chromeGeneration.get()) {
 					reveal.run();
 				}
 			});
 			ui.timerExec(1500, () -> {
-				if(!ui.isDisposed() && !shuttingDown) {
+				if(!ui.isDisposed() && !shuttingDown && generation == chromeGeneration.get()) {
 					reveal.run();
 				}
 			});
 		} catch(RuntimeException | LinkageError e) {
 			reveal.run();
 		}
+	}
+
+	private static boolean isCsdChromeActivation(Object element) {
+
+		if(!(element instanceof MUIElement ui)) {
+			return false;
+		}
+		String id = ui.getElementId();
+		return BaijiuShellChrome.CSD_EDITOR_PART_ID.equals(id) //
+				|| BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID.equals(id) //
+				|| BaijiuShellChrome.CHROMATOGRAM_STACK_ID.equals(id);
+	}
+
+	private static boolean isPlantChromeContainer(Object container) {
+
+		if(container instanceof MTrimBar bar) {
+			try {
+				if(bar.getSide() == SideValue.TOP) {
+					return true;
+				}
+			} catch(RuntimeException | LinkageError e) {
+				// older E4
+			}
+			return BaijiuShellChrome.isPlantChromeContainer(bar.getElementId());
+		}
+		if(container instanceof MUIElement ui) {
+			return BaijiuShellChrome.isPlantChromeContainer(ui.getElementId());
+		}
+		return false;
 	}
 
 	/**

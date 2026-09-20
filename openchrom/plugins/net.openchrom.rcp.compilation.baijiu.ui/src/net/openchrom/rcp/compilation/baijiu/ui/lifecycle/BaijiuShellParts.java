@@ -25,7 +25,9 @@ import org.eclipse.e4.ui.model.application.ui.basic.MPartStack;
 import org.eclipse.e4.ui.model.application.ui.basic.MTrimBar;
 import org.eclipse.e4.ui.model.application.ui.basic.MTrimmedWindow;
 import org.eclipse.e4.ui.model.application.ui.basic.MWindow;
+import org.eclipse.e4.ui.model.application.ui.menu.MHandledMenuItem;
 import org.eclipse.e4.ui.model.application.ui.menu.MMenu;
+import org.eclipse.e4.ui.model.application.ui.menu.MMenuElement;
 import org.eclipse.e4.ui.model.application.ui.menu.MMenuFactory;
 import org.eclipse.e4.ui.model.application.ui.menu.MToolBar;
 import org.eclipse.e4.ui.workbench.IPresentationEngine;
@@ -35,6 +37,8 @@ import org.eclipse.e4.ui.workbench.modeling.EPartService.PartState;
 import org.eclipse.e4.ui.workbench.modeling.IWindowCloseHandler;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Menu;
+import org.eclipse.swt.widgets.Shell;
 
 import net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuHomePanels;
 
@@ -300,6 +304,7 @@ public final class BaijiuShellParts {
 				}
 			}
 		}
+		attachPlantToolbarToVisibleTrim(application, modelService, toolbar instanceof MToolBar plant ? plant : null);
 	}
 
 	/**
@@ -327,6 +332,7 @@ public final class BaijiuShellParts {
 		showTopTrimBars(application, modelService);
 		revealPlantToolbar(application, modelService);
 		hideNonPlantTopTrim(application, modelService);
+		revealPlantToolbar(application, modelService);
 		forceShowPlantWindowChrome(application, modelService);
 		ensureEditorRequiredMenus(application, modelService);
 		recreatePlantChromeWidgets(application, modelService);
@@ -469,6 +475,13 @@ public final class BaijiuShellParts {
 		ensureTopMenuChild(modelService, application, mainMenu, BaijiuShellChrome.BAIJIU_MENU_ID, "白酒");
 		ensureTopMenuChild(modelService, application, mainMenu, BaijiuShellChrome.VIEW_MENU_ID, "视图");
 		ensureTopMenuChild(modelService, application, mainMenu, BaijiuShellChrome.HELP_MENU_ID, "帮助");
+		MMenu view = findMenu(modelService, application, BaijiuShellChrome.VIEW_MENU_ID);
+		if(view == null && mainMenuChild(mainMenu, BaijiuShellChrome.VIEW_MENU_ID) instanceof MMenu found) {
+			view = found;
+		}
+		ensureViewMenuContents(modelService, application, view);
+		orderPlantTopMenus(mainMenu);
+		applyEditorRequiredMenuVisibility(mainMenu);
 	}
 
 	private static void ensureTopMenuChild(EModelService modelService, MApplication application, MMenu mainMenu, String elementId, String label) {
@@ -713,8 +726,14 @@ public final class BaijiuShellParts {
 				}
 			}
 			List children = trim.getChildren();
-			if(children != null && !children.contains(toolbar)) {
-				children.add(0, toolbar);
+			if(children != null) {
+				int current = children.indexOf(toolbar);
+				if(current < 0) {
+					children.add(0, toolbar);
+				} else if(current > 0) {
+					children.remove(toolbar);
+					children.add(0, toolbar);
+				}
 			}
 		} catch(RuntimeException | LinkageError e) {
 			// immutable
@@ -733,13 +752,31 @@ public final class BaijiuShellParts {
 		MMenu menu = plant.getMainMenu();
 		if(menu != null) {
 			forceCreateElement(application, modelService, menu);
+			MMenu view = findMenu(modelService, application, BaijiuShellChrome.VIEW_MENU_ID);
+			if(view == null && mainMenuChild(menu, BaijiuShellChrome.VIEW_MENU_ID) instanceof MMenu found) {
+				view = found;
+			}
+			if(view != null) {
+				forceCreateElement(application, modelService, view);
+			}
+			applyEditorRequiredMenuVisibility(menu);
+			if(plant.getWidget() instanceof Shell shell && !shell.isDisposed()) {
+				Menu bar = shell.getMenuBar();
+				if(bar != null && !bar.isDisposed()) {
+					BaijiuShellMenus.sanitizeMainMenuBar(bar);
+				}
+			}
 		}
 		if(plant instanceof MTrimmedWindow trimmed) {
+			MTrimBar live = liveTopTrim(application, modelService);
+			if(live != null) {
+				forceCreateElement(application, modelService, live);
+			}
 			MTrimBar top = findTrimBar(modelService, application, BaijiuShellChrome.TRIMBAR_TOP_ID);
 			if(top == null) {
 				top = trimBarOnWindow(trimmed, BaijiuShellChrome.TRIMBAR_TOP_ID);
 			}
-			if(top != null) {
+			if(top != null && top != live) {
 				forceCreateElement(application, modelService, top);
 			}
 			MUIElement toolbar = modelService.find(BaijiuShellChrome.PLANT_TOOLBAR_ID, application);
@@ -753,8 +790,8 @@ public final class BaijiuShellParts {
 	 * Keep {@link BaijiuShellChrome#EDITOR_REQUIRED_MENU_IDS} as {@code MMenu}
 	 * children of the live window main menu so GroupHandler
 	 * {@code getSubMenu} does not throw {@code NotDefinedException}. 视图
-	 * stays the ChemClipse View menu id; 色谱 stays defined but hidden
-	 * unless the research escape hatch is on.
+	 * stays the ChemClipse View menu id; 色谱 / 色谱图 stays defined but
+	 * {@code visible=false} unless the research escape hatch is on.
 	 */
 	static void ensureEditorRequiredMenus(MApplication application, EModelService modelService) {
 
@@ -786,14 +823,13 @@ public final class BaijiuShellParts {
 				continue;
 			}
 			attachMenuChild(mainMenu, menu);
-			removeTag(menu, IPresentationEngine.HIDDEN_EXPLICITLY);
-			menu.setToBeRendered(true);
-			if(BaijiuShellChrome.VIEW_MENU_ID.equals(id) || BaijiuShellChrome.researchMenusVisible()) {
-				menu.setVisible(true);
-			} else {
-				menu.setVisible(false);
+			applyEditorRequiredMenuVisibility(menu);
+			if(BaijiuShellChrome.VIEW_MENU_ID.equals(id)) {
+				ensureViewMenuContents(modelService, application, menu);
 			}
 		}
+		orderPlantTopMenus(mainMenu);
+		applyEditorRequiredMenuVisibility(mainMenu);
 	}
 
 	private static MMenu windowMainMenu(MApplication application) {
@@ -850,6 +886,11 @@ public final class BaijiuShellParts {
 			menu.setLabel("色谱");
 		}
 		menu.setToBeRendered(true);
+		if(BaijiuShellChrome.isEditorRequiredMenu(elementId)) {
+			menu.setVisible(BaijiuShellChrome.editorRequiredMenuVisible(elementId));
+		} else {
+			menu.setVisible(true);
+		}
 		return menu;
 	}
 
@@ -874,6 +915,291 @@ public final class BaijiuShellParts {
 		} catch(RuntimeException | LinkageError e) {
 			// menu children not writable
 		}
+	}
+
+	/**
+	 * View paints; chromatogram stays a child with {@code visible=false}
+	 * and {@code toBeRendered=true} so GroupHandler still finds the id.
+	 */
+	static void applyEditorRequiredMenuVisibility(MMenu menu) {
+
+		if(menu == null) {
+			return;
+		}
+		applyEditorRequiredMenuVisibility((MUIElement)menu);
+		try {
+			List<?> children = menu.getChildren();
+			if(children == null) {
+				return;
+			}
+			for(Object child : children) {
+				if(child instanceof MMenu childMenu) {
+					applyEditorRequiredMenuVisibility(childMenu);
+				} else if(child instanceof MUIElement element) {
+					applyEditorRequiredMenuVisibility(element);
+				}
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// menu children not readable
+		}
+	}
+
+	private static void applyEditorRequiredMenuVisibility(MUIElement element) {
+
+		if(element == null) {
+			return;
+		}
+		String id = element.getElementId();
+		if(!BaijiuShellChrome.isEditorRequiredMenu(id)) {
+			return;
+		}
+		removeTag(element, IPresentationEngine.HIDDEN_EXPLICITLY);
+		element.setToBeRendered(true);
+		element.setVisible(BaijiuShellChrome.editorRequiredMenuVisible(id));
+	}
+
+	/**
+	 * JFace MenuManager omits an empty 视图 cascade. Keep Select View as a
+	 * visible child so the top-level label paints.
+	 */
+	static void ensureViewMenuContents(EModelService modelService, MApplication application, MMenu viewMenu) {
+
+		if(viewMenu == null) {
+			return;
+		}
+		MUIElement select = mainMenuChild(viewMenu, BaijiuShellChrome.SELECT_VIEW_MENU_ID);
+		if(select == null && modelService != null && application != null) {
+			select = modelService.find(BaijiuShellChrome.SELECT_VIEW_MENU_ID, application);
+		}
+		if(select == null) {
+			select = createSelectViewItem(modelService);
+		}
+		if(select instanceof MMenuElement item) {
+			forceShowChrome(select);
+			attachMenuElement(viewMenu, item);
+		}
+		try {
+			List<?> children = viewMenu.getChildren();
+			if(children != null) {
+				for(Object child : children) {
+					if(child instanceof MUIElement element && BaijiuShellChrome.SELECT_VIEW_MENU_ID.equals(element.getElementId())) {
+						forceShowChrome(element);
+					}
+				}
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// view children not readable
+		}
+	}
+
+	private static MHandledMenuItem createSelectViewItem(EModelService modelService) {
+
+		MHandledMenuItem item = null;
+		if(modelService != null) {
+			try {
+				item = modelService.createModelElement(MHandledMenuItem.class);
+			} catch(RuntimeException | LinkageError e) {
+				item = null;
+			}
+		}
+		if(item == null) {
+			try {
+				item = MMenuFactory.INSTANCE.createHandledMenuItem();
+			} catch(RuntimeException | LinkageError e) {
+				return null;
+			}
+		}
+		item.setElementId(BaijiuShellChrome.SELECT_VIEW_MENU_ID);
+		item.setLabel("选择视图");
+		item.setToBeRendered(true);
+		item.setVisible(true);
+		return item;
+	}
+
+	/**
+	 * File / 白酒 / 视图 / 帮助 in that order. Chromatogram may remain a
+	 * later child for lookup; it is not painted.
+	 */
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	static void orderPlantTopMenus(MMenu mainMenu) {
+
+		if(mainMenu == null) {
+			return;
+		}
+		try {
+			List children = mainMenu.getChildren();
+			if(children == null) {
+				return;
+			}
+			for(int i = 0; i < BaijiuShellChrome.PLANT_TOP_MENU_IDS.size(); i++) {
+				String id = BaijiuShellChrome.PLANT_TOP_MENU_IDS.get(i);
+				MUIElement child = mainMenuChild(mainMenu, id);
+				if(child == null) {
+					continue;
+				}
+				int current = children.indexOf(child);
+				if(current < 0) {
+					children.add(Math.min(i, children.size()), child);
+				} else if(current != i) {
+					children.remove(child);
+					children.add(Math.min(i, children.size()), child);
+				}
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// menu children not writable
+		}
+	}
+
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	private static void attachMenuElement(MMenu parent, MMenuElement child) {
+
+		if(parent == null || child == null) {
+			return;
+		}
+		try {
+			MElementContainer<?> currentParent = child.getParent();
+			if(currentParent != null && currentParent != parent) {
+				List siblings = currentParent.getChildren();
+				if(siblings != null) {
+					siblings.remove(child);
+				}
+			}
+			List children = parent.getChildren();
+			if(children != null && !children.contains(child)) {
+				children.add(0, child);
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// menu children not writable
+		}
+	}
+
+	/**
+	 * After CSD action bars steal the top coolbar, {@code toolbar.plant}
+	 * may be orphaned from {@code trimbar.top}. Re-attach it to the live
+	 * TOP trim (ChemClipse trimbar.top or Eclipse {@code main.toolbar})
+	 * at index 0 without walk-hiding chart toolitems.
+	 */
+	private static void attachPlantToolbarToVisibleTrim(MApplication application, EModelService modelService, MToolBar toolbar) {
+
+		if(application == null || toolbar == null) {
+			return;
+		}
+		MTrimBar live = liveTopTrim(application, modelService);
+		if(live != null) {
+			forceShowChrome(live);
+			attachToolBar(live, toolbar);
+			forceShowChrome(toolbar);
+		}
+	}
+
+	private static MTrimBar liveTopTrim(MApplication application, EModelService modelService) {
+
+		MWindow plant = plantWindow(application, modelService);
+		if(plant instanceof MTrimmedWindow trimmed) {
+			MTrimBar withWidget = firstTopTrimWithWidget(trimmed);
+			if(withWidget != null) {
+				return withWidget;
+			}
+			MTrimBar hosting = trimBarContainingPlantToolbar(trimmed);
+			if(hosting != null) {
+				return hosting;
+			}
+			MTrimBar firstTop = firstTopTrim(trimmed);
+			if(firstTop != null) {
+				return firstTop;
+			}
+			MTrimBar onWindow = trimBarOnWindow(trimmed, BaijiuShellChrome.TRIMBAR_TOP_ID);
+			if(onWindow != null) {
+				return onWindow;
+			}
+		}
+		MTrimBar chemclipse = findTrimBar(modelService, application, BaijiuShellChrome.TRIMBAR_TOP_ID);
+		if(chemclipse != null) {
+			return chemclipse;
+		}
+		MUIElement eclipse = modelService == null ? null : modelService.find(BaijiuShellChrome.ECLIPSE_MAIN_TOOLBAR_ID, application);
+		if(eclipse instanceof MTrimBar bar) {
+			return bar;
+		}
+		return null;
+	}
+
+	private static MTrimBar trimBarContainingPlantToolbar(MTrimmedWindow window) {
+
+		if(window == null) {
+			return null;
+		}
+		try {
+			List<MTrimBar> bars = window.getTrimBars();
+			if(bars == null) {
+				return null;
+			}
+			for(MTrimBar bar : bars) {
+				if(bar != null && containsPlantToolbar(bar)) {
+					return bar;
+				}
+			}
+		} catch(RuntimeException | LinkageError e) {
+			return null;
+		}
+		return null;
+	}
+
+	private static MTrimBar firstTopTrimWithWidget(MTrimmedWindow window) {
+
+		if(window == null) {
+			return null;
+		}
+		try {
+			List<MTrimBar> bars = window.getTrimBars();
+			if(bars == null) {
+				return null;
+			}
+			for(MTrimBar bar : bars) {
+				if(bar != null && isRenderedTopTrim(bar) && bar.getWidget() != null) {
+					return bar;
+				}
+			}
+		} catch(RuntimeException | LinkageError e) {
+			return null;
+		}
+		return null;
+	}
+
+	private static boolean isRenderedTopTrim(MTrimBar bar) {
+
+		if(bar == null) {
+			return false;
+		}
+		try {
+			if(bar.getSide() != SideValue.TOP) {
+				return false;
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// older E4: treat as top
+		}
+		return bar.isToBeRendered() && bar.isVisible();
+	}
+
+	private static MTrimBar firstTopTrim(MTrimmedWindow window) {
+
+		if(window == null) {
+			return null;
+		}
+		try {
+			List<MTrimBar> bars = window.getTrimBars();
+			if(bars == null) {
+				return null;
+			}
+			for(MTrimBar bar : bars) {
+				if(bar != null && isRenderedTopTrim(bar)) {
+					return bar;
+				}
+			}
+		} catch(RuntimeException | LinkageError e) {
+			return null;
+		}
+		return null;
 	}
 
 	static void hideNonPlantTopTrim(MApplication application, EModelService modelService) {
@@ -908,8 +1234,10 @@ public final class BaijiuShellParts {
 				hideNonPlantTrimChildren(ui);
 				continue;
 			}
-			ui.setVisible(false);
-			ui.setToBeRendered(false);
+			if(BaijiuShellChrome.shouldHideTopTrimChild(id)) {
+				ui.setVisible(false);
+				ui.setToBeRendered(false);
+			}
 		}
 	}
 
