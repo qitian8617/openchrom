@@ -145,6 +145,25 @@ public final class BaijiuShellChrome {
 	public static final String SELECT_VIEW_TITLE_ZH = "选择视图";
 	public static final String SELECT_VIEW_TITLE_EN = "Select View";
 	public static final String OPEN_CHROMATOGRAM_TOOLITEM_ID = "net.openchrom.rcp.compilation.baijiu.ui.toolbar.openChromatogram";
+	public static final String START_ANALYSIS_TOOLITEM_ID = "net.openchrom.rcp.compilation.baijiu.ui.toolbar.startAnalysis";
+	public static final String INTEGRATE_TOOLITEM_ID = "net.openchrom.rcp.compilation.baijiu.ui.toolbar.integrate";
+	public static final String ANALYSIS_TOOLITEM_ID = "net.openchrom.rcp.compilation.baijiu.ui.toolbar.analysis";
+	public static final String REPORT_TOOLITEM_ID = "net.openchrom.rcp.compilation.baijiu.ui.toolbar.report";
+	public static final String OPEN_CHROMATOGRAM_COMMAND_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.command.openChromatogram";
+	public static final String START_ANALYSIS_COMMAND_ID = "net.openchrom.xxd.control.supplier.temperature.ui.command.startAnalysis";
+	public static final String INTEGRATE_COMMAND_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.command.integrate";
+	public static final String ANALYSIS_COMMAND_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.command.open";
+	public static final String REPORT_COMMAND_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.command.report";
+	public static final String PLANT_ICON_CSD = "platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/importChromatogramCSD.gif";
+	public static final String PLANT_ICON_PEAK = "platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/peak.gif";
+	public static final String PLANT_ICON_PREFERENCES = "platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/preferences.gif";
+	public static final List<String> PLANT_TOOLBAR_ITEM_IDS = List.of( //
+			OPEN_CHROMATOGRAM_TOOLITEM_ID, //
+			TOGGLE_GC_TOOLITEM_ID, //
+			START_ANALYSIS_TOOLITEM_ID, //
+			INTEGRATE_TOOLITEM_ID, //
+			ANALYSIS_TOOLITEM_ID, //
+			REPORT_TOOLITEM_ID);
 	public static final String GC_CONSOLE_HIDDEN_TAG = "BaijiuGcConsoleHidden";
 	/**
 	 * ChemClipse {@code Application.e4xmi} PerspectiveStack. Fragments target
@@ -259,8 +278,15 @@ public final class BaijiuShellChrome {
 	 * Continuous allowlist re-apply (ADD / Show / Arm / every ACTIVATE /
 	 * editor close / TOPIC_VISIBLE / recover) is runtime — same epoch;
 	 * do not rely on another bump for the same branding leak.
+	 * Epoch 29: #68/#69 second-launch poison. Continuous sanitize + empty
+	 * {@code toolbar.plant} recreate painted Eclipse working-set person
+	 * icons; dummy 选择视图 had no command so the dialog was a no-op;
+	 * {@code TOPIC_WIDGET} on chromatogram-home teardown re-entered
+	 * trim hide. Rebuild workbench.xmi. Runtime: bind Select View command,
+	 * restore plant toolbar items/icons, hide coolbar fillers, sanitize
+	 * menus not the Eclipse coolbar on every widget SET-null.
 	 */
-	public static final int CHROME_EPOCH = 28;
+	public static final int CHROME_EPOCH = 29;
 	/**
 	 * Ids that must exist on the live model after plant-home reveal. Missing
 	 * any of these is the empty-left / community-button-column failure mode.
@@ -312,6 +338,12 @@ public final class BaijiuShellChrome {
 	public static final String ECLIPSE_MAIN_TOOLBAR_ID = "org.eclipse.ui.main.toolbar";
 	public static final String SELECT_VIEW_MENU_ID = "org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.selectView";
 	public static final String SELECT_VIEW_TOOL_ID = SELECT_VIEW_TOOLITEM_ID;
+	/**
+	 * ChemClipse Select View handler. Recreated 视图 children must bind this
+	 * or 选择视图 is a no-op. Eclipse Show View is a last-resort fallback.
+	 */
+	public static final String SELECT_VIEW_COMMAND_ID = "org.eclipse.chemclipse.rcp.app.ui.command.selectView";
+	public static final String ECLIPSE_SHOW_VIEW_COMMAND_ID = "org.eclipse.ui.views.showView";
 	public static final String PERSPECTIVE_SWITCHER_MENU_ID = "org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.perspectiveSwitcher";
 	public static final String PERSPECTIVE_SWITCHER_TOOL_ID = PERSPECTIVE_SWITCHER_TOOLITEM_ID;
 	public static final String NO_MOVE_TAG = "NoMove";
@@ -1020,6 +1052,90 @@ public final class BaijiuShellChrome {
 		return shouldHide(elementId);
 	}
 
+	/**
+	 * Eclipse file / working-set coolbar fillers on {@link #TRIMBAR_TOP_ID}
+	 * / {@link #ECLIPSE_MAIN_TOOLBAR_ID}. Blank and {@code org.eclipse.ui.*}
+	 * ids (except the live main toolbar itself) are the red person
+	 * silhouettes. Chart toolitems inside {@link #PLANT_TOOLBAR_ID} are not
+	 * this predicate — {@link #shouldHideTopTrimChild} still leaves those.
+	 */
+	public static boolean shouldHideEclipseCoolbarFiller(String elementId) {
+
+		if(isPlantWindowChrome(elementId) || isPlantToolbarContribution(elementId) || isEditorRequiredMenu(elementId)) {
+			return false;
+		}
+		if(elementId == null || elementId.isBlank()) {
+			return true;
+		}
+		if(ECLIPSE_MAIN_TOOLBAR_ID.equals(elementId) || TRIMBAR_TOP_ID.equals(elementId)) {
+			return false;
+		}
+		if(shouldHide(elementId) || shouldHideTopTrimChild(elementId)) {
+			return true;
+		}
+		return elementId.startsWith("org.eclipse.ui.");
+	}
+
+	public static String plantToolbarItemCommandId(String elementId) {
+
+		if(OPEN_CHROMATOGRAM_TOOLITEM_ID.equals(elementId)) {
+			return OPEN_CHROMATOGRAM_COMMAND_ID;
+		}
+		if(TOGGLE_GC_TOOLITEM_ID.equals(elementId)) {
+			return TOGGLE_GC_COMMAND_ID;
+		}
+		if(START_ANALYSIS_TOOLITEM_ID.equals(elementId)) {
+			return START_ANALYSIS_COMMAND_ID;
+		}
+		if(INTEGRATE_TOOLITEM_ID.equals(elementId)) {
+			return INTEGRATE_COMMAND_ID;
+		}
+		if(ANALYSIS_TOOLITEM_ID.equals(elementId)) {
+			return ANALYSIS_COMMAND_ID;
+		}
+		if(REPORT_TOOLITEM_ID.equals(elementId)) {
+			return REPORT_COMMAND_ID;
+		}
+		return null;
+	}
+
+	public static String plantToolbarItemIconUri(String elementId) {
+
+		if(OPEN_CHROMATOGRAM_TOOLITEM_ID.equals(elementId)) {
+			return PLANT_ICON_CSD;
+		}
+		if(TOGGLE_GC_TOOLITEM_ID.equals(elementId)) {
+			return PLANT_ICON_PREFERENCES;
+		}
+		if(isPlantToolbarContribution(elementId) && !PLANT_TOOLBAR_ID.equals(elementId)) {
+			return PLANT_ICON_PEAK;
+		}
+		return null;
+	}
+
+	public static String plantToolbarItemLabel(String elementId) {
+
+		if(OPEN_CHROMATOGRAM_TOOLITEM_ID.equals(elementId)) {
+			return "打开谱图";
+		}
+		if(TOGGLE_GC_TOOLITEM_ID.equals(elementId)) {
+			return "反控";
+		}
+		if(START_ANALYSIS_TOOLITEM_ID.equals(elementId)) {
+			return "开始分析";
+		}
+		if(INTEGRATE_TOOLITEM_ID.equals(elementId)) {
+			return "推荐积分";
+		}
+		if(ANALYSIS_TOOLITEM_ID.equals(elementId)) {
+			return "定量/白酒分析";
+		}
+		if(REPORT_TOOLITEM_ID.equals(elementId)) {
+			return "报告";
+		}
+		return null;
+	}
+
 	public static boolean isPlantChromeContainer(String elementId) {
 
 		if(elementId == null || elementId.isBlank()) {
@@ -1119,8 +1235,9 @@ public final class BaijiuShellChrome {
 	 * GroupHandler {@code updateMenu} ADDs children to {@link #VIEW_MENU_ID}
 	 * / {@code xxd.ui.view.*}. Full chrome reveal here is the #64 视图 spam.
 	 * Re-hide those children only — never {@code createGui} cascades. Same
-	 * sanitize-only path for 文件 / 白酒 / 帮助 / main / trim / editor stack
-	 * so research chrome cannot paint after contribution ADD.
+	 * sanitize-only path for 文件 / 白酒 / 帮助 / main so research chrome
+	 * cannot paint after contribution ADD. Trim / editor-stack ADD is not
+	 * a menu container — coolbar hide stays on reveal / CSD chrome restore.
 	 */
 	public static boolean shouldSanitizePlantMenuChildrenAfterChange(String containerId, String changeType) {
 
@@ -1143,12 +1260,6 @@ public final class BaijiuShellChrome {
 			return true;
 		}
 		if(MAIN_MENU_ID.equals(elementId) || ECLIPSE_MAIN_MENU_ID.equals(elementId) || CHROMATOGRAM_MENU_ID.equals(elementId)) {
-			return true;
-		}
-		if(TRIMBAR_TOP_ID.equals(elementId) || ECLIPSE_MAIN_TOOLBAR_ID.equals(elementId) || PLANT_TOOLBAR_ID.equals(elementId)) {
-			return true;
-		}
-		if(CHROMATOGRAM_STACK_ID.equals(elementId)) {
 			return true;
 		}
 		return isResearchViewMenuId(elementId);
@@ -1195,18 +1306,22 @@ public final class BaijiuShellChrome {
 		if(CHROMATOGRAM_STACK_ID.equals(containerId) || CHROMATOGRAM_STACK_ID.equals(elementId)) {
 			return true;
 		}
-		return CSD_EDITOR_PART_ID.equals(elementId) || CHROMATOGRAM_HOME_PART_ID.equals(elementId);
+		return CSD_EDITOR_PART_ID.equals(elementId);
 	}
 
 	/**
-	 * {@code UIElement.TOPIC_WIDGET} SET-to-null / REMOVE: the editor GUI is
-	 * gone even if the stack child event is delayed. {@code widgetGone} is
-	 * the compile-safe stand-in for that teardown (no UILifeCycle field
-	 * for editor GUI removal on this target).
+	 * {@code UIElement.TOPIC_WIDGET} SET-to-null / REMOVE: sanitize only for
+	 * ChromatogramEditorCSD. Plant-home / trim / menu widget unbind during
+	 * second-launch recreate is not editor close — treating
+	 * {@link #CHROMATOGRAM_HOME_PART_ID} as teardown re-entered trim hide
+	 * and painted working-set person icons.
 	 */
 	public static boolean shouldSanitizeAfterEditorWidgetTeardown(String elementId, boolean widgetGone) {
 
-		return widgetGone && shouldSanitizeAfterEditorClose(null, elementId, "REMOVE");
+		if(researchMenusVisible() || !widgetGone) {
+			return false;
+		}
+		return CSD_EDITOR_PART_ID.equals(elementId);
 	}
 
 	/**
@@ -1483,6 +1598,9 @@ public final class BaijiuShellChrome {
 			return false;
 		}
 		if(isViewMenuKeepId(elementId) || isViewMenuKeepLabel(label)) {
+			return false;
+		}
+		if((elementId == null || elementId.isBlank()) && (label == null || label.isBlank())) {
 			return false;
 		}
 		return true;

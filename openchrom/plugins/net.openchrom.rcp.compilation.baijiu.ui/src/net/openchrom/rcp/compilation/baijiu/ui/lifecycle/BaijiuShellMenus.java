@@ -76,7 +76,6 @@ public final class BaijiuShellMenus {
 						Menu bar = shell.getMenuBar();
 						if(bar != null && !bar.isDisposed()) {
 							sanitizeMainMenuBar(bar);
-							sanitizePlantCascades(bar);
 						}
 					} else if(event.widget instanceof Table table && !table.isDisposed()) {
 						sanitizeSelectViewTable(table);

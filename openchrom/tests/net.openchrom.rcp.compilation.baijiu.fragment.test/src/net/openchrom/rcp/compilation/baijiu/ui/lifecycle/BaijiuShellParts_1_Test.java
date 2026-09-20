@@ -64,6 +64,7 @@ public class BaijiuShellParts_1_Test {
 		BaijiuShellParts.applyEditorRequiredMenuVisibility(null);
 		BaijiuShellParts.ensureViewMenuContents(null, null, null);
 		BaijiuShellParts.ensureFileMenuContents(null, null, null);
+		BaijiuShellParts.ensurePlantToolbarContents(null, null, null);
 		BaijiuShellParts.sanitizeViewMenuChildren(null);
 		BaijiuShellParts.sanitizeFileMenuChildren(null);
 		BaijiuShellParts.sanitizeBaijiuMenuChildren(null);
@@ -245,6 +246,37 @@ public class BaijiuShellParts_1_Test {
 		BaijiuShellParts.sanitizeHelpMenuChildren(help);
 		assertTrue(about.isVisible());
 		assertFalse(tutorials.isVisible());
+	}
+
+	@Test
+	public void plantToolbarRestoreIsIdempotentAndRepairsBlankIcons() {
+
+		org.eclipse.e4.ui.model.application.ui.menu.MToolBar toolbar = MMenuFactory.INSTANCE.createToolBar();
+		toolbar.setElementId(BaijiuShellChrome.PLANT_TOOLBAR_ID);
+		org.eclipse.e4.ui.model.application.ui.menu.MHandledToolItem open = MMenuFactory.INSTANCE.createHandledToolItem();
+		open.setElementId(BaijiuShellChrome.OPEN_CHROMATOGRAM_TOOLITEM_ID);
+		open.setIconURI("");
+		open.setVisible(true);
+		toolbar.getChildren().add(open);
+		BaijiuShellParts.ensurePlantToolbarContents(null, null, toolbar);
+		assertEquals(BaijiuShellChrome.PLANT_TOOLBAR_ITEM_IDS.size(), toolbar.getChildren().size());
+		assertEquals(BaijiuShellChrome.PLANT_ICON_CSD, open.getIconURI());
+		assertEquals("打开谱图", open.getLabel());
+		assertTrue(open.isVisible());
+		assertTrue(open.isToBeRendered());
+		for(String id : BaijiuShellChrome.PLANT_TOOLBAR_ITEM_IDS) {
+			boolean found = false;
+			for(Object child : toolbar.getChildren()) {
+				if(child instanceof org.eclipse.e4.ui.model.application.ui.menu.MHandledToolItem item && id.equals(item.getElementId())) {
+					found = true;
+					assertEquals(BaijiuShellChrome.plantToolbarItemIconUri(id), item.getIconURI(), id);
+					assertEquals(BaijiuShellChrome.plantToolbarItemLabel(id), item.getLabel(), id);
+				}
+			}
+			assertTrue(found, id);
+		}
+		BaijiuShellParts.ensurePlantToolbarContents(null, null, toolbar);
+		assertEquals(BaijiuShellChrome.PLANT_TOOLBAR_ITEM_IDS.size(), toolbar.getChildren().size(), "second ensure must not duplicate toolbar items");
 	}
 
 	private static MMenu findView(MMenu main) {

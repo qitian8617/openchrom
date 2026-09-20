@@ -234,7 +234,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertNotNull(chrome);
 		String chromeSrc = Files.readString(chrome, StandardCharsets.UTF_8);
 		assertTrue(chromeSrc.contains("CSD_EDITOR_PART_ID"), chromeSrc);
-		assertTrue(chromeSrc.contains("CHROME_EPOCH = 28"), chromeSrc);
+		assertTrue(chromeSrc.contains("CHROME_EPOCH = 29"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldAppendMenuChild"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldCreateGuiForPlantChrome"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldRestoreChromeAfterChildrenChange"), chromeSrc);
@@ -277,6 +277,11 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(chromeSrc.contains("isChromatogramTopMenuLabel"), chromeSrc);
 		assertTrue(chromeSrc.contains("isPlantTopMenuLabel"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldHideTopTrimChild"), chromeSrc);
+		assertTrue(chromeSrc.contains("shouldHideEclipseCoolbarFiller"), chromeSrc);
+		assertTrue(chromeSrc.contains("SELECT_VIEW_COMMAND_ID"), chromeSrc);
+		assertTrue(chromeSrc.contains("PLANT_TOOLBAR_ITEM_IDS"), chromeSrc);
+		assertTrue(chromeSrc.contains("plantToolbarItemIconUri"), chromeSrc);
+		assertTrue(chromeSrc.contains("PLANT_ICON_CSD"), chromeSrc);
 		assertTrue(chromeSrc.contains("PLANT_TOP_MENU_IDS"), chromeSrc);
 		assertTrue(chromeSrc.contains("色谱图"), chromeSrc);
 		assertTrue(chromeSrc.contains("SELECT_VIEW_KEEP_ELEMENT_IDS"), chromeSrc);
@@ -545,6 +550,10 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(partsSrc.contains("preferPlantLookupWindow"), partsSrc);
 		assertTrue(partsSrc.contains("EDITOR_REQUIRED_MENU_IDS"), partsSrc);
 		assertTrue(partsSrc.contains("hideNonPlantTopTrim"), partsSrc);
+		assertTrue(partsSrc.contains("ensurePlantToolbarContents"), partsSrc);
+		assertTrue(partsSrc.contains("bindSelectViewCommand"), partsSrc);
+		assertTrue(partsSrc.contains("shouldHideEclipseCoolbarFiller"), partsSrc);
+		assertTrue(partsSrc.contains("SELECT_VIEW_COMMAND_ID"), partsSrc);
 		assertTrue(partsSrc.contains("isPlantToolbarContribution"), partsSrc);
 		assertTrue(partsSrc.contains("mustForceShowPlantChrome") || partsSrc.contains("forceShowPlantWindowChrome"), partsSrc);
 		assertTrue(partsSrc.contains("forceCreateElement"), partsSrc);
