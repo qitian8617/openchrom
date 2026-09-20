@@ -14,10 +14,12 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 
 /**
- * Chrome / plant-home recovery logs. Fragment tests may run without an OSGi
+ * Chrome / plant-home recovery logs. Public so handlers in
+ * {@code net.openchrom.rcp.compilation.baijiu.ui.handlers} can log without
+ * a compile-time visibility error. Fragment tests may run without an OSGi
  * log service; those calls fall back to {@code System.err}.
  */
-final class BaijiuShellLog {
+public final class BaijiuShellLog {
 
 	static final String PLUGIN_ID = "net.openchrom.rcp.compilation.baijiu.ui";
 
@@ -25,12 +27,12 @@ final class BaijiuShellLog {
 
 	}
 
-	static void warn(String message) {
+	public static void warn(String message) {
 
 		warn(message, null);
 	}
 
-	static void warn(String message, Throwable throwable) {
+	public static void warn(String message, Throwable throwable) {
 
 		String text = message == null || message.isBlank() ? "Baijiu shell warning" : message;
 		try {

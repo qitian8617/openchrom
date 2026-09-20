@@ -752,6 +752,15 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(openSelectViewSrc.contains("@Execute"), openSelectViewSrc);
 		assertTrue(openSelectViewSrc.contains("SelectViewHandler"), openSelectViewSrc);
 		assertTrue(openSelectViewSrc.contains("executeFromShell"), openSelectViewSrc);
+		assertTrue(openSelectViewSrc.contains("import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuShellLog;"), openSelectViewSrc);
+		assertTrue(openSelectViewSrc.contains("BaijiuShellLog.warn"), openSelectViewSrc);
+
+		Path shellLog = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellLog.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellLog.java");
+		assertNotNull(shellLog);
+		String shellLogSrc = Files.readString(shellLog, StandardCharsets.UTF_8);
+		assertTrue(shellLogSrc.contains("public final class BaijiuShellLog"), "handlers package cannot see package-private BaijiuShellLog");
+		assertTrue(shellLogSrc.contains("public static void warn(String message)"), shellLogSrc);
+		assertTrue(shellLogSrc.contains("public static void warn(String message, Throwable throwable)"), shellLogSrc);
 
 		Path uiManifest = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/META-INF/MANIFEST.MF", "plugins/net.openchrom.rcp.compilation.baijiu.ui/META-INF/MANIFEST.MF");
 		assertNotNull(uiManifest);
