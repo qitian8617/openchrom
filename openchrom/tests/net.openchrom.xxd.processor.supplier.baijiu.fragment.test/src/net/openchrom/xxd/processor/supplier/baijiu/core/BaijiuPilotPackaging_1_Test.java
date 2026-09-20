@@ -239,6 +239,13 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(chromeSrc.contains("shouldCreateGuiForPlantChrome"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldRestoreChromeAfterChildrenChange"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldSanitizePlantMenuChildrenAfterChange"), chromeSrc);
+		assertTrue(chromeSrc.contains("shouldSanitizeAfterPartActivation"), chromeSrc);
+		assertTrue(chromeSrc.contains("shouldSanitizeAfterVisibilityChange"), chromeSrc);
+		assertTrue(chromeSrc.contains("shouldSanitizeAfterEditorClose"), chromeSrc);
+		assertTrue(chromeSrc.contains("shouldHideBaijiuCascadeChild"), chromeSrc);
+		assertTrue(chromeSrc.contains("shouldHideHelpMenuChild"), chromeSrc);
+		assertTrue(chromeSrc.contains("BAIJIU_MENU_KEEP_ID_PREFIXES"), chromeSrc);
+		assertTrue(chromeSrc.contains("HELP_MENU_KEEP_ELEMENT_IDS"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldHideViewMenuChild"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldHideFileMenuChild"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldHidePlantMenuChild"), chromeSrc);
@@ -371,6 +378,12 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(addonSrc.contains("shouldHideMenuContribution"), addonSrc);
 		assertTrue(addonSrc.contains("shouldSanitizePlantMenuChildrenAfterChange"), addonSrc);
 		assertTrue(addonSrc.contains("scheduleSanitizePlantMenus"), addonSrc);
+		assertTrue(addonSrc.contains("sanitizeGeneration"), addonSrc);
+		assertTrue(addonSrc.contains("shouldSanitizeAfterPartActivation"), addonSrc);
+		assertTrue(addonSrc.contains("shouldSanitizeAfterVisibilityChange"), addonSrc);
+		assertTrue(addonSrc.contains("shouldSanitizeAfterEditorClose"), addonSrc);
+		assertTrue(addonSrc.contains("REMOVE_GUI"), addonSrc);
+		assertTrue(addonSrc.contains("finally"), addonSrc);
 		assertTrue(addonSrc.contains("sanitizePlantMenuContributions"), addonSrc);
 		assertTrue(addonSrc.contains("allowsWalkHide"), addonSrc);
 		assertTrue(addonSrc.contains("child instanceof MMenu nested"), addonSrc);
@@ -508,6 +521,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(partsSrc.contains("ensureFileMenuContents"), partsSrc);
 		assertTrue(partsSrc.contains("sanitizeViewMenuChildren"), partsSrc);
 		assertTrue(partsSrc.contains("sanitizeFileMenuChildren"), partsSrc);
+		assertTrue(partsSrc.contains("sanitizeBaijiuMenuChildren"), partsSrc);
+		assertTrue(partsSrc.contains("sanitizeHelpMenuChildren"), partsSrc);
 		assertTrue(partsSrc.contains("sanitizePlantMenuContributions"), partsSrc);
 		assertTrue(partsSrc.contains("SAVE_COMMAND_ID"), partsSrc);
 		assertTrue(partsSrc.contains("dedupePlantMenuChildren"), partsSrc);
@@ -781,6 +796,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertNotNull(shellMenus, "plant SWT popup sanitizer");
 		String shellMenusSrc = Files.readString(shellMenus, StandardCharsets.UTF_8);
 		assertTrue(shellMenusSrc.contains("SWT.Show"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("SWT.Arm"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("SWT.Activate"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("sanitize"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("sanitizeMainMenuBar"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("SWT.BAR"), shellMenusSrc);
@@ -794,6 +811,11 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(shellMenusSrc.contains("sanitizePlantCascades"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("sanitizeViewMenu"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("sanitizeFileMenu"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("sanitizeBaijiuMenu"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("sanitizeHelpMenu"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("looksLikePlantBaijiuMenu"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("looksLikePlantHelpMenu"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("shouldHideBaijiuCascadeChild"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("shouldHideViewMenuChild"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("shouldHideFileMenuChild"), shellMenusSrc);
 
@@ -818,6 +840,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertFalse(cssText.contains("#org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.selectView"), "视图 keeps Select View; Java allowlists the dialog");
 		assertTrue(cssText.contains("#org.eclipse.chemclipse.ux.extension.xxd.ui.view.overview"), cssText);
 		assertTrue(cssText.contains("#org.eclipse.chemclipse.ux.extension.xxd.ui.view.misc"), cssText);
+		assertTrue(cssText.contains("#org.eclipse.chemclipse.rcp.app.ui.menu.item.import"), cssText);
+		assertTrue(cssText.contains("#org.eclipse.chemclipse.rcp.app.ui.menu.item.export"), cssText);
 		assertTrue(cssText.contains("toolbar.toggleGcConsole"), cssText);
 		assertFalse(cssText.contains("#org.eclipse.ui.main.toolbar {") || cssText.contains("#org.eclipse.ui.main.toolbar,"), "CSS must not hide the entire top coolbar so the plant toolbar stays painted");
 		assertFalse(cssText.contains("#org.eclipse.chemclipse.ux.extension.ui.menu.process {") || cssText.contains("#org.eclipse.chemclipse.ux.extension.ui.menu.process,"), "CSS must not hide 处理器 so the JVM escape hatch can reveal it");

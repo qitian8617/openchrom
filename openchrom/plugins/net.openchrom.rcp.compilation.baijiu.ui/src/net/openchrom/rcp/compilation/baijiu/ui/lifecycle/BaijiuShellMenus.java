@@ -62,11 +62,21 @@ public final class BaijiuShellMenus {
 				Listener listener = event -> {
 					if(event.widget instanceof Menu menu && !menu.isDisposed()) {
 						sanitize(menu);
+					} else if(event.widget instanceof MenuItem item && !item.isDisposed()) {
+						Menu parent = item.getParent();
+						if(parent != null && !parent.isDisposed()) {
+							sanitize(parent);
+						}
+						Menu cascade = item.getMenu();
+						if(cascade != null && !cascade.isDisposed()) {
+							sanitize(cascade);
+						}
 					} else if(event.widget instanceof Shell shell && !shell.isDisposed()) {
 						sanitizeSelectView(shell);
 						Menu bar = shell.getMenuBar();
 						if(bar != null && !bar.isDisposed()) {
 							sanitizeMainMenuBar(bar);
+							sanitizePlantCascades(bar);
 						}
 					} else if(event.widget instanceof Table table && !table.isDisposed()) {
 						sanitizeSelectViewTable(table);
@@ -75,6 +85,7 @@ public final class BaijiuShellMenus {
 					}
 				};
 				display.addFilter(SWT.Show, listener);
+				display.addFilter(SWT.Arm, listener);
 				display.addFilter(SWT.Activate, listener);
 				installed = listener;
 			}
@@ -110,6 +121,14 @@ public final class BaijiuShellMenus {
 				sanitizeFileMenu(menu);
 				return;
 			}
+			if("白酒".equals(normalizedParent) || "baijiu".equals(normalizedParent)) {
+				sanitizeBaijiuMenu(menu);
+				return;
+			}
+			if("帮助".equals(normalizedParent) || "help".equals(normalizedParent)) {
+				sanitizeHelpMenu(menu);
+				return;
+			}
 		}
 		List<String> labels = labelsOf(menu, false);
 		if(looksLikePlantViewMenu(labels)) {
@@ -118,6 +137,14 @@ public final class BaijiuShellMenus {
 		}
 		if(looksLikePlantFileMenu(labels)) {
 			sanitizeFileMenu(menu);
+			return;
+		}
+		if(looksLikePlantBaijiuMenu(labels)) {
+			sanitizeBaijiuMenu(menu);
+			return;
+		}
+		if(looksLikePlantHelpMenu(labels)) {
+			sanitizeHelpMenu(menu);
 			return;
 		}
 		boolean chart = BaijiuShellChrome.looksLikeChartMenu(labelsOf(menu, true));
@@ -224,6 +251,10 @@ public final class BaijiuShellMenus {
 				sanitizeViewMenu(child);
 			} else if("文件".equals(normalized) || "file".equals(normalized)) {
 				sanitizeFileMenu(child);
+			} else if("白酒".equals(normalized) || "baijiu".equals(normalized)) {
+				sanitizeBaijiuMenu(child);
+			} else if("帮助".equals(normalized) || "help".equals(normalized)) {
+				sanitizeHelpMenu(child);
 			}
 		}
 	}
@@ -307,6 +338,61 @@ public final class BaijiuShellMenus {
 		disposeExtraSeparators(menu);
 	}
 
+	static void sanitizeBaijiuMenu(Menu menu) {
+
+		if(menu == null || menu.isDisposed() || BaijiuShellChrome.researchMenusVisible()) {
+			return;
+		}
+		MenuItem[] items = menu.getItems();
+		for(int i = items.length - 1; i >= 0; i--) {
+			MenuItem item = items[i];
+			if(item == null || item.isDisposed()) {
+				continue;
+			}
+			if((item.getStyle() & SWT.SEPARATOR) != 0) {
+				continue;
+			}
+			if(BaijiuShellChrome.shouldHideBaijiuCascadeChild(null, item.getText())) {
+				try {
+					item.dispose();
+				} catch(RuntimeException e) {
+					// menu already closing
+				}
+			}
+		}
+		disposeExtraSeparators(menu);
+	}
+
+	static void sanitizeHelpMenu(Menu menu) {
+
+		if(menu == null || menu.isDisposed() || BaijiuShellChrome.researchMenusVisible()) {
+			return;
+		}
+		MenuItem[] items = menu.getItems();
+		for(int i = items.length - 1; i >= 0; i--) {
+			MenuItem item = items[i];
+			if(item == null || item.isDisposed()) {
+				continue;
+			}
+			if((item.getStyle() & SWT.SEPARATOR) != 0) {
+				try {
+					item.dispose();
+				} catch(RuntimeException e) {
+					return;
+				}
+				continue;
+			}
+			if(BaijiuShellChrome.shouldHideHelpMenuChild(null, item.getText())) {
+				try {
+					item.dispose();
+				} catch(RuntimeException e) {
+					// menu already closing
+				}
+			}
+		}
+		disposeExtraSeparators(menu);
+	}
+
 	static boolean looksLikePlantViewMenu(List<String> labels) {
 
 		if(labels == null || labels.isEmpty()) {
@@ -333,6 +419,37 @@ public final class BaijiuShellMenus {
 		for(String label : labels) {
 			String normalized = BaijiuShellChrome.normalizeMenuLabel(label == null ? "" : label);
 			if("保存".equals(normalized) || "save".equals(normalized) || "另存为".equals(normalized) || "save as".equals(normalized)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	static boolean looksLikePlantBaijiuMenu(List<String> labels) {
+
+		if(labels == null || labels.isEmpty()) {
+			return false;
+		}
+		for(String label : labels) {
+			String normalized = BaijiuShellChrome.normalizeMenuLabel(label == null ? "" : label);
+			if("打开谱图".equals(normalized) || "open chromatogram".equals(normalized) || "显示/隐藏反控".equals(normalized) || "推荐积分".equals(normalized) || "开始分析".equals(normalized) || "切换厂工作台".equals(normalized) || "重置窗口布局".equals(normalized)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	static boolean looksLikePlantHelpMenu(List<String> labels) {
+
+		if(labels == null || labels.isEmpty()) {
+			return false;
+		}
+		if(looksLikePlantFileMenu(labels) || looksLikePlantViewMenu(labels) || looksLikePlantBaijiuMenu(labels)) {
+			return false;
+		}
+		for(String label : labels) {
+			String normalized = BaijiuShellChrome.normalizeMenuLabel(label == null ? "" : label);
+			if("关于".equals(normalized) || "about".equals(normalized) || "首选项".equals(normalized) || "preferences".equals(normalized)) {
 				return true;
 			}
 		}

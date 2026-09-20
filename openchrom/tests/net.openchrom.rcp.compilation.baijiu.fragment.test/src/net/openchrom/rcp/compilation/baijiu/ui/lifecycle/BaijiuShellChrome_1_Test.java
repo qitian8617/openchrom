@@ -352,11 +352,33 @@ public class BaijiuShellChrome_1_Test {
 		assertTrue(BaijiuShellChrome.shouldSanitizePlantMenuChildrenAfterChange(BaijiuShellChrome.VIEW_MENU_ID, "ADD"), "GroupHandler ADD must re-hide 概览 not reveal chrome");
 		assertTrue(BaijiuShellChrome.shouldSanitizePlantMenuChildrenAfterChange(BaijiuShellChrome.FILE_MENU_ID, "ADD"));
 		assertTrue(BaijiuShellChrome.shouldSanitizePlantMenuChildrenAfterChange("org.eclipse.chemclipse.ux.extension.xxd.ui.view.overview", "ADD"));
-		assertFalse(BaijiuShellChrome.shouldSanitizePlantMenuChildrenAfterChange(BaijiuShellChrome.MAIN_MENU_ID, "ADD"), "main-menu ADD is #64 spam if we full-reveal");
+		assertTrue(BaijiuShellChrome.shouldSanitizePlantMenuChildrenAfterChange(BaijiuShellChrome.MAIN_MENU_ID, "ADD"), "sanitize-only on main-menu ADD; full reveal stays off");
+		assertTrue(BaijiuShellChrome.shouldSanitizePlantMenuChildrenAfterChange(BaijiuShellChrome.BAIJIU_MENU_ID, "ADD"));
+		assertTrue(BaijiuShellChrome.shouldSanitizePlantMenuChildrenAfterChange(BaijiuShellChrome.HELP_MENU_ID, "ADD"));
+		assertTrue(BaijiuShellChrome.shouldSanitizePlantMenuChildrenAfterChange(BaijiuShellChrome.TRIMBAR_TOP_ID, "ADD"));
+		assertTrue(BaijiuShellChrome.shouldSanitizePlantMenuChildrenAfterChange(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, "REMOVE"));
 		assertFalse(BaijiuShellChrome.shouldSanitizePlantMenuChildrenAfterChange(BaijiuShellChrome.VIEW_MENU_ID, null));
 		assertTrue(BaijiuShellChrome.isPlantMenuContributionContainer(BaijiuShellChrome.VIEW_MENU_ID));
+		assertTrue(BaijiuShellChrome.isPlantMenuContributionContainer(BaijiuShellChrome.MAIN_MENU_ID));
+		assertTrue(BaijiuShellChrome.isPlantMenuContributionContainer(BaijiuShellChrome.BAIJIU_MENU_ID));
+		assertTrue(BaijiuShellChrome.isPlantMenuContributionContainer(BaijiuShellChrome.HELP_MENU_ID));
+		assertTrue(BaijiuShellChrome.isPlantMenuContributionContainer(BaijiuShellChrome.TRIMBAR_TOP_ID));
+		assertTrue(BaijiuShellChrome.isPlantMenuContributionContainer(BaijiuShellChrome.CHROMATOGRAM_STACK_ID));
 		assertTrue(BaijiuShellChrome.isResearchViewMenuId("org.eclipse.chemclipse.ux.extension.xxd.ui.view.peaks"));
 		assertFalse(BaijiuShellChrome.isResearchViewMenuId(BaijiuShellChrome.VIEW_MENU_ID));
+		assertTrue(BaijiuShellChrome.shouldSanitizeAfterPartActivation(BaijiuShellChrome.CSD_EDITOR_PART_ID));
+		assertTrue(BaijiuShellChrome.shouldSanitizeAfterPartActivation(BaijiuShellChrome.WORKBENCH_HOME_PART_ID));
+		assertTrue(BaijiuShellChrome.shouldSanitizeAfterPartActivation(null));
+		assertTrue(BaijiuShellChrome.shouldSanitizeAfterEditorClose(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, BaijiuShellChrome.CSD_EDITOR_PART_ID, "REMOVE"));
+		assertTrue(BaijiuShellChrome.shouldSanitizeAfterEditorClose(null, BaijiuShellChrome.CSD_EDITOR_PART_ID, "REMOVE_GUI"));
+		assertFalse(BaijiuShellChrome.shouldSanitizeAfterEditorClose(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, BaijiuShellChrome.CSD_EDITOR_PART_ID, "ADD"));
+		assertTrue(BaijiuShellChrome.shouldSanitizeAfterVisibilityChange("org.eclipse.chemclipse.ux.extension.xxd.ui.view.overview", "概览", true));
+		assertTrue(BaijiuShellChrome.shouldSanitizeAfterVisibilityChange(null, "叠加", true));
+		assertTrue(BaijiuShellChrome.shouldSanitizeAfterVisibilityChange(BaijiuShellChrome.CHROMATOGRAM_MENU_ID, "色谱图", true));
+		assertTrue(BaijiuShellChrome.shouldSanitizeAfterVisibilityChange(BaijiuShellChrome.VIEW_MENU_ID, "视图", true));
+		assertFalse(BaijiuShellChrome.shouldSanitizeAfterVisibilityChange("org.eclipse.chemclipse.ux.extension.xxd.ui.view.overview", "概览", false));
+		assertFalse(BaijiuShellChrome.shouldSanitizeAfterVisibilityChange(BaijiuShellChrome.CSD_EDITOR_PART_ID, null, true), "CSD visible is not research chrome");
+		assertFalse(BaijiuShellChrome.shouldRestoreChromeAfterChildrenChange("ADD"), "ADD sanitize must not full-reveal");
 		assertFalse(BaijiuShellChrome.shouldRestoreMainMenuAfterChange(BaijiuShellChrome.MAIN_MENU_ID));
 		assertFalse(BaijiuShellChrome.shouldRestoreMainMenuAfterChange(BaijiuShellChrome.ECLIPSE_MAIN_MENU_ID));
 		assertTrue(BaijiuShellChrome.shouldRestoreMainMenuAfterChange(null), "bug 398847 detach");
@@ -515,6 +537,11 @@ public class BaijiuShellChrome_1_Test {
 		assertFalse(BaijiuShellChrome.shouldHideMainMenuChild("generated.import", "Import", null));
 		assertFalse(BaijiuShellChrome.shouldHideViewMenuChild(null, "概览"));
 		assertFalse(BaijiuShellChrome.shouldHideFileMenuChild(null, "Import"));
+		assertFalse(BaijiuShellChrome.shouldHideBaijiuCascadeChild(null, "气相色谱控制台"));
+		assertFalse(BaijiuShellChrome.shouldHideHelpMenuChild(null, "Tutorials"));
+		assertFalse(BaijiuShellChrome.shouldSanitizeAfterPartActivation(BaijiuShellChrome.CSD_EDITOR_PART_ID));
+		assertFalse(BaijiuShellChrome.shouldSanitizeAfterVisibilityChange(null, "概览", true));
+		assertFalse(BaijiuShellChrome.shouldSanitizeAfterEditorClose(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, BaijiuShellChrome.CSD_EDITOR_PART_ID, "REMOVE"));
 	}
 
 	@Test
@@ -578,6 +605,24 @@ public class BaijiuShellChrome_1_Test {
 		assertTrue(BaijiuShellChrome.FILE_MENU_KEEP_ELEMENT_IDS.contains(BaijiuShellChrome.SAVE_MENU_ID));
 		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem(null, "色谱图叠加"), "overlay view is Select View, not the 视图 叠加 cascade");
 		assertTrue(BaijiuShellChrome.shouldHideViewMenuChild(null, "叠加"));
+		assertFalse(BaijiuShellChrome.shouldHideBaijiuCascadeChild(BaijiuShellChrome.TOGGLE_GC_MENU_ID, "显示/隐藏反控"));
+		assertFalse(BaijiuShellChrome.shouldHideBaijiuCascadeChild("net.openchrom.rcp.compilation.baijiu.ui.menu.openChromatogram", "打开谱图"));
+		assertFalse(BaijiuShellChrome.shouldHideBaijiuCascadeChild("net.openchrom.rcp.compilation.baijiu.ui.menu.integrate", "推荐积分"));
+		assertTrue(BaijiuShellChrome.shouldHideBaijiuCascadeChild(BaijiuShellChrome.GC_CONTROL_MENU_ID, "气相色谱控制台"));
+		assertTrue(BaijiuShellChrome.shouldHideBaijiuCascadeChild("org.eclipse.chemclipse.ux.extension.ui.menu.process", "处理器"));
+		assertTrue(BaijiuShellChrome.shouldHideBaijiuCascadeChild(null, "Import"));
+		assertFalse(BaijiuShellChrome.shouldHidePlantMenuChild(BaijiuShellChrome.BAIJIU_MENU_ID, "net.openchrom.rcp.compilation.baijiu.ui.menu.openChromatogram", "打开谱图", null));
+		assertTrue(BaijiuShellChrome.shouldHidePlantMenuChild(BaijiuShellChrome.BAIJIU_MENU_ID, BaijiuShellChrome.GC_CONTROL_MENU_ID, "气相色谱控制台", null));
+		assertFalse(BaijiuShellChrome.shouldHideHelpMenuChild("org.eclipse.chemclipse.rcp.app.ui.menu.item.about", "About"));
+		assertFalse(BaijiuShellChrome.shouldHideHelpMenuChild(null, "关于"));
+		assertFalse(BaijiuShellChrome.shouldHideHelpMenuChild(null, "首选项"));
+		assertTrue(BaijiuShellChrome.shouldHideHelpMenuChild(null, "Tutorials"));
+		assertTrue(BaijiuShellChrome.shouldHideHelpMenuChild("org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.updates", "Updates"));
+		assertTrue(BaijiuShellChrome.shouldHidePlantMenuChild(BaijiuShellChrome.HELP_MENU_ID, null, "Install Add-ons", null));
+		assertFalse(BaijiuShellChrome.shouldHideMenuContribution(BaijiuShellChrome.BAIJIU_MENU_ID, "net.openchrom.rcp.compilation.baijiu.ui.menu.openChromatogram", "打开谱图", null));
+		assertTrue(BaijiuShellChrome.shouldHideMenuContribution(BaijiuShellChrome.BAIJIU_MENU_ID, BaijiuShellChrome.GC_CONTROL_MENU_ID, "气相色谱控制台", null));
+		assertFalse(BaijiuShellChrome.allowsWalkHide("net.openchrom.rcp.compilation.baijiu.ui.menu.openChromatogram", "打开谱图"));
+		assertFalse(BaijiuShellChrome.allowsWalkHide("org.eclipse.chemclipse.rcp.app.ui.menu.item.about", "About"));
 	}
 
 	@Test

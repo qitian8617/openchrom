@@ -66,6 +66,8 @@ public class BaijiuShellParts_1_Test {
 		BaijiuShellParts.ensureFileMenuContents(null, null, null);
 		BaijiuShellParts.sanitizeViewMenuChildren(null);
 		BaijiuShellParts.sanitizeFileMenuChildren(null);
+		BaijiuShellParts.sanitizeBaijiuMenuChildren(null);
+		BaijiuShellParts.sanitizeHelpMenuChildren(null);
 		BaijiuShellParts.sanitizePlantMenuContributions(null, null);
 		BaijiuShellParts.orderPlantTopMenus(null);
 		BaijiuShellParts.recreatePlantChromeWidgets(null, null);
@@ -202,6 +204,47 @@ public class BaijiuShellParts_1_Test {
 		int saveCount = BaijiuShellParts.countMenuChildrenWithId(file, BaijiuShellChrome.SAVE_MENU_ID);
 		BaijiuShellParts.ensureFileMenuContents(null, null, file);
 		assertEquals(saveCount, BaijiuShellParts.countMenuChildrenWithId(file, BaijiuShellChrome.SAVE_MENU_ID), "second ensure must not duplicate 保存");
+
+		overview.setVisible(true);
+		overview.setToBeRendered(true);
+		BaijiuShellParts.sanitizeViewMenuChildren(view);
+		assertFalse(overview.isVisible(), "reinjected 概览 must hide again");
+		assertEquals(1, BaijiuShellParts.countMenuChildrenWithId(view, BaijiuShellChrome.SELECT_VIEW_MENU_ID));
+		assertEquals(3, view.getChildren().size(), "repeated sanitize must not drop GroupHandler cascades");
+
+		MMenu baijiu = MMenuFactory.INSTANCE.createMenu();
+		baijiu.setElementId(BaijiuShellChrome.BAIJIU_MENU_ID);
+		org.eclipse.e4.ui.model.application.ui.menu.MHandledMenuItem open = org.eclipse.e4.ui.model.application.ui.menu.MMenuFactory.INSTANCE.createHandledMenuItem();
+		open.setElementId("net.openchrom.rcp.compilation.baijiu.ui.menu.openChromatogram");
+		open.setLabel("打开谱图");
+		baijiu.getChildren().add(open);
+		org.eclipse.e4.ui.model.application.ui.menu.MHandledMenuItem gc = org.eclipse.e4.ui.model.application.ui.menu.MMenuFactory.INSTANCE.createHandledMenuItem();
+		gc.setElementId(BaijiuShellChrome.GC_CONTROL_MENU_ID);
+		gc.setLabel("气相色谱控制台");
+		gc.setVisible(true);
+		gc.setToBeRendered(true);
+		baijiu.getChildren().add(gc);
+		BaijiuShellParts.sanitizeBaijiuMenuChildren(baijiu);
+		assertTrue(open.isVisible());
+		assertFalse(gc.isVisible());
+		gc.setVisible(true);
+		BaijiuShellParts.sanitizeBaijiuMenuChildren(baijiu);
+		assertFalse(gc.isVisible(), "GC console must not flash back on 白酒");
+
+		MMenu help = MMenuFactory.INSTANCE.createMenu();
+		help.setElementId(BaijiuShellChrome.HELP_MENU_ID);
+		org.eclipse.e4.ui.model.application.ui.menu.MHandledMenuItem about = org.eclipse.e4.ui.model.application.ui.menu.MMenuFactory.INSTANCE.createHandledMenuItem();
+		about.setElementId("org.eclipse.chemclipse.rcp.app.ui.menu.item.about");
+		about.setLabel("About");
+		help.getChildren().add(about);
+		org.eclipse.e4.ui.model.application.ui.menu.MHandledMenuItem tutorials = org.eclipse.e4.ui.model.application.ui.menu.MMenuFactory.INSTANCE.createHandledMenuItem();
+		tutorials.setElementId("org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.tutorials");
+		tutorials.setLabel("Tutorials");
+		tutorials.setVisible(true);
+		help.getChildren().add(tutorials);
+		BaijiuShellParts.sanitizeHelpMenuChildren(help);
+		assertTrue(about.isVisible());
+		assertFalse(tutorials.isVisible());
 	}
 
 	private static MMenu findView(MMenu main) {

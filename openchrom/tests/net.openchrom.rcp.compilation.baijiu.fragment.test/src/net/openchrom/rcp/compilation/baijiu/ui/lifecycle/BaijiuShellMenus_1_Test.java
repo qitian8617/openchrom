@@ -28,11 +28,17 @@ public class BaijiuShellMenus_1_Test {
 		BaijiuShellMenus.sanitizePlantCascades(null);
 		BaijiuShellMenus.sanitizeViewMenu(null);
 		BaijiuShellMenus.sanitizeFileMenu(null);
+		BaijiuShellMenus.sanitizeBaijiuMenu(null);
+		BaijiuShellMenus.sanitizeHelpMenu(null);
 		assertFalse(BaijiuShellMenus.isSelectViewShell(null));
 		assertFalse(BaijiuShellMenus.looksLikePlantFileMenu(java.util.List.of("Close", "Close All", "Restore")));
 		assertTrue(BaijiuShellMenus.looksLikePlantFileMenu(java.util.List.of("Save As...", "Close")));
 		assertTrue(BaijiuShellMenus.looksLikePlantViewMenu(java.util.List.of("选择视图")));
 		assertTrue(BaijiuShellMenus.looksLikePlantViewMenu(java.util.List.of("概览", "叠加")));
 		assertFalse(BaijiuShellMenus.looksLikePlantViewMenu(java.util.List.of("峰")));
+		assertTrue(BaijiuShellMenus.looksLikePlantBaijiuMenu(java.util.List.of("打开谱图", "推荐积分")));
+		assertFalse(BaijiuShellMenus.looksLikePlantBaijiuMenu(java.util.List.of("Close", "Restore")));
+		assertTrue(BaijiuShellMenus.looksLikePlantHelpMenu(java.util.List.of("About", "Preferences")));
+		assertFalse(BaijiuShellMenus.looksLikePlantHelpMenu(java.util.List.of("Save", "Save As")));
 	}
 }

@@ -52,6 +52,7 @@ public class BaijiuShellAddon {
 	private static final String WINDOW_MAIN_MENU_TOPIC = "org/eclipse/e4/ui/model/application/ui/basic/Window/mainMenu";
 	private static volatile boolean shuttingDown;
 	private static final AtomicInteger chromeGeneration = new AtomicInteger();
+	private static final AtomicInteger sanitizeGeneration = new AtomicInteger();
 
 	@Inject
 	private MApplication application;
@@ -94,6 +95,7 @@ public class BaijiuShellAddon {
 				if(container instanceof MUIElement stack && BaijiuShellChrome.CHROMATOGRAM_STACK_ID.equals(stack.getElementId())) {
 					schedulePlantWindowChrome(application, modelService);
 				}
+				scheduleSanitizePlantMenus(application, modelService);
 			} catch(RuntimeException | LinkageError e) {
 				// never let a selection bounce abort the workbench
 			}
@@ -147,6 +149,10 @@ public class BaijiuShellAddon {
 					return;
 				}
 				Object element = event.getProperty(UIEvents.EventTags.ELEMENT);
+				String elementId = element instanceof MUIElement ui ? ui.getElementId() : null;
+				if(BaijiuShellChrome.shouldSanitizeAfterPartActivation(elementId)) {
+					scheduleSanitizePlantMenus(application, modelService);
+				}
 				if(isCsdChromeActivation(element)) {
 					schedulePlantWindowChrome(application, modelService);
 				}
@@ -161,8 +167,14 @@ public class BaijiuShellAddon {
 				}
 				Object element = event.getProperty(UIEvents.EventTags.ELEMENT);
 				Object next = event.getProperty(UIEvents.EventTags.NEW_VALUE);
-				if(element instanceof MUIElement ui && BaijiuShellChrome.CHROMATOGRAM_MENU_ID.equals(ui.getElementId()) && Boolean.TRUE.equals(next) && !BaijiuShellChrome.researchMenusVisible()) {
-					scheduleHideChromatogramMenuLabel(application, modelService);
+				boolean visible = Boolean.TRUE.equals(next);
+				if(element instanceof MUIElement ui) {
+					if(BaijiuShellChrome.shouldSanitizeAfterVisibilityChange(ui.getElementId(), labelOf(ui), visible)) {
+						scheduleSanitizePlantMenus(application, modelService);
+					}
+					if(BaijiuShellChrome.CHROMATOGRAM_MENU_ID.equals(ui.getElementId()) && visible && !BaijiuShellChrome.researchMenusVisible()) {
+						scheduleHideChromatogramMenuLabel(application, modelService);
+					}
 				}
 			});
 		} catch(RuntimeException | LinkageError e) {
@@ -177,7 +189,11 @@ public class BaijiuShellAddon {
 				String changeType = type instanceof String text ? text : null;
 				Object container = event.getProperty(UIEvents.EventTags.ELEMENT);
 				String containerId = container instanceof MUIElement ui ? ui.getElementId() : null;
-				if(BaijiuShellChrome.shouldSanitizePlantMenuChildrenAfterChange(containerId, changeType)) {
+				String childId = elementIdOf(event.getProperty(UIEvents.EventTags.NEW_VALUE));
+				if(childId == null) {
+					childId = elementIdOf(event.getProperty(UIEvents.EventTags.OLD_VALUE));
+				}
+				if(BaijiuShellChrome.shouldSanitizePlantMenuChildrenAfterChange(containerId, changeType) || BaijiuShellChrome.shouldSanitizeAfterEditorClose(containerId, childId, changeType)) {
 					scheduleSanitizePlantMenus(application, modelService);
 				}
 				if(!BaijiuShellChrome.shouldRestoreChromeAfterChildrenChange(changeType)) {
@@ -185,6 +201,20 @@ public class BaijiuShellAddon {
 				}
 				if(isPlantChromeContainer(container)) {
 					schedulePlantWindowChrome(application, modelService);
+				}
+			});
+		} catch(RuntimeException | LinkageError e) {
+			// older E4
+		}
+		try {
+			eventBroker.subscribe(UIEvents.UILifeCycle.REMOVE_GUI, event -> {
+				if(shuttingDown || BaijiuShellParts.isRevealingPlantWindowChrome()) {
+					return;
+				}
+				Object element = event.getProperty(UIEvents.EventTags.ELEMENT);
+				String elementId = element instanceof MUIElement ui ? ui.getElementId() : null;
+				if(BaijiuShellChrome.shouldSanitizeAfterEditorClose(null, elementId, "REMOVE_GUI")) {
+					scheduleSanitizePlantMenus(application, modelService);
 				}
 			});
 		} catch(RuntimeException | LinkageError e) {
@@ -258,6 +288,12 @@ public class BaijiuShellAddon {
 			BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
 		} catch(RuntimeException | LinkageError e) {
 			BaijiuShellLog.warn("Plant-home recovery failed", e);
+		} finally {
+			try {
+				BaijiuShellParts.sanitizePlantMenuContributions(application, modelService);
+			} catch(RuntimeException | LinkageError e) {
+				BaijiuShellLog.warn("Plant-home recovery chrome sanitize failed", e);
+			}
 		}
 	}
 
@@ -646,13 +682,19 @@ public class BaijiuShellAddon {
 				return;
 			}
 			final Display ui = display;
+			final int generation = sanitizeGeneration.incrementAndGet();
 			ui.asyncExec(() -> {
-				if(!ui.isDisposed() && !shuttingDown) {
+				if(!ui.isDisposed() && !shuttingDown && generation == sanitizeGeneration.get()) {
 					sanitize.run();
 				}
 			});
-			ui.timerExec(120, () -> {
-				if(!ui.isDisposed() && !shuttingDown) {
+			ui.timerExec(80, () -> {
+				if(!ui.isDisposed() && !shuttingDown && generation == sanitizeGeneration.get()) {
+					sanitize.run();
+				}
+			});
+			ui.timerExec(250, () -> {
+				if(!ui.isDisposed() && !shuttingDown && generation == sanitizeGeneration.get()) {
 					sanitize.run();
 				}
 			});
@@ -830,6 +872,21 @@ public class BaijiuShellAddon {
 				return localized;
 			}
 			return labeled.getLabel();
+		}
+		return null;
+	}
+
+	private static String elementIdOf(Object value) {
+
+		if(value instanceof MUIElement ui) {
+			return ui.getElementId();
+		}
+		if(value instanceof List<?> list) {
+			for(Object item : list) {
+				if(item instanceof MUIElement ui) {
+					return ui.getElementId();
+				}
+			}
 		}
 		return null;
 	}

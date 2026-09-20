@@ -1290,8 +1290,9 @@ public final class BaijiuShellParts {
 	}
 
 	/**
-	 * Re-apply 视图 / 文件 allowlists. Does not {@code createGui} cascades
-	 * (that appends another 视图). Idempotent.
+	 * Re-apply 视图 / 文件 / 白酒 / 帮助 allowlists. Does not {@code createGui}
+	 * cascades (that appends another 视图). Idempotent. Last SWT pass is
+	 * {@link BaijiuShellMenus#sanitizePlantCascades}.
 	 */
 	static void sanitizePlantMenuContributions(MApplication application, EModelService modelService) {
 
@@ -1301,6 +1302,10 @@ public final class BaijiuShellParts {
 		MMenu mainMenu = windowMainMenu(application);
 		if(mainMenu == null && modelService != null) {
 			mainMenu = findMenu(modelService, application, BaijiuShellChrome.MAIN_MENU_ID);
+		}
+		if(mainMenu != null) {
+			applyEditorRequiredMenuVisibility(mainMenu);
+			dedupePlantMenuChildren(mainMenu);
 		}
 		MMenu view = liveMenuChild(mainMenu, BaijiuShellChrome.VIEW_MENU_ID);
 		if(view == null && modelService != null) {
@@ -1312,6 +1317,18 @@ public final class BaijiuShellParts {
 			file = findMenu(modelService, application, BaijiuShellChrome.FILE_MENU_ID);
 		}
 		ensureFileMenuContents(modelService, application, file);
+		MMenu baijiu = liveMenuChild(mainMenu, BaijiuShellChrome.BAIJIU_MENU_ID);
+		if(baijiu == null && modelService != null) {
+			baijiu = findMenu(modelService, application, BaijiuShellChrome.BAIJIU_MENU_ID);
+		}
+		sanitizeBaijiuMenuChildren(baijiu);
+		MMenu help = liveMenuChild(mainMenu, BaijiuShellChrome.HELP_MENU_ID);
+		if(help == null && modelService != null) {
+			help = findMenu(modelService, application, BaijiuShellChrome.HELP_MENU_ID);
+		}
+		sanitizeHelpMenuChildren(help);
+		hideChromatogramMenuLabel(application, modelService);
+		hideNonPlantTopTrim(application, modelService);
 		MWindow plant = plantWindow(application, modelService);
 		if(plant != null && plant.getWidget() instanceof Shell shell && !shell.isDisposed()) {
 			Menu bar = shell.getMenuBar();
@@ -1319,6 +1336,52 @@ public final class BaijiuShellParts {
 				BaijiuShellMenus.sanitizeMainMenuBar(bar);
 				BaijiuShellMenus.sanitizePlantCascades(bar);
 			}
+		}
+	}
+
+	static void sanitizeBaijiuMenuChildren(MMenu baijiuMenu) {
+
+		if(baijiuMenu == null || BaijiuShellChrome.researchMenusVisible()) {
+			return;
+		}
+		try {
+			List<?> children = baijiuMenu.getChildren();
+			if(children == null) {
+				return;
+			}
+			for(Object child : children) {
+				if(!(child instanceof MUIElement element)) {
+					continue;
+				}
+				if(BaijiuShellChrome.shouldHideBaijiuCascadeChild(element.getElementId(), labelOf(element))) {
+					hideMenuChild(element);
+				}
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// baijiu children not readable
+		}
+	}
+
+	static void sanitizeHelpMenuChildren(MMenu helpMenu) {
+
+		if(helpMenu == null || BaijiuShellChrome.researchMenusVisible()) {
+			return;
+		}
+		try {
+			List<?> children = helpMenu.getChildren();
+			if(children == null) {
+				return;
+			}
+			for(Object child : children) {
+				if(!(child instanceof MUIElement element)) {
+					continue;
+				}
+				if(BaijiuShellChrome.shouldHideHelpMenuChild(element.getElementId(), labelOf(element))) {
+					hideMenuChild(element);
+				}
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// help children not readable
 		}
 	}
 
