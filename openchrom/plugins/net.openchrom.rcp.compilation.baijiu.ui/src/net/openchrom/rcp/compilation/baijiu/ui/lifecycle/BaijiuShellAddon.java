@@ -505,13 +505,14 @@ public class BaijiuShellAddon {
 				reveal.run();
 				return;
 			}
-			display.asyncExec(() -> {
-				if(!display.isDisposed()) {
+			final Display ui = display;
+			ui.asyncExec(() -> {
+				if(!ui.isDisposed()) {
 					reveal.run();
 				}
 			});
-			display.timerExec(300, () -> {
-				if(!display.isDisposed()) {
+			ui.timerExec(300, () -> {
+				if(!ui.isDisposed()) {
 					reveal.run();
 				}
 			});

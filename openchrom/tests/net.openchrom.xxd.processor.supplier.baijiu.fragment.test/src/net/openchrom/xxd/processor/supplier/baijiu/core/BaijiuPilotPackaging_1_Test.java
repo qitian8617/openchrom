@@ -327,6 +327,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(addonSrc.contains("revealPlantWindowChrome"), addonSrc);
 		assertTrue(addonSrc.contains("APP_SHUTDOWN_STARTED"), addonSrc);
 		assertTrue(addonSrc.contains("timerExec"), addonSrc);
+		assertTrue(addonSrc.contains("final Display ui"), addonSrc);
 		assertTrue(addonSrc.contains("schedulePlantWindowChrome"), addonSrc);
 		assertTrue(addonSrc.contains("isPlantWindowChrome"), addonSrc);
 		assertTrue(addonSrc.contains("PLANT_WINDOW_CHROME_IDS") || chromeSrc.contains("PLANT_WINDOW_CHROME_IDS"), addonSrc);
