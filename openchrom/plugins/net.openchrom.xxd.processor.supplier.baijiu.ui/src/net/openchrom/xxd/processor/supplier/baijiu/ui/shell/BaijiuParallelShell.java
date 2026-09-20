@@ -84,9 +84,8 @@ public final class BaijiuParallelShell {
 		if(parent == null || parent.isDisposed()) {
 			return;
 		}
-		if(!(parent.getLayout() instanceof GridLayout)) {
-			parent.setLayout(new GridLayout(1, false));
-		}
+		BaijiuPlantLayout.ensureGrid(parent);
+		Composite body = BaijiuPlantLayout.scrollBody(parent);
 		BaijiuMethodSettings settings = BaijiuPreferences.loadMethod();
 		BaijiuSampleInfo template = new BaijiuSampleInfo();
 		BaijiuPreferences.loadSampleDefaults(template);
@@ -95,47 +94,37 @@ public final class BaijiuParallelShell {
 		}
 		Shell host = parent.getShell();
 
-		Label hint = new Label(parent, SWT.WRAP);
-		hint.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		hint.setText("同一样品进两针，看均值与简单相对偏差。甲醇标出。针 A / 针 B 可各选一个 .ocb；演示可用两次 sample-nongxiang.ocb。\nSame sample, two needles: mean and simple relative deviation. Methanol is highlighted. " + BaijiuCalibrationGate.OPERATOR_HINT);
+		BaijiuPlantLayout.hint(body, "同一样品进两针，看均值与简单相对偏差。甲醇标出。针 A / 针 B 可各选一个 .ocb；演示可用两次 sample-nongxiang.ocb。\nSame sample, two needles: mean and simple relative deviation. Methanol is highlighted. " + BaijiuCalibrationGate.OPERATOR_HINT);
+		BaijiuPlantLayout.hint(body, BaijiuParallelEngine.FORMULA_TEXT + "\n" + BaijiuParallelEngine.SCOPE_NOTE);
+		BaijiuPlantLayout.hint(body, "方法：" + settings.getMethodName() + "    内标：" + settings.getIstdName());
 
-		Label formula = new Label(parent, SWT.WRAP);
-		formula.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		formula.setText(BaijiuParallelEngine.FORMULA_TEXT + "\n" + BaijiuParallelEngine.SCOPE_NOTE);
-
-		Label method = new Label(parent, SWT.WRAP);
-		method.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		method.setText("方法：" + settings.getMethodName() + "    内标：" + settings.getIstdName());
-
-		Composite header = new Composite(parent, SWT.NONE);
-		header.setLayout(new GridLayout(4, false));
-		header.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-
+		Composite header = BaijiuPlantLayout.row(body, 8);
 		Label sampleLabel = new Label(header, SWT.NONE);
 		sampleLabel.setText("样品编号");
 		Text sampleNo = new Text(header, SWT.BORDER);
-		sampleNo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		sampleNo.setLayoutData(BaijiuPlantLayout.fixed(BaijiuPlantLayout.SAMPLE_ID));
 		sampleNo.setText(template.getSampleNo().isEmpty() ? "LD-BJ-001" : template.getSampleNo());
 
 		Label abvLabel = new Label(header, SWT.NONE);
 		abvLabel.setText("酒精度 %vol");
 		Text abv = new Text(header, SWT.BORDER);
-		abv.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		abv.setLayoutData(BaijiuPlantLayout.fixed(BaijiuPlantLayout.ABV));
 		abv.setText(template.getAbvPercent() > 0.0d ? String.format(Locale.US, "%.2f", template.getAbvPercent()) : "52");
 
-		Label fileALabel = new Label(header, SWT.WRAP);
-		fileALabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
-		fileALabel.setText(needleA == null ? "针 A：尚未选择" : "针 A：" + needleA.getName());
-		Label fileBLabel = new Label(header, SWT.WRAP);
-		fileBLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
-		fileBLabel.setText(needleB == null ? "针 B：尚未选择" : "针 B：" + needleB.getName());
+		Label rsdLabel = new Label(header, SWT.NONE);
+		rsdLabel.setText("允许相对偏差 %");
+		Text allowedRsd = new Text(header, SWT.BORDER);
+		allowedRsd.setLayoutData(BaijiuPlantLayout.fixed(BaijiuPlantLayout.ABV));
+		allowedRsd.setText(String.format(Locale.US, "%.1f", BaijiuPreferences.loadAllowedRsdPercent()));
+
+		Label fileALabel = BaijiuPlantLayout.hint(header, needleA == null ? "针 A：尚未选择" : "针 A：" + needleA.getName());
+		((GridData)fileALabel.getLayoutData()).horizontalSpan = 4;
+		Label fileBLabel = BaijiuPlantLayout.hint(header, needleB == null ? "针 B：尚未选择" : "针 B：" + needleB.getName());
+		((GridData)fileBLabel.getLayoutData()).horizontalSpan = 4;
 
 		final File[] files = new File[]{needleA, needleB};
 
-		Table table = new Table(parent, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
-		table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-		table.setHeaderVisible(true);
-		table.setLinesVisible(true);
+		Table table = BaijiuPlantLayout.table(body, 280);
 		addColumn(table, "组分", 120);
 		addColumn(table, "针 A g/L", 90);
 		addColumn(table, "针 B g/L", 90);
@@ -143,13 +132,9 @@ public final class BaijiuParallelShell {
 		addColumn(table, "相对偏差 %", 100);
 		addColumn(table, "说明", 220);
 
-		Label status = new Label(parent, SWT.WRAP);
-		status.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		status.setText("选择两针后点「计算均值与偏差」。");
+		Label status = BaijiuPlantLayout.hint(body, "选择两针后点「计算均值与偏差」。");
 
-		Composite buttons = new Composite(parent, SWT.NONE);
-		buttons.setLayout(new GridLayout(4, false));
-		buttons.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		Composite buttons = BaijiuPlantLayout.row(body, 4);
 
 		Button pickA = new Button(buttons, SWT.PUSH);
 		pickA.setText("选择针 A .ocb");
@@ -189,6 +174,8 @@ public final class BaijiuParallelShell {
 				template.setSampleNo(sampleNo.getText());
 				template.setAbvPercent(parse(abv.getText(), template.getAbvPercent()));
 				template.setRawMaterial(BaijiuRawMaterial.GRAIN);
+				double allowed = parse(allowedRsd.getText(), BaijiuPreferences.DEFAULT_ALLOWED_RSD_PERCENT);
+				BaijiuPreferences.saveAllowedRsdPercent(allowed);
 				IChromatogram chromatogramA = BaijiuChromatogramFiles.loadCsd(files[0], null);
 				IChromatogram chromatogramB = BaijiuChromatogramFiles.loadCsd(files[1], null);
 				if(chromatogramA == null || chromatogramB == null) {
@@ -198,7 +185,7 @@ public final class BaijiuParallelShell {
 				BaijiuBatchRow rowA = BaijiuBatchEngine.analyze(chromatogramA, files[0], settings, template, true);
 				BaijiuBatchRow rowB = BaijiuBatchEngine.analyze(chromatogramB, files[1], settings, template, true);
 				BaijiuParallelResult result = BaijiuParallelEngine.compare(rowA, rowB);
-				fill(table, result, settings);
+				fill(table, result, settings, allowed);
 				status.setText(result.getMessage());
 				if(!result.isSuccess()) {
 					warn(host, result.getMessage());
@@ -217,6 +204,11 @@ public final class BaijiuParallelShell {
 
 	public static void fill(Table table, BaijiuParallelResult result, BaijiuMethodSettings settings) {
 
+		fill(table, result, settings, BaijiuPreferences.loadAllowedRsdPercent());
+	}
+
+	public static void fill(Table table, BaijiuParallelResult result, BaijiuMethodSettings settings, double allowedRsdPercent) {
+
 		table.removeAll();
 		if(result == null || !result.isSuccess()) {
 			return;
@@ -233,9 +225,12 @@ public final class BaijiuParallelShell {
 			item.setText(2, BaijiuParallelEngine.formatConcentration(row.getNeedleB()));
 			item.setText(3, BaijiuParallelEngine.formatConcentration(row.getMean()));
 			item.setText(4, BaijiuParallelEngine.formatPercent(row.getRelativeDeviationPercent()));
-			item.setText(5, row.getRemark());
+			item.setText(5, annotateRemark(row.getRemark(), row.getRelativeDeviationPercent(), allowedRsdPercent));
 			if(row.isMethanol()) {
 				item.setForeground(display.getSystemColor(SWT.COLOR_DARK_BLUE));
+			}
+			if(exceedsAllowed(row.getRelativeDeviationPercent(), allowedRsdPercent)) {
+				item.setForeground(display.getSystemColor(SWT.COLOR_DARK_RED));
 			}
 		}
 	}
@@ -279,9 +274,24 @@ public final class BaijiuParallelShell {
 				item.setText(3, BaijiuParallelEngine.formatConcentration(row.getNeedleB()));
 				item.setText(4, BaijiuParallelEngine.formatConcentration(row.getMean()));
 				item.setText(5, BaijiuParallelEngine.formatPercent(row.getRelativeDeviationPercent()));
-				item.setText(6, row.getRemark());
+				item.setText(6, annotateRemark(row.getRemark(), row.getRelativeDeviationPercent(), BaijiuPreferences.loadAllowedRsdPercent()));
 			}
 		}
+	}
+
+	private static String annotateRemark(String remark, Double relativeDeviationPercent, double allowedRsdPercent) {
+
+		String base = remark == null ? "" : remark;
+		if(!exceedsAllowed(relativeDeviationPercent, allowedRsdPercent)) {
+			return base;
+		}
+		String note = "超允许相对偏差 " + String.format(java.util.Locale.US, "%.1f", allowedRsdPercent) + "%";
+		return base.isEmpty() ? note : base + "；" + note;
+	}
+
+	private static boolean exceedsAllowed(Double relativeDeviationPercent, double allowedRsdPercent) {
+
+		return relativeDeviationPercent != null && !relativeDeviationPercent.isNaN() && relativeDeviationPercent > allowedRsdPercent;
 	}
 
 	private static File chooseFile(Shell shell, String title) {

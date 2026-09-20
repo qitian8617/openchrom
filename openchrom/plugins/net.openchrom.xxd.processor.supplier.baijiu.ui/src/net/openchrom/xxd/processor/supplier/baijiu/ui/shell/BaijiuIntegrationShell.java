@@ -11,11 +11,8 @@ package net.openchrom.xxd.processor.supplier.baijiu.ui.shell;
 
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuAnalysisEngine;
@@ -39,18 +36,16 @@ public final class BaijiuIntegrationShell {
 		if(parent == null || parent.isDisposed()) {
 			return;
 		}
-		parent.setLayout(new GridLayout(1, false));
-		Label hint = new Label(parent, SWT.WRAP);
-		hint.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		hint.setText("对当前 FID 谱图运行推荐积分（一阶导数阈值 MEDIUM + 梯形积分）。请先打开谱图/采集。");
+		BaijiuPlantLayout.ensureGrid(parent);
+		Composite body = BaijiuPlantLayout.scrollBody(parent);
+		BaijiuPlantLayout.hint(body, "对当前 FID 谱图运行推荐积分（一阶导数阈值 MEDIUM + 梯形积分）。请先打开谱图/采集。");
 
-		Text result = new Text(parent, SWT.BORDER | SWT.MULTI | SWT.WRAP | SWT.V_SCROLL | SWT.READ_ONLY);
-		result.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		Text result = new Text(body, SWT.BORDER | SWT.MULTI | SWT.WRAP | SWT.V_SCROLL | SWT.H_SCROLL | SWT.READ_ONLY);
+		result.setLayoutData(BaijiuPlantLayout.tableFill(240));
 		result.setText("尚未运行。打开谱图后点「运行推荐积分」。");
 
-		Button run = new Button(parent, SWT.PUSH);
+		Button run = new Button(body, SWT.PUSH);
 		run.setText(BaijiuTerms.RECOMMENDED_INTEGRATION);
-		run.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		run.addListener(SWT.Selection, e -> {
 			String message = BaijiuRecommendedIntegration.integrate(ChromatogramBridge.resolve(partService));
 			BaijiuAnalysisEngine.refreshSelection(ChromatogramBridge.resolve(partService));

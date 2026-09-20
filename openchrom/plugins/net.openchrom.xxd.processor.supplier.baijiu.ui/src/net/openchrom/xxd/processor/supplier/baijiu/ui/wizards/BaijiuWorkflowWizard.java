@@ -16,10 +16,7 @@ import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.FillLayout;
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
@@ -33,6 +30,7 @@ import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuPreferences;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuRecommendedIntegration;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuSampleInfo;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.ChromatogramBridge;
+import net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuPlantLayout;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuReportShell;
 
 public class BaijiuWorkflowWizard extends Wizard {
@@ -80,12 +78,11 @@ public class BaijiuWorkflowWizard extends Wizard {
 	void createEmbedded(Composite parent) {
 
 		addPages();
-		parent.setLayout(new GridLayout(1, false));
-		Label title = new Label(parent, SWT.WRAP);
-		title.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		title.setText(getWindowTitle() + " — 页签代替对话框。熟练操作员可直接用「白酒分析」。");
-		TabFolder tabs = new TabFolder(parent, SWT.NONE);
-		tabs.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		BaijiuPlantLayout.ensureGrid(parent);
+		Composite body = BaijiuPlantLayout.scrollBody(parent);
+		BaijiuPlantLayout.hint(body, getWindowTitle() + " — 页签代替对话框。熟练操作员可直接用「白酒分析」。");
+		TabFolder tabs = new TabFolder(body, SWT.NONE);
+		tabs.setLayoutData(BaijiuPlantLayout.tableFill(360));
 		embed(tabs, methodPage);
 		embed(tabs, processPage);
 		embed(tabs, resultPage);

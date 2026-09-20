@@ -95,9 +95,8 @@ public final class BaijiuSequenceResultsShell {
 		if(parent == null || parent.isDisposed()) {
 			return;
 		}
-		if(!(parent.getLayout() instanceof GridLayout)) {
-			parent.setLayout(new GridLayout(1, false));
-		}
+		BaijiuPlantLayout.ensureGrid(parent);
+		Composite body = BaijiuPlantLayout.scrollBody(parent);
 		BaijiuMethodSettings settings = BaijiuPreferences.loadMethod();
 		BaijiuSampleInfo template = new BaijiuSampleInfo();
 		BaijiuPreferences.loadSampleDefaults(template);
@@ -105,31 +104,23 @@ public final class BaijiuSequenceResultsShell {
 		List<BaijiuSequenceResultRow> rows = new ArrayList<>();
 		Shell host = parent.getShell();
 
-		Label hint = new Label(parent, SWT.WRAP);
-		hint.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		hint.setText("按当前（或打开的）进样序列汇总：每一针一行。已完成且有谱图路径的行按厂方法定量；未进样 / 已跳过 / 失败的行仍列出原因，不会悄悄丢掉。" + BaijiuCalibrationGate.OPERATOR_HINT + " 平行针在备注中写甲醇均值与相对偏差，详细仍用工作台「" + BaijiuTerms.PARALLEL + "」。离线演示：打开指向 demo .ocb 的序列 JSON。");
+		BaijiuPlantLayout.hint(body, "按当前（或打开的）进样序列汇总：每一针一行。已完成且有谱图路径的行按厂方法定量；未进样 / 已跳过 / 失败的行仍列出原因，不会悄悄丢掉。" + BaijiuCalibrationGate.OPERATOR_HINT + " 平行针在备注中写甲醇均值与相对偏差，详细仍用工作台「" + BaijiuTerms.PARALLEL + "」。离线演示：打开指向 demo .ocb 的序列 JSON。");
 
-		Composite header = new Composite(parent, SWT.NONE);
-		header.setLayout(new GridLayout(6, false));
-		header.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		Composite header = BaijiuPlantLayout.row(body, 6);
 		Label method = new Label(header, SWT.NONE);
-		method.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 6, 1));
+		method.setLayoutData(BaijiuPlantLayout.wrapHint());
+		((GridData)method.getLayoutData()).horizontalSpan = 6;
 		method.setText("方法：" + settings.getMethodName() + "    内标：" + settings.getIstdName());
 
 		Label abvLabel = new Label(header, SWT.NONE);
 		abvLabel.setText("默认酒精度 %vol");
 		Text abv = new Text(header, SWT.BORDER);
-		abv.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		abv.setLayoutData(BaijiuPlantLayout.fixed(BaijiuPlantLayout.ABV));
 		abv.setText(template.getAbvPercent() > 0.0d ? String.format(Locale.US, "%.2f", template.getAbvPercent()) : "52");
 
-		Label summary = new Label(header, SWT.WRAP);
-		summary.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 6, 1));
-		summary.setText(source.isEmpty() ? "尚未载入序列。可从当前进样序列生成，或打开已保存的序列 JSON（条目中的谱图路径可指向 demo .ocb）。" : "已载入 " + source.size() + " 行序列。");
+		Label summary = BaijiuPlantLayout.hint(body, source.isEmpty() ? "尚未载入序列。可从当前进样序列生成，或打开已保存的序列 JSON（条目中的谱图路径可指向 demo .ocb）。" : "已载入 " + source.size() + " 行序列。");
 
-		Table table = new Table(parent, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
-		table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-		table.setHeaderVisible(true);
-		table.setLinesVisible(true);
+		Table table = BaijiuPlantLayout.table(body, 280);
 		addColumn(table, "序号", 48);
 		addColumn(table, "类型", 56);
 		addColumn(table, "编号", 88);
@@ -144,9 +135,7 @@ public final class BaijiuSequenceResultsShell {
 		addColumn(table, "GB 2757", 80);
 		addColumn(table, "备注", 280);
 
-		Composite buttons = new Composite(parent, SWT.NONE);
-		buttons.setLayout(new GridLayout(6, false));
-		buttons.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		Composite buttons = BaijiuPlantLayout.row(body, 6);
 
 		Button fromCurrent = new Button(buttons, SWT.PUSH);
 		fromCurrent.setText("从当前序列生成结果表");
@@ -186,6 +175,7 @@ public final class BaijiuSequenceResultsShell {
 			close.addListener(SWT.Selection, e -> dialog.close());
 		}
 
+		BaijiuPlantLayout.packLeading(table, 6);
 		if(runImmediately && !source.isEmpty() && BaijiuLicenseGate.allowsQuantifyAndReport()) {
 			runTable(host, source, settings, template, abv, rows, table, summary);
 		}
