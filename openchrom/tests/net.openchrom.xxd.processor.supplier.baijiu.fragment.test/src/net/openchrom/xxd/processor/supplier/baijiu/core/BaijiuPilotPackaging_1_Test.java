@@ -483,6 +483,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(wbHomeSrc.contains("@PostConstruct"), wbHomeSrc);
 		assertTrue(wbHomeSrc.contains("createWorkbenchPanel"), wbHomeSrc);
 		assertTrue(wbHomeSrc.contains("catch(Throwable"), wbHomeSrc);
+		assertFalse(wbHomeSrc.contains("create(parent);"), "must not build 白酒操作 before E4 injects IEclipseContext");
 
 		Path chromHomePart = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/parts/BaijiuChromatogramHomePart.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/parts/BaijiuChromatogramHomePart.java");
 		assertNotNull(chromHomePart);
@@ -517,6 +518,9 @@ public class BaijiuPilotPackaging_1_Test {
 		String wbPartSrc = Files.readString(wbPart, StandardCharsets.UTF_8);
 		assertTrue(wbPartSrc.contains("createIn"), wbPartSrc);
 		assertTrue(wbPartSrc.contains("@PostConstruct"), wbPartSrc);
+		assertTrue(wbPartSrc.contains("openChromatogram"), wbPartSrc);
+		assertTrue(wbPartSrc.contains("OpenBaijiuChromatogramHandler.resolveContext"), wbPartSrc);
+		assertFalse(wbPartSrc.contains("new OpenBaijiuChromatogramHandler().execute(shell, context)"), "must not capture create-time null context for 打开色谱图");
 
 		Path gcOsShell = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuGcConsoleShell.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuGcConsoleShell.java");
 		assertNotNull(gcOsShell, "independent GC OS window");
@@ -694,6 +698,10 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(handlerSrc.contains("findPrimaryEditorStack"), handlerSrc);
 		assertTrue(handlerSrc.contains("addToSharedElements"), handlerSrc);
 		assertTrue(handlerSrc.contains("findPlantChromatogramStack"), handlerSrc);
+		assertTrue(handlerSrc.contains("resolveContext"), handlerSrc);
+		assertTrue(handlerSrc.contains("activeShell"), handlerSrc);
+		assertFalse(handlerSrc.contains("请改用主菜单"), "plant 打开色谱图 must not redirect to a File menu stub");
+		assertFalse(handlerSrc.contains("打开 CSD 文件"), "plant 打开色谱图 must open FileDialog, not a menu-stub MessageBox");
 
 		Path cdfPrefs = locate("openchrom/plugins/net.openchrom.csd.converter.supplier.cdf.ui/plugin.xml", "plugins/net.openchrom.csd.converter.supplier.cdf.ui/plugin.xml");
 		assertNotNull(cdfPrefs);

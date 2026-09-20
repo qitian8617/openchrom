@@ -11,6 +11,7 @@ package net.openchrom.xxd.processor.supplier.baijiu.ui.handlers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import org.junit.jupiter.api.Test;
 
@@ -22,5 +23,8 @@ public class OpenBaijiuChromatogramHandler_1_Test {
 		assertFalse(OpenBaijiuChromatogramHandler.openFile(null, null));
 		OpenBaijiuChromatogramHandler.showPlantChromatogram(null);
 		assertEquals("baijiu.filter.path.chromatogram", OpenBaijiuChromatogramHandler.FILTER_PATH_KEY);
+		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui.command.openChromatogram", OpenBaijiuChromatogramHandler.COMMAND_ID);
+		assertNull(OpenBaijiuChromatogramHandler.resolveContext(null));
+		assertNull(OpenBaijiuChromatogramHandler.activeShell(null));
 	}
 }
