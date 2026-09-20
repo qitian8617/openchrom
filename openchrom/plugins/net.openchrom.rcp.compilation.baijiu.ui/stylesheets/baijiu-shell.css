@@ -5,6 +5,8 @@
  * in Java so -Dnet.openchrom.baijiu.showResearchMenus=true can reveal them.
  * Do NOT CSS-hide org.eclipse.ui.main.toolbar: after CSD editor action bars
  * attach, that id is the live top coolbar that hosts the plant toolbar.
+ * Do NOT CSS-hide handledmenuitem.selectView: 视图 keeps the dialog; Java
+ * allowlists 白酒操作 / 气相色谱控制台 / 色谱图叠加 / 进样序列.
  *******************************************************************************/
 #org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.updates,
 #org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.updates,
@@ -18,7 +20,6 @@
 #org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.perspectiveSwitcher,
 #org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.perspectiveSwitcher,
 #org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.selectView,
-#org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.selectView,
 #org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.resetperspective,
 #org.eclipse.chemclipse.ux.extension.msd.ui.handledmenuitem.openChromatogram,
 #org.eclipse.chemclipse.ux.extension.wsd.ui.handledmenuitem.openChromatogram,

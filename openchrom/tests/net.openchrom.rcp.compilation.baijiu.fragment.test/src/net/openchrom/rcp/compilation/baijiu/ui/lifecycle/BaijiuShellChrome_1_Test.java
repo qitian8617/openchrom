@@ -65,7 +65,7 @@ public class BaijiuShellChrome_1_Test {
 		assertEquals("白酒FID工作站", BaijiuShellChrome.APPLICATION_NAME_VM);
 		assertFalse(BaijiuShellChrome.APPLICATION_NAME_VM.contains(" "));
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome", BaijiuShellChrome.PERSPECTIVE_ID);
-		assertEquals(22, BaijiuShellChrome.CHROME_EPOCH);
+		assertEquals(23, BaijiuShellChrome.CHROME_EPOCH);
 		assertEquals("org.eclipse.chemclipse.ux.extension.ui.perspective.welcome", BaijiuShellChrome.WELCOME_PERSPECTIVE_ID);
 		assertTrue(BaijiuShellChrome.isHiddenResearchPerspective(BaijiuShellChrome.WELCOME_PERSPECTIVE_ID));
 		assertTrue(BaijiuShellChrome.isHiddenResearchPerspective(BaijiuShellChrome.MALDI_PERSPECTIVE_ID));
@@ -135,7 +135,7 @@ public class BaijiuShellChrome_1_Test {
 		assertFalse(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.about"));
 		assertFalse(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.preferences"));
 		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.PLANT_TOOLBAR_ID));
-		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.SELECT_VIEW_MENU_ID));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.SELECT_VIEW_MENU_ID), "视图 keeps Select View; dialog is allowlisted");
 		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.SELECT_VIEW_TOOL_ID));
 		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.PERSPECTIVE_SWITCHER_MENU_ID));
 		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.PERSPECTIVE_SWITCHER_TOOL_ID));
@@ -144,7 +144,7 @@ public class BaijiuShellChrome_1_Test {
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.xxd.ui.part.platedata"));
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.xxd.ui.part.wellchannels"));
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.xxd.ui.part.peakScanListPart"));
-		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.xxd.ui.part.chromatogramOverlay"));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.CHROMATOGRAM_OVERLAY_PART_ID), "FID overlay stays available");
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.xxd.ui.part.dataexplorer"));
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.ui.internal.introview"));
 		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.ui.views.ProgressView"));
@@ -225,6 +225,73 @@ public class BaijiuShellChrome_1_Test {
 		assertFalse(BaijiuShellChrome.isPlantWindowChrome(BaijiuShellChrome.PERSPECTIVES_TOOLBAR_ID));
 		assertFalse(BaijiuShellChrome.shouldHideMainMenuChild(BaijiuShellChrome.MAIN_MENU_ID, null, null));
 		assertFalse(BaijiuShellChrome.shouldHideMainMenuChild(BaijiuShellChrome.ECLIPSE_MAIN_MENU_ID, "Window", null), "main menu bar is not the 窗口 item");
+		assertTrue(BaijiuShellChrome.shouldHideMainMenuChild("generated.tutorials", "Tutorials", null));
+		assertTrue(BaijiuShellChrome.shouldHideMainMenuChild("generated.updates", "更新", null));
+		assertTrue(BaijiuShellChrome.shouldHideMainMenuChild("generated.import", "Import", null));
+		assertTrue(BaijiuShellChrome.shouldHideMainMenuChild("generated.export", "导出", null));
+		assertTrue(BaijiuShellChrome.shouldHideMainMenuChild("generated.showview", "Show View", null));
+		assertTrue(BaijiuShellChrome.shouldHideMainMenuChild("generated.perspective", "Open Perspective", null));
+		assertFalse(BaijiuShellChrome.shouldHideMainMenuChild(BaijiuShellChrome.SELECT_VIEW_MENU_ID, "Select View", null), "视图 keeps Select View itself");
+		assertTrue(BaijiuShellChrome.isPlantToolbarContribution(BaijiuShellChrome.PLANT_TOOLBAR_ID));
+		assertTrue(BaijiuShellChrome.isPlantToolbarContribution(BaijiuShellChrome.OPEN_CHROMATOGRAM_TOOLITEM_ID));
+		assertTrue(BaijiuShellChrome.isPlantToolbarContribution(BaijiuShellChrome.TOGGLE_GC_TOOLITEM_ID));
+		assertTrue(BaijiuShellChrome.isPlantToolbarContribution("net.openchrom.rcp.compilation.baijiu.ui.toolbar.startAnalysis"));
+		assertTrue(BaijiuShellChrome.isPlantToolbarContribution("net.openchrom.rcp.compilation.baijiu.ui.toolbar.integrate"));
+		assertFalse(BaijiuShellChrome.isPlantToolbarContribution("org.eclipse.ui.WorkingSetActionSet"));
+		assertFalse(BaijiuShellChrome.isPlantToolbarContribution(BaijiuShellChrome.PERSPECTIVES_TOOLBAR_ID));
+		assertFalse(BaijiuShellChrome.isPlantToolbarContribution(BaijiuShellChrome.FILE_TOOLBAR_ID));
+	}
+
+	@Test
+	public void selectViewAllowlistKeepsPlantHidesResearch() {
+
+		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem(BaijiuShellChrome.WORKBENCH_HOME_PART_ID, "白酒操作"));
+		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem(BaijiuShellChrome.WORKBENCH_PART_ID, "白酒操作"));
+		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem(BaijiuShellChrome.GC_HOME_PART_ID, "气相色谱控制台"));
+		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem(BaijiuShellChrome.GC_CONTROL_PART_ID, "气相色谱控制台"));
+		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem(BaijiuShellChrome.CHROMATOGRAM_OVERLAY_PART_ID, "色谱图叠加"));
+		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem(null, "色谱图叠加"));
+		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem(null, "Chromatogram Overlay"));
+		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem(BaijiuShellChrome.SEQUENCE_HOME_PART_ID, "进样序列"));
+		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem(BaijiuShellChrome.SEQUENCE_PART_ID, "进样序列"));
+		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem(null, "进样序列"));
+		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem(BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID, "谱图 / 采集"));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem(null, "序列"), "ChemClipse 序列 is not plant 进样序列");
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem(null, "Sequence"));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem(null, "数据"));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem(null, "Data"));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem(null, "编辑历史"));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem(null, "Edit History"));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem(null, "反馈"));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem(null, "Feedback"));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem(null, "控制台"));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem(null, "Console"));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem(null, "Mass Spectrum File Explorer"));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem(null, "Mass Spectrum Header"));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem(null, "Targets"));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem(null, "Mass Spectrum Overlay"));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem(null, "Pseudo Gel"));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem(null, "Mass Spectrum Peak List"));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem(null, "热图"));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem(null, "Heatmap"));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem("org.eclipse.chemclipse.ux.extension.xxd.ui.part.massSpectrumFileExplorer", "Mass Spectrum File Explorer"));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem("org.eclipse.chemclipse.ux.extension.xxd.ui.part.targets", "Targets"));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem("org.eclipse.chemclipse.ux.extension.xxd.ui.part.heatmap", "热图"));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem("org.eclipse.ui.console.ConsoleView", "Console"));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem("org.eclipse.chemclipse.ux.extension.msd.ui.part.explorer", null));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem("org.eclipse.chemclipse.nmr.ui.part.spectrum", "NMR"));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem("org.eclipse.chemclipse.ux.extension.xxd.ui.part.pca", "PCA"));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem("unknown.research.view", "Whatever"));
+		assertTrue(BaijiuShellChrome.SELECT_VIEW_KEEP_ELEMENT_IDS.contains(BaijiuShellChrome.WORKBENCH_HOME_PART_ID));
+		assertTrue(BaijiuShellChrome.SELECT_VIEW_KEEP_ELEMENT_IDS.contains(BaijiuShellChrome.GC_HOME_PART_ID));
+		assertTrue(BaijiuShellChrome.SELECT_VIEW_KEEP_ELEMENT_IDS.contains(BaijiuShellChrome.CHROMATOGRAM_OVERLAY_PART_ID));
+		assertTrue(BaijiuShellChrome.SELECT_VIEW_KEEP_ELEMENT_IDS.contains(BaijiuShellChrome.SEQUENCE_HOME_PART_ID));
+		assertTrue(BaijiuShellChrome.SELECT_VIEW_KEEP_LABELS.contains("白酒操作"));
+		assertTrue(BaijiuShellChrome.SELECT_VIEW_KEEP_LABELS.contains("气相色谱控制台"));
+		assertTrue(BaijiuShellChrome.SELECT_VIEW_KEEP_LABELS.contains("色谱图叠加"));
+		assertTrue(BaijiuShellChrome.SELECT_VIEW_KEEP_LABELS.contains("进样序列"));
+		assertTrue(BaijiuShellChrome.SELECT_VIEW_HIDE_LABELS.contains("序列"));
+		assertFalse(BaijiuShellChrome.SELECT_VIEW_KEEP_LABELS.contains("序列"));
 	}
 
 	@Test
@@ -244,6 +311,10 @@ public class BaijiuShellChrome_1_Test {
 		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.PLANT_EDITOR_PLACEHOLDER_ID));
 		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.FILE_TOOLBAR_ID));
 		assertTrue(BaijiuShellChrome.shouldHide(BaijiuShellChrome.SAVE_TOOLITEM_ID));
+		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem(null, "数据"));
+		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem(null, "Mass Spectrum File Explorer"));
+		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem("org.eclipse.chemclipse.ux.extension.xxd.ui.part.targets", "Targets"));
+		assertFalse(BaijiuShellChrome.shouldHideMainMenuChild("generated.import", "Import", null));
 	}
 
 	@Test

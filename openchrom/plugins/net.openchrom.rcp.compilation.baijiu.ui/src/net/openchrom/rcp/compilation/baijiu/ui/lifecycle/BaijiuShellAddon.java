@@ -14,6 +14,7 @@ import java.util.List;
 
 import org.eclipse.e4.core.services.events.IEventBroker;
 import org.eclipse.e4.ui.model.application.MApplication;
+import org.eclipse.e4.ui.model.application.descriptor.basic.MPartDescriptor;
 import org.eclipse.e4.ui.model.application.ui.MUIElement;
 import org.eclipse.e4.ui.model.application.ui.MUILabel;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPerspective;
@@ -137,12 +138,14 @@ public class BaijiuShellAddon {
 		BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
 		List<MUIElement> elements = modelService.findElements(application, null, MUIElement.class, null);
 		if(elements == null) {
+			hideSelectViewDescriptors(application, modelService);
 			hideTopWindowMenus(application, modelService);
 			revealPlantParts(application, modelService);
 			BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
 			return;
 		}
 		hideResearchElements(application, modelService, elements);
+		hideSelectViewDescriptors(application, modelService);
 		hideTopWindowMenus(application, modelService);
 		revealPlantParts(application, modelService);
 		BaijiuShellParts.revealPlantWindowChrome(application, modelService);
@@ -169,6 +172,7 @@ public class BaijiuShellAddon {
 			BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
 			BaijiuShellParts.showPlantHomeParts(application, modelService, partService(application));
 			BaijiuShellParts.forceCreatePlantHomeGuis(application, modelService);
+			hideSelectViewDescriptors(application, modelService);
 			BaijiuShellParts.revealPlantWindowChrome(application, modelService);
 			BaijiuShellSelection.clearHiddenSelections(application, modelService);
 			BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
@@ -402,7 +406,57 @@ public class BaijiuShellAddon {
 				}
 			}
 		}
+		hideSelectViewDescriptors(application, modelService);
 		BaijiuShellParts.revealPlantWindowChrome(application, modelService);
+	}
+
+	static void hideSelectViewDescriptors(MApplication application, EModelService modelService) {
+
+		if(application == null) {
+			return;
+		}
+		try {
+			List<MPartDescriptor> descriptors = application.getDescriptors();
+			if(descriptors != null) {
+				for(MPartDescriptor descriptor : descriptors) {
+					applySelectViewDescriptorVisibility(descriptor);
+				}
+			}
+		} catch(RuntimeException | LinkageError e) {
+			BaijiuShellLog.warn("Hiding Select View descriptors from MApplication failed", e);
+		}
+		if(modelService == null) {
+			return;
+		}
+		try {
+			List<MPartDescriptor> found = modelService.findElements(application, null, MPartDescriptor.class, null);
+			if(found == null) {
+				return;
+			}
+			for(MPartDescriptor descriptor : found) {
+				applySelectViewDescriptorVisibility(descriptor);
+			}
+		} catch(RuntimeException | LinkageError e) {
+			BaijiuShellLog.warn("Hiding Select View descriptors from EModelService failed", e);
+		}
+	}
+
+	private static void applySelectViewDescriptorVisibility(MPartDescriptor descriptor) {
+
+		if(descriptor == null) {
+			return;
+		}
+		String label = descriptor.getLocalizedLabel();
+		if(label == null || label.isBlank()) {
+			label = descriptor.getLabel();
+		}
+		if(BaijiuShellChrome.shouldHideSelectViewItem(descriptor.getElementId(), label)) {
+			descriptor.setVisible(false);
+			descriptor.setToBeRendered(false);
+		} else {
+			descriptor.setVisible(true);
+			descriptor.setToBeRendered(true);
+		}
 	}
 
 	private static void schedulePlantHomeRender(MApplication application, EModelService modelService) {

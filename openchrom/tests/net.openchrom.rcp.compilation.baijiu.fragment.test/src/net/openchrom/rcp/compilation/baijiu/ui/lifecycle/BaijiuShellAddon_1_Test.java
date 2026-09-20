@@ -21,6 +21,7 @@ public class BaijiuShellAddon_1_Test {
 		BaijiuShellAddon.revealPlantParts(null, null);
 		BaijiuShellAddon.dropDeadPlantEditorPlaceholder(null, null);
 		BaijiuShellAddon.hideTopWindowMenus(null, null);
+		BaijiuShellAddon.hideSelectViewDescriptors(null, null);
 		BaijiuShellAddon.tagPlantHomeSingletons(null, null);
 		BaijiuShellAddon.recoverPlantHome(null, null);
 		BaijiuShellParts.suppressE4GcWindow(null, null);

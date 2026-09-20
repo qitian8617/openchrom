@@ -9,6 +9,8 @@
  *******************************************************************************/
 package net.openchrom.rcp.compilation.baijiu.ui.lifecycle;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 import org.junit.jupiter.api.Test;
 
 public class BaijiuShellMenus_1_Test {
@@ -18,5 +20,9 @@ public class BaijiuShellMenus_1_Test {
 
 		BaijiuShellMenus.install();
 		BaijiuShellMenus.sanitize(null);
+		BaijiuShellMenus.sanitizeSelectView(null);
+		BaijiuShellMenus.sanitizeSelectViewTable(null);
+		BaijiuShellMenus.sanitizeSelectViewTree(null);
+		assertFalse(BaijiuShellMenus.isSelectViewShell(null));
 	}
 }
