@@ -131,7 +131,8 @@ public final class BaijiuShellMenus {
 	/**
 	 * Compatibility / ChemClipse may paint 色谱图 on the SWT bar even when
 	 * the E4 contribution is {@code visible=false} and still defined for
-	 * GroupHandler. Dispose the label; keep 文件 / 白酒 / 视图 / 帮助.
+	 * GroupHandler. Dispose 色谱图 / research labels; keep the first
+	 * 文件 / 白酒 / 视图 / 帮助 and drop extra 视图 from a createGui loop.
 	 */
 	static void sanitizeMainMenuBar(Menu menu) {
 
@@ -139,7 +140,8 @@ public final class BaijiuShellMenus {
 			return;
 		}
 		MenuItem[] items = menu.getItems();
-		for(int i = items.length - 1; i >= 0; i--) {
+		java.util.Set<String> seenPlant = new java.util.HashSet<>();
+		for(int i = 0; i < items.length; i++) {
 			MenuItem item = items[i];
 			if(item == null || item.isDisposed() || (item.getStyle() & SWT.SEPARATOR) != 0) {
 				continue;
@@ -148,7 +150,11 @@ public final class BaijiuShellMenus {
 			if(text == null || text.isBlank()) {
 				continue;
 			}
-			if(BaijiuShellChrome.shouldHideMainMenuBarItem(text)) {
+			boolean already = false;
+			if(BaijiuShellChrome.isPlantTopMenuLabel(text)) {
+				already = !seenPlant.add(BaijiuShellChrome.normalizeMenuLabel(text));
+			}
+			if(BaijiuShellChrome.shouldDisposeMainMenuBarItem(text, already)) {
 				try {
 					item.dispose();
 				} catch(RuntimeException e) {

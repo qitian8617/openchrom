@@ -65,7 +65,7 @@ public class BaijiuShellChrome_1_Test {
 		assertEquals("白酒FID工作站", BaijiuShellChrome.APPLICATION_NAME_VM);
 		assertFalse(BaijiuShellChrome.APPLICATION_NAME_VM.contains(" "));
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome", BaijiuShellChrome.PERSPECTIVE_ID);
-		assertEquals(26, BaijiuShellChrome.CHROME_EPOCH);
+		assertEquals(27, BaijiuShellChrome.CHROME_EPOCH);
 		assertEquals("org.eclipse.chemclipse.ux.extension.ui.perspective.welcome", BaijiuShellChrome.WELCOME_PERSPECTIVE_ID);
 		assertTrue(BaijiuShellChrome.isHiddenResearchPerspective(BaijiuShellChrome.WELCOME_PERSPECTIVE_ID));
 		assertTrue(BaijiuShellChrome.isHiddenResearchPerspective(BaijiuShellChrome.MALDI_PERSPECTIVE_ID));
@@ -295,6 +295,49 @@ public class BaijiuShellChrome_1_Test {
 		assertFalse(BaijiuShellChrome.shouldHideMainMenuBarItem("文件"));
 		assertFalse(BaijiuShellChrome.shouldHideMainMenuBarItem("帮助"));
 		assertFalse(BaijiuShellChrome.shouldHideMainMenuBarItem("色谱图叠加"));
+		assertFalse(BaijiuShellChrome.shouldDisposeMainMenuBarItem("视图", false));
+		assertTrue(BaijiuShellChrome.shouldDisposeMainMenuBarItem("视图", true), "extra 视图 from createGui loop must be dropped");
+		assertTrue(BaijiuShellChrome.shouldDisposeMainMenuBarItem("色谱图", false));
+		assertFalse(BaijiuShellChrome.shouldDisposeMainMenuBarItem("文件", false));
+		assertTrue(BaijiuShellChrome.shouldDisposeMainMenuBarItem("帮助", true));
+		assertTrue(BaijiuShellChrome.isTopLevelCascadeMenu(BaijiuShellChrome.VIEW_MENU_ID));
+		assertTrue(BaijiuShellChrome.isTopLevelCascadeMenu(BaijiuShellChrome.FILE_MENU_ID));
+		assertFalse(BaijiuShellChrome.isTopLevelCascadeMenu(BaijiuShellChrome.MAIN_MENU_ID));
+		assertFalse(BaijiuShellChrome.shouldCreateGuiForPlantChrome(BaijiuShellChrome.VIEW_MENU_ID, false), "createGui(view) appends another 视图");
+		assertFalse(BaijiuShellChrome.shouldCreateGuiForPlantChrome(BaijiuShellChrome.VIEW_MENU_ID, true));
+		assertFalse(BaijiuShellChrome.shouldCreateGuiForPlantChrome(BaijiuShellChrome.MAIN_MENU_ID, true), "already rendered menu bar");
+		assertTrue(BaijiuShellChrome.shouldCreateGuiForPlantChrome(BaijiuShellChrome.MAIN_MENU_ID, false));
+		assertTrue(BaijiuShellChrome.shouldCreateGuiForPlantChrome(BaijiuShellChrome.PLANT_TOOLBAR_ID, false));
+		assertTrue(BaijiuShellChrome.isSingletonMenuChildId(BaijiuShellChrome.VIEW_MENU_ID));
+		assertTrue(BaijiuShellChrome.isSingletonMenuChildId(BaijiuShellChrome.SELECT_VIEW_MENU_ID));
+		assertTrue(BaijiuShellChrome.isSingletonMenuChildId(BaijiuShellChrome.CHROMATOGRAM_MENU_ID));
+		assertFalse(BaijiuShellChrome.shouldAppendMenuChild(java.util.List.of(BaijiuShellChrome.VIEW_MENU_ID), BaijiuShellChrome.VIEW_MENU_ID));
+		assertTrue(BaijiuShellChrome.shouldAppendMenuChild(java.util.List.of(), BaijiuShellChrome.VIEW_MENU_ID));
+		assertTrue(BaijiuShellChrome.shouldAppendMenuChild(java.util.List.of(BaijiuShellChrome.FILE_MENU_ID), BaijiuShellChrome.VIEW_MENU_ID));
+		java.util.List<String> loop = new java.util.ArrayList<>();
+		for(int i = 0; i < 50; i++) {
+			if(BaijiuShellChrome.shouldAppendMenuChild(loop, BaijiuShellChrome.VIEW_MENU_ID)) {
+				loop.add(BaijiuShellChrome.VIEW_MENU_ID);
+			}
+			if(BaijiuShellChrome.shouldAppendMenuChild(loop, BaijiuShellChrome.SELECT_VIEW_MENU_ID)) {
+				loop.add(BaijiuShellChrome.SELECT_VIEW_MENU_ID);
+			}
+			if(BaijiuShellChrome.shouldAppendMenuChild(loop, BaijiuShellChrome.CHROMATOGRAM_MENU_ID)) {
+				loop.add(BaijiuShellChrome.CHROMATOGRAM_MENU_ID);
+			}
+		}
+		assertEquals(1, BaijiuShellChrome.countMenuChildrenWithId(loop, BaijiuShellChrome.VIEW_MENU_ID), "ensure-loop must not append a second 视图");
+		assertEquals(1, BaijiuShellChrome.countMenuChildrenWithId(loop, BaijiuShellChrome.SELECT_VIEW_MENU_ID));
+		assertEquals(1, BaijiuShellChrome.countMenuChildrenWithId(loop, BaijiuShellChrome.CHROMATOGRAM_MENU_ID));
+		assertFalse(BaijiuShellChrome.shouldRestoreChromeAfterChildrenChange("ADD"), "ADD is our own ensure; must not re-enter");
+		assertFalse(BaijiuShellChrome.shouldRestoreChromeAfterChildrenChange("CREATE"));
+		assertFalse(BaijiuShellChrome.shouldRestoreChromeAfterChildrenChange(null));
+		assertTrue(BaijiuShellChrome.shouldRestoreChromeAfterChildrenChange("REMOVE"));
+		assertTrue(BaijiuShellChrome.shouldRestoreChromeAfterChildrenChange("MOVE"));
+		assertFalse(BaijiuShellChrome.shouldRestoreMainMenuAfterChange(BaijiuShellChrome.MAIN_MENU_ID));
+		assertFalse(BaijiuShellChrome.shouldRestoreMainMenuAfterChange(BaijiuShellChrome.ECLIPSE_MAIN_MENU_ID));
+		assertTrue(BaijiuShellChrome.shouldRestoreMainMenuAfterChange(null), "bug 398847 detach");
+		assertTrue(BaijiuShellChrome.shouldRestoreMainMenuAfterChange("org.eclipse.ui.editorMenu"));
 		assertFalse(BaijiuShellChrome.shouldHideTopTrimChild(BaijiuShellChrome.PLANT_TOOLBAR_ID));
 		assertFalse(BaijiuShellChrome.shouldHideTopTrimChild(BaijiuShellChrome.OPEN_CHROMATOGRAM_TOOLITEM_ID));
 		assertFalse(BaijiuShellChrome.shouldHideTopTrimChild(null), "unknown/chart toolitems are not walk-hidden");
@@ -416,6 +459,8 @@ public class BaijiuShellChrome_1_Test {
 		assertTrue(BaijiuShellChrome.paintsAsTopLevelMainMenu(BaijiuShellChrome.CHROMATOGRAM_MENU_ID));
 		assertFalse(BaijiuShellChrome.shouldHideTopLevelMenuLabel(BaijiuShellChrome.CHROMATOGRAM_MENU_ID, "色谱图"));
 		assertFalse(BaijiuShellChrome.shouldHideMainMenuBarItem("色谱图"));
+		assertFalse(BaijiuShellChrome.shouldDisposeMainMenuBarItem("视图", true));
+		assertFalse(BaijiuShellChrome.shouldDisposeMainMenuBarItem("色谱图", false));
 		assertFalse(BaijiuShellChrome.shouldHide("window"));
 		assertFalse(BaijiuShellChrome.shouldHide("org.eclipse.ui.windowMenu"));
 		assertFalse(BaijiuShellChrome.shouldHideTopMenu("window", "窗口"));

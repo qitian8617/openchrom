@@ -10,8 +10,12 @@
 package net.openchrom.rcp.compilation.baijiu.ui.lifecycle;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.e4.core.contexts.IEclipseContext;
 import org.eclipse.e4.ui.model.application.MApplication;
@@ -60,8 +64,15 @@ import net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuHomePanels;
  */
 public final class BaijiuShellParts {
 
+	private static final AtomicBoolean revealingPlantWindowChrome = new AtomicBoolean();
+
 	private BaijiuShellParts() {
 
+	}
+
+	static boolean isRevealingPlantWindowChrome() {
+
+		return revealingPlantWindowChrome.get();
 	}
 
 	/**
@@ -324,18 +335,25 @@ public final class BaijiuShellParts {
 		if(application == null || modelService == null) {
 			return;
 		}
-		preferPlantLookupWindow(application, modelService);
-		ensurePlantChromeModel(application, modelService);
-		forceShowPlantWindowChrome(application, modelService);
-		reattachWindowMainMenu(application, modelService);
-		ensureEditorRequiredMenus(application, modelService);
-		showTopTrimBars(application, modelService);
-		revealPlantToolbar(application, modelService);
-		hideNonPlantTopTrim(application, modelService);
-		revealPlantToolbar(application, modelService);
-		forceShowPlantWindowChrome(application, modelService);
-		ensureEditorRequiredMenus(application, modelService);
-		recreatePlantChromeWidgets(application, modelService);
+		if(!revealingPlantWindowChrome.compareAndSet(false, true)) {
+			return;
+		}
+		try {
+			preferPlantLookupWindow(application, modelService);
+			ensurePlantChromeModel(application, modelService);
+			forceShowPlantWindowChrome(application, modelService);
+			reattachWindowMainMenu(application, modelService);
+			ensureEditorRequiredMenus(application, modelService);
+			showTopTrimBars(application, modelService);
+			revealPlantToolbar(application, modelService);
+			hideNonPlantTopTrim(application, modelService);
+			revealPlantToolbar(application, modelService);
+			forceShowPlantWindowChrome(application, modelService);
+			ensureEditorRequiredMenus(application, modelService);
+			recreatePlantChromeWidgets(application, modelService);
+		} finally {
+			revealingPlantWindowChrome.set(false);
+		}
 	}
 
 	private static void forceShowPlantWindowChrome(MApplication application, EModelService modelService) {
@@ -343,7 +361,7 @@ public final class BaijiuShellParts {
 		for(String id : BaijiuShellChrome.PLANT_WINDOW_CHROME_IDS) {
 			MUIElement found = modelService.find(id, application);
 			forceShowChrome(found);
-			if(found != null && BaijiuShellChrome.mustForceShowPlantChrome(found.getElementId())) {
+			if(found != null && BaijiuShellChrome.shouldCreateGuiForPlantChrome(found.getElementId(), found.getWidget() != null)) {
 				forceCreateElement(application, modelService, found);
 			}
 		}
@@ -475,20 +493,22 @@ public final class BaijiuShellParts {
 		ensureTopMenuChild(modelService, application, mainMenu, BaijiuShellChrome.BAIJIU_MENU_ID, "白酒");
 		ensureTopMenuChild(modelService, application, mainMenu, BaijiuShellChrome.VIEW_MENU_ID, "视图");
 		ensureTopMenuChild(modelService, application, mainMenu, BaijiuShellChrome.HELP_MENU_ID, "帮助");
-		MMenu view = findMenu(modelService, application, BaijiuShellChrome.VIEW_MENU_ID);
-		if(view == null && mainMenuChild(mainMenu, BaijiuShellChrome.VIEW_MENU_ID) instanceof MMenu found) {
-			view = found;
+		MMenu view = liveMenuChild(mainMenu, BaijiuShellChrome.VIEW_MENU_ID);
+		if(view == null) {
+			view = findMenu(modelService, application, BaijiuShellChrome.VIEW_MENU_ID);
 		}
 		ensureViewMenuContents(modelService, application, view);
+		dedupePlantMenuChildren(mainMenu);
+		dedupePlantMenuChildren(view);
 		orderPlantTopMenus(mainMenu);
 		applyEditorRequiredMenuVisibility(mainMenu);
 	}
 
 	private static void ensureTopMenuChild(EModelService modelService, MApplication application, MMenu mainMenu, String elementId, String label) {
 
-		MMenu child = findMenu(modelService, application, elementId);
-		if(child == null && mainMenuChild(mainMenu, elementId) instanceof MMenu found) {
-			child = found;
+		MMenu child = liveMenuChild(mainMenu, elementId);
+		if(child == null) {
+			child = findMenu(modelService, application, elementId);
 		}
 		if(child == null) {
 			child = createEditorRequiredMenu(modelService, elementId);
@@ -525,6 +545,109 @@ public final class BaijiuShellParts {
 			return null;
 		}
 		return null;
+	}
+
+	private static MMenu liveMenuChild(MMenu parent, String elementId) {
+
+		return mainMenuChild(parent, elementId) instanceof MMenu menu ? menu : null;
+	}
+
+	static List<String> childIdsOf(MMenu menu) {
+
+		List<String> ids = new ArrayList<>();
+		if(menu == null) {
+			return ids;
+		}
+		try {
+			List<?> children = menu.getChildren();
+			if(children == null) {
+				return ids;
+			}
+			for(Object child : children) {
+				if(child instanceof MUIElement element) {
+					ids.add(element.getElementId());
+				}
+			}
+		} catch(RuntimeException | LinkageError e) {
+			return ids;
+		}
+		return ids;
+	}
+
+	static int countMenuChildrenWithId(MMenu menu, String elementId) {
+
+		return BaijiuShellChrome.countMenuChildrenWithId(childIdsOf(menu), elementId);
+	}
+
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	static void dedupePlantMenuChildren(MMenu menu) {
+
+		if(menu == null) {
+			return;
+		}
+		try {
+			List children = menu.getChildren();
+			if(children == null) {
+				return;
+			}
+			Set<String> seen = new HashSet<>();
+			for(int i = 0; i < children.size();) {
+				Object child = children.get(i);
+				if(!(child instanceof MUIElement element)) {
+					i++;
+					continue;
+				}
+				String id = element.getElementId();
+				if(!BaijiuShellChrome.isSingletonMenuChildId(id)) {
+					i++;
+					continue;
+				}
+				if(!seen.add(id)) {
+					children.remove(i);
+					continue;
+				}
+				i++;
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// menu children not writable
+		}
+	}
+
+	static void ensurePlantTopMenus(MMenu mainMenu) {
+
+		ensurePlantTopMenus(null, null, mainMenu);
+	}
+
+	/**
+	 * Re-hide the chromatogram top-level label without {@code createGui} on
+	 * 视图. Full chrome reveal here was the #64 视图 spam loop: CSD sets
+	 * {@code visible=true}, reveal createGui'd the cascade, another 视图.
+	 */
+	static void hideChromatogramMenuLabel(MApplication application, EModelService modelService) {
+
+		if(application == null || BaijiuShellChrome.researchMenusVisible()) {
+			return;
+		}
+		MMenu mainMenu = windowMainMenu(application);
+		if(mainMenu != null) {
+			applyEditorRequiredMenuVisibility(mainMenu);
+			dedupePlantMenuChildren(mainMenu);
+		}
+		if(modelService != null) {
+			MUIElement found = modelService.find(BaijiuShellChrome.CHROMATOGRAM_MENU_ID, application);
+			if(found instanceof MMenu menu) {
+				applyEditorRequiredMenuVisibility(menu);
+			} else if(found != null) {
+				applyEditorRequiredMenuVisibility(found);
+			}
+		}
+		MWindow plant = plantWindow(application, modelService);
+		if(plant != null && plant.getWidget() instanceof Shell shell && !shell.isDisposed()) {
+			Menu bar = shell.getMenuBar();
+			if(bar != null && !bar.isDisposed()) {
+				BaijiuShellMenus.sanitizeMainMenuBar(bar);
+			}
+		}
 	}
 
 	private static void ensurePlantTopTrim(EModelService modelService, MApplication application, MTrimmedWindow window) {
@@ -752,13 +875,6 @@ public final class BaijiuShellParts {
 		MMenu menu = plant.getMainMenu();
 		if(menu != null) {
 			forceCreateElement(application, modelService, menu);
-			MMenu view = findMenu(modelService, application, BaijiuShellChrome.VIEW_MENU_ID);
-			if(view == null && mainMenuChild(menu, BaijiuShellChrome.VIEW_MENU_ID) instanceof MMenu found) {
-				view = found;
-			}
-			if(view != null) {
-				forceCreateElement(application, modelService, view);
-			}
 			applyEditorRequiredMenuVisibility(menu);
 			if(plant.getWidget() instanceof Shell shell && !shell.isDisposed()) {
 				Menu bar = shell.getMenuBar();
@@ -814,8 +930,29 @@ public final class BaijiuShellParts {
 			return;
 		}
 		forceShowChrome(mainMenu);
+		ensureEditorRequiredMenus(mainMenu, modelService, application);
+	}
+
+	/**
+	 * Idempotent: a second call must not append another {@code menu.view}.
+	 * Used by fragment tests without an {@code EModelService.find} index.
+	 */
+	static void ensureEditorRequiredMenus(MMenu mainMenu) {
+
+		ensureEditorRequiredMenus(mainMenu, null, null);
+	}
+
+	static void ensureEditorRequiredMenus(MMenu mainMenu, EModelService modelService, MApplication application) {
+
+		if(mainMenu == null) {
+			return;
+		}
+		forceShowChrome(mainMenu);
 		for(String id : BaijiuShellChrome.EDITOR_REQUIRED_MENU_IDS) {
-			MMenu menu = findMenu(modelService, application, id);
+			MMenu menu = liveMenuChild(mainMenu, id);
+			if(menu == null) {
+				menu = findMenu(modelService, application, id);
+			}
 			if(menu == null) {
 				menu = createEditorRequiredMenu(modelService, id);
 			}
@@ -826,8 +963,10 @@ public final class BaijiuShellParts {
 			applyEditorRequiredMenuVisibility(menu);
 			if(BaijiuShellChrome.VIEW_MENU_ID.equals(id)) {
 				ensureViewMenuContents(modelService, application, menu);
+				dedupePlantMenuChildren(menu);
 			}
 		}
+		dedupePlantMenuChildren(mainMenu);
 		orderPlantTopMenus(mainMenu);
 		applyEditorRequiredMenuVisibility(mainMenu);
 	}
@@ -901,6 +1040,15 @@ public final class BaijiuShellParts {
 			return;
 		}
 		try {
+			String id = child.getElementId();
+			if(!BaijiuShellChrome.shouldAppendMenuChild(childIdsOf(parent), id)) {
+				MMenu existing = liveMenuChild(parent, id);
+				if(existing != null && existing != child) {
+					forceShowChrome(existing);
+					applyEditorRequiredMenuVisibility(existing);
+				}
+				return;
+			}
 			MElementContainer<?> currentParent = child.getParent();
 			if(currentParent != null && currentParent != parent) {
 				List siblings = currentParent.getChildren();
@@ -978,6 +1126,7 @@ public final class BaijiuShellParts {
 			forceShowChrome(select);
 			attachMenuElement(viewMenu, item);
 		}
+		dedupePlantMenuChildren(viewMenu);
 		try {
 			List<?> children = viewMenu.getChildren();
 			if(children != null) {
@@ -1057,6 +1206,10 @@ public final class BaijiuShellParts {
 			return;
 		}
 		try {
+			String id = child.getElementId();
+			if(!BaijiuShellChrome.shouldAppendMenuChild(childIdsOf(parent), id)) {
+				return;
+			}
 			MElementContainer<?> currentParent = child.getParent();
 			if(currentParent != null && currentParent != parent) {
 				List siblings = currentParent.getChildren();
@@ -1787,6 +1940,9 @@ public final class BaijiuShellParts {
 		}
 		element.setVisible(true);
 		element.setToBeRendered(true);
+		if(!BaijiuShellChrome.shouldCreateGuiForPlantChrome(element.getElementId(), element.getWidget() != null)) {
+			return element.getWidget() != null;
+		}
 		IPresentationEngine engine = presentationEngine(application, element instanceof MPart part ? part : null);
 		if(engine == null) {
 			engine = fromContext(windowContext(element));
