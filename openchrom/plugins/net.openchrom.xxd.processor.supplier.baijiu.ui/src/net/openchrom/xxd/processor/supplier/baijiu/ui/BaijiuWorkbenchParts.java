@@ -196,6 +196,8 @@ public final class BaijiuWorkbenchParts {
 	 * Move {@code part} into {@code plantStack} (left 谱图/采集). Removes it
 	 * from the right 白酒操作 stack / primary editor stack so the CSD is not
 	 * an orphan tab. Does not steal the SWT widget via {@code setParent}.
+	 * Java 21: do not compare {@code getParent()} to {@code MPartStack}
+	 * ({@code ==} is a type error; same as #49). Use children membership (#56).
 	 */
 	static boolean dockIntoPlantChromatogramStack(MPartStack plantStack, MPart part) {
 
@@ -203,10 +205,10 @@ public final class BaijiuWorkbenchParts {
 			return false;
 		}
 		try {
-			MElementContainer<MUIElement> parent = part.getParent();
-			if(parent == plantStack) {
+			if(plantStack.getChildren().contains(part)) {
 				return true;
 			}
+			MElementContainer<MUIElement> parent = part.getParent();
 			if(parent != null) {
 				parent.getChildren().remove(part);
 			}

@@ -175,16 +175,20 @@ public final class TemperatureControlWorkbench {
 		return hosted;
 	}
 
+	/**
+	 * Java 21: do not compare {@code getParent()} to {@code MPartStack} (#49).
+	 * Membership is {@code plantStack.getChildren().contains(part)} (#56).
+	 */
 	static boolean dockIntoPlantChromatogramStack(MPartStack plantStack, MPart part) {
 
 		if(part == null || plantStack == null) {
 			return false;
 		}
 		try {
-			MElementContainer<MUIElement> parent = part.getParent();
-			if(parent == plantStack) {
+			if(plantStack.getChildren().contains(part)) {
 				return true;
 			}
+			MElementContainer<MUIElement> parent = part.getParent();
 			if(parent != null) {
 				parent.getChildren().remove(part);
 			}

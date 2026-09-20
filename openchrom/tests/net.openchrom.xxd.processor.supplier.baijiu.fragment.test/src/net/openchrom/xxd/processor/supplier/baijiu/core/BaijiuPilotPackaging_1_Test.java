@@ -390,6 +390,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(partsSrc.contains("isParkedEditorArea"), partsSrc);
 		assertTrue(partsSrc.contains("hostOpenCsdEditors"), partsSrc);
 		assertFalse(partsSrc.contains("getParent() != plantStack"), "MElementContainer<MUIElement> vs MPartStack is incomparable on Java 21");
+		assertFalse(partsSrc.contains("parent == plantStack"), "Java 21: use plantStack.getChildren().contains(part) (#49/#56)");
+		assertFalse(partsSrc.contains("parent != plantStack"), "Java 21: do not compare getParent() to MPartStack");
 		assertTrue(partsSrc.contains("plantStack.getChildren().contains(part)"), partsSrc);
 		assertTrue(partsSrc.contains("dockIntoPlantChromatogramStack"), partsSrc);
 		assertTrue(partsSrc.contains("selectionClearsHostedEditor"), partsSrc);
@@ -573,6 +575,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(gcWorkbenchSrc.contains("hostOpenCsdEditors"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("hasCsdInput"), gcWorkbenchSrc);
 		assertFalse(gcWorkbenchSrc.contains("getParent() != plantStack"), "MElementContainer<MUIElement> vs MPartStack is incomparable on Java 21");
+		assertFalse(gcWorkbenchSrc.contains("parent == plantStack"), "Java 21: use plantStack.getChildren().contains(part) (#49/#56)");
+		assertFalse(gcWorkbenchSrc.contains("parent != plantStack"), "Java 21: do not compare getParent() to MPartStack");
 		assertTrue(gcWorkbenchSrc.contains("plantStack.getChildren().contains(part)"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("dockIntoPlantChromatogramStack"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("embedCsdEditor"), gcWorkbenchSrc);
@@ -604,6 +608,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(seqWorkbenchSrc.contains("hostOpenCsdEditors"), seqWorkbenchSrc);
 		assertTrue(seqWorkbenchSrc.contains("hasCsdInput"), seqWorkbenchSrc);
 		assertFalse(seqWorkbenchSrc.contains("getParent() != plantStack"), "MElementContainer<MUIElement> vs MPartStack is incomparable on Java 21");
+		assertFalse(seqWorkbenchSrc.contains("parent == plantStack"), "Java 21: use plantStack.getChildren().contains(part) (#49/#56)");
+		assertFalse(seqWorkbenchSrc.contains("parent != plantStack"), "Java 21: do not compare getParent() to MPartStack");
 		assertTrue(seqWorkbenchSrc.contains("plantStack.getChildren().contains(part)"), seqWorkbenchSrc);
 		assertTrue(seqWorkbenchSrc.contains("dockIntoPlantChromatogramStack"), seqWorkbenchSrc);
 		assertTrue(seqWorkbenchSrc.contains("selectionClearsHostedEditor"), seqWorkbenchSrc);
