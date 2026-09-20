@@ -792,6 +792,10 @@ public class BaijiuPilotPackaging_1_Test {
 		if(openchromAbout != null) {
 			assertTrue(Files.mismatch(aboutLogo, openchromAbout) != -1L, "do not ship OpenChrom about_250x330 as plant About logo");
 		}
+		Path waveformIcon = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/icons/logo_128x128.png", "plugins/net.openchrom.rcp.compilation.baijiu.ui/icons/logo_128x128.png");
+		if(waveformIcon != null) {
+			assertTrue(Files.mismatch(aboutLogo, waveformIcon) != -1L, "About logo is the company mark, not the 128px waveform placeholder");
+		}
 
 		Path shellLog = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellLog.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellLog.java");
 		assertNotNull(shellLog);
