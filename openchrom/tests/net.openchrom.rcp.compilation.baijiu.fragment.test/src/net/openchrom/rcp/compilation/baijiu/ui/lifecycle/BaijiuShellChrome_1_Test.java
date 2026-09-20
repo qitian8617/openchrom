@@ -577,6 +577,17 @@ public class BaijiuShellChrome_1_Test {
 		assertFalse(BaijiuShellChrome.shouldHideViewMenuChild(null, null), "unlabeled SWT item must not be disposed as research");
 		assertFalse(BaijiuShellChrome.shouldHideViewMenuChild(null, ""));
 		assertFalse(BaijiuShellChrome.shouldHideViewMenuChild("", ""));
+		assertTrue(BaijiuShellChrome.shouldHideViewMenuChild(null, "显示视图"), "Eclipse Show View is not plant 选择视图");
+		assertTrue(BaijiuShellChrome.shouldHideViewMenuChild(null, "Show View"));
+		assertTrue(BaijiuShellChrome.shouldHideViewMenuChild(BaijiuShellChrome.ECLIPSE_SHOW_VIEW_COMMAND_ID, "Show View"));
+		assertTrue(BaijiuShellChrome.VIEW_MENU_RESEARCH_SHOW_VIEW_LABELS.contains("显示视图"));
+		assertTrue(BaijiuShellChrome.VIEW_MENU_RESEARCH_SHOW_VIEW_LABELS.contains("show view"));
+		assertFalse(BaijiuShellChrome.VIEW_MENU_KEEP_LABELS.contains("显示视图"));
+		assertFalse(BaijiuShellChrome.VIEW_MENU_KEEP_LABELS.contains("show view"));
+		assertTrue(BaijiuShellChrome.isViewMenuKeepLabel("选择视图"));
+		assertTrue(BaijiuShellChrome.isViewMenuKeepLabel("Select View"));
+		assertFalse(BaijiuShellChrome.isViewMenuKeepLabel("显示视图"));
+		assertFalse(BaijiuShellChrome.isViewMenuKeepLabel("Show View"));
 		assertTrue(BaijiuShellChrome.shouldHideViewMenuChild(null, "概览"));
 		assertTrue(BaijiuShellChrome.shouldHideViewMenuChild(null, "Overview"));
 		assertTrue(BaijiuShellChrome.shouldHideViewMenuChild(null, "叠加"));

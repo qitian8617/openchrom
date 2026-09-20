@@ -295,6 +295,7 @@ public final class BaijiuShellMenus {
 				item.setText(BaijiuShellChrome.SELECT_VIEW_TITLE_ZH);
 			}
 			if(BaijiuShellChrome.isViewMenuKeepLabel(item.getText()) || BaijiuShellChrome.SELECT_VIEW_TITLE_ZH.equals(BaijiuShellChrome.normalizeMenuLabel(item.getText() == null ? "" : item.getText()))) {
+				clearSelectViewImage(item);
 				ensureSelectViewOpensOnClick(item);
 			}
 		}
@@ -305,12 +306,14 @@ public final class BaijiuShellMenus {
 	 * Dummy 选择视图 from a poisoned {@code workbench.xmi} has no command, so
 	 * the renderer creates an SWT item with no {@code Selection} listener.
 	 * Attach ChemClipse Select View only when nothing else is already wired.
+	 * Strip any image so a missing ChemClipse icon cannot paint a red square.
 	 */
 	static void ensureSelectViewOpensOnClick(MenuItem item) {
 
 		if(item == null || item.isDisposed()) {
 			return;
 		}
+		clearSelectViewImage(item);
 		try {
 			Listener[] listeners = item.getListeners(SWT.Selection);
 			if(listeners != null && listeners.length > 0) {
@@ -326,6 +329,25 @@ public final class BaijiuShellMenus {
 			};
 			item.addListener(SWT.Selection, fallback);
 			item.setData(SELECT_VIEW_FALLBACK, fallback);
+		} catch(RuntimeException | LinkageError e) {
+			// widget already closing
+		}
+	}
+
+	/**
+	 * 选择视图 is text-only. ChemClipse's command image is a missing GIF
+	 * that SWT paints as a red square; {@code Show}/{@code Arm} sanitize
+	 * must drop it even if E4 re-copied the command icon onto the item.
+	 */
+	static void clearSelectViewImage(MenuItem item) {
+
+		if(item == null || item.isDisposed()) {
+			return;
+		}
+		try {
+			if(item.getImage() != null) {
+				item.setImage(null);
+			}
 		} catch(RuntimeException | LinkageError e) {
 			// widget already closing
 		}

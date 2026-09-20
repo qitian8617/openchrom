@@ -379,6 +379,11 @@ public final class BaijiuShellChrome {
 	public static final String SELECT_VIEW_TOOLITEM_ID = "org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.selectView";
 	public static final String RESET_PERSPECTIVE_TOOLITEM_ID = "org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.resetperspective";
 	public static final String ECLIPSE_MAIN_TOOLBAR_ID = "org.eclipse.ui.main.toolbar";
+	/**
+	 * Plant 视图 → 选择视图. Label-only: ChemClipse's command icon is a
+	 * missing GIF (red square on cold start). Runtime sanitize clears
+	 * {@code iconURI} / SWT image every pass; no epoch bump.
+	 */
 	public static final String SELECT_VIEW_MENU_ID = "org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.selectView";
 	public static final String SELECT_VIEW_TOOL_ID = SELECT_VIEW_TOOLITEM_ID;
 	/**
@@ -760,6 +765,12 @@ public final class BaijiuShellChrome {
 
 	public static final List<String> VIEW_MENU_KEEP_LABELS = List.of( //
 			"选择视图", "select view");
+	/**
+	 * Eclipse Show View / 显示视图 is research chrome, not the plant
+	 * Select View dialog. {@link #shouldHideViewMenuChild} drops it.
+	 */
+	public static final List<String> VIEW_MENU_RESEARCH_SHOW_VIEW_LABELS = List.of( //
+			"显示视图", "show view");
 
 	/**
 	 * ChemClipse GroupHandler cascades that reappear after CSD/OCB once
@@ -1796,12 +1807,10 @@ public final class BaijiuShellChrome {
 			return false;
 		}
 		String normalized = normalizeMenuLabel(label);
-		for(String keep : VIEW_MENU_KEEP_LABELS) {
-			if(normalized.equals(keep)) {
-				return true;
-			}
+		if(VIEW_MENU_RESEARCH_SHOW_VIEW_LABELS.contains(normalized)) {
+			return false;
 		}
-		return false;
+		return VIEW_MENU_KEEP_LABELS.contains(normalized);
 	}
 
 	static boolean isViewMenuHideLabel(String label) {
