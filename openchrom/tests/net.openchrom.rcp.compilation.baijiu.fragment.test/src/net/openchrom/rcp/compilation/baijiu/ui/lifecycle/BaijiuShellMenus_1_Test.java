@@ -48,5 +48,7 @@ public class BaijiuShellMenus_1_Test {
 		assertTrue(BaijiuShellMenus.looksLikePlantHelpMenu(java.util.List.of("关于")));
 		assertFalse(BaijiuShellMenus.looksLikePlantHelpMenu(java.util.List.of("许可 / 版本…")));
 		assertFalse(BaijiuShellMenus.looksLikePlantHelpMenu(java.util.List.of("Save", "Save As")));
+		assertTrue(BaijiuShellChrome.shouldHidePlantChartMenuItem("峰检测器"));
+		assertFalse(BaijiuShellChrome.shouldHidePlantChartMenuItem("重置图表"));
 	}
 }

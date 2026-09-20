@@ -35,15 +35,21 @@ import net.openchrom.rcp.compilation.baijiu.ui.handlers.BaijiuOpenSelectViewHand
 
 /**
  * Dedicated-product SWT popup cleanup. ChemClipse copies processor menus
- * onto the chromatogram chart independently of E4 visibility, and the
- * part-stack tab menu is Eclipse StackRenderer English chrome. Filter
- * {@code SWT.Show} on this product only; community OpenChrom is unchanged.
+ * onto the chromatogram chart independently of E4 visibility
+ * ({@code ExtendedChromatogramUI.updateMenu} → {@code ProcessorSupplierMenuEntry}
+ * on SWTChart {@code IChartSettings}), and the part-stack tab menu is
+ * Eclipse StackRenderer English chrome. Filter {@code SWT.Show} /
+ * {@code SWT.Arm} / {@code SWT.MenuDetect} on this product only; community
+ * OpenChrom is unchanged. Chart popups are an allowlist (重置图表 /
+ * 设置图表范围 / 撤销选择 / 用户限制 / 范围选择) so processor cascades
+ * cannot return after reopen or {@code applySettings}.
  */
 public final class BaijiuShellMenus {
 
 	private static final Object LOCK = new Object();
 	private static final String SELECT_VIEW_FALLBACK = "net.openchrom.baijiu.selectViewFallback";
 	private static final String ABOUT_FALLBACK = "net.openchrom.baijiu.aboutFallback";
+	private static final String CHART_SANITIZE_RETRY = "net.openchrom.baijiu.chartSanitizeRetry";
 	private static Listener installed;
 
 	private BaijiuShellMenus() {
@@ -86,11 +92,17 @@ public final class BaijiuShellMenus {
 						sanitizeSelectViewTable(table);
 					} else if(event.widget instanceof Tree tree && !tree.isDisposed()) {
 						sanitizeSelectViewTree(tree);
+					} else if(event.type == SWT.MenuDetect && event.widget instanceof Control control && !control.isDisposed()) {
+						Menu context = control.getMenu();
+						if(context != null && !context.isDisposed() && (context.getStyle() & SWT.BAR) == 0) {
+							sanitize(context);
+						}
 					}
 				};
 				display.addFilter(SWT.Show, listener);
 				display.addFilter(SWT.Arm, listener);
 				display.addFilter(SWT.Activate, listener);
+				display.addFilter(SWT.MenuDetect, listener);
 				installed = listener;
 			}
 		} catch(RuntimeException | LinkageError e) {
@@ -152,6 +164,11 @@ public final class BaijiuShellMenus {
 			return;
 		}
 		boolean chart = BaijiuShellChrome.looksLikeChartMenu(labelsOf(menu, true));
+		if(!chart && parentItem != null && !parentItem.isDisposed()) {
+			String parentText = parentItem.getText();
+			chart = BaijiuShellChrome.isChartMenuKeepItem(parentText) || BaijiuShellChrome.isChartRangeSelectionLabel(parentText) || BaijiuShellChrome.shouldHideChartMenuItem(parentText);
+		}
+		boolean keepRangeChildren = parentItem != null && !parentItem.isDisposed() && BaijiuShellChrome.isChartRangeSelectionLabel(parentItem.getText());
 		boolean stack = BaijiuShellChrome.looksLikePartStackMenu(labelsOf(menu, false));
 		MenuItem[] items = menu.getItems();
 		for(int i = items.length - 1; i >= 0; i--) {
@@ -159,28 +176,33 @@ public final class BaijiuShellMenus {
 			if(item == null || item.isDisposed() || (item.getStyle() & SWT.SEPARATOR) != 0) {
 				continue;
 			}
-			Menu child = item.getMenu();
-			if(child != null && !child.isDisposed()) {
-				sanitize(child);
-			}
 			String text = item.getText();
-			boolean hide = BaijiuShellChrome.shouldHideChartMenuItem(text);
-			if(!hide && child != null && !child.isDisposed() && child.getItemCount() == 0 && chart) {
+			boolean hide = false;
+			if(chart && !BaijiuShellChrome.researchMenusVisible()) {
+				if(keepRangeChildren) {
+					hide = false;
+				} else {
+					hide = BaijiuShellChrome.shouldHidePlantChartMenuItem(text);
+				}
+			} else {
+				hide = BaijiuShellChrome.shouldHideChartMenuItem(text);
+			}
+			Menu child = item.getMenu();
+			if(!hide && child != null && !child.isDisposed() && child.getItemCount() == 0 && chart && !BaijiuShellChrome.isChartMenuKeepItem(text)) {
 				hide = true;
 			}
-			if(!hide && BaijiuShellChrome.shouldHidePartStackMenuItem(text)) {
+			if(!hide && !BaijiuShellChrome.isChartMenuKeepItem(text) && BaijiuShellChrome.shouldHidePartStackMenuItem(text)) {
 				hide = stack || isStrongPartStackHide(text);
 			}
-			if(!hide && BaijiuShellChrome.shouldHideBaijiuMenuChild(null, text)) {
+			if(!hide && !BaijiuShellChrome.isChartMenuKeepItem(text) && BaijiuShellChrome.shouldHideBaijiuMenuChild(null, text)) {
 				hide = true;
 			}
 			if(hide) {
-				try {
-					item.dispose();
-				} catch(RuntimeException e) {
-					// menu already closing
-				}
+				hideMenuItem(item);
 				continue;
+			}
+			if(child != null && !child.isDisposed()) {
+				sanitize(child);
 			}
 			String translated = BaijiuShellChrome.translateChartMenuItem(text);
 			if(translated == null) {
@@ -192,6 +214,9 @@ public final class BaijiuShellMenus {
 		}
 		if(chart || stack) {
 			disposeExtraSeparators(menu);
+		}
+		if(chart) {
+			sanitizeChartMenuLater(menu);
 		}
 	}
 
@@ -740,6 +765,52 @@ public final class BaijiuShellMenus {
 
 		String normalized = BaijiuShellChrome.normalizeMenuLabel(label == null ? "" : label);
 		return "detach".equals(normalized) || "close others".equals(normalized) || "close all".equals(normalized) || "分离".equals(normalized) || "关闭其他".equals(normalized) || "关闭全部".equals(normalized);
+	}
+
+	private static void hideMenuItem(MenuItem item) {
+
+		if(item == null || item.isDisposed()) {
+			return;
+		}
+		try {
+			item.setVisible(false);
+		} catch(RuntimeException e) {
+			// older SWT / item already tearing down
+		}
+		try {
+			item.dispose();
+		} catch(RuntimeException e) {
+			// menu already closing
+		}
+	}
+
+	private static void sanitizeChartMenuLater(Menu menu) {
+
+		if(menu == null || menu.isDisposed()) {
+			return;
+		}
+		if(Boolean.TRUE.equals(menu.getData(CHART_SANITIZE_RETRY))) {
+			return;
+		}
+		Display display = menu.getDisplay();
+		if(display == null || display.isDisposed()) {
+			return;
+		}
+		menu.setData(CHART_SANITIZE_RETRY, Boolean.TRUE);
+		display.asyncExec(() -> {
+			if(menu.isDisposed()) {
+				return;
+			}
+			try {
+				sanitize(menu);
+			} catch(RuntimeException e) {
+				// menu already closing
+			} finally {
+				if(!menu.isDisposed()) {
+					menu.setData(CHART_SANITIZE_RETRY, Boolean.FALSE);
+				}
+			}
+		});
 	}
 
 	private static void disposeExtraSeparators(Menu menu) {

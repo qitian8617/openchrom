@@ -355,6 +355,10 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(chromeSrc.contains("org.eclipse.ui.WorkingSetActionSet"), chromeSrc);
 		assertTrue(chromeSrc.contains("SELECT_VIEW_MENU_ID"), chromeSrc);
 		assertTrue(chromeSrc.contains("CHART_MENU_HIDE_LABELS"), chromeSrc);
+		assertTrue(chromeSrc.contains("shouldHidePlantChartMenuItem"), chromeSrc);
+		assertTrue(chromeSrc.contains("peak detector"), chromeSrc);
+		assertTrue(chromeSrc.contains("峰检测器"), chromeSrc);
+		assertTrue(chromeSrc.contains("切换可见性"), chromeSrc);
 		assertTrue(chromeSrc.contains("PART_STACK_HIDE_LABELS"), chromeSrc);
 		assertTrue(chromeSrc.contains("NoDetach"), chromeSrc);
 
@@ -909,6 +913,10 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(shellMenusSrc.contains("SWT.Show"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("SWT.Arm"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("SWT.Activate"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("SWT.MenuDetect"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("shouldHidePlantChartMenuItem"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("isChartRangeSelectionLabel"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("sanitizeChartMenuLater"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("sanitize"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("sanitizeMainMenuBar"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("SWT.BAR"), shellMenusSrc);
