@@ -11,6 +11,8 @@ package net.openchrom.rcp.compilation.baijiu.ui.handlers;
 
 import org.junit.jupiter.api.Test;
 
+import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuShellLog;
+
 public class BaijiuOpenSelectViewHandler_1_Test {
 
 	@Test
@@ -19,5 +21,12 @@ public class BaijiuOpenSelectViewHandler_1_Test {
 		BaijiuOpenSelectViewHandler.bindWorkbench(null, null);
 		BaijiuOpenSelectViewHandler.executeFromShell(null);
 		new BaijiuOpenSelectViewHandler().execute(null, null, null);
+	}
+
+	@Test
+	public void shellLogIsVisibleToHandlers() {
+
+		BaijiuShellLog.warn("handlers can log Select View failures");
+		BaijiuShellLog.warn("handlers can log Select View failures", null);
 	}
 }
