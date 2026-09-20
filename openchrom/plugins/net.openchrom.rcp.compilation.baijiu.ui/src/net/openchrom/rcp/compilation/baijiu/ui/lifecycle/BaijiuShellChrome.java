@@ -35,6 +35,9 @@ import java.util.Set;
  * not a Select View or 白酒-menu entry — open it from 显示/隐藏反控 /
  * toolbar 反控. Re-apply on every contribution ADD, about-to-show, part
  * activation, and editor close; SWT sanitizer is last line of defense.
+ * The CSD chart popup is ChemClipse {@code ProcessorSupplierMenuEntry}
+ * copied onto SWTChart independently of E4 — plant allowlist only
+ * (重置图表 / 设置图表范围 / 撤销选择 / 用户限制 / 范围选择).
  * Perspective switcher stays hidden. Plant home sash: left workflow tabs
  * (谱图/采集 + analysis pages) | right fixed 白酒操作 sidebar. GC console is
  * a true top-level SWT Shell (600×1024), toggled from 反控 — never a
@@ -924,41 +927,65 @@ public final class BaijiuShellChrome {
 			REPORT_HOME_PART_ID);
 
 	/**
-	 * SWTChart / ChemClipse chart popup items that FID plant analysis still
-	 * uses. Values are the Chinese labels to show on the dedicated product.
+	 * SWTChart {@code STANDARD_OPERATION} (empty category) items that FID
+	 * plant analysis still uses, plus the Range Selection cascade. Values
+	 * are the Chinese labels to show on the dedicated product. Toggle
+	 * Visibility and ChemClipse processor categories are not keep.
 	 */
 	public static final List<String[]> CHART_MENU_KEEP_TRANSLATIONS = List.of( //
 			new String[]{"Reset Chart", "重置图表"}, //
 			new String[]{"Set Chart Range", "设置图表范围"}, //
 			new String[]{"Undo Selection", "撤销选择"}, //
-			new String[]{"Redo Selection", "重做选择"}, //
 			new String[]{"Range Selection", "范围选择"}, //
-			new String[]{"Toggle Visibility", "切换可见性"}, //
-			new String[]{"User Restriction", "用户限制"}, //
+			new String[]{"User Restriction", "用户限制"});
+
+	/**
+	 * Pure selection UX under the Range Selection cascade (Undo also sits
+	 * on the top level via {@code STANDARD_OPERATION}). Keep these only as
+	 * children of 范围选择.
+	 */
+	public static final List<String[]> CHART_RANGE_SELECTION_CHILD_TRANSLATIONS = List.of( //
+			new String[]{"Undo Selection", "撤销选择"}, //
+			new String[]{"Redo Selection", "重做选择"}, //
+			new String[]{"Reset Selected Series", "重置所选系列"}, //
 			new String[]{"Reset X-Axis", "重置 X 轴"}, //
 			new String[]{"Reset Y-Axis", "重置 Y 轴"}, //
 			new String[]{"Zoom In", "放大"}, //
 			new String[]{"Zoom Out", "缩小"});
 
 	/**
-	 * Chart popup categories / English research suppliers not used on the
-	 * factory CSD FID path. Match English or already-translated Chinese.
+	 * ChemClipse {@code ICategories} / SWTChart research cascades that must
+	 * never paint on the plant CSD chart popup. Match English (including
+	 * ProcessingMessages) or already-translated Chinese. Short tokens such
+	 * as {@code system} stay off this list so non-chart popups are not
+	 * stripped; the chart allowlist hides them when the popup is a chart.
 	 */
 	public static final List<String> CHART_MENU_HIDE_LABELS = List.of( //
+			"toggle visibility", "切换可见性", //
+			"baseline detector", "基线检测器", //
+			"peak identifier", "峰定性器", "峰鉴定", //
+			"peak detector", "峰检测器", //
+			"peak filter", "峰滤波器", //
+			"peak integrator", "峰积分器", //
+			"user methods", "user method", "用户方法", //
+			"user interface", "用户界面", //
+			"combined chromatogram and peak integrator", "色谱与峰组合积分器", //
 			"chromatogram classifier", "色谱分类器", "classifier", //
 			"column parser", "noise calculator", "noise segment setter", //
 			"chromatogram export", "色谱导出", //
 			"chromatogram filter", "色谱滤波器", //
 			"chromatogram identifier", "色谱鉴定", //
+			"chromatogram integrator", "chromatogram integration", "色谱积分", "色谱积分器", //
 			"chromatogram calculator", "色谱计算器", "calculators", //
 			"chromatogram reports", "色谱报告", //
 			"export chart selection", //
 			"peak export", "峰导出", //
-			"peak identifier", "峰鉴定", //
 			"peak quantifier", "峰定量", //
 			"scan filter", "扫描滤波器", //
 			"scan identifier", "扫描鉴定", //
-			"mass spectrum filter", "mass spectrum identifier");
+			"mass spectrum filter", "mass spectrum identifier", //
+			"peak mass spectrum filter", "scan mass spectrum filter", //
+			"procedures");
 
 	public static final List<String> PART_STACK_HIDE_LABELS = List.of( //
 			"detach", "分离", //
@@ -2231,6 +2258,9 @@ public final class BaijiuShellChrome {
 		if(label == null || label.isBlank()) {
 			return false;
 		}
+		if(isChartMenuKeepItem(label)) {
+			return false;
+		}
 		String normalized = normalizeMenuLabel(label);
 		for(String hide : CHART_MENU_HIDE_LABELS) {
 			if(menuLabelMatches(normalized, hide)) {
@@ -2240,9 +2270,83 @@ public final class BaijiuShellChrome {
 		return false;
 	}
 
+	/**
+	 * Plant CSD chart popup allowlist. Anything that is not a keep item is
+	 * hidden, including ChemClipse processor categories and SWTChart
+	 * Toggle Visibility. {@link #researchMenusVisible()} is the escape
+	 * hatch. Range Selection children are kept by the SWT sanitizer when
+	 * the parent cascade is 范围选择.
+	 */
+	public static boolean shouldHidePlantChartMenuItem(String label) {
+
+		if(researchMenusVisible()) {
+			return false;
+		}
+		if(label == null || label.isBlank()) {
+			return false;
+		}
+		if(isChartMenuKeepItem(label)) {
+			return false;
+		}
+		return true;
+	}
+
+	public static boolean isChartMenuKeepItem(String label) {
+
+		if(label == null || label.isBlank()) {
+			return false;
+		}
+		if(isChartRangeSelectionLabel(label)) {
+			return true;
+		}
+		String normalized = normalizeMenuLabel(label);
+		for(String[] pair : CHART_MENU_KEEP_TRANSLATIONS) {
+			if(pair == null || pair.length < 2) {
+				continue;
+			}
+			if(chartKeepPhraseMatches(normalized, pair[0]) || chartKeepPhraseMatches(normalized, pair[1])) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public static boolean isChartRangeSelectionLabel(String label) {
+
+		if(label == null || label.isBlank()) {
+			return false;
+		}
+		String normalized = normalizeMenuLabel(label);
+		return "range selection".equals(normalized) || "范围选择".equals(normalized);
+	}
+
+	public static boolean isChartRangeSelectionChildItem(String label) {
+
+		if(label == null || label.isBlank()) {
+			return false;
+		}
+		if(translateKeepLabel(label, CHART_RANGE_SELECTION_CHILD_TRANSLATIONS) != null) {
+			return true;
+		}
+		String normalized = normalizeMenuLabel(label);
+		for(String[] pair : CHART_RANGE_SELECTION_CHILD_TRANSLATIONS) {
+			if(pair == null || pair.length < 2) {
+				continue;
+			}
+			if(normalized.equals(pair[0].toLowerCase(Locale.ROOT)) || normalized.equals(pair[1].toLowerCase(Locale.ROOT))) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public static String translateChartMenuItem(String label) {
 
-		return translateKeepLabel(label, CHART_MENU_KEEP_TRANSLATIONS);
+		String translated = translateKeepLabel(label, CHART_MENU_KEEP_TRANSLATIONS);
+		if(translated != null) {
+			return translated;
+		}
+		return translateKeepLabel(label, CHART_RANGE_SELECTION_CHILD_TRANSLATIONS);
 	}
 
 	public static boolean shouldHidePartStackMenuItem(String label) {
@@ -2335,8 +2439,7 @@ public final class BaijiuShellChrome {
 			if(label == null || label.isBlank()) {
 				continue;
 			}
-			String normalized = normalizeMenuLabel(label);
-			if("reset chart".equals(normalized) || "重置图表".equals(normalized) || "set chart range".equals(normalized) || "user restriction".equals(normalized) || "用户限制".equals(normalized)) {
+			if(isChartMenuKeepItem(label) || isChartRangeSelectionLabel(label) || isChartRangeSelectionChildItem(label)) {
 				return true;
 			}
 			if(shouldHideChartMenuItem(label) || translateChartMenuItem(label) != null) {
@@ -2344,5 +2447,17 @@ public final class BaijiuShellChrome {
 			}
 		}
 		return false;
+	}
+
+	private static boolean chartKeepPhraseMatches(String normalized, String phrase) {
+
+		if(normalized == null || phrase == null || phrase.isBlank()) {
+			return false;
+		}
+		String expected = phrase.toLowerCase(Locale.ROOT);
+		if(normalized.equals(expected)) {
+			return true;
+		}
+		return normalized.contains(expected);
 	}
 }
