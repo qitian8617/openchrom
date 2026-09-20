@@ -511,6 +511,14 @@ public final class BaijiuShellParts {
 			file = findMenu(modelService, application, BaijiuShellChrome.FILE_MENU_ID);
 		}
 		ensureFileMenuContents(modelService, application, file);
+		MMenu help = liveMenuChild(mainMenu, BaijiuShellChrome.HELP_MENU_ID);
+		if(help == null) {
+			help = findMenu(modelService, application, BaijiuShellChrome.HELP_MENU_ID);
+		}
+		if(help == null) {
+			help = liveMenuChild(mainMenu, BaijiuShellChrome.ECLIPSE_HELP_MENU_ID);
+		}
+		ensureHelpMenuContents(modelService, application, help);
 		dedupePlantMenuChildren(mainMenu);
 		dedupePlantMenuChildren(view);
 		orderPlantTopMenus(mainMenu);
@@ -1462,6 +1470,12 @@ public final class BaijiuShellParts {
 			menu.setLabel("视图");
 		} else if(BaijiuShellChrome.CHROMATOGRAM_MENU_ID.equals(elementId)) {
 			menu.setLabel("色谱");
+		} else if(BaijiuShellChrome.isHelpMenuId(elementId)) {
+			menu.setLabel("帮助");
+		} else if(BaijiuShellChrome.FILE_MENU_ID.equals(elementId)) {
+			menu.setLabel("文件");
+		} else if(BaijiuShellChrome.BAIJIU_MENU_ID.equals(elementId)) {
+			menu.setLabel("白酒");
 		}
 		menu.setToBeRendered(true);
 		if(BaijiuShellChrome.isEditorRequiredMenu(elementId)) {
@@ -1955,6 +1969,112 @@ public final class BaijiuShellParts {
 		sanitizeFileMenuChildren(fileMenu);
 	}
 
+	/**
+	 * JFace MenuManager omits an empty 帮助 cascade (same as 视图). Keep
+	 * About / 许可·版本 visible so the top-level label paints on every
+	 * start, including after workbench.xmi restore of hidden children.
+	 */
+	static void ensureHelpMenuContents(EModelService modelService, MApplication application, MMenu helpMenu) {
+
+		if(helpMenu == null) {
+			return;
+		}
+		if(helpMenu.getLabel() == null || helpMenu.getLabel().isBlank()) {
+			helpMenu.setLabel("帮助");
+		}
+		forceShowChrome(helpMenu);
+		MUIElement about = bestHelpAboutItem(helpMenu);
+		if(about == null && modelService != null && application != null) {
+			about = findHelpAboutElement(modelService, application);
+		}
+		if(about == null) {
+			about = createAboutMenuItem(modelService, application);
+		}
+		if(about instanceof MMenuElement item) {
+			forceShowChrome(about);
+			if(about instanceof MUILabel labeled) {
+				String label = labeled.getLabel();
+				if(label == null || label.isBlank()) {
+					labeled.setLabel("关于...");
+				}
+			}
+			attachMenuElement(helpMenu, item);
+		}
+		dedupePlantMenuChildren(helpMenu);
+		sanitizeHelpMenuChildren(helpMenu);
+	}
+
+	private static MUIElement bestHelpAboutItem(MMenu helpMenu) {
+
+		MUIElement first = mainMenuChild(helpMenu, BaijiuShellChrome.ABOUT_MENU_ID);
+		MUIElement best = first;
+		try {
+			List<?> children = helpMenu.getChildren();
+			if(children != null) {
+				for(Object child : children) {
+					if(!(child instanceof MUIElement element)) {
+						continue;
+					}
+					if(isHelpAboutItem(element)) {
+						best = preferredPlantMenuChild(best, element);
+					}
+				}
+			}
+		} catch(RuntimeException | LinkageError e) {
+			return first;
+		}
+		return best;
+	}
+
+	private static MUIElement findHelpAboutElement(EModelService modelService, MApplication application) {
+
+		MUIElement found = findElement(modelService, application, BaijiuShellChrome.ABOUT_MENU_ID);
+		found = preferredPlantMenuChild(found, findElement(modelService, application, BaijiuShellChrome.ABOUT_HANDLED_MENU_ID));
+		found = preferredPlantMenuChild(found, findElement(modelService, application, BaijiuShellChrome.ECLIPSE_ABOUT_COMMAND_ID));
+		found = preferredPlantMenuChild(found, findElement(modelService, application, BaijiuShellChrome.ECLIPSE_ABOUT_PRODUCT_COMMAND_ID));
+		return found instanceof MMenuElement ? found : null;
+	}
+
+	private static boolean isHelpAboutItem(MUIElement element) {
+
+		if(element == null) {
+			return false;
+		}
+		String id = element.getElementId();
+		if(BaijiuShellChrome.ABOUT_MENU_ID.equals(id) || BaijiuShellChrome.ABOUT_HANDLED_MENU_ID.equals(id) || BaijiuShellChrome.ECLIPSE_ABOUT_COMMAND_ID.equals(id) || BaijiuShellChrome.ECLIPSE_ABOUT_PRODUCT_COMMAND_ID.equals(id)) {
+			return true;
+		}
+		String normalized = BaijiuShellChrome.normalizeMenuLabel(labelOf(element) == null ? "" : labelOf(element));
+		return normalized.startsWith("about") || normalized.startsWith("关于");
+	}
+
+	private static MHandledMenuItem createAboutMenuItem(EModelService modelService, MApplication application) {
+
+		MHandledMenuItem item = createHandledMenuItem(modelService);
+		if(item == null) {
+			return null;
+		}
+		item.setElementId(BaijiuShellChrome.ABOUT_MENU_ID);
+		item.setLabel("关于...");
+		item.setToBeRendered(true);
+		item.setVisible(true);
+		MCommand command = null;
+		for(String commandId : BaijiuShellChrome.ABOUT_COMMAND_IDS) {
+			command = findCommand(modelService, application, commandId);
+			if(command != null) {
+				break;
+			}
+		}
+		if(command != null) {
+			try {
+				item.setCommand(command);
+			} catch(RuntimeException | LinkageError e) {
+				// command not writable
+			}
+		}
+		return item;
+	}
+
 	static void sanitizeFileMenuChildren(MMenu fileMenu) {
 
 		if(fileMenu == null || BaijiuShellChrome.researchMenusVisible()) {
@@ -2040,7 +2160,10 @@ public final class BaijiuShellParts {
 		if(help == null && modelService != null) {
 			help = findMenu(modelService, application, BaijiuShellChrome.HELP_MENU_ID);
 		}
-		sanitizeHelpMenuChildren(help);
+		if(help == null && mainMenu != null) {
+			help = liveMenuChild(mainMenu, BaijiuShellChrome.ECLIPSE_HELP_MENU_ID);
+		}
+		ensureHelpMenuContents(modelService, application, help);
 		hideChromatogramMenuLabel(application, modelService);
 		hideNonPlantTopTrim(application, modelService);
 		MWindow plant = plantWindow(application, modelService);
@@ -2092,6 +2215,8 @@ public final class BaijiuShellParts {
 				}
 				if(BaijiuShellChrome.shouldHideHelpMenuChild(element.getElementId(), labelOf(element))) {
 					hideMenuChild(element);
+				} else {
+					forceShowChrome(element);
 				}
 			}
 		} catch(RuntimeException | LinkageError e) {

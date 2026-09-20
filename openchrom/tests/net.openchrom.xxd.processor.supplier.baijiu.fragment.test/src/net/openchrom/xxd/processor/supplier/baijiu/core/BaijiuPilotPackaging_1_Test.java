@@ -234,7 +234,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertNotNull(chrome);
 		String chromeSrc = Files.readString(chrome, StandardCharsets.UTF_8);
 		assertTrue(chromeSrc.contains("CSD_EDITOR_PART_ID"), chromeSrc);
-		assertTrue(chromeSrc.contains("CHROME_EPOCH = 30"), chromeSrc);
+		assertTrue(chromeSrc.contains("CHROME_EPOCH = 31"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldAppendMenuChild"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldCreateGuiForPlantChrome"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldRestoreChromeAfterChildrenChange"), chromeSrc);
@@ -247,6 +247,9 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(chromeSrc.contains("shouldHideHelpMenuChild"), chromeSrc);
 		assertTrue(chromeSrc.contains("BAIJIU_MENU_KEEP_ID_PREFIXES"), chromeSrc);
 		assertTrue(chromeSrc.contains("HELP_MENU_KEEP_ELEMENT_IDS"), chromeSrc);
+		assertTrue(chromeSrc.contains("HELP_MENU_KEEP_LABEL_PREFIXES"), chromeSrc);
+		assertTrue(chromeSrc.contains("isHelpMenuId"), chromeSrc);
+		assertTrue(chromeSrc.contains("ABOUT_MENU_ID"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldHideViewMenuChild"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldHideFileMenuChild"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldHidePlantMenuChild"), chromeSrc);
@@ -532,6 +535,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(partsSrc.contains("applyEditorRequiredMenuVisibility"), partsSrc);
 		assertTrue(partsSrc.contains("ensureViewMenuContents"), partsSrc);
 		assertTrue(partsSrc.contains("ensureFileMenuContents"), partsSrc);
+		assertTrue(partsSrc.contains("ensureHelpMenuContents"), partsSrc);
 		assertTrue(partsSrc.contains("sanitizeViewMenuChildren"), partsSrc);
 		assertTrue(partsSrc.contains("sanitizeFileMenuChildren"), partsSrc);
 		assertTrue(partsSrc.contains("sanitizeBaijiuMenuChildren"), partsSrc);

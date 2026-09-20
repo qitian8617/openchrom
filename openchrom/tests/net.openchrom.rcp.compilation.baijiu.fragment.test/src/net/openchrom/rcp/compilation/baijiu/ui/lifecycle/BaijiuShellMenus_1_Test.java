@@ -42,6 +42,7 @@ public class BaijiuShellMenus_1_Test {
 		assertTrue(BaijiuShellMenus.looksLikePlantBaijiuMenu(java.util.List.of("打开谱图", "推荐积分")));
 		assertFalse(BaijiuShellMenus.looksLikePlantBaijiuMenu(java.util.List.of("Close", "Restore")));
 		assertTrue(BaijiuShellMenus.looksLikePlantHelpMenu(java.util.List.of("About", "Preferences")));
+		assertTrue(BaijiuShellMenus.looksLikePlantHelpMenu(java.util.List.of("许可 / 版本…")));
 		assertFalse(BaijiuShellMenus.looksLikePlantHelpMenu(java.util.List.of("Save", "Save As")));
 	}
 }

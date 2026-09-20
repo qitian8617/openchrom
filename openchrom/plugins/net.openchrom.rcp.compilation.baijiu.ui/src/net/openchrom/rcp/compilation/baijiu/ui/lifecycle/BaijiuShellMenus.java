@@ -506,7 +506,7 @@ public final class BaijiuShellMenus {
 		}
 		for(String label : labels) {
 			String normalized = BaijiuShellChrome.normalizeMenuLabel(label == null ? "" : label);
-			if("关于".equals(normalized) || "about".equals(normalized) || "首选项".equals(normalized) || "preferences".equals(normalized)) {
+			if("关于".equals(normalized) || "about".equals(normalized) || normalized.startsWith("about ") || normalized.startsWith("关于") || "首选项".equals(normalized) || "preferences".equals(normalized) || "许可".equals(normalized) || normalized.startsWith("许可") || "license".equals(normalized) || normalized.startsWith("license")) {
 				return true;
 			}
 		}
