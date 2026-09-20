@@ -640,13 +640,29 @@ public class BaijiuShellChrome_1_Test {
 		assertTrue(BaijiuShellChrome.shouldHideBaijiuCascadeChild(null, "Import"));
 		assertFalse(BaijiuShellChrome.shouldHidePlantMenuChild(BaijiuShellChrome.BAIJIU_MENU_ID, "net.openchrom.rcp.compilation.baijiu.ui.menu.openChromatogram", "打开谱图", null));
 		assertTrue(BaijiuShellChrome.shouldHidePlantMenuChild(BaijiuShellChrome.BAIJIU_MENU_ID, BaijiuShellChrome.GC_CONTROL_MENU_ID, "气相色谱控制台", null));
-		assertFalse(BaijiuShellChrome.shouldHideHelpMenuChild("org.eclipse.chemclipse.rcp.app.ui.menu.item.about", "About"));
-		assertFalse(BaijiuShellChrome.shouldHideHelpMenuChild(BaijiuShellChrome.ABOUT_MENU_ID, "About OpenChrom"));
+		assertFalse(BaijiuShellChrome.shouldHideHelpMenuChild(BaijiuShellChrome.PLANT_ABOUT_MENU_ID, "关于"));
+		assertFalse(BaijiuShellChrome.shouldHideHelpMenuChild(BaijiuShellChrome.PLANT_ABOUT_MENU_ID, "About"));
 		assertFalse(BaijiuShellChrome.shouldHideHelpMenuChild(null, "关于"));
-		assertFalse(BaijiuShellChrome.shouldHideHelpMenuChild(null, "关于 白酒 FID 工作站"));
-		assertFalse(BaijiuShellChrome.shouldHideHelpMenuChild(null, "首选项"));
-		assertFalse(BaijiuShellChrome.shouldHideHelpMenuChild(BaijiuShellChrome.LICENSE_MENU_ID, "许可 / 版本…"));
-		assertFalse(BaijiuShellChrome.shouldHideHelpMenuChild(null, "手册"));
+		assertFalse(BaijiuShellChrome.shouldHideHelpMenuChild(null, "About"));
+		assertTrue(BaijiuShellChrome.HELP_MENU_KEEP_ELEMENT_IDS.contains(BaijiuShellChrome.PLANT_ABOUT_MENU_ID));
+		assertEquals(1, BaijiuShellChrome.HELP_MENU_KEEP_ELEMENT_IDS.size(), "帮助 keeps only plant 关于");
+		assertFalse(BaijiuShellChrome.KEEP_ELEMENT_IDS.contains(BaijiuShellChrome.ABOUT_MENU_ID), "ChemClipse About must not KEEP — walk-hide / sanitize drop it");
+		assertFalse(BaijiuShellChrome.KEEP_ELEMENT_IDS.contains(BaijiuShellChrome.ABOUT_HANDLED_MENU_ID));
+		assertFalse(BaijiuShellChrome.HELP_MENU_KEEP_ELEMENT_IDS.contains(BaijiuShellChrome.LICENSE_MENU_ID));
+		assertTrue(BaijiuShellChrome.shouldHideHelpMenuChild(BaijiuShellChrome.ABOUT_MENU_ID, "About"), "ChemClipse About is not plant 关于");
+		assertTrue(BaijiuShellChrome.shouldHideHelpMenuChild(BaijiuShellChrome.ABOUT_HANDLED_MENU_ID, "About"));
+		assertTrue(BaijiuShellChrome.shouldHideHelpMenuChild(BaijiuShellChrome.ABOUT_MENU_ID, "About OpenChrom"));
+		assertTrue(BaijiuShellChrome.shouldHideHelpMenuChild(BaijiuShellChrome.ECLIPSE_ABOUT_COMMAND_ID, "About"));
+		assertTrue(BaijiuShellChrome.shouldHideHelpMenuChild(null, "关于 白酒 FID 工作站"));
+		assertTrue(BaijiuShellChrome.shouldHideHelpMenuChild(null, "首选项"));
+		assertTrue(BaijiuShellChrome.shouldHideHelpMenuChild(BaijiuShellChrome.LICENSE_MENU_ID, "许可 / 版本…"));
+		assertTrue(BaijiuShellChrome.shouldHideHelpMenuChild(null, "手册"));
+		assertTrue(BaijiuShellChrome.shouldHideHelpMenuChild(null, "Help Contents"));
+		assertTrue(BaijiuShellChrome.shouldHideHelpMenuChild("org.eclipse.ui.help.helpContents", "Help Contents"));
+		assertTrue(BaijiuShellChrome.isAboutDirectHandlerUri(BaijiuShellChrome.ABOUT_DIRECT_HANDLER_URI));
+		assertFalse(BaijiuShellChrome.isAboutDirectHandlerUri("bundleclass://org.eclipse.ui/org.eclipse.ui.internal.about.AboutHandler"));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.PLANT_ABOUT_MENU_ID));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.HELP_MENU_ID));
 		assertFalse(BaijiuShellChrome.shouldHideMainMenuChild("help", "Help", null), "Eclipse 3.x Help alias is plant chrome");
 		assertFalse(BaijiuShellChrome.shouldHideMainMenuChild(BaijiuShellChrome.ECLIPSE_HELP_MENU_ALT_ID, "帮助", null));
 		assertTrue(BaijiuShellChrome.isHelpMenuId(BaijiuShellChrome.HELP_MENU_ID));
@@ -663,7 +679,8 @@ public class BaijiuShellChrome_1_Test {
 		assertFalse(BaijiuShellChrome.shouldHideMenuContribution(BaijiuShellChrome.BAIJIU_MENU_ID, "net.openchrom.rcp.compilation.baijiu.ui.menu.openChromatogram", "打开谱图", null));
 		assertTrue(BaijiuShellChrome.shouldHideMenuContribution(BaijiuShellChrome.BAIJIU_MENU_ID, BaijiuShellChrome.GC_CONTROL_MENU_ID, "气相色谱控制台", null));
 		assertFalse(BaijiuShellChrome.allowsWalkHide("net.openchrom.rcp.compilation.baijiu.ui.menu.openChromatogram", "打开谱图"));
-		assertFalse(BaijiuShellChrome.allowsWalkHide("org.eclipse.chemclipse.rcp.app.ui.menu.item.about", "About"));
+		assertTrue(BaijiuShellChrome.allowsWalkHide("org.eclipse.chemclipse.rcp.app.ui.menu.item.about", "About"));
+		assertFalse(BaijiuShellChrome.allowsWalkHide(BaijiuShellChrome.PLANT_ABOUT_MENU_ID, "关于"));
 	}
 
 	@Test

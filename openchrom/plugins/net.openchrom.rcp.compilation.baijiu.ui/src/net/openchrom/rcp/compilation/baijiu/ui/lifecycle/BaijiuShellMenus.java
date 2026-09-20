@@ -30,6 +30,7 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
 
+import net.openchrom.rcp.compilation.baijiu.ui.handlers.BaijiuAboutHandler;
 import net.openchrom.rcp.compilation.baijiu.ui.handlers.BaijiuOpenSelectViewHandler;
 
 /**
@@ -42,6 +43,7 @@ public final class BaijiuShellMenus {
 
 	private static final Object LOCK = new Object();
 	private static final String SELECT_VIEW_FALLBACK = "net.openchrom.baijiu.selectViewFallback";
+	private static final String ABOUT_FALLBACK = "net.openchrom.baijiu.aboutFallback";
 	private static Listener installed;
 
 	private BaijiuShellMenus() {
@@ -425,6 +427,7 @@ public final class BaijiuShellMenus {
 		if(menu == null || menu.isDisposed() || BaijiuShellChrome.researchMenusVisible()) {
 			return;
 		}
+		boolean seenAbout = false;
 		MenuItem[] items = menu.getItems();
 		for(int i = items.length - 1; i >= 0; i--) {
 			MenuItem item = items[i];
@@ -445,9 +448,48 @@ public final class BaijiuShellMenus {
 				} catch(RuntimeException e) {
 					// menu already closing
 				}
+				continue;
 			}
+			if(seenAbout) {
+				try {
+					item.dispose();
+				} catch(RuntimeException e) {
+					// menu already closing
+				}
+				continue;
+			}
+			seenAbout = true;
+			if(BaijiuShellChrome.isHelpMenuKeepLabel(item.getText()) && !BaijiuShellChrome.ABOUT_LABEL_ZH.equals(item.getText())) {
+				item.setText(BaijiuShellChrome.ABOUT_LABEL_ZH);
+			}
+			ensureAboutOpensOnClick(item);
 		}
 		disposeExtraSeparators(menu);
+	}
+
+	static void ensureAboutOpensOnClick(MenuItem item) {
+
+		if(item == null || item.isDisposed()) {
+			return;
+		}
+		try {
+			Listener[] listeners = item.getListeners(SWT.Selection);
+			if(listeners != null && listeners.length > 0) {
+				return;
+			}
+			if(item.getData(ABOUT_FALLBACK) != null) {
+				return;
+			}
+			Listener fallback = event -> {
+				Menu parent = item.getParent();
+				Shell shell = parent == null || parent.isDisposed() ? null : parent.getShell();
+				BaijiuAboutHandler.executeFromShell(shell);
+			};
+			item.addListener(SWT.Selection, fallback);
+			item.setData(ABOUT_FALLBACK, fallback);
+		} catch(RuntimeException | LinkageError e) {
+			// widget already closing
+		}
 	}
 
 	static boolean looksLikePlantViewMenu(List<String> labels) {
@@ -506,7 +548,7 @@ public final class BaijiuShellMenus {
 		}
 		for(String label : labels) {
 			String normalized = BaijiuShellChrome.normalizeMenuLabel(label == null ? "" : label);
-			if("关于".equals(normalized) || "about".equals(normalized) || normalized.startsWith("about ") || normalized.startsWith("关于") || "首选项".equals(normalized) || "preferences".equals(normalized) || "许可".equals(normalized) || normalized.startsWith("许可") || "license".equals(normalized) || normalized.startsWith("license")) {
+			if("关于".equals(normalized) || "about".equals(normalized)) {
 				return true;
 			}
 		}

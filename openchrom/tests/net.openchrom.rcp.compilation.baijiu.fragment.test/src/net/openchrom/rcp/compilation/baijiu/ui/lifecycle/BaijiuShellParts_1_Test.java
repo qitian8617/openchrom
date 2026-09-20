@@ -117,7 +117,7 @@ public class BaijiuShellParts_1_Test {
 		assertTrue(helpAfterEnsure != null);
 		assertEquals("帮助", helpAfterEnsure.getLabel());
 		assertTrue(helpAfterEnsure.isVisible());
-		assertEquals(1, BaijiuShellParts.countMenuChildrenWithId(helpAfterEnsure, BaijiuShellChrome.ABOUT_MENU_ID), "帮助 must have About so JFace paints it");
+		assertEquals(1, BaijiuShellParts.countMenuChildrenWithId(helpAfterEnsure, BaijiuShellChrome.PLANT_ABOUT_MENU_ID), "帮助 must have 关于 so JFace paints it");
 		int afterFirst = main.getChildren().size();
 		for(int i = 0; i < 20; i++) {
 			BaijiuShellParts.ensurePlantTopMenus(main);
@@ -133,7 +133,7 @@ public class BaijiuShellParts_1_Test {
 		assertEquals("视图", view.getLabel());
 		assertTrue(view.isVisible());
 		assertEquals(1, BaijiuShellParts.countMenuChildrenWithId(view, BaijiuShellChrome.SELECT_VIEW_MENU_ID));
-		assertEquals(1, BaijiuShellParts.countMenuChildrenWithId(helpAfterEnsure, BaijiuShellChrome.ABOUT_MENU_ID), "ensure* must not duplicate About");
+		assertEquals(1, BaijiuShellParts.countMenuChildrenWithId(helpAfterEnsure, BaijiuShellChrome.PLANT_ABOUT_MENU_ID), "ensure* must not duplicate About");
 		assertTrue(helpAfterEnsure.isVisible());
 		org.eclipse.e4.ui.model.application.ui.menu.MMenuElement selectView = null;
 		for(org.eclipse.e4.ui.model.application.ui.menu.MMenuElement child : view.getChildren()) {
@@ -269,14 +269,7 @@ public class BaijiuShellParts_1_Test {
 		tutorials.setVisible(true);
 		help.getChildren().add(tutorials);
 		BaijiuShellParts.sanitizeHelpMenuChildren(help);
-		assertTrue(about.isVisible());
-		assertTrue(about.isToBeRendered());
-		assertFalse(tutorials.isVisible());
-		about.setVisible(false);
-		about.setToBeRendered(false);
-		BaijiuShellParts.sanitizeHelpMenuChildren(help);
-		assertTrue(about.isVisible(), "persisted hidden About must force-show so 帮助 paints");
-		assertTrue(about.isToBeRendered());
+		assertFalse(about.isVisible(), "ChemClipse About must not paint");
 		assertFalse(tutorials.isVisible());
 
 		MMenu emptyHelp = MMenuFactory.INSTANCE.createMenu();
@@ -286,19 +279,26 @@ public class BaijiuShellParts_1_Test {
 		assertTrue(emptyHelp.isVisible());
 		assertTrue(emptyHelp.isToBeRendered());
 		assertEquals("帮助", emptyHelp.getLabel());
-		assertEquals(1, BaijiuShellParts.countMenuChildrenWithId(emptyHelp, BaijiuShellChrome.ABOUT_MENU_ID), "empty 帮助 gets About so JFace paints the cascade");
-		org.eclipse.e4.ui.model.application.ui.menu.MHandledMenuItem created = null;
+		assertEquals(1, BaijiuShellParts.countMenuChildrenWithId(emptyHelp, BaijiuShellChrome.PLANT_ABOUT_MENU_ID), "empty 帮助 gets plant 关于 so JFace paints the cascade");
+		org.eclipse.e4.ui.model.application.ui.menu.MDirectMenuItem created = null;
 		for(Object child : emptyHelp.getChildren()) {
-			if(child instanceof org.eclipse.e4.ui.model.application.ui.menu.MHandledMenuItem item && BaijiuShellChrome.ABOUT_MENU_ID.equals(item.getElementId())) {
+			if(child instanceof org.eclipse.e4.ui.model.application.ui.menu.MDirectMenuItem item && BaijiuShellChrome.PLANT_ABOUT_MENU_ID.equals(item.getElementId())) {
 				created = item;
 			}
 		}
 		assertTrue(created != null);
 		assertTrue(created.isVisible());
 		assertTrue(created.isToBeRendered());
+		assertEquals(BaijiuShellChrome.ABOUT_LABEL_ZH, created.getLabel());
+		assertTrue(BaijiuShellChrome.isAboutDirectHandlerUri(created.getContributionURI()));
 		BaijiuShellParts.ensureHelpMenuContents(null, null, emptyHelp);
-		assertEquals(1, BaijiuShellParts.countMenuChildrenWithId(emptyHelp, BaijiuShellChrome.ABOUT_MENU_ID), "repeated ensure must not duplicate About");
+		assertEquals(1, BaijiuShellParts.countMenuChildrenWithId(emptyHelp, BaijiuShellChrome.PLANT_ABOUT_MENU_ID), "repeated ensure must not duplicate About");
 		assertFalse(BaijiuShellChrome.shouldHideMainMenuChild(emptyHelp.getElementId(), emptyHelp.getLabel(), null));
+		emptyHelp.getChildren().add(about);
+		about.setVisible(true);
+		BaijiuShellParts.ensureHelpMenuContents(null, null, emptyHelp);
+		assertFalse(about.isVisible(), "ChemClipse About stays hidden after ensure");
+		assertEquals(1, BaijiuShellParts.countMenuChildrenWithId(emptyHelp, BaijiuShellChrome.PLANT_ABOUT_MENU_ID));
 	}
 
 	@Test

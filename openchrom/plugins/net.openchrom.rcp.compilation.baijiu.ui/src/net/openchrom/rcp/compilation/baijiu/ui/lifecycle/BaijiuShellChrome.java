@@ -211,13 +211,16 @@ public final class BaijiuShellChrome {
 	public static final String ABOUT_COMMAND_ID = "org.eclipse.chemclipse.rcp.app.ui.command.about";
 	public static final String ECLIPSE_ABOUT_COMMAND_ID = "org.eclipse.ui.help.aboutAction";
 	public static final String ECLIPSE_ABOUT_PRODUCT_COMMAND_ID = "org.eclipse.ui.help.aboutProduct";
+	/**
+	 * Plant 帮助 → 关于. DirectMenuItem so Eclipse / OpenChrom About never
+	 * paints. The only visible Help child.
+	 */
+	public static final String PLANT_ABOUT_MENU_ID = "net.openchrom.rcp.compilation.baijiu.ui.menu.about";
+	public static final String ABOUT_DIRECT_HANDLER_URI = "bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.handlers.BaijiuAboutHandler";
+	public static final String ABOUT_LABEL_ZH = "关于";
+	public static final String ABOUT_LOGO_PATH = "icons/about_logo.png";
 	public static final String LICENSE_MENU_ID = "net.openchrom.rcp.compilation.baijiu.ui.menu.license";
 	public static final String LICENSE_COMMAND_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.command.license";
-	public static final List<String> ABOUT_COMMAND_IDS = List.of( //
-			ABOUT_COMMAND_ID, //
-			ECLIPSE_ABOUT_COMMAND_ID, //
-			ECLIPSE_ABOUT_PRODUCT_COMMAND_ID, //
-			LICENSE_COMMAND_ID);
 	public static final String BAIJIU_MENU_ID = "net.openchrom.rcp.compilation.baijiu.ui.menu.baijiu";
 	public static final String PLANT_TOOLBAR_ID = "net.openchrom.rcp.compilation.baijiu.ui.toolbar.plant";
 	public static final String RESET_LAYOUT_COMMAND_ID = "net.openchrom.rcp.compilation.baijiu.ui.command.resetLayout";
@@ -322,9 +325,9 @@ public final class BaijiuShellChrome {
 	 * {@link #HELP_MENU_ID} (or persist of {@code toBeRendered=false} on
 	 * every child after #68 allowlist) has no visible About — JFace
 	 * MenuManager omits empty cascades, same as epoch-26 视图. Rebuild
-	 * workbench.xmi. Runtime: ensure About / 许可·版本 as painted Help
-	 * children; treat Eclipse {@code help} aliases as plant chrome so the
-	 * hide walk cannot drop the label.
+	 * workbench.xmi. Runtime: one DirectMenuItem 关于 (plant About dialog);
+	 * treat Eclipse {@code help} aliases as plant chrome so the hide walk
+	 * cannot drop the top-level label.
 	 */
 	public static final int CHROME_EPOCH = 31;
 	/**
@@ -450,9 +453,9 @@ public final class BaijiuShellChrome {
 	/**
 	 * Painted plant top menus, in bar order. {@link #VIEW_MENU_ID} must
 	 * have at least one visible child (Select View) or JFace omits it.
-	 * {@link #HELP_MENU_ID} must have at least one visible child (About /
-	 * 许可·版本) for the same reason. {@link #CHROMATOGRAM_MENU_ID} is
-	 * <em>not</em> in this list — defined for lookup, not painted.
+	 * {@link #HELP_MENU_ID} must have one visible child (关于) for the same
+	 * reason. {@link #CHROMATOGRAM_MENU_ID} is <em>not</em> in this list —
+	 * defined for lookup, not painted.
 	 */
 	public static final List<String> PLANT_TOP_MENU_IDS = List.of( //
 			FILE_MENU_ID, //
@@ -619,8 +622,7 @@ public final class BaijiuShellChrome {
 			ECLIPSE_HELP_MENU_ALT_ID, //
 			ECLIPSE_HELP_MENU_MAIN_ID, //
 			VIEW_MENU_ID, //
-			ABOUT_MENU_ID, //
-			ABOUT_HANDLED_MENU_ID, //
+			PLANT_ABOUT_MENU_ID, //
 			LICENSE_MENU_ID, //
 			CSD_EDITOR_PART_ID, //
 			CHROMATOGRAM_OVERLAY_PART_ID, //
@@ -856,40 +858,14 @@ public final class BaijiuShellChrome {
 			"白酒工作台", "baijiu workbench");
 
 	/**
-	 * Painted 帮助 children. Tutorials / Updates / Install Add-ons stay off.
-	 * JFace omits the top-level 帮助 label when none of these are visible.
+	 * Painted 帮助 children: only 关于. Eclipse Help Contents / Search /
+	 * ChemClipse About OpenChrom / Tutorials / Updates stay off.
 	 */
 	public static final Set<String> HELP_MENU_KEEP_ELEMENT_IDS = Set.of( //
-			ABOUT_MENU_ID, //
-			ABOUT_HANDLED_MENU_ID, //
-			LICENSE_MENU_ID, //
-			"org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.preferences", //
-			"org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.resetperspective", //
-			ECLIPSE_ABOUT_COMMAND_ID, //
-			ECLIPSE_ABOUT_PRODUCT_COMMAND_ID, //
-			"org.eclipse.ui.help.helpContents", //
-			"org.eclipse.ui.help.helpSearch", //
-			"org.eclipse.ui.actions.helpContents");
+			PLANT_ABOUT_MENU_ID);
 
 	public static final List<String> HELP_MENU_KEEP_LABELS = List.of( //
-			"关于", "about", //
-			"许可", "许可 / 版本", "license", //
-			"手册", "manual", "user guide", //
-			"首选项", "preferences", //
-			"帮助内容", "help contents", //
-			"搜索", "search", //
-			"重置透视图", "reset perspective");
-
-	/**
-	 * Prefix keep so {@code About OpenChrom} / {@code 关于 白酒 FID 工作站}
-	 * / {@code 许可 / 版本…} still paint. {@code search} stays exact-only
-	 * so {@code Search for Updates} does not leak.
-	 */
-	public static final List<String> HELP_MENU_KEEP_LABEL_PREFIXES = List.of( //
-			"about", "关于", //
-			"许可", "license", //
-			"手册", "manual", "user guide", //
-			"help contents", "帮助内容");
+			ABOUT_LABEL_ZH, "about");
 
 	public static final List<String[]> SELECT_VIEW_CHROME_TRANSLATIONS = List.of( //
 			new String[]{"Select View", SELECT_VIEW_TITLE_ZH}, //
@@ -1247,6 +1223,11 @@ public final class BaijiuShellChrome {
 		return contributionURI != null && SELECT_VIEW_DIRECT_HANDLER_URI.equals(contributionURI);
 	}
 
+	public static boolean isAboutDirectHandlerUri(String contributionURI) {
+
+		return contributionURI != null && ABOUT_DIRECT_HANDLER_URI.equals(contributionURI);
+	}
+
 	/**
 	 * Skip {@code createGui} when the widget already exists, and never
 	 * {@code createGui} a top-level cascade — MenuRenderer would add another
@@ -1268,7 +1249,7 @@ public final class BaijiuShellChrome {
 		if(elementId == null || elementId.isBlank()) {
 			return false;
 		}
-		return PLANT_TOP_MENU_IDS.contains(elementId) || isHelpMenuId(elementId) || EDITOR_REQUIRED_MENU_IDS.contains(elementId) || SELECT_VIEW_MENU_ID.equals(elementId) || SAVE_MENU_ID.equals(elementId) || ABOUT_MENU_ID.equals(elementId) || ABOUT_HANDLED_MENU_ID.equals(elementId);
+		return PLANT_TOP_MENU_IDS.contains(elementId) || isHelpMenuId(elementId) || EDITOR_REQUIRED_MENU_IDS.contains(elementId) || SELECT_VIEW_MENU_ID.equals(elementId) || SAVE_MENU_ID.equals(elementId) || PLANT_ABOUT_MENU_ID.equals(elementId);
 	}
 
 	/**
@@ -1283,7 +1264,7 @@ public final class BaijiuShellChrome {
 		if(existingChildIds == null || existingChildIds.isEmpty()) {
 			return true;
 		}
-		if(PLANT_TOP_MENU_IDS.contains(newId) || isHelpMenuId(newId) || EDITOR_REQUIRED_MENU_IDS.contains(newId) || SELECT_VIEW_MENU_ID.equals(newId) || SAVE_MENU_ID.equals(newId) || ABOUT_MENU_ID.equals(newId) || ABOUT_HANDLED_MENU_ID.equals(newId) || MAIN_MENU_ID.equals(newId) || ECLIPSE_MAIN_MENU_ID.equals(newId)) {
+		if(PLANT_TOP_MENU_IDS.contains(newId) || isHelpMenuId(newId) || EDITOR_REQUIRED_MENU_IDS.contains(newId) || SELECT_VIEW_MENU_ID.equals(newId) || SAVE_MENU_ID.equals(newId) || PLANT_ABOUT_MENU_ID.equals(newId) || MAIN_MENU_ID.equals(newId) || ECLIPSE_MAIN_MENU_ID.equals(newId)) {
 			return !existingChildIds.contains(newId);
 		}
 		return true;
@@ -1755,17 +1736,21 @@ public final class BaijiuShellChrome {
 	}
 
 	/**
-	 * 帮助 cascade allowlist. Tutorials / Updates / Install Add-ons stay off.
+	 * 帮助 cascade: only plant 关于. Named ChemClipse / Eclipse Help
+	 * children stay off even when their label is About.
 	 */
 	public static boolean shouldHideHelpMenuChild(String elementId, String label) {
 
 		if(researchMenusVisible()) {
 			return false;
 		}
-		if(isHelpMenuKeepId(elementId) || isHelpMenuKeepLabel(label)) {
+		if(isHelpMenuKeepId(elementId)) {
 			return false;
 		}
-		return true;
+		if(elementId != null && !elementId.isBlank()) {
+			return true;
+		}
+		return !isHelpMenuKeepLabel(label);
 	}
 
 	/**
@@ -1887,16 +1872,7 @@ public final class BaijiuShellChrome {
 
 	static boolean isHelpMenuKeepId(String elementId) {
 
-		if(elementId == null || elementId.isBlank()) {
-			return false;
-		}
-		if(HELP_MENU_KEEP_ELEMENT_IDS.contains(elementId)) {
-			return true;
-		}
-		if(elementId.endsWith(".help.aboutAction") || elementId.endsWith(".help.aboutProduct") || elementId.endsWith(".menu.item.about") || elementId.endsWith(".handledmenuitem.about") || elementId.endsWith(".menu.license")) {
-			return true;
-		}
-		return false;
+		return elementId != null && !elementId.isBlank() && HELP_MENU_KEEP_ELEMENT_IDS.contains(elementId);
 	}
 
 	static boolean isHelpMenuKeepLabel(String label) {
@@ -1907,11 +1883,6 @@ public final class BaijiuShellChrome {
 		String normalized = normalizeMenuLabel(label);
 		for(String keep : HELP_MENU_KEEP_LABELS) {
 			if(normalized.equals(keep)) {
-				return true;
-			}
-		}
-		for(String prefix : HELP_MENU_KEEP_LABEL_PREFIXES) {
-			if(normalized.startsWith(prefix)) {
 				return true;
 			}
 		}

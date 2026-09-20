@@ -247,9 +247,13 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(chromeSrc.contains("shouldHideHelpMenuChild"), chromeSrc);
 		assertTrue(chromeSrc.contains("BAIJIU_MENU_KEEP_ID_PREFIXES"), chromeSrc);
 		assertTrue(chromeSrc.contains("HELP_MENU_KEEP_ELEMENT_IDS"), chromeSrc);
-		assertTrue(chromeSrc.contains("HELP_MENU_KEEP_LABEL_PREFIXES"), chromeSrc);
 		assertTrue(chromeSrc.contains("isHelpMenuId"), chromeSrc);
-		assertTrue(chromeSrc.contains("ABOUT_MENU_ID"), chromeSrc);
+		assertTrue(chromeSrc.contains("PLANT_ABOUT_MENU_ID"), chromeSrc);
+		assertTrue(chromeSrc.contains("ABOUT_DIRECT_HANDLER_URI"), chromeSrc);
+		assertTrue(chromeSrc.contains("ABOUT_LOGO_PATH"), chromeSrc);
+		assertTrue(chromeSrc.contains("BaijiuAboutHandler"), chromeSrc);
+		assertTrue(chromeSrc.contains("icons/about_logo.png"), chromeSrc);
+		assertFalse(chromeSrc.contains("ABOUT_COMMAND_IDS"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldHideViewMenuChild"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldHideFileMenuChild"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldHidePlantMenuChild"), chromeSrc);
@@ -536,6 +540,9 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(partsSrc.contains("ensureViewMenuContents"), partsSrc);
 		assertTrue(partsSrc.contains("ensureFileMenuContents"), partsSrc);
 		assertTrue(partsSrc.contains("ensureHelpMenuContents"), partsSrc);
+		assertTrue(partsSrc.contains("PLANT_ABOUT_MENU_ID"), partsSrc);
+		assertTrue(partsSrc.contains("createAboutDirectItem"), partsSrc);
+		assertTrue(partsSrc.contains("ABOUT_DIRECT_HANDLER_URI"), partsSrc);
 		assertTrue(partsSrc.contains("sanitizeViewMenuChildren"), partsSrc);
 		assertTrue(partsSrc.contains("sanitizeFileMenuChildren"), partsSrc);
 		assertTrue(partsSrc.contains("sanitizeBaijiuMenuChildren"), partsSrc);
@@ -759,6 +766,33 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(openSelectViewSrc.contains("import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuShellLog;"), openSelectViewSrc);
 		assertTrue(openSelectViewSrc.contains("BaijiuShellLog.warn"), openSelectViewSrc);
 
+		Path aboutHandler = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/handlers/BaijiuAboutHandler.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/handlers/BaijiuAboutHandler.java");
+		assertNotNull(aboutHandler, "帮助 关于 DirectMenuItem");
+		String aboutHandlerSrc = Files.readString(aboutHandler, StandardCharsets.UTF_8);
+		assertTrue(aboutHandlerSrc.contains("public class BaijiuAboutHandler"), aboutHandlerSrc);
+		assertTrue(aboutHandlerSrc.contains("@Execute"), aboutHandlerSrc);
+		assertTrue(aboutHandlerSrc.contains("executeFromShell"), aboutHandlerSrc);
+		assertTrue(aboutHandlerSrc.contains("BaijiuAboutDialog.open"), aboutHandlerSrc);
+		assertFalse(aboutHandlerSrc.contains("org.eclipse.ui.help.aboutAction"), aboutHandlerSrc);
+
+		Path aboutDialog = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/handlers/BaijiuAboutDialog.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/handlers/BaijiuAboutDialog.java");
+		assertNotNull(aboutDialog);
+		String aboutDialogSrc = Files.readString(aboutDialog, StandardCharsets.UTF_8);
+		assertTrue(aboutDialogSrc.contains("WINDOW_TITLE"), aboutDialogSrc);
+		assertTrue(aboutDialogSrc.contains("确定"), aboutDialogSrc);
+		assertTrue(aboutDialogSrc.contains("ABOUT_LOGO_PATH"), aboutDialogSrc);
+		assertFalse(aboutDialogSrc.contains("readAndDispatch"), aboutDialogSrc);
+		assertFalse(aboutDialogSrc.contains("About OpenChrom"), aboutDialogSrc);
+		assertFalse(aboutDialogSrc.contains("setText(\"OpenChrom\")"), aboutDialogSrc);
+
+		Path aboutLogo = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/icons/about_logo.png", "plugins/net.openchrom.rcp.compilation.baijiu.ui/icons/about_logo.png");
+		assertNotNull(aboutLogo, "plant About logo must ship in baijiu.ui");
+		assertTrue(Files.size(aboutLogo) > 0);
+		Path openchromAbout = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/icons/about_250x330.png", "plugins/net.openchrom.rcp.compilation.baijiu.ui/icons/about_250x330.png");
+		if(openchromAbout != null) {
+			assertTrue(Files.mismatch(aboutLogo, openchromAbout) != -1L, "do not ship OpenChrom about_250x330 as plant About logo");
+		}
+
 		Path shellLog = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellLog.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellLog.java");
 		assertNotNull(shellLog);
 		String shellLogSrc = Files.readString(shellLog, StandardCharsets.UTF_8);
@@ -774,6 +808,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertNotNull(uiBuild);
 		String uiBuildSrc = Files.readString(uiBuild, StandardCharsets.UTF_8);
 		assertTrue(uiBuildSrc.contains("source.. = src/"), uiBuildSrc);
+		assertTrue(uiBuildSrc.contains("icons/"), uiBuildSrc);
 		assertTrue(uiBuildSrc.contains("jre.compilation.profile = JavaSE-21"), uiBuildSrc);
 
 		Path uiClasspath = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/.classpath", "plugins/net.openchrom.rcp.compilation.baijiu.ui/.classpath");
@@ -886,6 +921,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(shellMenusSrc.contains("ensureSelectViewOpensOnClick"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("SWT.Selection"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("BaijiuOpenSelectViewHandler"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("BaijiuAboutHandler"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("ensureAboutOpensOnClick"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("shouldHideFileMenuChild"), shellMenusSrc);
 
 		Path seqPart = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/parts/BaijiuSequencePart.java", "plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/parts/BaijiuSequencePart.java");
