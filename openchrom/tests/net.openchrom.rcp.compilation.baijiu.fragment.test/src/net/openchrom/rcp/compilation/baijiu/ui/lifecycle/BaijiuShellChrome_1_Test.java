@@ -292,6 +292,15 @@ public class BaijiuShellChrome_1_Test {
 		assertTrue(BaijiuShellChrome.SELECT_VIEW_KEEP_LABELS.contains("进样序列"));
 		assertTrue(BaijiuShellChrome.SELECT_VIEW_HIDE_LABELS.contains("序列"));
 		assertFalse(BaijiuShellChrome.SELECT_VIEW_KEEP_LABELS.contains("序列"));
+		java.util.List<String> tags = new java.util.ArrayList<>();
+		tags.add(BaijiuShellChrome.VIEW_DESCRIPTOR_TAG);
+		BaijiuShellChrome.applySelectViewDescriptorTags(tags, true);
+		assertFalse(tags.contains(BaijiuShellChrome.VIEW_DESCRIPTOR_TAG));
+		assertTrue(tags.contains(BaijiuShellChrome.SELECT_VIEW_HIDDEN_TAG));
+		BaijiuShellChrome.applySelectViewDescriptorTags(tags, false);
+		assertTrue(tags.contains(BaijiuShellChrome.VIEW_DESCRIPTOR_TAG));
+		assertFalse(tags.contains(BaijiuShellChrome.SELECT_VIEW_HIDDEN_TAG));
+		BaijiuShellChrome.applySelectViewDescriptorTags(null, true);
 	}
 
 	@Test
