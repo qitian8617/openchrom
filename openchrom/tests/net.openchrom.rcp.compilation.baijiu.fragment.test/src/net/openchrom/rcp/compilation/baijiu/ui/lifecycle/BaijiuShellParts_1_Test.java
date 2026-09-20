@@ -112,6 +112,14 @@ public class BaijiuShellParts_1_Test {
 		assertEquals("视图", view.getLabel());
 		assertTrue(view.isVisible());
 		assertEquals(1, BaijiuShellParts.countMenuChildrenWithId(view, BaijiuShellChrome.SELECT_VIEW_MENU_ID));
+		org.eclipse.e4.ui.model.application.ui.menu.MMenuElement selectView = null;
+		for(org.eclipse.e4.ui.model.application.ui.menu.MMenuElement child : view.getChildren()) {
+			if(child != null && BaijiuShellChrome.SELECT_VIEW_MENU_ID.equals(child.getElementId())) {
+				selectView = child;
+			}
+		}
+		assertTrue(selectView != null);
+		assertEquals(BaijiuShellChrome.SELECT_VIEW_TITLE_ZH, selectView.getLabel());
 		MMenu chromatogram = null;
 		for(Object child : main.getChildren()) {
 			if(child instanceof MMenu menu && BaijiuShellChrome.CHROMATOGRAM_MENU_ID.equals(menu.getElementId())) {

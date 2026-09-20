@@ -259,9 +259,14 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(chromeSrc.contains("PLANT_TOP_MENU_IDS"), chromeSrc);
 		assertTrue(chromeSrc.contains("色谱图"), chromeSrc);
 		assertTrue(chromeSrc.contains("SELECT_VIEW_KEEP_ELEMENT_IDS"), chromeSrc);
+		assertTrue(chromeSrc.contains("BAIJIU_MENU_HIDE_ELEMENT_IDS"), chromeSrc);
+		assertTrue(chromeSrc.contains("SELECT_VIEW_TITLE_ZH"), chromeSrc);
 		assertTrue(chromeSrc.contains("SELECT_VIEW_KEEP_LABELS"), chromeSrc);
 		assertTrue(chromeSrc.contains("SELECT_VIEW_HIDE_LABELS"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldHideSelectViewItem"), chromeSrc);
+		assertTrue(chromeSrc.contains("shouldHideBaijiuMenuChild"), chromeSrc);
+		assertTrue(chromeSrc.contains("allowsWalkHide"), chromeSrc);
+		assertTrue(chromeSrc.contains("shouldDropSelectViewRow"), chromeSrc);
 		assertTrue(chromeSrc.contains("applySelectViewDescriptorTags"), chromeSrc);
 		assertTrue(chromeSrc.contains("VIEW_DESCRIPTOR_TAG"), chromeSrc);
 		assertTrue(chromeSrc.contains("SELECT_VIEW_HIDDEN_TAG"), chromeSrc);
@@ -349,6 +354,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(addonSrc.contains("parkChromatogramEditorArea"), addonSrc);
 		assertTrue(addonSrc.contains("hideTopWindowMenus"), addonSrc);
 		assertTrue(addonSrc.contains("shouldHideMainMenuChild"), addonSrc);
+		assertTrue(addonSrc.contains("allowsWalkHide"), addonSrc);
+		assertTrue(addonSrc.contains("child instanceof MMenu nested"), addonSrc);
 		assertTrue(addonSrc.contains("CHROMATOGRAM_STACK_ID"), addonSrc);
 		assertTrue(addonSrc.contains("dropDeadPlantEditorPlaceholder"), addonSrc);
 		assertTrue(addonSrc.contains("BaijiuChromatogramReadability.apply"), addonSrc);
@@ -758,7 +765,9 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(shellMenusSrc.contains("shouldDisposeMainMenuBarItem"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("sanitizeSelectView"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("选择视图"), shellMenusSrc);
-		assertTrue(shellMenusSrc.contains("shouldHideSelectViewItem"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("shouldDropSelectViewRow"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("translateSelectViewChrome"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("shouldHideBaijiuMenuChild"), shellMenusSrc);
 
 		Path seqPart = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/parts/BaijiuSequencePart.java", "plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/parts/BaijiuSequencePart.java");
 		assertNotNull(seqPart);
