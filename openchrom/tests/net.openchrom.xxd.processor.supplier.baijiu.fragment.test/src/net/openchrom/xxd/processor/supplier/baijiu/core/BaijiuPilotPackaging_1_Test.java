@@ -234,7 +234,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertNotNull(chrome);
 		String chromeSrc = Files.readString(chrome, StandardCharsets.UTF_8);
 		assertTrue(chromeSrc.contains("CSD_EDITOR_PART_ID"), chromeSrc);
-		assertTrue(chromeSrc.contains("CHROME_EPOCH = 28"), chromeSrc);
+		assertTrue(chromeSrc.contains("CHROME_EPOCH = 30"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldAppendMenuChild"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldCreateGuiForPlantChrome"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldRestoreChromeAfterChildrenChange"), chromeSrc);
@@ -277,6 +277,13 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(chromeSrc.contains("isChromatogramTopMenuLabel"), chromeSrc);
 		assertTrue(chromeSrc.contains("isPlantTopMenuLabel"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldHideTopTrimChild"), chromeSrc);
+		assertTrue(chromeSrc.contains("shouldHideEclipseCoolbarFiller"), chromeSrc);
+		assertTrue(chromeSrc.contains("SELECT_VIEW_COMMAND_ID"), chromeSrc);
+		assertTrue(chromeSrc.contains("SELECT_VIEW_DIRECT_HANDLER_URI"), chromeSrc);
+		assertTrue(chromeSrc.contains("BaijiuOpenSelectViewHandler"), chromeSrc);
+		assertTrue(chromeSrc.contains("PLANT_TOOLBAR_ITEM_IDS"), chromeSrc);
+		assertTrue(chromeSrc.contains("plantToolbarItemIconUri"), chromeSrc);
+		assertTrue(chromeSrc.contains("PLANT_ICON_CSD"), chromeSrc);
 		assertTrue(chromeSrc.contains("PLANT_TOP_MENU_IDS"), chromeSrc);
 		assertTrue(chromeSrc.contains("色谱图"), chromeSrc);
 		assertTrue(chromeSrc.contains("SELECT_VIEW_KEEP_ELEMENT_IDS"), chromeSrc);
@@ -545,6 +552,14 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(partsSrc.contains("preferPlantLookupWindow"), partsSrc);
 		assertTrue(partsSrc.contains("EDITOR_REQUIRED_MENU_IDS"), partsSrc);
 		assertTrue(partsSrc.contains("hideNonPlantTopTrim"), partsSrc);
+		assertTrue(partsSrc.contains("ensurePlantToolbarContents"), partsSrc);
+		assertTrue(partsSrc.contains("bindSelectViewCommand"), partsSrc);
+		assertTrue(partsSrc.contains("preferredPlantMenuChild"), partsSrc);
+		assertTrue(partsSrc.contains("isExecutableSelectViewItem"), partsSrc);
+		assertTrue(partsSrc.contains("SELECT_VIEW_DIRECT_HANDLER_URI"), partsSrc);
+		assertTrue(partsSrc.contains("createDirectMenuItem") || partsSrc.contains("MDirectMenuItem"), partsSrc);
+		assertTrue(partsSrc.contains("shouldHideEclipseCoolbarFiller"), partsSrc);
+		assertTrue(partsSrc.contains("SELECT_VIEW_COMMAND_ID"), partsSrc);
 		assertTrue(partsSrc.contains("isPlantToolbarContribution"), partsSrc);
 		assertTrue(partsSrc.contains("mustForceShowPlantChrome") || partsSrc.contains("forceShowPlantWindowChrome"), partsSrc);
 		assertTrue(partsSrc.contains("forceCreateElement"), partsSrc);
@@ -720,6 +735,13 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(toggleGcSrc.contains("@Execute"), toggleGcSrc);
 		assertTrue(toggleGcSrc.contains("toggleGcConsole"), toggleGcSrc);
 
+		Path openSelectView = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/handlers/BaijiuOpenSelectViewHandler.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/handlers/BaijiuOpenSelectViewHandler.java");
+		assertNotNull(openSelectView, "视图 选择视图 DirectMenuItem fallback");
+		String openSelectViewSrc = Files.readString(openSelectView, StandardCharsets.UTF_8);
+		assertTrue(openSelectViewSrc.contains("@Execute"), openSelectViewSrc);
+		assertTrue(openSelectViewSrc.contains("SelectViewHandler"), openSelectViewSrc);
+		assertTrue(openSelectViewSrc.contains("executeFromShell"), openSelectViewSrc);
+
 		Path gcPart = locate("openchrom/plugins/net.openchrom.xxd.control.supplier.temperature.ui/src/net/openchrom/xxd/control/supplier/temperature/ui/parts/TemperatureControlPart.java", "plugins/net.openchrom.xxd.control.supplier.temperature.ui/src/net/openchrom/xxd/control/supplier/temperature/ui/parts/TemperatureControlPart.java");
 		assertNotNull(gcPart);
 		String gcPartSrc = Files.readString(gcPart, StandardCharsets.UTF_8);
@@ -823,6 +845,9 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(shellMenusSrc.contains("looksLikePlantHelpMenu"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("shouldHideBaijiuCascadeChild"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("shouldHideViewMenuChild"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("ensureSelectViewOpensOnClick"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("SWT.Selection"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("BaijiuOpenSelectViewHandler"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("shouldHideFileMenuChild"), shellMenusSrc);
 
 		Path seqPart = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/parts/BaijiuSequencePart.java", "plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/parts/BaijiuSequencePart.java");

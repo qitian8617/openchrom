@@ -30,6 +30,8 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
 
+import net.openchrom.rcp.compilation.baijiu.ui.handlers.BaijiuOpenSelectViewHandler;
+
 /**
  * Dedicated-product SWT popup cleanup. ChemClipse copies processor menus
  * onto the chromatogram chart independently of E4 visibility, and the
@@ -39,6 +41,7 @@ import org.eclipse.swt.widgets.TreeItem;
 public final class BaijiuShellMenus {
 
 	private static final Object LOCK = new Object();
+	private static final String SELECT_VIEW_FALLBACK = "net.openchrom.baijiu.selectViewFallback";
 	private static Listener installed;
 
 	private BaijiuShellMenus() {
@@ -76,7 +79,6 @@ public final class BaijiuShellMenus {
 						Menu bar = shell.getMenuBar();
 						if(bar != null && !bar.isDisposed()) {
 							sanitizeMainMenuBar(bar);
-							sanitizePlantCascades(bar);
 						}
 					} else if(event.widget instanceof Table table && !table.isDisposed()) {
 						sanitizeSelectViewTable(table);
@@ -290,6 +292,61 @@ public final class BaijiuShellMenus {
 			if(BaijiuShellChrome.isViewMenuKeepLabel(text) && !BaijiuShellChrome.SELECT_VIEW_TITLE_ZH.equals(text)) {
 				item.setText(BaijiuShellChrome.SELECT_VIEW_TITLE_ZH);
 			}
+			if(BaijiuShellChrome.isViewMenuKeepLabel(item.getText()) || BaijiuShellChrome.SELECT_VIEW_TITLE_ZH.equals(BaijiuShellChrome.normalizeMenuLabel(item.getText() == null ? "" : item.getText()))) {
+				ensureSelectViewOpensOnClick(item);
+			}
+		}
+		ensureLoneViewChildOpensSelectView(menu);
+	}
+
+	/**
+	 * Dummy 选择视图 from a poisoned {@code workbench.xmi} has no command, so
+	 * the renderer creates an SWT item with no {@code Selection} listener.
+	 * Attach ChemClipse Select View only when nothing else is already wired.
+	 */
+	static void ensureSelectViewOpensOnClick(MenuItem item) {
+
+		if(item == null || item.isDisposed()) {
+			return;
+		}
+		try {
+			Listener[] listeners = item.getListeners(SWT.Selection);
+			if(listeners != null && listeners.length > 0) {
+				return;
+			}
+			if(item.getData(SELECT_VIEW_FALLBACK) != null) {
+				return;
+			}
+			Listener fallback = event -> {
+				Menu parent = item.getParent();
+				Shell shell = parent == null || parent.isDisposed() ? null : parent.getShell();
+				BaijiuOpenSelectViewHandler.executeFromShell(shell);
+			};
+			item.addListener(SWT.Selection, fallback);
+			item.setData(SELECT_VIEW_FALLBACK, fallback);
+		} catch(RuntimeException | LinkageError e) {
+			// widget already closing
+		}
+	}
+
+	private static void ensureLoneViewChildOpensSelectView(Menu menu) {
+
+		if(menu == null || menu.isDisposed()) {
+			return;
+		}
+		MenuItem[] items = menu.getItems();
+		MenuItem only = null;
+		int painted = 0;
+		for(int i = 0; i < items.length; i++) {
+			MenuItem item = items[i];
+			if(item == null || item.isDisposed() || (item.getStyle() & SWT.SEPARATOR) != 0) {
+				continue;
+			}
+			painted++;
+			only = item;
+		}
+		if(painted == 1) {
+			ensureSelectViewOpensOnClick(only);
 		}
 	}
 

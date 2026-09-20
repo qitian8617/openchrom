@@ -36,6 +36,8 @@ import org.osgi.service.event.EventHandler;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 
+import net.openchrom.rcp.compilation.baijiu.ui.handlers.BaijiuOpenSelectViewHandler;
+
 /**
  * After ChemClipse fragments attach: ensure plant-home exists, <em>then</em>
  * select {@code perspective.plantHome} while Welcome is still visible, <em>then</em>
@@ -69,6 +71,7 @@ public class BaijiuShellAddon {
 		}
 		shuttingDown = false;
 		try {
+			BaijiuOpenSelectViewHandler.bindWorkbench(application, modelService);
 			BaijiuChromatogramReadability.apply();
 			BaijiuShellMenus.install();
 		} catch(RuntimeException | LinkageError e) {
@@ -247,6 +250,7 @@ public class BaijiuShellAddon {
 		if(application == null || modelService == null) {
 			return;
 		}
+		BaijiuOpenSelectViewHandler.bindWorkbench(application, modelService);
 		try {
 			applyChromeUnguarded(application, modelService);
 		} catch(RuntimeException | LinkageError e) {

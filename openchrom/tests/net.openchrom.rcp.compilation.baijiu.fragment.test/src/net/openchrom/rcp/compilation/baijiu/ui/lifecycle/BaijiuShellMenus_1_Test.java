@@ -27,6 +27,9 @@ public class BaijiuShellMenus_1_Test {
 		BaijiuShellMenus.sanitizeSelectViewTree(null);
 		BaijiuShellMenus.sanitizePlantCascades(null);
 		BaijiuShellMenus.sanitizeViewMenu(null);
+		BaijiuShellMenus.ensureSelectViewOpensOnClick(null);
+		net.openchrom.rcp.compilation.baijiu.ui.handlers.BaijiuOpenSelectViewHandler.executeFromShell(null);
+		net.openchrom.rcp.compilation.baijiu.ui.handlers.BaijiuOpenSelectViewHandler.bindWorkbench(null, null);
 		BaijiuShellMenus.sanitizeFileMenu(null);
 		BaijiuShellMenus.sanitizeBaijiuMenu(null);
 		BaijiuShellMenus.sanitizeHelpMenu(null);
