@@ -346,6 +346,9 @@ public class BaijiuShellParts_1_Test {
 		}
 		BaijiuShellParts.ensurePlantToolbarContents(null, null, toolbar);
 		assertEquals(BaijiuShellChrome.PLANT_TOOLBAR_ITEM_IDS.size(), toolbar.getChildren().size(), "second ensure must not duplicate toolbar items");
+		assertTrue(BaijiuShellParts.toolbarContains(toolbar, open));
+		assertFalse(BaijiuShellParts.toolbarContains(toolbar, null));
+		assertFalse(BaijiuShellParts.toolbarContains(null, open));
 	}
 
 	private static MMenu findView(MMenu main) {

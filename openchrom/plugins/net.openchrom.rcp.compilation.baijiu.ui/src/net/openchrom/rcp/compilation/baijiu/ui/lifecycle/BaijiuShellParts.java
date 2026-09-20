@@ -1083,15 +1083,97 @@ public final class BaijiuShellParts {
 		}
 	}
 
+	/**
+	 * Java 21: do not compare {@code getParent()} to {@code MToolBar} (#49).
+	 * Membership is {@code toolbar.getChildren().contains(item)} (#56).
+	 */
 	private static MToolBar toolbarHostingPlantItems(EModelService modelService, MApplication application) {
 
 		for(String id : BaijiuShellChrome.PLANT_TOOLBAR_ITEM_IDS) {
 			MUIElement found = findElement(modelService, application, id);
-			if(found != null && found.getParent() instanceof MToolBar parent) {
-				return parent;
+			if(found == null) {
+				continue;
+			}
+			MToolBar host = toolbarContaining(modelService, application, found);
+			if(host != null) {
+				return host;
 			}
 		}
 		return null;
+	}
+
+	private static MToolBar toolbarContaining(EModelService modelService, MApplication application, MUIElement item) {
+
+		if(item == null) {
+			return null;
+		}
+		if(modelService != null && application != null) {
+			try {
+				List<MToolBar> toolbars = modelService.findElements(application, null, MToolBar.class, null);
+				if(toolbars != null) {
+					for(MToolBar toolbar : toolbars) {
+						if(toolbarContains(toolbar, item)) {
+							return toolbar;
+						}
+					}
+				}
+			} catch(RuntimeException | LinkageError e) {
+				// findElements not available
+			}
+		}
+		return toolbarContainingInWindows(application, item);
+	}
+
+	private static MToolBar toolbarContainingInWindows(MApplication application, MUIElement item) {
+
+		if(application == null || item == null) {
+			return null;
+		}
+		try {
+			List<MWindow> windows = application.getChildren();
+			if(windows == null) {
+				return null;
+			}
+			for(MWindow window : windows) {
+				if(!(window instanceof MTrimmedWindow trimmed)) {
+					continue;
+				}
+				List<MTrimBar> bars = trimmed.getTrimBars();
+				if(bars == null) {
+					continue;
+				}
+				for(MTrimBar bar : bars) {
+					if(bar == null) {
+						continue;
+					}
+					List<?> children = bar.getChildren();
+					if(children == null) {
+						continue;
+					}
+					for(Object child : children) {
+						if(child instanceof MToolBar toolbar && toolbarContains(toolbar, item)) {
+							return toolbar;
+						}
+					}
+				}
+			}
+		} catch(RuntimeException | LinkageError e) {
+			return null;
+		}
+		return null;
+	}
+
+	static boolean toolbarContains(MToolBar toolbar, MUIElement item) {
+
+		if(toolbar == null || item == null) {
+			return false;
+		}
+		try {
+			List<?> children = toolbar.getChildren();
+			return children != null && children.contains(item);
+		} catch(RuntimeException | LinkageError e) {
+			return false;
+		}
 	}
 
 	private static MHandledToolItem findPlantToolItem(EModelService modelService, MApplication application, MToolBar toolbar, String id) {
@@ -1250,9 +1332,9 @@ public final class BaijiuShellParts {
 				forceCreateElement(application, modelService, top);
 			}
 			MUIElement toolbar = modelService.find(BaijiuShellChrome.PLANT_TOOLBAR_ID, application);
-			if(toolbar instanceof MToolBar plant) {
-				ensurePlantToolbarContents(modelService, application, plant);
-				forceCreateElement(application, modelService, plant);
+			if(toolbar instanceof MToolBar plantToolbar) {
+				ensurePlantToolbarContents(modelService, application, plantToolbar);
+				forceCreateElement(application, modelService, plantToolbar);
 			} else if(toolbar != null) {
 				forceCreateElement(application, modelService, toolbar);
 			}
