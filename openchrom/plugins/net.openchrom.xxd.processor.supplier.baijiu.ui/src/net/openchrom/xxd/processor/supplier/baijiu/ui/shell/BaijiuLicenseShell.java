@@ -48,7 +48,7 @@ public final class BaijiuLicenseShell {
 
 		Label version = BaijiuPlantLayout.hint(shell, "");
 		Label status = BaijiuPlantLayout.hint(shell, "");
-		Label hint = BaijiuPlantLayout.hint(shell, BaijiuLicenseGate.OPERATOR_HINT + " \u79bb\u7ebf *.bjlic \u6216\u4e00\u884c\u5bc6\u94a5\uff0c\u65e0\u9700\u6fc0\u6d3b\u670d\u52a1\u5668\u3002\u6f14\u793a\u53ef\u5bfc\u5165\u63d2\u4ef6 demo/sample-pilot.bjlic\u3002\nOffline *.bjlic or one-line key. No activation server. Demo: demo/sample-pilot.bjlic.");
+		BaijiuPlantLayout.hint(shell, BaijiuLicenseGate.OPERATOR_HINT + " \u79bb\u7ebf *.bjlic \u6216\u4e00\u884c\u5bc6\u94a5\uff0c\u65e0\u9700\u6fc0\u6d3b\u670d\u52a1\u5668\u3002\u6f14\u793a\u53ef\u5bfc\u5165\u63d2\u4ef6 demo/sample-pilot.bjlic\u3002\nOffline *.bjlic or one-line key. No activation server. Demo: demo/sample-pilot.bjlic.");
 
 		Label pasteLabel = new Label(shell, SWT.NONE);
 		pasteLabel.setText("\u8bb8\u53ef\u6587\u672c / license text");
