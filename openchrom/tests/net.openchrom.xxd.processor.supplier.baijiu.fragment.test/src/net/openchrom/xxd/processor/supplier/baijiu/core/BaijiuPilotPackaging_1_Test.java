@@ -335,6 +335,10 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(modelSrc.contains("createPerspectiveStack"), modelSrc);
 		assertTrue(modelSrc.contains("stack.getChildren().contains(plant)"), modelSrc);
 		assertFalse(modelSrc.contains("getParent() != stack"), "MElementContainer vs MPerspectiveStack is incomparable on Java 21");
+		assertTrue(modelSrc.contains("window.getChildren()"), modelSrc);
+		assertTrue(modelSrc.contains("sash.getChildren()"), modelSrc);
+		assertFalse(modelSrc.contains("List<MUIElement> children = window.getChildren()"), "MWindow.getChildren() is List<MWindowElement> on Java 21 / e4");
+		assertFalse(modelSrc.contains("List<MUIElement> children = sash.getChildren()"), "MPartSashContainer.getChildren() is List<MPartSashContainerElement> on Java 21 / e4");
 		assertTrue(modelSrc.contains("org.eclipse.e4.primaryPerspectiveStack") || chromeSrc.contains("org.eclipse.e4.primaryPerspectiveStack"), modelSrc);
 		assertFalse(modelSrc.contains("Perspective stack " + "org.eclipse.chemclipse.rcp.app.ui.perspectivestack.main not found; cannot attach plant home."), "must not give up when only the ChemClipse stack id is missing from EModelService.find");
 		assertTrue(modelSrc.contains("missingPlantHomeIds"), modelSrc);

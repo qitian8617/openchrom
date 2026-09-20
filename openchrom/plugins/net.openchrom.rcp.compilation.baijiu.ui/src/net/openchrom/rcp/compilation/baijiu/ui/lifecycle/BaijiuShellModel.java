@@ -249,8 +249,9 @@ public final class BaijiuShellModel {
 		} catch(RuntimeException | LinkageError e) {
 			// selectedElement not yet a stack
 		}
-		List<MUIElement> children;
+		List<?> children;
 		try {
+			// MWindow.getChildren() is List<MWindowElement>, not List<MUIElement>
 			children = window.getChildren();
 		} catch(RuntimeException | LinkageError e) {
 			return;
@@ -258,7 +259,7 @@ public final class BaijiuShellModel {
 		if(children == null) {
 			return;
 		}
-		for(MUIElement child : children) {
+		for(Object child : children) {
 			if(child instanceof MPerspectiveStack stack) {
 				addUnique(stacks, stack);
 			} else if(child instanceof MPartSashContainer sash) {
@@ -272,8 +273,9 @@ public final class BaijiuShellModel {
 		if(sash == null) {
 			return;
 		}
-		List<MUIElement> children;
+		List<?> children;
 		try {
+			// MPartSashContainer.getChildren() is List<MPartSashContainerElement>
 			children = sash.getChildren();
 		} catch(RuntimeException | LinkageError e) {
 			return;
@@ -281,7 +283,7 @@ public final class BaijiuShellModel {
 		if(children == null) {
 			return;
 		}
-		for(MUIElement child : children) {
+		for(Object child : children) {
 			if(child instanceof MPerspectiveStack stack) {
 				addUnique(stacks, stack);
 			}
