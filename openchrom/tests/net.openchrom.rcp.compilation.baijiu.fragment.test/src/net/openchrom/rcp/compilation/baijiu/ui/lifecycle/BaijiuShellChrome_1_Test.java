@@ -53,6 +53,7 @@ public class BaijiuShellChrome_1_Test {
 		assertFalse(BaijiuShellChrome.shouldHide("net.openchrom.xxd.processor.supplier.baijiu.ui.menu.workbench"));
 		assertFalse(BaijiuShellChrome.shouldHide("net.openchrom.xxd.control.supplier.temperature.ui.menu.open"));
 		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.GC_CONTROL_PART_ID));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.GC_CONTROL_PART_ID));
 		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.GC_HOME_PART_ID));
 		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.SEQUENCE_PART_ID));
 		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.SEQUENCE_HOME_PART_ID));
@@ -236,6 +237,19 @@ public class BaijiuShellChrome_1_Test {
 		assertTrue(BaijiuShellChrome.shouldHideMainMenuChild("generated.showview", "Show View", null));
 		assertTrue(BaijiuShellChrome.shouldHideMainMenuChild("generated.perspective", "Open Perspective", null));
 		assertFalse(BaijiuShellChrome.shouldHideMainMenuChild(BaijiuShellChrome.SELECT_VIEW_MENU_ID, "Select View", null), "视图 keeps Select View itself");
+		assertFalse(BaijiuShellChrome.shouldHideMainMenuChild(BaijiuShellChrome.SELECT_VIEW_MENU_ID, "选择视图", null));
+		assertTrue(BaijiuShellChrome.shouldHideMainMenuChild(BaijiuShellChrome.GC_CONTROL_MENU_ID, "气相色谱控制台", null));
+		assertTrue(BaijiuShellChrome.shouldHideMainMenuChild(BaijiuShellChrome.TEMPERATURE_OPEN_MENU_ID, "气相色谱控制台", null));
+		assertTrue(BaijiuShellChrome.shouldHideMainMenuChild(null, "气相色谱工作台", null));
+		assertFalse(BaijiuShellChrome.shouldHideMainMenuChild(BaijiuShellChrome.TOGGLE_GC_MENU_ID, "显示/隐藏反控", null), "反控 stays the GC open path");
+		assertTrue(BaijiuShellChrome.shouldHideBaijiuMenuChild(BaijiuShellChrome.GC_CONTROL_MENU_ID, "气相色谱控制台"));
+		assertTrue(BaijiuShellChrome.shouldHideBaijiuMenuChild(null, "气相色谱工作台"));
+		assertFalse(BaijiuShellChrome.shouldHideBaijiuMenuChild(BaijiuShellChrome.TOGGLE_GC_MENU_ID, "显示/隐藏反控"));
+		assertTrue(BaijiuShellChrome.allowsWalkHide(BaijiuShellChrome.GC_CONTROL_MENU_ID, "气相色谱控制台"));
+		assertTrue(BaijiuShellChrome.allowsWalkHide(BaijiuShellChrome.TEMPERATURE_OPEN_MENU_ID, "气相色谱控制台"));
+		assertFalse(BaijiuShellChrome.allowsWalkHide(BaijiuShellChrome.BAIJIU_MENU_ID, "白酒"));
+		assertFalse(BaijiuShellChrome.allowsWalkHide(BaijiuShellChrome.TOGGLE_GC_TOOLITEM_ID, "反控"));
+		assertFalse(BaijiuShellChrome.allowsWalkHide(BaijiuShellChrome.TOGGLE_GC_MENU_ID, "显示/隐藏反控"));
 	}
 
 	@Test
@@ -390,14 +404,16 @@ public class BaijiuShellChrome_1_Test {
 	public void selectViewAllowlistKeepsPlantHidesResearch() {
 
 		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem(BaijiuShellChrome.WORKBENCH_HOME_PART_ID, "白酒操作"));
-		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem(BaijiuShellChrome.WORKBENCH_PART_ID, "白酒操作"));
-		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem(BaijiuShellChrome.GC_HOME_PART_ID, "气相色谱控制台"));
-		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem(BaijiuShellChrome.GC_CONTROL_PART_ID, "气相色谱控制台"));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem(BaijiuShellChrome.WORKBENCH_PART_ID, "白酒操作"), "shared 白酒操作 clone is not listed");
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem(BaijiuShellChrome.GC_HOME_PART_ID, "气相色谱控制台"));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem(BaijiuShellChrome.GC_CONTROL_PART_ID, "气相色谱控制台"));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem(null, "气相色谱控制台"));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem(null, "气相色谱工作台"));
 		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem(BaijiuShellChrome.CHROMATOGRAM_OVERLAY_PART_ID, "色谱图叠加"));
 		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem(null, "色谱图叠加"));
 		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem(null, "Chromatogram Overlay"));
 		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem(BaijiuShellChrome.SEQUENCE_HOME_PART_ID, "进样序列"));
-		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem(BaijiuShellChrome.SEQUENCE_PART_ID, "进样序列"));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem(BaijiuShellChrome.SEQUENCE_PART_ID, "进样序列"), "shared 进样序列 clone is not listed");
 		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem(null, "进样序列"));
 		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem(BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID, "谱图 / 采集"));
 		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem(null, "序列"), "ChemClipse 序列 is not plant 进样序列");
@@ -427,15 +443,27 @@ public class BaijiuShellChrome_1_Test {
 		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem("org.eclipse.chemclipse.ux.extension.xxd.ui.part.pca", "PCA"));
 		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem("unknown.research.view", "Whatever"));
 		assertTrue(BaijiuShellChrome.SELECT_VIEW_KEEP_ELEMENT_IDS.contains(BaijiuShellChrome.WORKBENCH_HOME_PART_ID));
-		assertTrue(BaijiuShellChrome.SELECT_VIEW_KEEP_ELEMENT_IDS.contains(BaijiuShellChrome.GC_HOME_PART_ID));
+		assertFalse(BaijiuShellChrome.SELECT_VIEW_KEEP_ELEMENT_IDS.contains(BaijiuShellChrome.GC_HOME_PART_ID));
+		assertFalse(BaijiuShellChrome.SELECT_VIEW_KEEP_ELEMENT_IDS.contains(BaijiuShellChrome.GC_CONTROL_PART_ID));
 		assertTrue(BaijiuShellChrome.SELECT_VIEW_KEEP_ELEMENT_IDS.contains(BaijiuShellChrome.CHROMATOGRAM_OVERLAY_PART_ID));
 		assertTrue(BaijiuShellChrome.SELECT_VIEW_KEEP_ELEMENT_IDS.contains(BaijiuShellChrome.SEQUENCE_HOME_PART_ID));
 		assertTrue(BaijiuShellChrome.SELECT_VIEW_KEEP_LABELS.contains("白酒操作"));
-		assertTrue(BaijiuShellChrome.SELECT_VIEW_KEEP_LABELS.contains("气相色谱控制台"));
+		assertFalse(BaijiuShellChrome.SELECT_VIEW_KEEP_LABELS.contains("气相色谱控制台"));
+		assertTrue(BaijiuShellChrome.SELECT_VIEW_HIDE_LABELS.contains("气相色谱控制台"));
 		assertTrue(BaijiuShellChrome.SELECT_VIEW_KEEP_LABELS.contains("色谱图叠加"));
 		assertTrue(BaijiuShellChrome.SELECT_VIEW_KEEP_LABELS.contains("进样序列"));
 		assertTrue(BaijiuShellChrome.SELECT_VIEW_HIDE_LABELS.contains("序列"));
 		assertFalse(BaijiuShellChrome.SELECT_VIEW_KEEP_LABELS.contains("序列"));
+		assertEquals("选择视图", BaijiuShellChrome.selectViewDialogTitle());
+		assertEquals("选择视图", BaijiuShellChrome.translateSelectViewChrome("Select View"));
+		assertEquals("确定", BaijiuShellChrome.translateSelectViewChrome("OK"));
+		assertEquals("取消", BaijiuShellChrome.translateSelectViewChrome("Cancel"));
+		assertEquals("输入筛选文本", BaijiuShellChrome.translateSelectViewChrome("type filter text"));
+		assertFalse(BaijiuShellChrome.shouldDropSelectViewRow(null, "白酒操作", false));
+		assertTrue(BaijiuShellChrome.shouldDropSelectViewRow(null, "白酒操作", true), "duplicate 白酒操作");
+		assertTrue(BaijiuShellChrome.shouldDropSelectViewRow(null, "气相色谱控制台", false));
+		assertTrue(BaijiuShellChrome.BAIJIU_MENU_HIDE_ELEMENT_IDS.contains(BaijiuShellChrome.GC_CONTROL_MENU_ID));
+		assertFalse(BaijiuShellChrome.BAIJIU_MENU_HIDE_ELEMENT_IDS.contains(BaijiuShellChrome.TOGGLE_GC_MENU_ID));
 		java.util.List<String> tags = new java.util.ArrayList<>();
 		tags.add(BaijiuShellChrome.VIEW_DESCRIPTOR_TAG);
 		BaijiuShellChrome.applySelectViewDescriptorTags(tags, true);
@@ -473,6 +501,8 @@ public class BaijiuShellChrome_1_Test {
 		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem(null, "数据"));
 		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem(null, "Mass Spectrum File Explorer"));
 		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem("org.eclipse.chemclipse.ux.extension.xxd.ui.part.targets", "Targets"));
+		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem(null, "气相色谱控制台"));
+		assertFalse(BaijiuShellChrome.shouldHideBaijiuMenuChild(BaijiuShellChrome.GC_CONTROL_MENU_ID, "气相色谱控制台"));
 		assertFalse(BaijiuShellChrome.shouldHideMainMenuChild("generated.import", "Import", null));
 	}
 

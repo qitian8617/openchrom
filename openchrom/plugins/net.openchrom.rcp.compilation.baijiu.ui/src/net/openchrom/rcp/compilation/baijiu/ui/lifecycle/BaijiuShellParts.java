@@ -21,6 +21,7 @@ import org.eclipse.e4.core.contexts.IEclipseContext;
 import org.eclipse.e4.ui.model.application.MApplication;
 import org.eclipse.e4.ui.model.application.ui.MElementContainer;
 import org.eclipse.e4.ui.model.application.ui.MUIElement;
+import org.eclipse.e4.ui.model.application.ui.MUILabel;
 import org.eclipse.e4.ui.model.application.ui.SideValue;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPlaceholder;
 import org.eclipse.e4.ui.model.application.ui.basic.MBasicFactory;
@@ -1124,6 +1125,9 @@ public final class BaijiuShellParts {
 		}
 		if(select instanceof MMenuElement item) {
 			forceShowChrome(select);
+			if(select instanceof MUILabel labeled) {
+				labeled.setLabel(BaijiuShellChrome.SELECT_VIEW_TITLE_ZH);
+			}
 			attachMenuElement(viewMenu, item);
 		}
 		dedupePlantMenuChildren(viewMenu);
@@ -1133,6 +1137,9 @@ public final class BaijiuShellParts {
 				for(Object child : children) {
 					if(child instanceof MUIElement element && BaijiuShellChrome.SELECT_VIEW_MENU_ID.equals(element.getElementId())) {
 						forceShowChrome(element);
+						if(element instanceof MUILabel labeled) {
+							labeled.setLabel(BaijiuShellChrome.SELECT_VIEW_TITLE_ZH);
+						}
 					}
 				}
 			}
@@ -1159,7 +1166,7 @@ public final class BaijiuShellParts {
 			}
 		}
 		item.setElementId(BaijiuShellChrome.SELECT_VIEW_MENU_ID);
-		item.setLabel("选择视图");
+		item.setLabel(BaijiuShellChrome.SELECT_VIEW_TITLE_ZH);
 		item.setToBeRendered(true);
 		item.setVisible(true);
 		return item;

@@ -769,6 +769,10 @@ public class BaijiuShellAddon {
 			}
 			if(BaijiuShellChrome.shouldHideMainMenuChild(child.getElementId(), labelOf(child), child.getTags())) {
 				hide(child);
+				continue;
+			}
+			if(child instanceof MMenu nested) {
+				hideWindowMenuElements(nested.getChildren());
 			}
 		}
 	}
@@ -808,7 +812,7 @@ public class BaijiuShellAddon {
 		if(element == null) {
 			return;
 		}
-		if(BaijiuShellChrome.isPlantWindowChrome(element.getElementId()) || BaijiuShellChrome.isEditorRequiredMenu(element.getElementId()) || BaijiuShellChrome.KEEP_ELEMENT_IDS.contains(element.getElementId())) {
+		if(!BaijiuShellChrome.allowsWalkHide(element.getElementId(), labelOf(element))) {
 			return;
 		}
 		BaijiuShellSelection.deselectFromParent(element);

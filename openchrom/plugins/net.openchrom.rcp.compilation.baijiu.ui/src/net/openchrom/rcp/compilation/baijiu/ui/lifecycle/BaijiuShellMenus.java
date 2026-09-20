@@ -10,18 +10,23 @@
 package net.openchrom.rcp.compilation.baijiu.ui.lifecycle;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
+import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
 
@@ -107,6 +112,9 @@ public final class BaijiuShellMenus {
 			if(!hide && BaijiuShellChrome.shouldHidePartStackMenuItem(text)) {
 				hide = stack || isStrongPartStackHide(text);
 			}
+			if(!hide && BaijiuShellChrome.shouldHideBaijiuMenuChild(null, text)) {
+				hide = true;
+			}
 			if(hide) {
 				try {
 					item.dispose();
@@ -169,6 +177,7 @@ public final class BaijiuShellMenus {
 		if(shell == null || shell.isDisposed() || !isSelectViewShell(shell)) {
 			return;
 		}
+		localizeSelectViewChrome(shell);
 		sanitizeSelectViewControl(shell);
 	}
 
@@ -181,11 +190,27 @@ public final class BaijiuShellMenus {
 		return "select view".equals(title) || "选择视图".equals(title) || "show view".equals(title) || "显示视图".equals(title);
 	}
 
+	private static void localizeSelectViewChrome(Shell shell) {
+
+		if(shell == null || shell.isDisposed()) {
+			return;
+		}
+		String title = shell.getText();
+		String translatedTitle = BaijiuShellChrome.translateSelectViewChrome(title);
+		if(translatedTitle == null && (title == null || title.isBlank() || "select view".equals(BaijiuShellChrome.normalizeMenuLabel(title)) || "show view".equals(BaijiuShellChrome.normalizeMenuLabel(title)))) {
+			translatedTitle = BaijiuShellChrome.selectViewDialogTitle();
+		}
+		if(translatedTitle != null && !translatedTitle.equals(title)) {
+			shell.setText(translatedTitle);
+		}
+	}
+
 	private static void sanitizeSelectViewControl(Control control) {
 
 		if(control == null || control.isDisposed()) {
 			return;
 		}
+		localizeSelectViewWidget(control);
 		if(control instanceof Table table) {
 			sanitizeSelectViewTable(table);
 		} else if(control instanceof Tree tree) {
@@ -201,18 +226,42 @@ public final class BaijiuShellMenus {
 		}
 	}
 
+	private static void localizeSelectViewWidget(Control control) {
+
+		if(control instanceof Button button) {
+			String translated = BaijiuShellChrome.translateSelectViewChrome(button.getText());
+			if(translated != null) {
+				button.setText(translated);
+			}
+		} else if(control instanceof Label label) {
+			String translated = BaijiuShellChrome.translateSelectViewChrome(label.getText());
+			if(translated != null) {
+				label.setText(translated);
+			}
+		} else if(control instanceof Text text) {
+			String translated = BaijiuShellChrome.translateSelectViewChrome(text.getMessage());
+			if(translated != null) {
+				text.setMessage(translated);
+			}
+		}
+	}
+
 	static void sanitizeSelectViewTable(Table table) {
 
 		if(table == null || table.isDisposed() || !isSelectViewShell(table.getShell())) {
 			return;
 		}
+		Set<String> seen = new HashSet<>();
 		TableItem[] items = table.getItems();
-		for(int i = items.length - 1; i >= 0; i--) {
+		for(int i = 0; i < items.length; i++) {
 			TableItem item = items[i];
 			if(item == null || item.isDisposed()) {
 				continue;
 			}
-			if(BaijiuShellChrome.shouldHideSelectViewItem(null, item.getText())) {
+			String text = item.getText();
+			String key = BaijiuShellChrome.normalizeMenuLabel(text == null ? "" : text);
+			boolean already = !key.isBlank() && !seen.add(key);
+			if(BaijiuShellChrome.shouldDropSelectViewRow(null, text, already)) {
 				try {
 					item.dispose();
 				} catch(RuntimeException e) {
@@ -228,21 +277,26 @@ public final class BaijiuShellMenus {
 			return;
 		}
 		TreeItem[] items = tree.getItems();
-		for(int i = items.length - 1; i >= 0; i--) {
-			disposeHiddenTreeItem(items[i]);
+		Set<String> seen = new HashSet<>();
+		for(int i = 0; i < items.length; i++) {
+			disposeHiddenTreeItem(items[i], seen);
 		}
 	}
 
-	private static void disposeHiddenTreeItem(TreeItem item) {
+	private static void disposeHiddenTreeItem(TreeItem item, Set<String> siblingSeen) {
 
 		if(item == null || item.isDisposed()) {
 			return;
 		}
 		TreeItem[] children = item.getItems();
+		Set<String> childSeen = new HashSet<>();
 		for(int i = children.length - 1; i >= 0; i--) {
-			disposeHiddenTreeItem(children[i]);
+			disposeHiddenTreeItem(children[i], childSeen);
 		}
-		if(BaijiuShellChrome.shouldHideSelectViewItem(null, item.getText())) {
+		String text = item.getText();
+		String key = BaijiuShellChrome.normalizeMenuLabel(text == null ? "" : text);
+		boolean already = siblingSeen != null && !key.isBlank() && !siblingSeen.add(key);
+		if(BaijiuShellChrome.shouldDropSelectViewRow(null, text, already)) {
 			try {
 				item.dispose();
 			} catch(RuntimeException e) {
