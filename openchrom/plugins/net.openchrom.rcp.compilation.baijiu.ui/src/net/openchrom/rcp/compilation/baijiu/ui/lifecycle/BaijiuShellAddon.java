@@ -46,6 +46,9 @@ import jakarta.inject.Inject;
  */
 public class BaijiuShellAddon {
 
+	private static final String WINDOW_MAIN_MENU_TOPIC = "org/eclipse/e4/ui/model/application/ui/basic/Window/mainMenu";
+	private static volatile boolean shuttingDown;
+
 	@Inject
 	private MApplication application;
 	@Inject
@@ -59,6 +62,7 @@ public class BaijiuShellAddon {
 		} catch(RuntimeException | LinkageError e) {
 			BaijiuShellLog.warn("BaijiuShellAddon @PostConstruct chrome apply failed; plant home reveal will retry", e);
 		}
+		shuttingDown = false;
 		try {
 			BaijiuChromatogramReadability.apply();
 			BaijiuShellMenus.install();
@@ -111,12 +115,26 @@ public class BaijiuShellAddon {
 			}
 		});
 		eventBroker.subscribe(UIEvents.UILifeCycle.APP_SHUTDOWN_STARTED, event -> {
+			shuttingDown = true;
 			try {
 				BaijiuShellParts.revealPlantWindowChrome(application, modelService);
 			} catch(RuntimeException | LinkageError e) {
 				BaijiuShellLog.warn("Baijiu APP_SHUTDOWN_STARTED plant chrome persist failed", e);
 			}
 		});
+		try {
+			eventBroker.subscribe(WINDOW_MAIN_MENU_TOPIC, event -> {
+				if(shuttingDown) {
+					return;
+				}
+				Object next = event.getProperty(UIEvents.EventTags.NEW_VALUE);
+				if(next == null) {
+					schedulePlantWindowChrome(application, modelService);
+				}
+			});
+		} catch(RuntimeException | LinkageError e) {
+			// topic constant drift on older E4
+		}
 	}
 
 	static void applyChrome(MApplication application, EModelService modelService) {
@@ -515,6 +533,11 @@ public class BaijiuShellAddon {
 			});
 			ui.timerExec(300, () -> {
 				if(!ui.isDisposed()) {
+					reveal.run();
+				}
+			});
+			ui.timerExec(1500, () -> {
+				if(!ui.isDisposed() && !shuttingDown) {
 					reveal.run();
 				}
 			});

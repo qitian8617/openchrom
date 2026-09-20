@@ -198,8 +198,16 @@ public final class BaijiuShellChrome {
 	 * {@link #PLANT_WINDOW_CHROME_IDS}) plus {@code @PreSave} normalize so
 	 * second/third launch keep 文件/白酒/视图/帮助 and toolbar.plant without
 	 * Clean. Do not rely on another epoch bump for the same loop.
+	 * Epoch 25: #61/#62 still failed in the field. Eclipse compatibility
+	 * {@code WorkbenchWindow.hardClose} does {@code setMainMenu(null)}
+	 * (bug 398847) so the detached {@code menu.main} is not in the
+	 * containment tree — {@code EModelService.find} misses it, PreSave
+	 * cannot reattach, and the next {@code workbench.xmi} has no menu bar
+	 * or top trim. Recreate those contributions in the before-fragment
+	 * processor, attach them to the plant window, and {@code createGui}
+	 * after the Shell exists.
 	 */
-	public static final int CHROME_EPOCH = 24;
+	public static final int CHROME_EPOCH = 25;
 	/**
 	 * Ids that must exist on the live model after plant-home reveal. Missing
 	 * any of these is the empty-left / community-button-column failure mode.
@@ -685,6 +693,27 @@ public final class BaijiuShellChrome {
 	public static boolean isHardHideOrRemoveId(String elementId) {
 
 		return elementId != null && !elementId.isBlank() && HIDDEN_ELEMENT_IDS.contains(elementId);
+	}
+
+	/**
+	 * Eclipse 3.x compatibility {@code WorkbenchWindow.hardClose} detaches
+	 * {@code MWindow.mainMenu} ({@code setMainMenu(null)}) before
+	 * {@code workbench.xmi} is written. The MMenu is then absent from the
+	 * containment tree, so {@code find(menu.main)} is false even though the
+	 * plant window still exists. Recreate and reattach.
+	 */
+	public static boolean mustRecreateDetachedMainMenu(boolean windowMainMenuAttached) {
+
+		return !windowMainMenuAttached;
+	}
+
+	/**
+	 * Same detach/persist hole as {@link #mustRecreateDetachedMainMenu} for
+	 * {@link #TRIMBAR_TOP_ID} / {@link #PLANT_TOOLBAR_ID}.
+	 */
+	public static boolean mustRecreateDetachedTopTrim(boolean windowHasTopTrim, boolean toolbarAttached) {
+
+		return !windowHasTopTrim || !toolbarAttached;
 	}
 
 	/**

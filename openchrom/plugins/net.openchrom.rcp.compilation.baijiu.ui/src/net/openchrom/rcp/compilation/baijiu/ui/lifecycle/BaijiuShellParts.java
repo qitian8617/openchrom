@@ -19,6 +19,7 @@ import org.eclipse.e4.ui.model.application.ui.MElementContainer;
 import org.eclipse.e4.ui.model.application.ui.MUIElement;
 import org.eclipse.e4.ui.model.application.ui.SideValue;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPlaceholder;
+import org.eclipse.e4.ui.model.application.ui.basic.MBasicFactory;
 import org.eclipse.e4.ui.model.application.ui.basic.MPart;
 import org.eclipse.e4.ui.model.application.ui.basic.MPartStack;
 import org.eclipse.e4.ui.model.application.ui.basic.MTrimBar;
@@ -26,6 +27,7 @@ import org.eclipse.e4.ui.model.application.ui.basic.MTrimmedWindow;
 import org.eclipse.e4.ui.model.application.ui.basic.MWindow;
 import org.eclipse.e4.ui.model.application.ui.menu.MMenu;
 import org.eclipse.e4.ui.model.application.ui.menu.MMenuFactory;
+import org.eclipse.e4.ui.model.application.ui.menu.MToolBar;
 import org.eclipse.e4.ui.workbench.IPresentationEngine;
 import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
@@ -306,7 +308,10 @@ public final class BaijiuShellParts {
 	 * (persisted workbench.xmi may have hidden them), and on {@code @PreSave}
 	 * so shutdown cannot persist them hidden. Eclipse compatibility otherwise
 	 * replaces the TrimmedWindow menu and top trim with the editor's empty
-	 * action bars. Persisted {@code visible=false} / {@code HiddenExplicitly}
+	 * action bars, then {@code setMainMenu(null)} on hardClose (bug 398847)
+	 * so the next launch has no bar. Recreate the contributions if
+	 * {@code find} misses the detached menu, then {@code createGui} once the
+	 * Shell exists. Persisted {@code visible=false} / {@code HiddenExplicitly}
 	 * on {@link BaijiuShellChrome#PLANT_WINDOW_CHROME_IDS} is ignored.
 	 */
 	public static void revealPlantWindowChrome(MApplication application, EModelService modelService) {
@@ -315,6 +320,7 @@ public final class BaijiuShellParts {
 			return;
 		}
 		preferPlantLookupWindow(application, modelService);
+		ensurePlantChromeModel(application, modelService);
 		forceShowPlantWindowChrome(application, modelService);
 		reattachWindowMainMenu(application, modelService);
 		ensureEditorRequiredMenus(application, modelService);
@@ -323,6 +329,7 @@ public final class BaijiuShellParts {
 		hideNonPlantTopTrim(application, modelService);
 		forceShowPlantWindowChrome(application, modelService);
 		ensureEditorRequiredMenus(application, modelService);
+		recreatePlantChromeWidgets(application, modelService);
 	}
 
 	private static void forceShowPlantWindowChrome(MApplication application, EModelService modelService) {
@@ -352,44 +359,393 @@ public final class BaijiuShellParts {
 		} catch(RuntimeException | LinkageError e) {
 			return;
 		}
-		if(children == null || children.size() < 2) {
+		if(children == null) {
 			return;
 		}
-		MWindow plant = null;
-		if(modelService != null) {
-			MUIElement found = modelService.find(BaijiuShellChrome.MAIN_WINDOW_ID, application);
-			if(found instanceof MWindow window && !BaijiuShellChrome.GC_WINDOW_ID.equals(window.getElementId())) {
-				plant = window;
-			}
-		}
+		MWindow plant = plantWindow(application, modelService);
 		if(plant == null) {
-			for(MWindow window : children) {
-				if(window != null && BaijiuShellChrome.MAIN_WINDOW_ID.equals(window.getElementId())) {
-					plant = window;
-					break;
-				}
-			}
-		}
-		if(plant == null) {
-			for(MWindow window : children) {
-				if(window != null && !BaijiuShellChrome.GC_WINDOW_ID.equals(window.getElementId())) {
-					plant = window;
-					break;
-				}
-			}
-		}
-		if(plant == null) {
-			return;
-		}
-		int index = children.indexOf(plant);
-		if(index <= 0) {
 			return;
 		}
 		try {
-			children.remove(plant);
-			children.add(0, plant);
+			if(!children.contains(plant)) {
+				children.add(0, plant);
+				return;
+			}
+			int index = children.indexOf(plant);
+			if(index > 0) {
+				children.remove(plant);
+				children.add(0, plant);
+			}
 		} catch(RuntimeException | LinkageError e) {
 			// immutable application children
+		}
+	}
+
+	/**
+	 * Eclipse bug 398847: compatibility {@code setMainMenu(null)} on close
+	 * drops {@code menu.main} from the containment tree. Recreate the plant
+	 * window menu / 文件 / 白酒 / 视图 / 帮助 and {@code trimbar.top} +
+	 * {@code toolbar.plant} so fragments and GroupHandler have a parent, and
+	 * so a second launch without Clean still paints chrome.
+	 */
+	static void ensurePlantChromeModel(MApplication application, EModelService modelService) {
+
+		if(application == null || modelService == null) {
+			return;
+		}
+		preferPlantLookupWindow(application, modelService);
+		MWindow plant = plantWindow(application, modelService);
+		if(plant == null) {
+			return;
+		}
+		MMenu menu = plant.getMainMenu();
+		if(menu == null) {
+			menu = findMenu(modelService, application, BaijiuShellChrome.MAIN_MENU_ID);
+		}
+		if(menu == null) {
+			menu = findMenu(modelService, application, BaijiuShellChrome.ECLIPSE_MAIN_MENU_ID);
+		}
+		if(menu == null) {
+			menu = createEditorRequiredMenu(modelService, BaijiuShellChrome.MAIN_MENU_ID);
+		}
+		if(menu != null) {
+			if(menu.getElementId() == null || menu.getElementId().isBlank()) {
+				menu.setElementId(BaijiuShellChrome.MAIN_MENU_ID);
+			}
+			forceShowChrome(menu);
+			if(plant.getMainMenu() != menu) {
+				try {
+					plant.setMainMenu(menu);
+				} catch(RuntimeException | LinkageError e) {
+					// older E4
+				}
+			}
+			ensurePlantTopMenus(modelService, application, menu);
+		}
+		if(plant instanceof MTrimmedWindow trimmed) {
+			ensurePlantTopTrim(modelService, application, trimmed);
+		}
+	}
+
+	static MWindow plantWindow(MApplication application, EModelService modelService) {
+
+		if(application == null) {
+			return null;
+		}
+		if(modelService != null) {
+			MUIElement found = modelService.find(BaijiuShellChrome.MAIN_WINDOW_ID, application);
+			if(found instanceof MWindow window && !BaijiuShellChrome.GC_WINDOW_ID.equals(window.getElementId())) {
+				return window;
+			}
+		}
+		List<MWindow> children;
+		try {
+			children = application.getChildren();
+		} catch(RuntimeException | LinkageError e) {
+			return null;
+		}
+		if(children == null) {
+			return null;
+		}
+		for(MWindow window : children) {
+			if(window != null && BaijiuShellChrome.MAIN_WINDOW_ID.equals(window.getElementId())) {
+				return window;
+			}
+		}
+		for(MWindow window : children) {
+			if(window != null && !BaijiuShellChrome.GC_WINDOW_ID.equals(window.getElementId())) {
+				return window;
+			}
+		}
+		return null;
+	}
+
+	private static void ensurePlantTopMenus(EModelService modelService, MApplication application, MMenu mainMenu) {
+
+		if(mainMenu == null) {
+			return;
+		}
+		ensureTopMenuChild(modelService, application, mainMenu, BaijiuShellChrome.FILE_MENU_ID, "文件");
+		ensureTopMenuChild(modelService, application, mainMenu, BaijiuShellChrome.BAIJIU_MENU_ID, "白酒");
+		ensureTopMenuChild(modelService, application, mainMenu, BaijiuShellChrome.VIEW_MENU_ID, "视图");
+		ensureTopMenuChild(modelService, application, mainMenu, BaijiuShellChrome.HELP_MENU_ID, "帮助");
+	}
+
+	private static void ensureTopMenuChild(EModelService modelService, MApplication application, MMenu mainMenu, String elementId, String label) {
+
+		MMenu child = findMenu(modelService, application, elementId);
+		if(child == null && mainMenuChild(mainMenu, elementId) instanceof MMenu found) {
+			child = found;
+		}
+		if(child == null) {
+			child = createEditorRequiredMenu(modelService, elementId);
+			if(child != null && (child.getLabel() == null || child.getLabel().isBlank())) {
+				child.setLabel(label);
+			}
+		}
+		if(child == null) {
+			return;
+		}
+		if(child.getLabel() == null || child.getLabel().isBlank()) {
+			child.setLabel(label);
+		}
+		forceShowChrome(child);
+		attachMenuChild(mainMenu, child);
+	}
+
+	private static MUIElement mainMenuChild(MMenu mainMenu, String elementId) {
+
+		if(mainMenu == null || elementId == null) {
+			return null;
+		}
+		try {
+			List<?> children = mainMenu.getChildren();
+			if(children == null) {
+				return null;
+			}
+			for(Object child : children) {
+				if(child instanceof MUIElement element && elementId.equals(element.getElementId())) {
+					return element;
+				}
+			}
+		} catch(RuntimeException | LinkageError e) {
+			return null;
+		}
+		return null;
+	}
+
+	private static void ensurePlantTopTrim(EModelService modelService, MApplication application, MTrimmedWindow window) {
+
+		if(window == null) {
+			return;
+		}
+		MTrimBar top = findTrimBar(modelService, application, BaijiuShellChrome.TRIMBAR_TOP_ID);
+		if(top == null) {
+			top = trimBarOnWindow(window, BaijiuShellChrome.TRIMBAR_TOP_ID);
+		}
+		if(top == null) {
+			top = createTrimBar(modelService, BaijiuShellChrome.TRIMBAR_TOP_ID);
+		}
+		if(top == null) {
+			return;
+		}
+		try {
+			top.setSide(SideValue.TOP);
+		} catch(RuntimeException | LinkageError e) {
+			// older E4
+		}
+		forceShowChrome(top);
+		attachTrimBar(window, top);
+		MToolBar toolbar = findToolBar(modelService, application, BaijiuShellChrome.PLANT_TOOLBAR_ID);
+		if(toolbar == null) {
+			toolbar = toolBarOnTrim(top, BaijiuShellChrome.PLANT_TOOLBAR_ID);
+		}
+		if(toolbar == null) {
+			toolbar = createToolBar(modelService, BaijiuShellChrome.PLANT_TOOLBAR_ID);
+		}
+		if(toolbar != null) {
+			forceShowChrome(toolbar);
+			attachToolBar(top, toolbar);
+		}
+	}
+
+	private static MTrimBar findTrimBar(EModelService modelService, MApplication application, String id) {
+
+		if(modelService == null || application == null || id == null) {
+			return null;
+		}
+		MUIElement found = modelService.find(id, application);
+		if(found instanceof MTrimBar bar) {
+			return bar;
+		}
+		return null;
+	}
+
+	private static MTrimBar trimBarOnWindow(MTrimmedWindow window, String id) {
+
+		if(window == null) {
+			return null;
+		}
+		try {
+			List<MTrimBar> bars = window.getTrimBars();
+			if(bars == null) {
+				return null;
+			}
+			for(MTrimBar bar : bars) {
+				if(bar != null && id.equals(bar.getElementId())) {
+					return bar;
+				}
+				if(bar != null && containsPlantToolbar(bar)) {
+					return bar;
+				}
+			}
+		} catch(RuntimeException | LinkageError e) {
+			return null;
+		}
+		return null;
+	}
+
+	private static boolean containsPlantToolbar(MTrimBar bar) {
+
+		try {
+			List<?> children = bar.getChildren();
+			if(children == null) {
+				return false;
+			}
+			for(Object child : children) {
+				if(child instanceof MUIElement element && BaijiuShellChrome.PLANT_TOOLBAR_ID.equals(element.getElementId())) {
+					return true;
+				}
+			}
+		} catch(RuntimeException | LinkageError e) {
+			return false;
+		}
+		return false;
+	}
+
+	private static MToolBar findToolBar(EModelService modelService, MApplication application, String id) {
+
+		if(modelService == null || application == null || id == null) {
+			return null;
+		}
+		MUIElement found = modelService.find(id, application);
+		if(found instanceof MToolBar bar) {
+			return bar;
+		}
+		return null;
+	}
+
+	private static MToolBar toolBarOnTrim(MTrimBar trim, String id) {
+
+		if(trim == null) {
+			return null;
+		}
+		try {
+			List<?> children = trim.getChildren();
+			if(children == null) {
+				return null;
+			}
+			for(Object child : children) {
+				if(child instanceof MToolBar bar && id.equals(bar.getElementId())) {
+					return bar;
+				}
+			}
+		} catch(RuntimeException | LinkageError e) {
+			return null;
+		}
+		return null;
+	}
+
+	private static MTrimBar createTrimBar(EModelService modelService, String elementId) {
+
+		MTrimBar bar = null;
+		if(modelService != null) {
+			try {
+				bar = modelService.createModelElement(MTrimBar.class);
+			} catch(RuntimeException | LinkageError e) {
+				bar = null;
+			}
+		}
+		if(bar == null) {
+			try {
+				bar = MBasicFactory.INSTANCE.createTrimBar();
+			} catch(RuntimeException | LinkageError e) {
+				return null;
+			}
+		}
+		bar.setElementId(elementId);
+		bar.setToBeRendered(true);
+		bar.setVisible(true);
+		return bar;
+	}
+
+	private static MToolBar createToolBar(EModelService modelService, String elementId) {
+
+		MToolBar bar = null;
+		if(modelService != null) {
+			try {
+				bar = modelService.createModelElement(MToolBar.class);
+			} catch(RuntimeException | LinkageError e) {
+				bar = null;
+			}
+		}
+		if(bar == null) {
+			try {
+				bar = MMenuFactory.INSTANCE.createToolBar();
+			} catch(RuntimeException | LinkageError e) {
+				return null;
+			}
+		}
+		bar.setElementId(elementId);
+		bar.setToBeRendered(true);
+		bar.setVisible(true);
+		return bar;
+	}
+
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	private static void attachTrimBar(MTrimmedWindow window, MTrimBar bar) {
+
+		if(window == null || bar == null) {
+			return;
+		}
+		try {
+			List bars = window.getTrimBars();
+			if(bars != null && !bars.contains(bar)) {
+				bars.add(0, bar);
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// immutable trim
+		}
+	}
+
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	private static void attachToolBar(MTrimBar trim, MToolBar toolbar) {
+
+		if(trim == null || toolbar == null) {
+			return;
+		}
+		try {
+			MElementContainer<?> parent = toolbar.getParent();
+			if(parent != null && parent != trim) {
+				List siblings = parent.getChildren();
+				if(siblings != null) {
+					siblings.remove(toolbar);
+				}
+			}
+			List children = trim.getChildren();
+			if(children != null && !children.contains(toolbar)) {
+				children.add(0, toolbar);
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// immutable
+		}
+	}
+
+	static void recreatePlantChromeWidgets(MApplication application, EModelService modelService) {
+
+		if(application == null || modelService == null) {
+			return;
+		}
+		MWindow plant = plantWindow(application, modelService);
+		if(plant == null || plant.getWidget() == null) {
+			return;
+		}
+		MMenu menu = plant.getMainMenu();
+		if(menu != null) {
+			forceCreateElement(application, modelService, menu);
+		}
+		if(plant instanceof MTrimmedWindow trimmed) {
+			MTrimBar top = findTrimBar(modelService, application, BaijiuShellChrome.TRIMBAR_TOP_ID);
+			if(top == null) {
+				top = trimBarOnWindow(trimmed, BaijiuShellChrome.TRIMBAR_TOP_ID);
+			}
+			if(top != null) {
+				forceCreateElement(application, modelService, top);
+			}
+			MUIElement toolbar = modelService.find(BaijiuShellChrome.PLANT_TOOLBAR_ID, application);
+			if(toolbar != null) {
+				forceCreateElement(application, modelService, toolbar);
+			}
 		}
 	}
 
@@ -407,6 +763,10 @@ public final class BaijiuShellParts {
 		}
 		preferPlantLookupWindow(application, modelService);
 		MMenu mainMenu = windowMainMenu(application);
+		if(mainMenu == null) {
+			ensurePlantChromeModel(application, modelService);
+			mainMenu = windowMainMenu(application);
+		}
 		if(mainMenu == null) {
 			mainMenu = findMenu(modelService, application, BaijiuShellChrome.MAIN_MENU_ID);
 		}
@@ -438,6 +798,10 @@ public final class BaijiuShellParts {
 
 	private static MMenu windowMainMenu(MApplication application) {
 
+		MWindow plant = plantWindow(application, null);
+		if(plant != null && plant.getMainMenu() != null) {
+			return plant.getMainMenu();
+		}
 		if(application == null) {
 			return null;
 		}
@@ -1097,6 +1461,9 @@ public final class BaijiuShellParts {
 		element.setToBeRendered(true);
 		IPresentationEngine engine = presentationEngine(application, element instanceof MPart part ? part : null);
 		if(engine == null) {
+			engine = fromContext(windowContext(element));
+		}
+		if(engine == null) {
 			return false;
 		}
 		try {
@@ -1271,6 +1638,26 @@ public final class BaijiuShellParts {
 		}
 		String label = part.getLabel();
 		return label != null && label.contains("[CSD]");
+	}
+
+	private static IEclipseContext windowContext(MUIElement element) {
+
+		MUIElement walk = element;
+		while(walk != null) {
+			if(walk instanceof MWindow window) {
+				try {
+					return window.getContext();
+				} catch(RuntimeException | LinkageError e) {
+					return null;
+				}
+			}
+			try {
+				walk = walk.getParent();
+			} catch(RuntimeException | LinkageError e) {
+				return null;
+			}
+		}
+		return null;
 	}
 
 	private static IPresentationEngine presentationEngine(MApplication application, MPart part) {

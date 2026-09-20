@@ -65,7 +65,7 @@ public class BaijiuShellChrome_1_Test {
 		assertEquals("白酒FID工作站", BaijiuShellChrome.APPLICATION_NAME_VM);
 		assertFalse(BaijiuShellChrome.APPLICATION_NAME_VM.contains(" "));
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome", BaijiuShellChrome.PERSPECTIVE_ID);
-		assertEquals(24, BaijiuShellChrome.CHROME_EPOCH);
+		assertEquals(25, BaijiuShellChrome.CHROME_EPOCH);
 		assertEquals("org.eclipse.chemclipse.ux.extension.ui.perspective.welcome", BaijiuShellChrome.WELCOME_PERSPECTIVE_ID);
 		assertTrue(BaijiuShellChrome.isHiddenResearchPerspective(BaijiuShellChrome.WELCOME_PERSPECTIVE_ID));
 		assertTrue(BaijiuShellChrome.isHiddenResearchPerspective(BaijiuShellChrome.MALDI_PERSPECTIVE_ID));
@@ -258,6 +258,11 @@ public class BaijiuShellChrome_1_Test {
 		assertTrue(BaijiuShellChrome.shouldHideMainMenuChild("generated.chrom", "色谱", null), "generated 色谱 stay hidden");
 		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem("org.eclipse.chemclipse.ux.extension.xxd.ui.part.targets", "Targets"));
 		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem(null, "Mass Spectrum File Explorer"));
+		assertTrue(BaijiuShellChrome.mustRecreateDetachedMainMenu(false), "compatibility setMainMenu(null) must recreate");
+		assertFalse(BaijiuShellChrome.mustRecreateDetachedMainMenu(true));
+		assertTrue(BaijiuShellChrome.mustRecreateDetachedTopTrim(false, true));
+		assertTrue(BaijiuShellChrome.mustRecreateDetachedTopTrim(true, false));
+		assertFalse(BaijiuShellChrome.mustRecreateDetachedTopTrim(true, true));
 		assertTrue(BaijiuShellChrome.isPlantToolbarContribution(BaijiuShellChrome.PLANT_TOOLBAR_ID));
 		assertTrue(BaijiuShellChrome.isPlantToolbarContribution(BaijiuShellChrome.OPEN_CHROMATOGRAM_TOOLITEM_ID));
 		assertTrue(BaijiuShellChrome.isPlantToolbarContribution(BaijiuShellChrome.TOGGLE_GC_TOOLITEM_ID));

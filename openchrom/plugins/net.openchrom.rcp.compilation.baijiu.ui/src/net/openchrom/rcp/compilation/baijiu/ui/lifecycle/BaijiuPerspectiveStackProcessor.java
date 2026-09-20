@@ -18,9 +18,10 @@ import org.eclipse.e4.ui.workbench.modeling.EModelService;
  * {@code perspectivestack.main} exists before {@code fragment.e4xmi} parents
  * {@code perspective.plantHome} and before
  * {@code PerspectiveApplicationAddon} does {@code modelService.find} of that
- * id (NPE when the stack is missing). Stale {@code workbench.xmi} after a
- * chrome-epoch rebuild can omit the stack even though Application.e4xmi
- * defines it.
+ * id (NPE when the stack is missing). Also recreates {@code menu.main} /
+ * {@code trimbar.top} when compatibility {@code setMainMenu(null)} left them
+ * out of persisted {@code workbench.xmi} (bug 398847) so the 白酒 fragment
+ * still has a parent.
  */
 public class BaijiuPerspectiveStackProcessor {
 
@@ -29,6 +30,7 @@ public class BaijiuPerspectiveStackProcessor {
 
 		try {
 			BaijiuShellModel.ensureChemclipsePerspectiveStack(application, modelService);
+			BaijiuShellParts.ensurePlantChromeModel(application, modelService);
 		} catch(RuntimeException | LinkageError e) {
 			BaijiuShellLog.warn("Perspective stack processor failed; plant home attach will retry", e);
 		}

@@ -234,7 +234,10 @@ public class BaijiuPilotPackaging_1_Test {
 		assertNotNull(chrome);
 		String chromeSrc = Files.readString(chrome, StandardCharsets.UTF_8);
 		assertTrue(chromeSrc.contains("CSD_EDITOR_PART_ID"), chromeSrc);
-		assertTrue(chromeSrc.contains("CHROME_EPOCH = 24"), chromeSrc);
+		assertTrue(chromeSrc.contains("CHROME_EPOCH = 25"), chromeSrc);
+		assertTrue(chromeSrc.contains("mustRecreateDetachedMainMenu"), chromeSrc);
+		assertTrue(chromeSrc.contains("mustRecreateDetachedTopTrim"), chromeSrc);
+		assertTrue(chromeSrc.contains("398847"), chromeSrc);
 		assertTrue(chromeSrc.contains("mustForceShowPlantChrome"), chromeSrc);
 		assertTrue(chromeSrc.contains("ignoresPersistedVisibility"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldForceShowDespitePersistedHide"), chromeSrc);
@@ -338,6 +341,9 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(addonSrc.contains("revealPlantWindowChrome"), addonSrc);
 		assertTrue(addonSrc.contains("APP_SHUTDOWN_STARTED"), addonSrc);
 		assertTrue(addonSrc.contains("timerExec"), addonSrc);
+		assertTrue(addonSrc.contains("timerExec(1500"), addonSrc);
+		assertTrue(addonSrc.contains("WINDOW_MAIN_MENU_TOPIC"), addonSrc);
+		assertTrue(addonSrc.contains("shuttingDown"), addonSrc);
 		assertTrue(addonSrc.contains("final Display ui"), addonSrc);
 		assertTrue(addonSrc.contains("schedulePlantWindowChrome"), addonSrc);
 		assertTrue(addonSrc.contains("isPlantWindowChrome"), addonSrc);
@@ -421,6 +427,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertNotNull(stackProcessor, "before-fragment stack processor");
 		String stackProcessorSrc = Files.readString(stackProcessor, StandardCharsets.UTF_8);
 		assertTrue(stackProcessorSrc.contains("ensureChemclipsePerspectiveStack"), stackProcessorSrc);
+		assertTrue(stackProcessorSrc.contains("ensurePlantChromeModel"), stackProcessorSrc);
 		assertTrue(stackProcessorSrc.contains("PerspectiveApplicationAddon"), stackProcessorSrc);
 		Path plantProcessor = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuPlantHomeModelProcessor.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuPlantHomeModelProcessor.java");
 		assertNotNull(plantProcessor);
@@ -445,6 +452,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(partsSrc.contains("isParkedEditorArea"), partsSrc);
 		assertTrue(partsSrc.contains("revealPlantWindowChrome"), partsSrc);
 		assertTrue(partsSrc.contains("ensureEditorRequiredMenus"), partsSrc);
+		assertTrue(partsSrc.contains("ensurePlantChromeModel"), partsSrc);
+		assertTrue(partsSrc.contains("recreatePlantChromeWidgets"), partsSrc);
 		assertTrue(partsSrc.contains("preferPlantLookupWindow"), partsSrc);
 		assertTrue(partsSrc.contains("EDITOR_REQUIRED_MENU_IDS"), partsSrc);
 		assertTrue(partsSrc.contains("hideNonPlantTopTrim"), partsSrc);
