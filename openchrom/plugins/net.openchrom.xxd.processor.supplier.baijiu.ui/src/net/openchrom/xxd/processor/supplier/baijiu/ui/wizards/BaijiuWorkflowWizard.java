@@ -86,6 +86,7 @@ public class BaijiuWorkflowWizard extends Wizard {
 		embed(tabs, methodPage);
 		embed(tabs, processPage);
 		embed(tabs, resultPage);
+		BaijiuPlantLayout.constrainToClient(tabs);
 	}
 
 	private static void embed(TabFolder tabs, WizardPage page) {

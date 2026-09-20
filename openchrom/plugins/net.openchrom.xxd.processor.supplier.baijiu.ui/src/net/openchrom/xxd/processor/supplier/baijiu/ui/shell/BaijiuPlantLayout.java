@@ -12,15 +12,20 @@ package net.openchrom.xxd.processor.supplier.baijiu.ui.shell;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.TabFolder;
+import org.eclipse.swt.widgets.TabItem;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.Text;
@@ -91,19 +96,55 @@ public final class BaijiuPlantLayout {
 		return data;
 	}
 
+	/**
+	 * Preferred size used when a plant page is asked {@code SWT.DEFAULT}.
+	 * GTK TabFolder otherwise sizes the left sash to wide tables / Text and
+	 * clips with no scrollbar.
+	 */
+	public static Point clientPreferred(int wHint, int hHint) {
+
+		return new Point(wHint == SWT.DEFAULT ? 1 : wHint, hHint == SWT.DEFAULT ? 1 : hHint);
+	}
+
+	/**
+	 * Makes {@code parent} report a 1×1 preferred size and lay children out
+	 * to the real sash / tab client. Use as the first layout on a home-tab
+	 * host so the left page can scroll instead of clipping.
+	 */
+	public static void fillClient(Composite parent) {
+
+		if(parent == null || parent.isDisposed()) {
+			return;
+		}
+		parent.setLayout(new ClientFillLayout());
+	}
+
+	/**
+	 * GridLayout page whose host reports a compact preferred size (header +
+	 * inner TabFolder pattern used by 白酒分析).
+	 */
+	public static Composite pageBody(Composite parent) {
+
+		if(parent == null || parent.isDisposed()) {
+			return parent;
+		}
+		fillClient(parent);
+		Composite root = compact(parent);
+		GridLayout layout = new GridLayout(1, false);
+		layout.marginWidth = 0;
+		layout.marginHeight = 0;
+		layout.verticalSpacing = 6;
+		root.setLayout(layout);
+		return root;
+	}
+
 	public static Composite scrollBody(Composite parent) {
 
 		if(parent == null || parent.isDisposed()) {
 			return parent;
 		}
-		if(!(parent.getLayout() instanceof GridLayout)) {
-			parent.setLayout(new GridLayout(1, false));
-		}
-		ScrolledComposite scroll = new ScrolledComposite(parent, SWT.V_SCROLL | SWT.H_SCROLL);
-		scroll.setExpandHorizontal(true);
-		scroll.setExpandVertical(true);
-		scroll.setAlwaysShowScrollBars(false);
-		scroll.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		fillClient(parent);
+		ScrolledComposite scroll = scrolled(parent);
 		Composite body = new Composite(scroll, SWT.NONE);
 		GridLayout layout = new GridLayout(1, false);
 		layout.marginWidth = 6;
@@ -117,9 +158,7 @@ public final class BaijiuPlantLayout {
 
 	public static ScrolledComposite wrapVertical(Composite parent) {
 
-		ScrolledComposite scroll = new ScrolledComposite(parent, SWT.V_SCROLL | SWT.H_SCROLL);
-		scroll.setExpandHorizontal(true);
-		scroll.setExpandVertical(true);
+		ScrolledComposite scroll = scrolled(parent);
 		if(parent != null && parent.getLayout() instanceof GridLayout) {
 			scroll.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		}
@@ -135,14 +174,29 @@ public final class BaijiuPlantLayout {
 	}
 
 	/**
-	 * TabItem control: FillLayout holder so GTK sizes the inner V+H
+	 * TabItem control: compact FillLayout holder so GTK sizes the inner V+H
 	 * {@link ScrolledComposite} to the folder client instead of clipping.
 	 */
 	public static Composite tabHolder(Composite tabFolder) {
 
-		Composite holder = new Composite(tabFolder, SWT.NONE);
+		Composite holder = compact(tabFolder);
 		holder.setLayout(new FillLayout());
 		return holder;
+	}
+
+	/**
+	 * GTK TabFolder often sizes the selected control to preferred width
+	 * (wide tables) and clips. Pin the selected page to the folder client.
+	 */
+	public static void constrainToClient(TabFolder tabs) {
+
+		if(tabs == null || tabs.isDisposed()) {
+			return;
+		}
+		Listener resize = e -> layoutSelectedTab(tabs);
+		tabs.addListener(SWT.Resize, resize);
+		tabs.addListener(SWT.Selection, resize);
+		layoutSelectedTab(tabs);
 	}
 
 	public static Composite tabBody(Composite tabFolder) {
@@ -252,6 +306,44 @@ public final class BaijiuPlantLayout {
 		return row;
 	}
 
+	/**
+	 * Push-button strip that wraps to the sash instead of clipping a
+	 * multi-column GridLayout row.
+	 */
+	public static Composite buttonRow(Composite parent) {
+
+		Composite row = new Composite(parent, SWT.NONE);
+		RowLayout layout = new RowLayout(SWT.HORIZONTAL);
+		layout.wrap = true;
+		layout.pack = true;
+		layout.justify = false;
+		layout.spacing = 6;
+		layout.marginWidth = 0;
+		layout.marginHeight = 0;
+		layout.marginTop = 0;
+		layout.marginBottom = 0;
+		layout.marginLeft = 0;
+		layout.marginRight = 0;
+		row.setLayout(layout);
+		GridData data = new GridData(SWT.FILL, SWT.CENTER, true, false);
+		data.widthHint = 1;
+		row.setLayoutData(data);
+		return row;
+	}
+
+	/**
+	 * GTK {@code Text}/{@code Combo} ignore {@code widthHint} when the cell is
+	 * wider than the hint. Nest the control in a FillLayout host whose
+	 * GridData is the real cap.
+	 */
+	public static Composite widthHost(Composite parent, int widthHint) {
+
+		Composite host = new Composite(parent, SWT.NONE);
+		host.setLayout(new FillLayout());
+		host.setLayoutData(fixed(widthHint));
+		return host;
+	}
+
 	public static Label hint(Composite parent, String text) {
 
 		return hint(parent, text, 1);
@@ -277,57 +369,54 @@ public final class BaijiuPlantLayout {
 	public static Text labeledText(Composite parent, String title, int widthHint) {
 
 		label(parent, title);
-		Text text = new Text(parent, SWT.BORDER);
-		text.setLayoutData(fixed(widthHint));
-		return text;
+		return new Text(widthHost(parent, widthHint), SWT.BORDER);
 	}
 
 	public static Text labeledFill(Composite parent, String title, int widthHint) {
 
-		label(parent, title);
-		Text text = new Text(parent, SWT.BORDER);
-		text.setLayoutData(fillHint(widthHint));
-		return text;
+		return labeledText(parent, title, widthHint);
 	}
 
 	public static Text labeledWrap(Composite parent, String title, int horizontalSpan, int heightHint) {
 
 		label(parent, title);
-		Text text = new Text(parent, SWT.BORDER | SWT.MULTI | SWT.WRAP | SWT.V_SCROLL);
+		Composite host = new Composite(parent, SWT.NONE);
+		host.setLayout(new FillLayout());
 		GridData data = new GridData(SWT.FILL, SWT.CENTER, true, false, Math.max(1, horizontalSpan), 1);
-		data.widthHint = METHOD;
+		data.widthHint = 1;
 		data.heightHint = heightHint > 0 ? heightHint : 36;
-		text.setLayoutData(data);
-		return text;
+		host.setLayoutData(data);
+		return new Text(host, SWT.BORDER | SWT.MULTI | SWT.WRAP | SWT.V_SCROLL);
 	}
 
 	public static Text labeledRemarks(Composite parent, String title, int horizontalSpan) {
 
 		label(parent, title);
-		Text text = new Text(parent, SWT.BORDER | SWT.MULTI | SWT.WRAP | SWT.V_SCROLL);
+		Composite host = new Composite(parent, SWT.NONE);
+		host.setLayout(new FillLayout());
 		GridData data = remarks();
 		data.horizontalSpan = Math.max(1, horizontalSpan);
-		text.setLayoutData(data);
-		return text;
+		data.widthHint = 1;
+		host.setLayoutData(data);
+		return new Text(host, SWT.BORDER | SWT.MULTI | SWT.WRAP | SWT.V_SCROLL);
 	}
 
 	public static Combo labeledCombo(Composite parent, String title, String[] items, int widthHint) {
 
 		label(parent, title);
-		Combo combo = new Combo(parent, SWT.DROP_DOWN | SWT.READ_ONLY);
+		Combo combo = new Combo(widthHost(parent, widthHint), SWT.DROP_DOWN | SWT.READ_ONLY);
 		if(items != null) {
 			combo.setItems(items);
 			if(items.length > 0) {
 				combo.select(0);
 			}
 		}
-		combo.setLayoutData(fixed(widthHint));
 		return combo;
 	}
 
 	public static Table table(Composite parent, int heightHint) {
 
-		Composite host = new Composite(parent, SWT.NONE);
+		Composite host = compact(parent);
 		host.setLayout(new FillLayout());
 		host.setLayoutData(tableFill(heightHint));
 		Table table = new Table(host, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
@@ -370,5 +459,87 @@ public final class BaijiuPlantLayout {
 
 		Label label = new Label(parent, SWT.NONE);
 		label.setText(title == null ? "" : title);
+	}
+
+	private static Composite compact(Composite parent) {
+
+		return new Composite(parent, SWT.NONE) {
+
+			@Override
+			public Point computeSize(int wHint, int hHint, boolean changed) {
+
+				if(wHint == SWT.DEFAULT && hHint == SWT.DEFAULT) {
+					return clientPreferred(wHint, hHint);
+				}
+				return super.computeSize(wHint, hHint, changed);
+			}
+		};
+	}
+
+	private static ScrolledComposite scrolled(Composite parent) {
+
+		ScrolledComposite scroll = new ScrolledComposite(parent, SWT.V_SCROLL | SWT.H_SCROLL) {
+
+			@Override
+			public Point computeSize(int wHint, int hHint, boolean changed) {
+
+				if(wHint == SWT.DEFAULT && hHint == SWT.DEFAULT) {
+					return clientPreferred(wHint, hHint);
+				}
+				return super.computeSize(wHint, hHint, changed);
+			}
+		};
+		scroll.setExpandHorizontal(true);
+		scroll.setExpandVertical(true);
+		scroll.setAlwaysShowScrollBars(false);
+		return scroll;
+	}
+
+	private static void layoutSelectedTab(TabFolder tabs) {
+
+		if(tabs == null || tabs.isDisposed()) {
+			return;
+		}
+		int index = tabs.getSelectionIndex();
+		if(index < 0) {
+			return;
+		}
+		TabItem item = tabs.getItem(index);
+		Control control = item.getControl();
+		if(control == null || control.isDisposed()) {
+			return;
+		}
+		Rectangle client = tabs.getClientArea();
+		if(client.width > 0 && client.height > 0) {
+			control.setBounds(client);
+		}
+	}
+
+	/**
+	 * Fills the parent client on layout; reports a 1×1 preferred size so a
+	 * GTK TabFolder / sash does not grow to the form's table width and clip.
+	 */
+	private static final class ClientFillLayout extends Layout {
+
+		@Override
+		protected Point computeSize(Composite composite, int wHint, int hHint, boolean flushCache) {
+
+			return clientPreferred(wHint, hHint);
+		}
+
+		@Override
+		protected void layout(Composite composite, boolean flushCache) {
+
+			Rectangle client = composite.getClientArea();
+			Control[] children = composite.getChildren();
+			if(children == null) {
+				return;
+			}
+			for(Control child : children) {
+				if(child != null && !child.isDisposed()) {
+					child.setBounds(client);
+				}
+			}
+		}
 	}
 }

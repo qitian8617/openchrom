@@ -97,23 +97,21 @@ public final class BaijiuParallelShell {
 		BaijiuPlantLayout.hint(body, BaijiuParallelEngine.FORMULA_TEXT + "\n" + BaijiuParallelEngine.SCOPE_NOTE);
 		BaijiuPlantLayout.hint(body, "方法：" + settings.getMethodName() + "    内标：" + settings.getIstdName());
 
-		Composite header = BaijiuPlantLayout.row(body, 6);
+		Composite header = BaijiuPlantLayout.row(body, 2);
 		Label sampleLabel = new Label(header, SWT.NONE);
 		sampleLabel.setText("样品编号");
-		Text sampleNo = new Text(header, SWT.BORDER);
-		sampleNo.setLayoutData(BaijiuPlantLayout.fixed(BaijiuPlantLayout.SAMPLE_ID));
+		Text sampleNo = new Text(BaijiuPlantLayout.widthHost(header, BaijiuPlantLayout.SAMPLE_ID), SWT.BORDER);
 		sampleNo.setText(template.getSampleNo().isEmpty() ? "LD-BJ-001" : template.getSampleNo());
 
-		Label abvLabel = new Label(header, SWT.NONE);
+		Composite nums = BaijiuPlantLayout.row(body, 4);
+		Label abvLabel = new Label(nums, SWT.NONE);
 		abvLabel.setText("酒精度 %vol");
-		Text abv = new Text(header, SWT.BORDER);
-		abv.setLayoutData(BaijiuPlantLayout.fixed(BaijiuPlantLayout.ABV));
+		Text abv = new Text(BaijiuPlantLayout.widthHost(nums, BaijiuPlantLayout.ABV), SWT.BORDER);
 		abv.setText(template.getAbvPercent() > 0.0d ? String.format(Locale.US, "%.2f", template.getAbvPercent()) : "52");
 
-		Label rsdLabel = new Label(header, SWT.NONE);
+		Label rsdLabel = new Label(nums, SWT.NONE);
 		rsdLabel.setText("允许相对偏差 %");
-		Text allowedRsd = new Text(header, SWT.BORDER);
-		allowedRsd.setLayoutData(BaijiuPlantLayout.fixed(BaijiuPlantLayout.ABV));
+		Text allowedRsd = new Text(BaijiuPlantLayout.widthHost(nums, BaijiuPlantLayout.ABV), SWT.BORDER);
 		allowedRsd.setText(String.format(Locale.US, "%.1f", BaijiuPreferences.loadAllowedRsdPercent()));
 
 		Label fileALabel = BaijiuPlantLayout.hint(body, needleA == null ? "针 A：尚未选择" : "针 A：" + needleA.getName());
@@ -131,7 +129,7 @@ public final class BaijiuParallelShell {
 
 		Label status = BaijiuPlantLayout.hint(body, "选择两针后点「计算均值与偏差」。");
 
-		Composite buttons = BaijiuPlantLayout.row(body, 4);
+		Composite buttons = BaijiuPlantLayout.buttonRow(body);
 
 		Button pickA = new Button(buttons, SWT.PUSH);
 		pickA.setText("选择针 A .ocb");

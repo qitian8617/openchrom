@@ -80,7 +80,7 @@ public final class BaijiuReportShell {
 		AtomicReference<String> generatedRef = new AtomicReference<>(BaijiuReportSupport.generatedAt());
 		BaijiuReportHeaderForm headerForm = new BaijiuReportHeaderForm(body);
 
-		Composite buttons = BaijiuPlantLayout.row(body, 6);
+		Composite buttons = BaijiuPlantLayout.buttonRow(body);
 
 		Label status = BaijiuPlantLayout.hint(body, "尚未生成。打开谱图后点「生成报告」。");
 
@@ -176,7 +176,7 @@ public final class BaijiuReportShell {
 		BaijiuReportHeaderForm headerForm = new BaijiuReportHeaderForm(body);
 		headerForm.load(resolved);
 
-		Composite buttons = BaijiuPlantLayout.row(body, 6);
+		Composite buttons = BaijiuPlantLayout.buttonRow(body);
 
 		Browser browser = createBrowser(body);
 		if(browser != null) {

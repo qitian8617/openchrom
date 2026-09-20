@@ -110,8 +110,7 @@ public final class BaijiuSequenceResultsShell {
 
 		Label abvLabel = new Label(header, SWT.NONE);
 		abvLabel.setText("默认酒精度 %vol");
-		Text abv = new Text(header, SWT.BORDER);
-		abv.setLayoutData(BaijiuPlantLayout.fixed(BaijiuPlantLayout.ABV));
+		Text abv = new Text(BaijiuPlantLayout.widthHost(header, BaijiuPlantLayout.ABV), SWT.BORDER);
 		abv.setText(template.getAbvPercent() > 0.0d ? String.format(Locale.US, "%.2f", template.getAbvPercent()) : "52");
 
 		Label summary = BaijiuPlantLayout.hint(body, source.isEmpty() ? "尚未载入序列。可从当前进样序列生成，或打开已保存的序列 JSON（条目中的谱图路径可指向 demo .ocb）。" : "已载入 " + source.size() + " 行序列。");
@@ -131,7 +130,7 @@ public final class BaijiuSequenceResultsShell {
 		addColumn(table, "GB 2757", 80);
 		addColumn(table, "备注", 280);
 
-		Composite buttons = BaijiuPlantLayout.row(body, 6);
+		Composite buttons = BaijiuPlantLayout.buttonRow(body);
 
 		Button fromCurrent = new Button(buttons, SWT.PUSH);
 		fromCurrent.setText("从当前序列生成结果表");

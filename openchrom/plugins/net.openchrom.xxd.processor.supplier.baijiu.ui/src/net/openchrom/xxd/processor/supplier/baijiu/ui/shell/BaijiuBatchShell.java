@@ -89,8 +89,7 @@ public final class BaijiuBatchShell {
 
 		Label abvLabel = new Label(header, SWT.NONE);
 		abvLabel.setText("\u9ed8\u8ba4\u9152\u7cbe\u5ea6 %vol");
-		Text abv = new Text(header, SWT.BORDER);
-		abv.setLayoutData(BaijiuPlantLayout.fixed(BaijiuPlantLayout.ABV));
+		Text abv = new Text(BaijiuPlantLayout.widthHost(header, BaijiuPlantLayout.ABV), SWT.BORDER);
 		abv.setText(template.getAbvPercent() > 0.0d ? String.format(Locale.US, "%.2f", template.getAbvPercent()) : "52");
 
 		Label filesLabel = BaijiuPlantLayout.hint(body, "\u5c1a\u672a\u9009\u62e9\u6587\u4ef6");
@@ -111,7 +110,7 @@ public final class BaijiuBatchShell {
 		Table parallelTable = BaijiuPlantLayout.table(body, 160);
 		BaijiuParallelShell.addBatchColumns(parallelTable);
 
-		Composite buttons = BaijiuPlantLayout.row(body, 6);
+		Composite buttons = BaijiuPlantLayout.buttonRow(body);
 
 		Button pick = new Button(buttons, SWT.PUSH);
 		pick.setText("\u9009\u62e9\u591a\u4e2a .ocb");

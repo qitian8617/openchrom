@@ -14,9 +14,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
@@ -63,24 +61,7 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 	public BaijiuSequenceComposite(Composite parent, int style) {
 
 		super(parent, style);
-		GridLayout layout = new GridLayout(1, false);
-		layout.marginWidth = 8;
-		layout.marginHeight = 8;
-		layout.verticalSpacing = 8;
-		setLayout(layout);
-
-		ScrolledComposite scroll = new ScrolledComposite(this, SWT.V_SCROLL | SWT.H_SCROLL);
-		scroll.setExpandHorizontal(true);
-		scroll.setExpandVertical(true);
-		scroll.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-		Composite body = new Composite(scroll, SWT.NONE);
-		GridLayout bodyLayout = new GridLayout(1, false);
-		bodyLayout.marginWidth = 0;
-		bodyLayout.marginHeight = 0;
-		bodyLayout.verticalSpacing = 8;
-		body.setLayout(bodyLayout);
-		scroll.setContent(body);
-		BaijiuPlantLayout.bindMinSize(scroll, body);
+		Composite body = BaijiuPlantLayout.scrollBody(this);
 
 		Label title = new Label(body, SWT.NONE);
 		title.setText(BaijiuTerms.SEQUENCE);
@@ -122,11 +103,10 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 		Composite row = BaijiuPlantLayout.row(parent, 3);
 		Label templateLabel = new Label(row, SWT.NONE);
 		templateLabel.setText("样品数");
-		sampleCountSpinner = new Spinner(row, SWT.BORDER);
+		sampleCountSpinner = new Spinner(BaijiuPlantLayout.widthHost(row, BaijiuPlantLayout.NUMERIC), SWT.BORDER);
 		sampleCountSpinner.setMinimum(1);
 		sampleCountSpinner.setMaximum(InjectionSequence.MAX_SAMPLES_IN_TEMPLATE);
 		sampleCountSpinner.setSelection(3);
-		sampleCountSpinner.setLayoutData(BaijiuPlantLayout.fixed(BaijiuPlantLayout.NUMERIC));
 		Button fillTypicalButton = new Button(row, SWT.PUSH);
 		fillTypicalButton.setText("填入典型队列");
 		fillTypicalButton.addListener(SWT.Selection, e -> {
@@ -164,39 +144,34 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 		editTitle.setText("编辑选中行");
 		editTitle.setLayoutData(BaijiuPlantLayout.wrapHint());
 
-		Composite card = BaijiuPlantLayout.row(parent, 6);
-		label(card, "类型");
-		typeCombo = new Combo(card, SWT.READ_ONLY);
-		typeCombo.setLayoutData(BaijiuPlantLayout.fixed(BaijiuPlantLayout.TYPE));
+		Composite typeRow = BaijiuPlantLayout.row(parent, 4);
+		label(typeRow, "类型");
+		typeCombo = new Combo(BaijiuPlantLayout.widthHost(typeRow, BaijiuPlantLayout.TYPE), SWT.READ_ONLY);
 		fillTypeCombo();
-		label(card, "编号");
-		sampleIdText = new Text(card, SWT.BORDER);
-		sampleIdText.setLayoutData(BaijiuPlantLayout.fixed(BaijiuPlantLayout.SAMPLE_ID));
-		label(card, "名称");
-		sampleNameText = new Text(card, SWT.BORDER);
-		sampleNameText.setLayoutData(BaijiuPlantLayout.fixed(BaijiuPlantLayout.SAMPLE_NAME));
-		notesText = BaijiuPlantLayout.labeledRemarks(card, "备注", 5);
-		Button applyRowButton = new Button(card, SWT.PUSH);
+		label(typeRow, "编号");
+		sampleIdText = new Text(BaijiuPlantLayout.widthHost(typeRow, BaijiuPlantLayout.SAMPLE_ID), SWT.BORDER);
+		Composite nameRow = BaijiuPlantLayout.row(parent, 2);
+		label(nameRow, "名称");
+		sampleNameText = new Text(BaijiuPlantLayout.widthHost(nameRow, BaijiuPlantLayout.SAMPLE_NAME), SWT.BORDER);
+		notesText = BaijiuPlantLayout.labeledRemarks(parent, "备注", 1);
+		Composite applyRow = BaijiuPlantLayout.buttonRow(parent);
+		Button applyRowButton = new Button(applyRow, SWT.PUSH);
 		applyRowButton.setText("保存本行");
 		applyRowButton.addListener(SWT.Selection, e -> applyEditor());
 	}
 
 	private void createAddRow(Composite parent) {
 
-		Composite row = new Composite(parent, SWT.NONE);
-		row.setLayout(new GridLayout(6, true));
-		row.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		Composite row = BaijiuPlantLayout.buttonRow(parent);
 		addTypeButton(row, InjectionType.BLANK, "+ 空白");
 		addTypeButton(row, InjectionType.MIX_STD, "+ 混标");
 		addTypeButton(row, InjectionType.QC, "+ QC");
 		addTypeButton(row, InjectionType.SAMPLE, "+ 样品");
 		Button parallelButton = new Button(row, SWT.PUSH);
 		parallelButton.setText("添加平行样");
-		parallelButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		parallelButton.addListener(SWT.Selection, e -> addParallel());
 		Button removeButton = new Button(row, SWT.PUSH);
 		removeButton.setText("删除");
-		removeButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		removeButton.addListener(SWT.Selection, e -> {
 			int index = selectedIndex();
 			if(index < 0) {
@@ -209,9 +184,7 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 
 	private void createOrderRow(Composite parent) {
 
-		Composite row = new Composite(parent, SWT.NONE);
-		row.setLayout(new GridLayout(5, true));
-		row.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		Composite row = BaijiuPlantLayout.buttonRow(parent);
 		actionButton(row, "上移", e -> {
 			int index = selectedIndexOrWarn();
 			if(index >= 0) {
@@ -246,24 +219,18 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 
 	private void createFileRow(Composite parent) {
 
-		Composite row = new Composite(parent, SWT.NONE);
-		row.setLayout(new GridLayout(4, true));
-		row.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		Composite row = BaijiuPlantLayout.buttonRow(parent);
 		Button saveButton = new Button(row, SWT.PUSH);
 		saveButton.setText("保存序列…");
-		saveButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		saveButton.addListener(SWT.Selection, e -> saveSequence());
 		Button loadButton = new Button(row, SWT.PUSH);
 		loadButton.setText("打开序列…");
-		loadButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		loadButton.addListener(SWT.Selection, e -> loadSequence());
 		Button parallelResultButton = new Button(row, SWT.PUSH);
 		parallelResultButton.setText("平行样结果…");
-		parallelResultButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		parallelResultButton.addListener(SWT.Selection, e -> openParallelResults());
 		Button batchResultButton = new Button(row, SWT.PUSH);
 		batchResultButton.setText("生成结果表");
-		batchResultButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		batchResultButton.addListener(SWT.Selection, e -> openBatchResults());
 	}
 
@@ -271,7 +238,6 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 
 		Button button = new Button(parent, SWT.PUSH);
 		button.setText(text);
-		button.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		button.addListener(SWT.Selection, e -> manager.add(type));
 	}
 
@@ -279,7 +245,6 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 
 		Button button = new Button(parent, SWT.PUSH);
 		button.setText(text);
-		button.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		button.addListener(SWT.Selection, listener);
 	}
 

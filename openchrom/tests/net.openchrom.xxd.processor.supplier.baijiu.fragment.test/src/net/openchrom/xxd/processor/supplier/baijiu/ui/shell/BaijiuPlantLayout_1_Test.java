@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.junit.jupiter.api.Test;
 
@@ -85,5 +86,19 @@ public class BaijiuPlantLayout_1_Test {
 		assertEquals(240, BaijiuPlantLayout.SAMPLE_ID);
 		assertEquals(280, BaijiuPlantLayout.SAMPLE_NAME);
 		assertEquals(420, BaijiuPlantLayout.METHOD);
+	}
+
+	@Test
+	public void unconstrainedPagePreferredSizeIsOneByOne() {
+
+		assertEquals(1, BaijiuPlantLayout.clientPreferred(SWT.DEFAULT, SWT.DEFAULT).x);
+		assertEquals(1, BaijiuPlantLayout.clientPreferred(SWT.DEFAULT, SWT.DEFAULT).y);
+	}
+
+	@Test
+	public void constrainedClientPreferredKeepsHints() {
+
+		assertEquals(640, BaijiuPlantLayout.clientPreferred(640, 480).x);
+		assertEquals(480, BaijiuPlantLayout.clientPreferred(640, 480).y);
 	}
 }
