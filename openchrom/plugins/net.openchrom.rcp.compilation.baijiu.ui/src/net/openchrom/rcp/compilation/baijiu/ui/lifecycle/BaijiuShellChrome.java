@@ -1172,8 +1172,12 @@ public final class BaijiuShellChrome {
 	}
 
 	/**
-	 * CSD/OCB close (and REMOVE_GUI of the editor) must re-hide research
-	 * chrome that GroupHandler filled while the chromatogram was open.
+	 * CSD/OCB close must re-hide research chrome that GroupHandler filled
+	 * while the chromatogram was open. Change type is e4
+	 * {@code EventTypes.REMOVE} / {@code REMOVE_MANY} from
+	 * {@code ElementContainer.TOPIC_CHILDREN}, or
+	 * {@link #shouldSanitizeAfterEditorWidgetTeardown} for
+	 * {@code UIElement.TOPIC_WIDGET} / {@code TOPIC_TOBERENDERED}.
 	 */
 	public static boolean shouldSanitizeAfterEditorClose(String containerId, String elementId, String changeType) {
 
@@ -1184,7 +1188,7 @@ public final class BaijiuShellChrome {
 			return false;
 		}
 		String type = changeType.trim();
-		boolean remove = "REMOVE".equalsIgnoreCase(type) || "REMOVE_GUI".equalsIgnoreCase(type);
+		boolean remove = "REMOVE".equalsIgnoreCase(type) || "REMOVE_MANY".equalsIgnoreCase(type);
 		if(!remove) {
 			return false;
 		}
@@ -1192,6 +1196,17 @@ public final class BaijiuShellChrome {
 			return true;
 		}
 		return CSD_EDITOR_PART_ID.equals(elementId) || CHROMATOGRAM_HOME_PART_ID.equals(elementId);
+	}
+
+	/**
+	 * {@code UIElement.TOPIC_WIDGET} SET-to-null / REMOVE: the editor GUI is
+	 * gone even if the stack child event is delayed. {@code widgetGone} is
+	 * the compile-safe stand-in for that teardown (no UILifeCycle field
+	 * for editor GUI removal on this target).
+	 */
+	public static boolean shouldSanitizeAfterEditorWidgetTeardown(String elementId, boolean widgetGone) {
+
+		return widgetGone && shouldSanitizeAfterEditorClose(null, elementId, "REMOVE");
 	}
 
 	/**

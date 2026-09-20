@@ -370,8 +370,14 @@ public class BaijiuShellChrome_1_Test {
 		assertTrue(BaijiuShellChrome.shouldSanitizeAfterPartActivation(BaijiuShellChrome.WORKBENCH_HOME_PART_ID));
 		assertTrue(BaijiuShellChrome.shouldSanitizeAfterPartActivation(null));
 		assertTrue(BaijiuShellChrome.shouldSanitizeAfterEditorClose(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, BaijiuShellChrome.CSD_EDITOR_PART_ID, "REMOVE"));
-		assertTrue(BaijiuShellChrome.shouldSanitizeAfterEditorClose(null, BaijiuShellChrome.CSD_EDITOR_PART_ID, "REMOVE_GUI"));
+		assertTrue(BaijiuShellChrome.shouldSanitizeAfterEditorClose(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, BaijiuShellChrome.CSD_EDITOR_PART_ID, "REMOVE_MANY"));
+		assertTrue(BaijiuShellChrome.shouldSanitizeAfterEditorClose(null, BaijiuShellChrome.CSD_EDITOR_PART_ID, "REMOVE"));
+		assertTrue(BaijiuShellChrome.shouldSanitizeAfterEditorWidgetTeardown(BaijiuShellChrome.CSD_EDITOR_PART_ID, true));
+		assertTrue(BaijiuShellChrome.shouldSanitizeAfterEditorWidgetTeardown(BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID, true));
+		assertFalse(BaijiuShellChrome.shouldSanitizeAfterEditorWidgetTeardown(BaijiuShellChrome.CSD_EDITOR_PART_ID, false));
+		assertFalse(BaijiuShellChrome.shouldSanitizeAfterEditorWidgetTeardown(BaijiuShellChrome.VIEW_MENU_ID, true));
 		assertFalse(BaijiuShellChrome.shouldSanitizeAfterEditorClose(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, BaijiuShellChrome.CSD_EDITOR_PART_ID, "ADD"));
+		assertFalse(BaijiuShellChrome.shouldSanitizeAfterEditorClose(null, BaijiuShellChrome.CSD_EDITOR_PART_ID, "SET"));
 		assertTrue(BaijiuShellChrome.shouldSanitizeAfterVisibilityChange("org.eclipse.chemclipse.ux.extension.xxd.ui.view.overview", "概览", true));
 		assertTrue(BaijiuShellChrome.shouldSanitizeAfterVisibilityChange(null, "叠加", true));
 		assertTrue(BaijiuShellChrome.shouldSanitizeAfterVisibilityChange(BaijiuShellChrome.CHROMATOGRAM_MENU_ID, "色谱图", true));
@@ -542,6 +548,7 @@ public class BaijiuShellChrome_1_Test {
 		assertFalse(BaijiuShellChrome.shouldSanitizeAfterPartActivation(BaijiuShellChrome.CSD_EDITOR_PART_ID));
 		assertFalse(BaijiuShellChrome.shouldSanitizeAfterVisibilityChange(null, "概览", true));
 		assertFalse(BaijiuShellChrome.shouldSanitizeAfterEditorClose(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, BaijiuShellChrome.CSD_EDITOR_PART_ID, "REMOVE"));
+		assertFalse(BaijiuShellChrome.shouldSanitizeAfterEditorWidgetTeardown(BaijiuShellChrome.CSD_EDITOR_PART_ID, true));
 	}
 
 	@Test

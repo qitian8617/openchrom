@@ -242,6 +242,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(chromeSrc.contains("shouldSanitizeAfterPartActivation"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldSanitizeAfterVisibilityChange"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldSanitizeAfterEditorClose"), chromeSrc);
+		assertTrue(chromeSrc.contains("shouldSanitizeAfterEditorWidgetTeardown"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldHideBaijiuCascadeChild"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldHideHelpMenuChild"), chromeSrc);
 		assertTrue(chromeSrc.contains("BAIJIU_MENU_KEEP_ID_PREFIXES"), chromeSrc);
@@ -382,7 +383,12 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(addonSrc.contains("shouldSanitizeAfterPartActivation"), addonSrc);
 		assertTrue(addonSrc.contains("shouldSanitizeAfterVisibilityChange"), addonSrc);
 		assertTrue(addonSrc.contains("shouldSanitizeAfterEditorClose"), addonSrc);
-		assertTrue(addonSrc.contains("REMOVE_GUI"), addonSrc);
+		assertTrue(addonSrc.contains("shouldSanitizeAfterEditorWidgetTeardown"), addonSrc);
+		assertTrue(addonSrc.contains("UIElement.TOPIC_WIDGET"), addonSrc);
+		assertTrue(addonSrc.contains("UIElement.TOPIC_TOBERENDERED"), addonSrc);
+		assertTrue(addonSrc.contains("EventTypes.REMOVE"), addonSrc);
+		assertTrue(addonSrc.contains("isWidgetGone"), addonSrc);
+		assertFalse(addonSrc.contains("REMOVE_GUI"), addonSrc);
 		assertTrue(addonSrc.contains("finally"), addonSrc);
 		assertTrue(addonSrc.contains("sanitizePlantMenuContributions"), addonSrc);
 		assertTrue(addonSrc.contains("allowsWalkHide"), addonSrc);
