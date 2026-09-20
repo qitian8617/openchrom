@@ -50,7 +50,9 @@ public class BaijiuWorkbenchHomePart {
 	@Inject
 	public BaijiuWorkbenchHomePart(Composite parent) {
 
-		create(parent);
+		// E4 injects Composite before partService/context. Build the button
+		// column in {@link #create} after field injection so 「打开色谱图」
+		// receives a live IEclipseContext (FileDialog + host into 谱图/采集).
 	}
 
 	@PostConstruct

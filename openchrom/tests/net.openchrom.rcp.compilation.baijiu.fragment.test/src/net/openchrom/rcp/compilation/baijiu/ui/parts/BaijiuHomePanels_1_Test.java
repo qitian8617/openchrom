@@ -107,6 +107,7 @@ public class BaijiuHomePanels_1_Test {
 		new BaijiuSequenceHomePart().create(null);
 		new BaijiuAnalysisHomePart().create(null);
 		new BaijiuWorkbenchHomePart().create(null);
+		new BaijiuWorkbenchHomePart((Composite)null).create(null);
 		new BaijiuChromatogramHomePart().create(null);
 		new BaijiuIntegrationHomePart().create(null);
 		new BaijiuWizardHomePart().create(null);
