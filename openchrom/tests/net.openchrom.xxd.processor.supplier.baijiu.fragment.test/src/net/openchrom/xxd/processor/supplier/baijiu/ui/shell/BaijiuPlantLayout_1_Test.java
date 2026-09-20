@@ -33,6 +33,22 @@ public class BaijiuPlantLayout_1_Test {
 	}
 
 	@Test
+	public void methodLengthFieldsDoNotGrabTheSash() {
+
+		GridData method = BaijiuPlantLayout.fillHint(BaijiuPlantLayout.METHOD);
+		assertEquals(420, method.widthHint);
+		assertFalse(method.grabExcessHorizontalSpace);
+	}
+
+	@Test
+	public void wrapLabelsAskForClientWidth() {
+
+		GridData wrap = BaijiuPlantLayout.wrapHint();
+		assertEquals(1, wrap.widthHint);
+		assertTrue(wrap.grabExcessHorizontalSpace);
+	}
+
+	@Test
 	public void tablesAskForClientWidthSoColumnsCanScroll() {
 
 		GridData table = BaijiuPlantLayout.tableFill(160);

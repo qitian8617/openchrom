@@ -30,12 +30,14 @@ final class BaijiuReportHeaderForm {
 
 	BaijiuReportHeaderForm(Composite parent) {
 
-		Group group = BaijiuPlantLayout.group(parent, "\u62a5\u544a\u62ac\u5934", 6);
-		unitName = BaijiuPlantLayout.labeledFill(group, BaijiuReportHeader.UNIT_LABEL, BaijiuPlantLayout.METHOD);
-		title = BaijiuPlantLayout.labeledFill(group, BaijiuReportHeader.TITLE_LABEL, BaijiuPlantLayout.METHOD);
-		tester = BaijiuPlantLayout.labeledText(group, BaijiuReportHeader.TESTER_LABEL, BaijiuPlantLayout.PERSON);
-		auditor = BaijiuPlantLayout.labeledText(group, BaijiuReportHeader.AUDITOR_LABEL, BaijiuPlantLayout.PERSON);
-		remarks = BaijiuPlantLayout.labeledRemarks(group, BaijiuReportHeader.REMARKS_LABEL, 5);
+		Group group = BaijiuPlantLayout.group(parent, "\u62a5\u544a\u62ac\u5934", 1);
+		Composite names = BaijiuPlantLayout.row(group, 2);
+		unitName = BaijiuPlantLayout.labeledText(names, BaijiuReportHeader.UNIT_LABEL, BaijiuPlantLayout.METHOD);
+		title = BaijiuPlantLayout.labeledText(names, BaijiuReportHeader.TITLE_LABEL, BaijiuPlantLayout.METHOD);
+		Composite people = BaijiuPlantLayout.row(group, 4);
+		tester = BaijiuPlantLayout.labeledText(people, BaijiuReportHeader.TESTER_LABEL, BaijiuPlantLayout.PERSON);
+		auditor = BaijiuPlantLayout.labeledText(people, BaijiuReportHeader.AUDITOR_LABEL, BaijiuPlantLayout.PERSON);
+		remarks = BaijiuPlantLayout.labeledRemarks(group, BaijiuReportHeader.REMARKS_LABEL, 1);
 		load(BaijiuPreferences.loadReportHeader());
 	}
 

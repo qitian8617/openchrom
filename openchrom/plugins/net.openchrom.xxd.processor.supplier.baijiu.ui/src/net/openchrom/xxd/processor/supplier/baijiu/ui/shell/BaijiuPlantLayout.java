@@ -12,6 +12,7 @@ package net.openchrom.xxd.processor.supplier.baijiu.ui.shell;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Combo;
@@ -58,11 +59,13 @@ public final class BaijiuPlantLayout {
 		return data;
 	}
 
+	/**
+	 * Longer plant fields (方法名 / 柱型号 / 单位 / 标题): modest cap, never grab
+	 * the full sash. SWT has no maxWidth; {@code grabExcess=false} is the cap.
+	 */
 	public static GridData fillHint(int widthHint) {
 
-		GridData data = new GridData(SWT.FILL, SWT.CENTER, true, false);
-		data.widthHint = widthHint;
-		return data;
+		return fixed(widthHint);
 	}
 
 	public static GridData remarks() {
@@ -130,6 +133,29 @@ public final class BaijiuPlantLayout {
 		return scroll;
 	}
 
+	/**
+	 * TabItem control: FillLayout holder so GTK sizes the inner V+H
+	 * {@link ScrolledComposite} to the folder client instead of clipping.
+	 */
+	public static Composite tabHolder(Composite tabFolder) {
+
+		Composite holder = new Composite(tabFolder, SWT.NONE);
+		holder.setLayout(new FillLayout());
+		return holder;
+	}
+
+	public static Composite tabBody(Composite tabFolder) {
+
+		return bodyOf(wrapVertical(tabHolder(tabFolder)));
+	}
+
+	public static Composite tabControlOf(Composite body) {
+
+		Control scroll = body == null ? null : body.getParent();
+		Control holder = scroll == null ? null : scroll.getParent();
+		return holder instanceof Composite composite ? composite : body;
+	}
+
 	public static Composite bodyOf(ScrolledComposite scroll) {
 
 		Control content = scroll.getContent();
@@ -141,18 +167,55 @@ public final class BaijiuPlantLayout {
 		if(scroll == null || body == null) {
 			return;
 		}
+		final boolean[] busy = {false};
 		Listener update = e -> {
-			if(scroll.isDisposed() || body.isDisposed()) {
+			if(busy[0] || scroll.isDisposed() || body.isDisposed()) {
 				return;
 			}
-			int client = scroll.getClientArea().width;
-			int wrap = client > 40 ? client : SWT.DEFAULT;
-			Point wrapped = body.computeSize(wrap, SWT.DEFAULT);
-			scroll.setMinSize(wrapped);
+			busy[0] = true;
+			try {
+				int client = scroll.getClientArea().width;
+				int wrap = client > 40 ? client : SWT.DEFAULT;
+				if(wrap != SWT.DEFAULT) {
+					reflowWraps(body, wrap);
+				}
+				Point wrapped = body.computeSize(wrap, SWT.DEFAULT);
+				scroll.setMinSize(wrapped);
+			} finally {
+				busy[0] = false;
+			}
 		};
 		scroll.addListener(SWT.Resize, update);
-		body.addListener(SWT.Resize, update);
 		update.handleEvent(null);
+	}
+
+	/**
+	 * SWT WRAP labels only reflow when GridData.widthHint matches the client.
+	 * Walk the body after sash / tab resize so prose is not clipped.
+	 */
+	public static void reflowWraps(Control root, int width) {
+
+		if(root == null || root.isDisposed() || width <= 0) {
+			return;
+		}
+		if(root instanceof Label label && (label.getStyle() & SWT.WRAP) != 0) {
+			Object layoutData = label.getLayoutData();
+			if(layoutData instanceof GridData data && (data.grabExcessHorizontalSpace || data.horizontalSpan > 1 || data.widthHint == 1)) {
+				data.widthHint = Math.max(1, width - 16);
+			}
+		}
+		if(root instanceof Composite composite) {
+			int inner = width;
+			if(composite.getLayout() instanceof GridLayout grid) {
+				inner = Math.max(1, width - grid.marginWidth * 2 - grid.marginLeft - grid.marginRight);
+			}
+			Control[] children = composite.getChildren();
+			if(children != null) {
+				for(Control child : children) {
+					reflowWraps(child, inner);
+				}
+			}
+		}
 	}
 
 	public static Group group(Composite parent, String title, int columns) {
@@ -233,10 +296,12 @@ public final class BaijiuPlantLayout {
 
 	public static Table table(Composite parent, int heightHint) {
 
-		Table table = new Table(parent, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
+		Composite host = new Composite(parent, SWT.NONE);
+		host.setLayout(new FillLayout());
+		host.setLayoutData(tableFill(heightHint));
+		Table table = new Table(host, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
-		table.setLayoutData(tableFill(heightHint));
 		return table;
 	}
 

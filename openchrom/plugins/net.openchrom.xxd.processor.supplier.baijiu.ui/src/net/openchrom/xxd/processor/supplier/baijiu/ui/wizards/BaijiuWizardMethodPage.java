@@ -39,8 +39,7 @@ public class BaijiuWizardMethodPage extends WizardPage {
 	@Override
 	public void createControl(Composite parent) {
 
-		org.eclipse.swt.custom.ScrolledComposite scroll = BaijiuPlantLayout.wrapVertical(parent);
-		Composite root = BaijiuPlantLayout.bodyOf(scroll);
+		Composite root = BaijiuPlantLayout.tabBody(parent);
 		BaijiuMethodSettings settings = wizard.getSettings();
 		BaijiuSampleInfo sample = wizard.getSample();
 		label(root, "\u65b9\u6cd5\uff1a" + settings.getMethodName() + "    \u67f1\uff1a" + settings.getColumnSummary());
@@ -49,18 +48,19 @@ public class BaijiuWizardMethodPage extends WizardPage {
 		label(root, license == null ? BaijiuLicenseGate.statusLine() : license);
 		String gate = BaijiuCalibrationGate.blockingMessage(settings);
 		label(root, gate == null ? BaijiuCalibrationGate.OPERATOR_HINT : gate);
-		Composite form = BaijiuPlantLayout.row(root, 6);
-		sampleNo = BaijiuPlantLayout.labeledText(form, "\u6837\u54c1\u7f16\u53f7", BaijiuPlantLayout.SAMPLE_ID);
+		Composite ids = BaijiuPlantLayout.row(root, 4);
+		sampleNo = BaijiuPlantLayout.labeledText(ids, "\u6837\u54c1\u7f16\u53f7", BaijiuPlantLayout.SAMPLE_ID);
 		sampleNo.setText(value(sample.getSampleNo()));
-		liquorName = BaijiuPlantLayout.labeledText(form, "\u9152\u540d", BaijiuPlantLayout.SAMPLE_NAME);
+		liquorName = BaijiuPlantLayout.labeledText(ids, "\u9152\u540d", BaijiuPlantLayout.SAMPLE_NAME);
 		liquorName.setText(value(sample.getLiquorName()));
-		batchNo = BaijiuPlantLayout.labeledText(form, "\u6279\u53f7", BaijiuPlantLayout.SAMPLE_ID);
+		Composite meta = BaijiuPlantLayout.row(root, 6);
+		batchNo = BaijiuPlantLayout.labeledText(meta, "\u6279\u53f7", BaijiuPlantLayout.SAMPLE_ID);
 		batchNo.setText(value(sample.getBatchNo()));
-		abv = BaijiuPlantLayout.labeledText(form, "\u9152\u7cbe\u5ea6 %vol", BaijiuPlantLayout.ABV);
+		abv = BaijiuPlantLayout.labeledText(meta, "\u9152\u7cbe\u5ea6 %vol", BaijiuPlantLayout.ABV);
 		abv.setText(sample.getAbvPercent() > 0.0d ? Double.toString(sample.getAbvPercent()) : "52");
-		analyst = BaijiuPlantLayout.labeledText(form, "\u68c0\u6d4b\u4eba", BaijiuPlantLayout.PERSON);
+		analyst = BaijiuPlantLayout.labeledText(meta, "\u68c0\u6d4b\u4eba", BaijiuPlantLayout.PERSON);
 		analyst.setText(value(sample.getAnalyst()));
-		setControl(scroll);
+		setControl(BaijiuPlantLayout.tabControlOf(root));
 	}
 
 	@Override

@@ -47,13 +47,13 @@ public final class BaijiuLicenseShell {
 		shell.setSize(720, 520);
 
 		Label version = new Label(shell, SWT.WRAP);
-		version.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		version.setLayoutData(BaijiuPlantLayout.wrapHint());
 
 		Label status = new Label(shell, SWT.WRAP);
-		status.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		status.setLayoutData(BaijiuPlantLayout.wrapHint());
 
 		Label hint = new Label(shell, SWT.WRAP);
-		hint.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		hint.setLayoutData(BaijiuPlantLayout.wrapHint());
 		hint.setText(BaijiuLicenseGate.OPERATOR_HINT + " \u79bb\u7ebf *.bjlic \u6216\u4e00\u884c\u5bc6\u94a5\uff0c\u65e0\u9700\u6fc0\u6d3b\u670d\u52a1\u5668\u3002\u6f14\u793a\u53ef\u5bfc\u5165\u63d2\u4ef6 demo/sample-pilot.bjlic\u3002\nOffline *.bjlic or one-line key. No activation server. Demo: demo/sample-pilot.bjlic.");
 
 		Label pasteLabel = new Label(shell, SWT.NONE);
@@ -64,7 +64,7 @@ public final class BaijiuLicenseShell {
 		paste.setLayoutData(pasteData);
 
 		Label detail = new Label(shell, SWT.WRAP);
-		detail.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		detail.setLayoutData(BaijiuPlantLayout.wrapHint());
 
 		Runnable refresh = () -> {
 			String text = BaijiuLicenseStore.loadText();

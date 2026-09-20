@@ -15,7 +15,6 @@ import java.util.Locale;
 
 import org.eclipse.chemclipse.model.core.IChromatogram;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
@@ -98,7 +97,7 @@ public final class BaijiuParallelShell {
 		BaijiuPlantLayout.hint(body, BaijiuParallelEngine.FORMULA_TEXT + "\n" + BaijiuParallelEngine.SCOPE_NOTE);
 		BaijiuPlantLayout.hint(body, "方法：" + settings.getMethodName() + "    内标：" + settings.getIstdName());
 
-		Composite header = BaijiuPlantLayout.row(body, 8);
+		Composite header = BaijiuPlantLayout.row(body, 6);
 		Label sampleLabel = new Label(header, SWT.NONE);
 		sampleLabel.setText("样品编号");
 		Text sampleNo = new Text(header, SWT.BORDER);
@@ -117,10 +116,8 @@ public final class BaijiuParallelShell {
 		allowedRsd.setLayoutData(BaijiuPlantLayout.fixed(BaijiuPlantLayout.ABV));
 		allowedRsd.setText(String.format(Locale.US, "%.1f", BaijiuPreferences.loadAllowedRsdPercent()));
 
-		Label fileALabel = BaijiuPlantLayout.hint(header, needleA == null ? "针 A：尚未选择" : "针 A：" + needleA.getName());
-		((GridData)fileALabel.getLayoutData()).horizontalSpan = 4;
-		Label fileBLabel = BaijiuPlantLayout.hint(header, needleB == null ? "针 B：尚未选择" : "针 B：" + needleB.getName());
-		((GridData)fileBLabel.getLayoutData()).horizontalSpan = 4;
+		Label fileALabel = BaijiuPlantLayout.hint(body, needleA == null ? "针 A：尚未选择" : "针 A：" + needleA.getName());
+		Label fileBLabel = BaijiuPlantLayout.hint(body, needleB == null ? "针 B：尚未选择" : "针 B：" + needleB.getName());
 
 		final File[] files = new File[]{needleA, needleB};
 

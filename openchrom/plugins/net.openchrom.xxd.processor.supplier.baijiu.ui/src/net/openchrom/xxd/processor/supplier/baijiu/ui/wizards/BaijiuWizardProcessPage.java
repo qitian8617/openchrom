@@ -12,7 +12,6 @@ package net.openchrom.xxd.processor.supplier.baijiu.ui.wizards;
 import org.eclipse.chemclipse.model.core.IChromatogram;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
@@ -35,8 +34,7 @@ public class BaijiuWizardProcessPage extends WizardPage {
 	@Override
 	public void createControl(Composite parent) {
 
-		Composite root = new Composite(parent, SWT.NONE);
-		root.setLayout(new GridLayout(1, false));
+		Composite root = BaijiuPlantLayout.tabBody(parent);
 		chromatogramLabel = BaijiuPlantLayout.hint(root, "");
 		status = BaijiuPlantLayout.hint(root, "");
 		Button reload = new Button(root, SWT.PUSH);
@@ -51,7 +49,7 @@ public class BaijiuWizardProcessPage extends WizardPage {
 			status.setText(wizard.integrate());
 			refresh();
 		});
-		setControl(root);
+		setControl(BaijiuPlantLayout.tabControlOf(root));
 		refresh();
 	}
 

@@ -176,10 +176,10 @@ public final class BaijiuHomePanels {
 			parent.setLayout(new GridLayout(1, false));
 			Label title = new Label(parent, SWT.WRAP);
 			title.setText(CHROMATOGRAM_EMPTY_TITLE);
-			title.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+			title.setLayoutData(wrapFill(false));
 			Label hint = new Label(parent, SWT.WRAP);
 			hint.setText(CHROMATOGRAM_EMPTY_HINT);
-			hint.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+			hint.setLayoutData(wrapFill(true));
 			applyEmptyStateColors(parent, title, hint);
 			layout(parent);
 		} catch(Throwable t) {
@@ -443,8 +443,10 @@ public final class BaijiuHomePanels {
 		}
 		try {
 			disposeChildren(parent);
-			parent.setLayout(new FillLayout());
+			parent.setLayout(new GridLayout(1, false));
 			Label label = new Label(parent, SWT.WRAP);
+			GridData data = wrapFill(true);
+			label.setLayoutData(data);
 			label.setText(text == null || text.isBlank() ? "厂工作台面板不可用。" : text);
 			applyDarkReadable(parent, label);
 			parent.layout(true, true);
@@ -464,6 +466,13 @@ public final class BaijiuHomePanels {
 				child.dispose();
 			}
 		}
+	}
+
+	private static GridData wrapFill(boolean grabVertical) {
+
+		GridData data = new GridData(SWT.FILL, grabVertical ? SWT.FILL : SWT.CENTER, true, grabVertical);
+		data.widthHint = 1;
+		return data;
 	}
 
 	private static void applyDarkReadable(Composite parent, Label label) {

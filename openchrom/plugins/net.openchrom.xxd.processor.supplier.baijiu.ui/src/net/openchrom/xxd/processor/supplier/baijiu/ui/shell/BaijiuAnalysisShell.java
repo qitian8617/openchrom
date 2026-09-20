@@ -18,7 +18,6 @@ import org.eclipse.chemclipse.model.core.IPeak;
 import org.eclipse.chemclipse.model.selection.IChromatogramSelection;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -264,8 +263,7 @@ public final class BaijiuAnalysisShell {
 
 	private Composite createReportTab(Composite parent) {
 
-		ScrolledComposite scroll = BaijiuPlantLayout.wrapVertical(parent);
-		Composite root = BaijiuPlantLayout.bodyOf(scroll);
+		Composite root = BaijiuPlantLayout.tabBody(parent);
 		BaijiuPlantLayout.hint(root, "\u6837\u54c1 \u2192 \u6821\u6b63 \u2192 \u5b9a\u91cf \u5b8c\u6210\u540e\u9884\u89c8\u62a5\u544a\u3002\u8bb8\u53ef\u95e8\u4e0e\u5b9a\u91cf\u5f15\u64ce\u4e0d\u53d8\uff1b\u672c\u9875\u53ea\u6253\u5f00\u5df2\u6709\u62a5\u544a\u7a97\u3002");
 		reportHeader = new BaijiuReportHeaderForm(root);
 		Composite buttons = BaijiuPlantLayout.row(root, 3);
@@ -275,57 +273,62 @@ public final class BaijiuAnalysisShell {
 			BaijiuLicenseShell.open(parent.getShell());
 			setStatus(BaijiuLicenseGate.statusLine());
 		});
-		return scroll;
+		return BaijiuPlantLayout.tabControlOf(root);
 	}
 
 	private Composite createSampleTab(Composite parent) {
 
-		ScrolledComposite scroll = BaijiuPlantLayout.wrapVertical(parent);
-		Composite root = BaijiuPlantLayout.bodyOf(scroll);
+		Composite root = BaijiuPlantLayout.tabBody(parent);
 
 		chromatogramLabel = BaijiuPlantLayout.hint(root, "");
 		BaijiuPlantLayout.hint(root, BaijiuTerms.GLOSSARY + " \u719f\u7ec3\u64cd\u4f5c\u5458\u53ef\u76f4\u63a5\u7528\u672c\u7a97\uff1b\u65b0\u64cd\u4f5c\u5458\u53ef\u8d70\u300c\u4e09\u6b65\u5411\u5bfc\u300d\u3002");
 
-		Group methodGroup = BaijiuPlantLayout.group(root, "\u6d53\u9999 FID \u65b9\u6cd5\u6458\u8981", 6);
-		methodName = BaijiuPlantLayout.labeledFill(methodGroup, "\u65b9\u6cd5\u540d\u79f0", BaijiuPlantLayout.METHOD);
-		columnSummary = BaijiuPlantLayout.labeledFill(methodGroup, "\u8272\u8c31\u67f1", BaijiuPlantLayout.METHOD);
-		ovenProgram = BaijiuPlantLayout.labeledWrap(methodGroup, "\u7a0b\u5e8f\u5347\u6e29", 5, 40);
-		samplingHz = BaijiuPlantLayout.labeledText(methodGroup, "\u91c7\u6837 Hz", BaijiuPlantLayout.NUMERIC);
-		runTimeMin = BaijiuPlantLayout.labeledText(methodGroup, "\u8dd1\u6837 min", BaijiuPlantLayout.NUMERIC);
-		windowMin = BaijiuPlantLayout.labeledText(methodGroup, "RT \u7a97\u53e3 min", BaijiuPlantLayout.NUMERIC);
-		istdName = BaijiuPlantLayout.labeledText(methodGroup, "\u5185\u6807\u540d\u79f0", BaijiuPlantLayout.ISTD_NAME);
-		aromaTemplate = BaijiuPlantLayout.labeledCombo(methodGroup, "\u9999\u578b\u6a21\u677f", labels(BaijiuAromaType.values()), BaijiuPlantLayout.AROMA);
+		Group methodGroup = BaijiuPlantLayout.group(root, "\u6d53\u9999 FID \u65b9\u6cd5\u6458\u8981", 1);
+		Composite methodNames = BaijiuPlantLayout.row(methodGroup, 2);
+		methodName = BaijiuPlantLayout.labeledText(methodNames, "\u65b9\u6cd5\u540d\u79f0", BaijiuPlantLayout.METHOD);
+		columnSummary = BaijiuPlantLayout.labeledText(methodNames, "\u8272\u8c31\u67f1", BaijiuPlantLayout.METHOD);
+		ovenProgram = BaijiuPlantLayout.labeledWrap(methodGroup, "\u7a0b\u5e8f\u5347\u6e29", 1, 40);
+		Composite methodShorts = BaijiuPlantLayout.row(methodGroup, 6);
+		samplingHz = BaijiuPlantLayout.labeledText(methodShorts, "\u91c7\u6837 Hz", BaijiuPlantLayout.NUMERIC);
+		runTimeMin = BaijiuPlantLayout.labeledText(methodShorts, "\u8dd1\u6837 min", BaijiuPlantLayout.NUMERIC);
+		windowMin = BaijiuPlantLayout.labeledText(methodShorts, "RT \u7a97\u53e3 min", BaijiuPlantLayout.NUMERIC);
+		Composite methodMeta = BaijiuPlantLayout.row(methodGroup, 4);
+		istdName = BaijiuPlantLayout.labeledText(methodMeta, "\u5185\u6807\u540d\u79f0", BaijiuPlantLayout.ISTD_NAME);
+		aromaTemplate = BaijiuPlantLayout.labeledCombo(methodMeta, "\u9999\u578b\u6a21\u677f", labels(BaijiuAromaType.values()), BaijiuPlantLayout.AROMA);
 
-		Group gasGroup = BaijiuPlantLayout.group(root, "\u6c14\u8def\uff08\u4ec5\u8bb0\u5f55\uff0c\u4e0d\u63a7\u5236\u4eea\u5668\uff09", 8);
-		carrierGas = BaijiuPlantLayout.labeledText(gasGroup, "\u8f7d\u6c14", BaijiuPlantLayout.GAS);
-		splitRatio = BaijiuPlantLayout.labeledText(gasGroup, "\u5206\u6d41", BaijiuPlantLayout.GAS);
-		injectorTemp = BaijiuPlantLayout.labeledText(gasGroup, "\u8fdb\u6837\u53e3 \u2103", BaijiuPlantLayout.NUMERIC);
-		detectorTemp = BaijiuPlantLayout.labeledText(gasGroup, "\u68c0\u6d4b\u5668 \u2103", BaijiuPlantLayout.NUMERIC);
+		Group gasGroup = BaijiuPlantLayout.group(root, "\u6c14\u8def\uff08\u4ec5\u8bb0\u5f55\uff0c\u4e0d\u63a7\u5236\u4eea\u5668\uff09", 1);
+		Composite gasRow = BaijiuPlantLayout.row(gasGroup, 8);
+		carrierGas = BaijiuPlantLayout.labeledText(gasRow, "\u8f7d\u6c14", BaijiuPlantLayout.GAS);
+		splitRatio = BaijiuPlantLayout.labeledText(gasRow, "\u5206\u6d41", BaijiuPlantLayout.GAS);
+		injectorTemp = BaijiuPlantLayout.labeledText(gasRow, "\u8fdb\u6837\u53e3 \u2103", BaijiuPlantLayout.NUMERIC);
+		detectorTemp = BaijiuPlantLayout.labeledText(gasRow, "\u68c0\u6d4b\u5668 \u2103", BaijiuPlantLayout.NUMERIC);
 		carrierGas.setEditable(false);
 		splitRatio.setEditable(false);
 		injectorTemp.setEditable(false);
 		detectorTemp.setEditable(false);
-		Label gasHint = BaijiuPlantLayout.hint(gasGroup, BaijiuCatalog.GAS_PATH_NOTE);
-		((GridData)gasHint.getLayoutData()).horizontalSpan = 8;
+		BaijiuPlantLayout.hint(gasGroup, BaijiuCatalog.GAS_PATH_NOTE);
 
-		Group sampleGroup = BaijiuPlantLayout.group(root, "\u6837\u54c1\u4fe1\u606f", 6);
-		sampleNo = BaijiuPlantLayout.labeledText(sampleGroup, "\u6837\u54c1\u7f16\u53f7", BaijiuPlantLayout.SAMPLE_ID);
-		liquorName = BaijiuPlantLayout.labeledText(sampleGroup, "\u9152\u540d", BaijiuPlantLayout.SAMPLE_NAME);
-		batchNo = BaijiuPlantLayout.labeledText(sampleGroup, "\u6279\u53f7", BaijiuPlantLayout.SAMPLE_ID);
-		aroma = BaijiuPlantLayout.labeledCombo(sampleGroup, "\u9999\u578b", labels(BaijiuAromaType.values()), BaijiuPlantLayout.AROMA);
-		abv = BaijiuPlantLayout.labeledText(sampleGroup, "\u9152\u7cbe\u5ea6 %vol", BaijiuPlantLayout.ABV);
-		analyst = BaijiuPlantLayout.labeledText(sampleGroup, "\u68c0\u6d4b\u4eba", BaijiuPlantLayout.PERSON);
-		dateText = BaijiuPlantLayout.labeledText(sampleGroup, "\u68c0\u6d4b\u65e5\u671f", BaijiuPlantLayout.DATE);
-		rawMaterial = BaijiuPlantLayout.labeledCombo(sampleGroup, "\u7532\u9187\u9650\u91cf\u539f\u6599", new String[] {BaijiuRawMaterial.GRAIN.getLabel(), BaijiuRawMaterial.OTHER.getLabel()}, BaijiuPlantLayout.SAMPLE_ID);
-		Label rawHint = BaijiuPlantLayout.hint(sampleGroup, "\u539f\u6599\u7c7b\u578b\u4ec5\u7528\u4e8e GB 2757 \u7532\u9187\u9650\u91cf\uff0c\u4e0e\u9999\u578b\u65e0\u5173\u3002\u9152\u7cbe\u5ea6\u4e3a\u624b\u5de5\u5f55\u5165\u3002");
-		((GridData)rawHint.getLayoutData()).horizontalSpan = 6;
+		Group sampleGroup = BaijiuPlantLayout.group(root, "\u6837\u54c1\u4fe1\u606f", 1);
+		Composite idRow = BaijiuPlantLayout.row(sampleGroup, 4);
+		sampleNo = BaijiuPlantLayout.labeledText(idRow, "\u6837\u54c1\u7f16\u53f7", BaijiuPlantLayout.SAMPLE_ID);
+		liquorName = BaijiuPlantLayout.labeledText(idRow, "\u9152\u540d", BaijiuPlantLayout.SAMPLE_NAME);
+		Composite batchRow = BaijiuPlantLayout.row(sampleGroup, 4);
+		batchNo = BaijiuPlantLayout.labeledText(batchRow, "\u6279\u53f7", BaijiuPlantLayout.SAMPLE_ID);
+		aroma = BaijiuPlantLayout.labeledCombo(batchRow, "\u9999\u578b", labels(BaijiuAromaType.values()), BaijiuPlantLayout.AROMA);
+		Composite abvRow = BaijiuPlantLayout.row(sampleGroup, 6);
+		abv = BaijiuPlantLayout.labeledText(abvRow, "\u9152\u7cbe\u5ea6 %vol", BaijiuPlantLayout.ABV);
+		analyst = BaijiuPlantLayout.labeledText(abvRow, "\u68c0\u6d4b\u4eba", BaijiuPlantLayout.PERSON);
+		dateText = BaijiuPlantLayout.labeledText(abvRow, "\u68c0\u6d4b\u65e5\u671f", BaijiuPlantLayout.DATE);
+		Composite rawRow = BaijiuPlantLayout.row(sampleGroup, 2);
+		rawMaterial = BaijiuPlantLayout.labeledCombo(rawRow, "\u7532\u9187\u9650\u91cf\u539f\u6599", new String[] {BaijiuRawMaterial.GRAIN.getLabel(), BaijiuRawMaterial.OTHER.getLabel()}, BaijiuPlantLayout.SAMPLE_ID);
+		BaijiuPlantLayout.hint(sampleGroup, "\u539f\u6599\u7c7b\u578b\u4ec5\u7528\u4e8e GB 2757 \u7532\u9187\u9650\u91cf\uff0c\u4e0e\u9999\u578b\u65e0\u5173\u3002\u9152\u7cbe\u5ea6\u4e3a\u624b\u5de5\u5f55\u5165\u3002");
 
-		Group istdGroup = BaijiuPlantLayout.group(root, "\u5185\u6807\u6cd5\uff08\u4e0e\u6f14\u793a\u6df7\u6807\u7ea6\u5b9a\u4e00\u81f4\uff09", 6);
-		istdStock = BaijiuPlantLayout.labeledText(istdGroup, "\u5185\u6807\u8d2e\u5907\u6db2 g/L", BaijiuPlantLayout.NUMERIC);
-		sampleMl = BaijiuPlantLayout.labeledText(istdGroup, "\u6837\u54c1\u4f53\u79ef mL", BaijiuPlantLayout.ABV);
-		istdMl = BaijiuPlantLayout.labeledText(istdGroup, "\u5185\u6807\u4f53\u79ef mL", BaijiuPlantLayout.ABV);
+		Group istdGroup = BaijiuPlantLayout.group(root, "\u5185\u6807\u6cd5\uff08\u4e0e\u6f14\u793a\u6df7\u6807\u7ea6\u5b9a\u4e00\u81f4\uff09", 1);
+		Composite istdRow = BaijiuPlantLayout.row(istdGroup, 6);
+		istdStock = BaijiuPlantLayout.labeledText(istdRow, "\u5185\u6807\u8d2e\u5907\u6db2 g/L", BaijiuPlantLayout.NUMERIC);
+		sampleMl = BaijiuPlantLayout.labeledText(istdRow, "\u6837\u54c1\u4f53\u79ef mL", BaijiuPlantLayout.ABV);
+		istdMl = BaijiuPlantLayout.labeledText(istdRow, "\u5185\u6807\u4f53\u79ef mL", BaijiuPlantLayout.ABV);
 		injectedIstd = BaijiuPlantLayout.hint(istdGroup, "");
-		((GridData)injectedIstd.getLayoutData()).horizontalSpan = 6;
 		istdStock.addModifyListener(e -> updateInjectedLabel());
 		sampleMl.addModifyListener(e -> updateInjectedLabel());
 		istdMl.addModifyListener(e -> updateInjectedLabel());
@@ -360,13 +363,12 @@ public final class BaijiuAnalysisShell {
 		for(int i = 0; i < columns.length; i++) {
 			BaijiuPlantLayout.column(resultTable, columns[i], widths[i]);
 		}
-		return scroll;
+		return BaijiuPlantLayout.tabControlOf(root);
 	}
 
 	private Composite createMethodTab(Composite parent) {
 
-		ScrolledComposite scroll = BaijiuPlantLayout.wrapVertical(parent);
-		Composite root = BaijiuPlantLayout.bodyOf(scroll);
+		Composite root = BaijiuPlantLayout.tabBody(parent);
 		BaijiuPlantLayout.hint(root, "\u5b9a\u7a3f\u6d53\u9999 FID \u65b9\u6cd5\u5305\uff1aXP-\u767d\u9152 C2 + \u4e59\u9178\u6b63\u4e01\u916f + 15 \u6df7\u6807\u3002\u53ef\u7f16\u8f91\u672c\u673a RT\u3001\u7a97\u53e3\u3001\u662f\u5426\u5b9a\u91cf\u3001\u662f\u5426\u7532\u9187\u5224\u5b9a\uff0c\u53e6\u5b58/\u52a0\u8f7d *.bjm\u3002\u4e0d\u5b9a\u91cf\u7684\u7ec4\u5206\u4ecd\u53ef\u5339\u914d\u51fa\u5cf0\uff0c\u4f46\u4e0d\u5199\u542b\u91cf\u3002\u7532\u9187\u5224\u5b9a\u6700\u591a\u52fe\u9009\u4e00\u4e2a\uff0c\u7528\u4e8e GB 2757\u3002\u9650\u91cf\u4e0d\u5199\u6b7b\u5728\u5224\u5b9a\u903b\u8f91\u4e2d\u3002");
 
 		Composite limits = BaijiuPlantLayout.row(root, 8);
@@ -394,13 +396,12 @@ public final class BaijiuAnalysisShell {
 		editGb2757 = labeledCheck(editor, BaijiuTerms.METHANOL_JUDGMENT);
 		button(editor, "\u5e94\u7528\u9009\u4e2d\u884c", e -> applyCompoundEdit());
 		BaijiuPlantLayout.hint(root, "\u52fe\u9009\u300c" + BaijiuTerms.QUANTIFY + "\u300d\u624d\u5199\u542b\u91cf\uff1b\u5185\u6807\u56fa\u5b9a\u4e0d\u5b9a\u91cf\u3002\u300c" + BaijiuTerms.METHANOL_JUDGMENT + "\u300d\u6700\u591a\u4e00\u4e2a\uff0c\u9ed8\u8ba4\u4e3a\u76ee\u5f55\u7532\u9187\u3002\u70b9\u300c\u5e94\u7528\u9009\u4e2d\u884c\u300d\u540e\u53ef\u300c\u4fdd\u5b58\u65b9\u6cd5\u300d\u6216\u300c\u53e6\u5b58\u5382\u65b9\u6cd5\u300d\u3002");
-		return scroll;
+		return BaijiuPlantLayout.tabControlOf(root);
 	}
 
 	private Composite createMatchTab(Composite parent) {
 
-		ScrolledComposite scroll = BaijiuPlantLayout.wrapVertical(parent);
-		Composite root = BaijiuPlantLayout.bodyOf(scroll);
+		Composite root = BaijiuPlantLayout.tabBody(parent);
 		BaijiuPlantLayout.hint(root, "\u4e0a\u8868\u4e3a\u671f\u671b\u7ec4\u5206\u7684\u5339\u914d\u7ed3\u679c\uff1b\u4e0b\u8868\u4e3a\u672a\u5339\u914d\u5cf0\u3002\u53ef\u5c06\u672a\u5339\u914d\u5cf0\u6307\u5b9a\u7ed9\u7ec4\u5206\uff0c\u6216\u4fee\u6539\u5cf0\u8d77\u6b62\u65f6\u95f4\u540e\u7acb\u5373\u91cd\u7b97\u5b9a\u91cf\u3002");
 		Composite quantRow = BaijiuPlantLayout.row(root, 2);
 		button(quantRow, "\u5b9a\u91cf\u5e76\u5199\u56de\u5cf0\u8868", e -> quantify(parent.getShell(), true, true));
@@ -436,13 +437,12 @@ public final class BaijiuAnalysisShell {
 			fillMatchTables();
 			recalculateQuiet();
 		});
-		return scroll;
+		return BaijiuPlantLayout.tabControlOf(root);
 	}
 
 	private Composite createMultipointTab(Composite parent) {
 
-		ScrolledComposite scroll = BaijiuPlantLayout.wrapVertical(parent);
-		Composite root = BaijiuPlantLayout.bodyOf(scroll);
+		Composite root = BaijiuPlantLayout.tabBody(parent);
 		BaijiuPlantLayout.hint(root, "\u591a\u70b9\u6df7\u6807\u6821\u6b63\uff08\u8bd5\u70b9 P1\uff09\uff1a\u7532\u9187\u3001\u4e59\u9178\u4e59\u916f\u3001\u4e73\u9178\u4e59\u916f\u3001\u5df1\u9178\u4e59\u916f\u3002\u6bcf\u9488\u58f0\u660e\u6df7\u6807\u500d\u6570\uff08\u76f8\u5bf9\u65b9\u6cd5\u6df7\u6807 g/L\uff09\uff0c\u4ece\u5f53\u524d\u8c31\u56fe\u52a0\u70b9\uff1b\u2265 3 \u70b9\u540e\u300c\u62df\u5408\u300d\u7ebf\u6027\u66f2\u7ebf\u5e76\u663e\u793a\u659c\u7387/\u622a\u8ddd/R\u00b2\u3002\u6709\u6548 RF \u5199\u5165\u65e2\u6709 RF \u8868\uff0c\u5b9a\u91cf\u4e0e\u95e8\u95ea\u4e0d\u53d8\u3002\u5176\u4f59\u7ec4\u5206\u4ecd\u7528\u300c\u7528\u5f53\u524d\u8c31\u56fe\u505a\u6821\u6b63\u300d\u5355\u70b9 RF\u3002\u79bb\u7ebf\u6f14\u793a\u53ef\u7528\u540c\u4e00\u5f20 mix-15plus-istd.ocb\uff0c\u52fe\u9009\u6309\u500d\u6570\u7f29\u653e\u5f85\u6d4b\u5cf0\u9762\u79ef\u6216\u76f4\u63a5\u300c\u6f14\u793a\u4e09\u70b9\u300d\uff08 0.5 / 1.0 / 1.5\uff09\u3002\u8be6\u89c1 docs/GCWS-MULTIPOINT.md\u3002");
 
 		Composite level = BaijiuPlantLayout.row(root, 6);
@@ -451,9 +451,9 @@ public final class BaijiuAnalysisShell {
 		mixLevelHint = BaijiuPlantLayout.hint(level, "");
 		((GridData)mixLevelHint.getLayoutData()).horizontalSpan = 4;
 		mixScale.addModifyListener(e -> updateMixLevelHint());
-		scaleAreas = new Button(level, SWT.CHECK);
+		scaleAreas = new Button(root, SWT.CHECK);
 		scaleAreas.setText("\u79bb\u7ebf\u6f14\u793a\uff1a\u6309\u500d\u6570\u7f29\u653e\u5f85\u6d4b\u5cf0\u9762\u79ef\uff08\u5185\u6807\u4e0d\u53d8\uff09");
-		scaleAreas.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 6, 1));
+		scaleAreas.setLayoutData(BaijiuPlantLayout.wrapHint());
 		updateMixLevelHint();
 
 		Composite actions = BaijiuPlantLayout.row(root, 6);
@@ -479,7 +479,7 @@ public final class BaijiuAnalysisShell {
 		}
 
 		multipointStatus = BaijiuPlantLayout.hint(root, "x = \u542b\u91cf g/L\uff0c y = A\u5f85\u6d4b / A\u5185\u6807\u3002R\u00b2 < 0.99 \u4ec5\u63d0\u793a\uff0c\u4e0d\u963b\u6b62\u95e8\u95ea\u3002");
-		return scroll;
+		return BaijiuPlantLayout.tabControlOf(root);
 	}
 
 	private void loadFields() {

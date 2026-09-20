@@ -11,7 +11,6 @@ package net.openchrom.xxd.processor.supplier.baijiu.ui.prefs;
 
 import org.eclipse.jface.preference.PreferencePage;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
@@ -23,6 +22,7 @@ import org.eclipse.ui.IWorkbenchPreferencePage;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuLicenseGate;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuPluginInfo;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuLicenseShell;
+import net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuPlantLayout;
 
 public class BaijiuLicensePreferencePage extends PreferencePage implements IWorkbenchPreferencePage {
 
@@ -46,13 +46,13 @@ public class BaijiuLicensePreferencePage extends PreferencePage implements IWork
 		Composite root = new Composite(parent, SWT.NONE);
 		root.setLayout(new GridLayout(1, false));
 		Label version = new Label(root, SWT.WRAP);
-		version.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		version.setLayoutData(BaijiuPlantLayout.wrapHint());
 		version.setText("\u63d2\u4ef6 " + BaijiuPluginInfo.bundleVersion() + "    " + BaijiuPluginInfo.FEATURE_ID);
 		status = new Label(root, SWT.WRAP);
-		status.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		status.setLayoutData(BaijiuPlantLayout.wrapHint());
 		status.setText(BaijiuLicenseGate.statusLine());
 		Label hint = new Label(root, SWT.WRAP);
-		hint.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		hint.setLayoutData(BaijiuPlantLayout.wrapHint());
 		hint.setText(BaijiuLicenseGate.OPERATOR_HINT);
 		Button open = new Button(root, SWT.PUSH);
 		open.setText("\u6253\u5f00\u8bb8\u53ef\u5bf9\u8bdd\u6846\u2026 / Open license dialog");
