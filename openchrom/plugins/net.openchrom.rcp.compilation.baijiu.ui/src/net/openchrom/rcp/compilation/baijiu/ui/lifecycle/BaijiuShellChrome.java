@@ -217,8 +217,13 @@ public final class BaijiuShellChrome {
 	 * {@code visible=false}/{@code toBeRendered=true}; 视图 gets Select
 	 * View so it paints. CSD action-bar swap re-attaches
 	 * {@link #PLANT_TOOLBAR_ID} without walk-hiding every chart toolitem.
+	 * Epoch 27: #64's ensure-view / createGui(view) / TOPIC_CHILDREN ADD
+	 * path re-entered: each pass appended another 视图 cascade (and
+	 * {@code createGui} on {@link #VIEW_MENU_ID} painted another SWT
+	 * bar item because cascade widgets stay null until Show). Rebuild
+	 * workbench.xmi that persisted duplicate {@code menu.view} children.
 	 */
-	public static final int CHROME_EPOCH = 26;
+	public static final int CHROME_EPOCH = 27;
 	/**
 	 * Ids that must exist on the live model after plant-home reveal. Missing
 	 * any of these is the empty-left / community-button-column failure mode.
@@ -835,6 +840,121 @@ public final class BaijiuShellChrome {
 			return false;
 		}
 		return isPlantWindowChrome(elementId) || isEditorRequiredMenu(elementId) || MAIN_MENU_ID.equals(elementId) || ECLIPSE_MAIN_MENU_ID.equals(elementId) || TRIMBAR_TOP_ID.equals(elementId) || ECLIPSE_MAIN_TOOLBAR_ID.equals(elementId) || PLANT_TOOLBAR_ID.equals(elementId);
+	}
+
+	/**
+	 * File / 白酒 / 视图 / 帮助 / Select View are painted as children of
+	 * {@code menu.main}. A second {@code createGui} on the cascade itself
+	 * appends another SWT.BAR item (cascade {@code widget} stays null until
+	 * Show). Only the bar / trim / toolbar need createGui.
+	 */
+	public static boolean isTopLevelCascadeMenu(String elementId) {
+
+		if(elementId == null || elementId.isBlank()) {
+			return false;
+		}
+		return FILE_MENU_ID.equals(elementId) || BAIJIU_MENU_ID.equals(elementId) || VIEW_MENU_ID.equals(elementId) || HELP_MENU_ID.equals(elementId) || SELECT_VIEW_MENU_ID.equals(elementId);
+	}
+
+	/**
+	 * Skip {@code createGui} when the widget already exists, and never
+	 * {@code createGui} a top-level cascade — MenuRenderer would add another
+	 * 视图 / 文件 / 白酒 / 帮助 to the live bar.
+	 */
+	public static boolean shouldCreateGuiForPlantChrome(String elementId, boolean hasWidget) {
+
+		if(hasWidget) {
+			return false;
+		}
+		return !isTopLevelCascadeMenu(elementId);
+	}
+
+	/**
+	 * Unique contribution ids on {@code menu.main} / {@code menu.view}.
+	 */
+	public static boolean isSingletonMenuChildId(String elementId) {
+
+		if(elementId == null || elementId.isBlank()) {
+			return false;
+		}
+		return PLANT_TOP_MENU_IDS.contains(elementId) || EDITOR_REQUIRED_MENU_IDS.contains(elementId) || SELECT_VIEW_MENU_ID.equals(elementId);
+	}
+
+	/**
+	 * Unique ids on {@code menu.main} / {@code menu.view}. A second
+	 * {@code menu.view} (same id, different instance) is the #64 field spam.
+	 */
+	public static boolean shouldAppendMenuChild(List<String> existingChildIds, String newId) {
+
+		if(newId == null || newId.isBlank()) {
+			return true;
+		}
+		if(existingChildIds == null || existingChildIds.isEmpty()) {
+			return true;
+		}
+		if(PLANT_TOP_MENU_IDS.contains(newId) || EDITOR_REQUIRED_MENU_IDS.contains(newId) || SELECT_VIEW_MENU_ID.equals(newId) || MAIN_MENU_ID.equals(newId) || ECLIPSE_MAIN_MENU_ID.equals(newId)) {
+			return !existingChildIds.contains(newId);
+		}
+		return true;
+	}
+
+	public static int countMenuChildrenWithId(List<String> childIds, String elementId) {
+
+		if(childIds == null || elementId == null || elementId.isBlank()) {
+			return 0;
+		}
+		int count = 0;
+		for(String id : childIds) {
+			if(elementId.equals(id)) {
+				count++;
+			}
+		}
+		return count;
+	}
+
+	/**
+	 * {@code TOPIC_CHILDREN} ADD is our own ensureViewMenu / order / Select
+	 * View attach. Scheduling reveal on ADD re-enters forever. REMOVE / MOVE
+	 * (CSD stole toolbar.plant or reordered the bar) still restore.
+	 */
+	public static boolean shouldRestoreChromeAfterChildrenChange(String changeType) {
+
+		if(changeType == null || changeType.isBlank()) {
+			return false;
+		}
+		String type = changeType.trim();
+		if("ADD".equalsIgnoreCase(type) || "CREATE".equalsIgnoreCase(type)) {
+			return false;
+		}
+		return "REMOVE".equalsIgnoreCase(type) || "MOVE".equalsIgnoreCase(type);
+	}
+
+	/**
+	 * {@code Window/mainMenu} SET. Our attach of {@code menu.main} must not
+	 * schedule another reveal. {@code null} (bug 398847 detach) or a foreign
+	 * editor action-bar menu still restore.
+	 */
+	public static boolean shouldRestoreMainMenuAfterChange(String newMenuId) {
+
+		if(newMenuId == null || newMenuId.isBlank()) {
+			return true;
+		}
+		return !MAIN_MENU_ID.equals(newMenuId) && !ECLIPSE_MAIN_MENU_ID.equals(newMenuId);
+	}
+
+	/**
+	 * SWT.BAR: hide 色谱图 / research, and dispose extra 视图 (keep the first
+	 * 文件 / 白酒 / 视图 / 帮助).
+	 */
+	public static boolean shouldDisposeMainMenuBarItem(String label, boolean alreadyPaintedThisPlantLabel) {
+
+		if(researchMenusVisible()) {
+			return false;
+		}
+		if(shouldHideMainMenuBarItem(label)) {
+			return true;
+		}
+		return isPlantTopMenuLabel(label) && alreadyPaintedThisPlantLabel;
 	}
 
 	/**

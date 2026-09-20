@@ -13,6 +13,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.eclipse.e4.ui.model.application.ui.menu.MMenu;
+import org.eclipse.e4.ui.model.application.ui.menu.MMenuFactory;
 import org.junit.jupiter.api.Test;
 
 public class BaijiuShellParts_1_Test {
@@ -73,8 +75,67 @@ public class BaijiuShellParts_1_Test {
 		assertFalse(BaijiuShellParts.forceCreateElement(null, null, null));
 		BaijiuShellParts.trySetCurSharedRef(null, null);
 		assertFalse(BaijiuShellParts.hasHiddenResearchAncestor(null));
+		assertFalse(BaijiuShellParts.isRevealingPlantWindowChrome());
+		BaijiuShellParts.hideChromatogramMenuLabel(null, null);
+		BaijiuShellParts.ensurePlantTopMenus(null);
+		BaijiuShellParts.ensureEditorRequiredMenus((MMenu)null);
+		BaijiuShellParts.dedupePlantMenuChildren(null);
+		assertEquals(0, BaijiuShellParts.countMenuChildrenWithId(null, BaijiuShellChrome.VIEW_MENU_ID));
 		assertFalse(BaijiuShellModel.plantHomeSurfacePresent(null, null));
 		assertTrue(BaijiuShellModel.missingPlantHomeIds(null, null).contains(BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID));
 		BaijiuShellSelection.selectInParent(null);
+	}
+
+	@Test
+	public void ensureViewMenuTwiceDoesNotAppendSecondViewChild() {
+
+		MMenu main = MMenuFactory.INSTANCE.createMenu();
+		main.setElementId(BaijiuShellChrome.MAIN_MENU_ID);
+		BaijiuShellParts.ensurePlantTopMenus(main);
+		BaijiuShellParts.ensureEditorRequiredMenus(main);
+		assertEquals(1, BaijiuShellParts.countMenuChildrenWithId(main, BaijiuShellChrome.VIEW_MENU_ID));
+		assertEquals(1, BaijiuShellParts.countMenuChildrenWithId(main, BaijiuShellChrome.FILE_MENU_ID));
+		assertEquals(1, BaijiuShellParts.countMenuChildrenWithId(main, BaijiuShellChrome.BAIJIU_MENU_ID));
+		assertEquals(1, BaijiuShellParts.countMenuChildrenWithId(main, BaijiuShellChrome.HELP_MENU_ID));
+		int afterFirst = main.getChildren().size();
+		for(int i = 0; i < 20; i++) {
+			BaijiuShellParts.ensurePlantTopMenus(main);
+			BaijiuShellParts.ensureEditorRequiredMenus(main);
+			BaijiuShellParts.ensureViewMenuContents(null, null, findView(main));
+			BaijiuShellParts.orderPlantTopMenus(main);
+		}
+		assertEquals(1, BaijiuShellParts.countMenuChildrenWithId(main, BaijiuShellChrome.VIEW_MENU_ID), "ensure* must be idempotent; a second 视图 is the field spam");
+		assertEquals(1, BaijiuShellParts.countMenuChildrenWithId(main, BaijiuShellChrome.CHROMATOGRAM_MENU_ID), "chromatogram stays one lookup child");
+		assertEquals(afterFirst, main.getChildren().size());
+		MMenu view = findView(main);
+		assertTrue(view != null);
+		assertEquals("视图", view.getLabel());
+		assertTrue(view.isVisible());
+		assertEquals(1, BaijiuShellParts.countMenuChildrenWithId(view, BaijiuShellChrome.SELECT_VIEW_MENU_ID));
+		MMenu chromatogram = null;
+		for(Object child : main.getChildren()) {
+			if(child instanceof MMenu menu && BaijiuShellChrome.CHROMATOGRAM_MENU_ID.equals(menu.getElementId())) {
+				chromatogram = menu;
+			}
+		}
+		assertTrue(chromatogram != null);
+		assertFalse(chromatogram.isVisible(), "menu.chromatogram is lookup-only, not a painted 色谱图");
+		MMenu extraView = MMenuFactory.INSTANCE.createMenu();
+		extraView.setElementId(BaijiuShellChrome.VIEW_MENU_ID);
+		extraView.setLabel("视图");
+		main.getChildren().add(extraView);
+		assertEquals(2, BaijiuShellParts.countMenuChildrenWithId(main, BaijiuShellChrome.VIEW_MENU_ID));
+		BaijiuShellParts.ensureEditorRequiredMenus(main);
+		assertEquals(1, BaijiuShellParts.countMenuChildrenWithId(main, BaijiuShellChrome.VIEW_MENU_ID), "dedupe must collapse a poisoned second 视图");
+	}
+
+	private static MMenu findView(MMenu main) {
+
+		for(Object child : main.getChildren()) {
+			if(child instanceof MMenu menu && BaijiuShellChrome.VIEW_MENU_ID.equals(menu.getElementId())) {
+				return menu;
+			}
+		}
+		return null;
 	}
 }

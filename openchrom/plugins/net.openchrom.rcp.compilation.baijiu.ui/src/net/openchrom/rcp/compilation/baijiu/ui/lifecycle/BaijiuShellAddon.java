@@ -128,7 +128,12 @@ public class BaijiuShellAddon {
 		});
 		try {
 			eventBroker.subscribe(WINDOW_MAIN_MENU_TOPIC, event -> {
-				if(shuttingDown) {
+				if(shuttingDown || BaijiuShellParts.isRevealingPlantWindowChrome()) {
+					return;
+				}
+				Object next = event.getProperty(UIEvents.EventTags.NEW_VALUE);
+				String newId = next instanceof MUIElement menu ? menu.getElementId() : null;
+				if(!BaijiuShellChrome.shouldRestoreMainMenuAfterChange(newId)) {
 					return;
 				}
 				schedulePlantWindowChrome(application, modelService);
@@ -138,7 +143,7 @@ public class BaijiuShellAddon {
 		}
 		try {
 			eventBroker.subscribe(UIEvents.UILifeCycle.ACTIVATE, event -> {
-				if(shuttingDown) {
+				if(shuttingDown || BaijiuShellParts.isRevealingPlantWindowChrome()) {
 					return;
 				}
 				Object element = event.getProperty(UIEvents.EventTags.ELEMENT);
@@ -151,13 +156,13 @@ public class BaijiuShellAddon {
 		}
 		try {
 			eventBroker.subscribe(UIEvents.UIElement.TOPIC_VISIBLE, event -> {
-				if(shuttingDown) {
+				if(shuttingDown || BaijiuShellParts.isRevealingPlantWindowChrome()) {
 					return;
 				}
 				Object element = event.getProperty(UIEvents.EventTags.ELEMENT);
 				Object next = event.getProperty(UIEvents.EventTags.NEW_VALUE);
 				if(element instanceof MUIElement ui && BaijiuShellChrome.CHROMATOGRAM_MENU_ID.equals(ui.getElementId()) && Boolean.TRUE.equals(next) && !BaijiuShellChrome.researchMenusVisible()) {
-					schedulePlantWindowChrome(application, modelService);
+					scheduleHideChromatogramMenuLabel(application, modelService);
 				}
 			});
 		} catch(RuntimeException | LinkageError e) {
@@ -165,7 +170,11 @@ public class BaijiuShellAddon {
 		}
 		try {
 			eventBroker.subscribe(UIEvents.ElementContainer.TOPIC_CHILDREN, event -> {
-				if(shuttingDown) {
+				if(shuttingDown || BaijiuShellParts.isRevealingPlantWindowChrome()) {
+					return;
+				}
+				Object type = event.getProperty(UIEvents.EventTags.TYPE);
+				if(!BaijiuShellChrome.shouldRestoreChromeAfterChildrenChange(type instanceof String text ? text : null)) {
 					return;
 				}
 				Object container = event.getProperty(UIEvents.EventTags.ELEMENT);
@@ -554,8 +563,34 @@ public class BaijiuShellAddon {
 		}
 	}
 
+	private static void scheduleHideChromatogramMenuLabel(MApplication application, EModelService modelService) {
+
+		Runnable hide = () -> BaijiuShellParts.hideChromatogramMenuLabel(application, modelService);
+		try {
+			Display display = Display.getCurrent();
+			if(display == null || display.isDisposed()) {
+				display = Display.getDefault();
+			}
+			if(display == null || display.isDisposed()) {
+				hide.run();
+				return;
+			}
+			final Display ui = display;
+			ui.asyncExec(() -> {
+				if(!ui.isDisposed() && !shuttingDown) {
+					hide.run();
+				}
+			});
+		} catch(RuntimeException | LinkageError e) {
+			hide.run();
+		}
+	}
+
 	private static void schedulePlantWindowChrome(MApplication application, EModelService modelService) {
 
+		if(BaijiuShellParts.isRevealingPlantWindowChrome()) {
+			return;
+		}
 		Runnable reveal = () -> BaijiuShellParts.revealPlantWindowChrome(application, modelService);
 		try {
 			Display display = Display.getCurrent();

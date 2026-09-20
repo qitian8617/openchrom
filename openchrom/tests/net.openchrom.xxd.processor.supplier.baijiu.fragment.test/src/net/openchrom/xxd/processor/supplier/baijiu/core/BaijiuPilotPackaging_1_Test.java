@@ -234,7 +234,14 @@ public class BaijiuPilotPackaging_1_Test {
 		assertNotNull(chrome);
 		String chromeSrc = Files.readString(chrome, StandardCharsets.UTF_8);
 		assertTrue(chromeSrc.contains("CSD_EDITOR_PART_ID"), chromeSrc);
-		assertTrue(chromeSrc.contains("CHROME_EPOCH = 26"), chromeSrc);
+		assertTrue(chromeSrc.contains("CHROME_EPOCH = 27"), chromeSrc);
+		assertTrue(chromeSrc.contains("shouldAppendMenuChild"), chromeSrc);
+		assertTrue(chromeSrc.contains("shouldCreateGuiForPlantChrome"), chromeSrc);
+		assertTrue(chromeSrc.contains("shouldRestoreChromeAfterChildrenChange"), chromeSrc);
+		assertTrue(chromeSrc.contains("shouldRestoreMainMenuAfterChange"), chromeSrc);
+		assertTrue(chromeSrc.contains("shouldDisposeMainMenuBarItem"), chromeSrc);
+		assertTrue(chromeSrc.contains("isTopLevelCascadeMenu"), chromeSrc);
+		assertTrue(chromeSrc.contains("isSingletonMenuChildId"), chromeSrc);
 		assertTrue(chromeSrc.contains("mustRecreateDetachedMainMenu"), chromeSrc);
 		assertTrue(chromeSrc.contains("mustRecreateDetachedTopTrim"), chromeSrc);
 		assertTrue(chromeSrc.contains("398847"), chromeSrc);
@@ -364,6 +371,10 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(addonSrc.contains("TOPIC_VISIBLE"), addonSrc);
 		assertTrue(addonSrc.contains("TOPIC_CHILDREN"), addonSrc);
 		assertTrue(addonSrc.contains("chromeGeneration"), addonSrc);
+		assertTrue(addonSrc.contains("isRevealingPlantWindowChrome"), addonSrc);
+		assertTrue(addonSrc.contains("shouldRestoreChromeAfterChildrenChange"), addonSrc);
+		assertTrue(addonSrc.contains("shouldRestoreMainMenuAfterChange"), addonSrc);
+		assertTrue(addonSrc.contains("hideChromatogramMenuLabel"), addonSrc);
 		assertTrue(addonSrc.contains("isCsdChromeActivation"), addonSrc);
 		assertTrue(addonSrc.contains("applyGcConsoleVisibility"), addonSrc);
 		assertTrue(addonSrc.contains("suppressE4GcWindow"), addonSrc);
@@ -469,6 +480,11 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(partsSrc.contains("ensureEditorRequiredMenus"), partsSrc);
 		assertTrue(partsSrc.contains("applyEditorRequiredMenuVisibility"), partsSrc);
 		assertTrue(partsSrc.contains("ensureViewMenuContents"), partsSrc);
+		assertTrue(partsSrc.contains("dedupePlantMenuChildren"), partsSrc);
+		assertTrue(partsSrc.contains("shouldAppendMenuChild"), partsSrc);
+		assertTrue(partsSrc.contains("shouldCreateGuiForPlantChrome"), partsSrc);
+		assertTrue(partsSrc.contains("isRevealingPlantWindowChrome"), partsSrc);
+		assertTrue(partsSrc.contains("hideChromatogramMenuLabel"), partsSrc);
 		assertTrue(partsSrc.contains("orderPlantTopMenus"), partsSrc);
 		assertTrue(partsSrc.contains("editorRequiredMenuVisible"), partsSrc);
 		assertTrue(partsSrc.contains("shouldHideTopTrimChild"), partsSrc);
@@ -739,6 +755,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(shellMenusSrc.contains("sanitizeMainMenuBar"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("SWT.BAR"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("shouldHideMainMenuBarItem"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("shouldDisposeMainMenuBarItem"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("sanitizeSelectView"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("选择视图"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("shouldHideSelectViewItem"), shellMenusSrc);
