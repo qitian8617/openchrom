@@ -429,40 +429,31 @@ public final class BaijiuShellParts {
 		if(part == null) {
 			return false;
 		}
-		if(host != null && !host.isDisposed()) {
-			Object widget = part.getWidget();
-			if(widget instanceof Control control && !control.isDisposed()) {
-				BaijiuHomePanels.hostEditor(host, control);
-				return true;
-			}
-			IPresentationEngine engine = presentationEngine(application, part);
-			if(engine != null) {
-				try {
-					IEclipseContext context = application == null ? null : application.getContext();
-					Object created = engine.createGui(part, host, context);
-					BaijiuHomePanels.hostEditor(host, part.getWidget() != null ? part.getWidget() : created);
-					if(part.getWidget() != null || created != null) {
-						return true;
-					}
-				} catch(RuntimeException | LinkageError e) {
-					// showPart below
-				}
-			}
+		if(reparentEditorWidget(part, host)) {
+			return true;
 		}
-		if(host != null && !host.isDisposed() && partService != null) {
+		if(partService != null) {
 			try {
 				partService.showPart(part, PartState.CREATE);
 			} catch(RuntimeException | LinkageError e) {
 				try {
 					partService.showPart(part, PartState.ACTIVATE);
 				} catch(RuntimeException | LinkageError e2) {
-					// widget reparent below
+					return reparentEditorWidget(part, host);
 				}
 			}
 		}
-		if(host != null && !host.isDisposed() && part.getWidget() instanceof Control control && !control.isDisposed()) {
+		return reparentEditorWidget(part, host);
+	}
+
+	static boolean reparentEditorWidget(MPart part, Composite host) {
+
+		if(part == null || host == null || host.isDisposed()) {
+			return false;
+		}
+		if(part.getWidget() instanceof Control control && !control.isDisposed()) {
 			BaijiuHomePanels.hostEditor(host, control);
-			return true;
+			return control.getParent() == host || BaijiuHomePanels.isAncestor(control, host) || BaijiuHomePanels.isAncestor(host, control);
 		}
 		return false;
 	}

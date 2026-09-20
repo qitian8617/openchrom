@@ -60,12 +60,17 @@ public class OpenBaijiuChromatogramHandler_1_Test {
 	}
 
 	@Test
-	public void hostSuccessRequiresPlantHostOrVisibleEditor() {
+	public void hostSuccessRequiresPlantEmbedNotChemclipseOnly() {
 
 		assertFalse(OpenBaijiuChromatogramHandler.hostedSuccessfully(false, false));
 		assertTrue(OpenBaijiuChromatogramHandler.hostedSuccessfully(true, false));
-		assertTrue(OpenBaijiuChromatogramHandler.hostedSuccessfully(false, true));
+		assertFalse(OpenBaijiuChromatogramHandler.hostedSuccessfully(false, true), "plant product must not claim success when 谱图/采集 embed failed");
 		assertTrue(OpenBaijiuChromatogramHandler.hostedSuccessfully(true, true));
+		assertTrue(OpenBaijiuChromatogramHandler.hostedSuccessfully(false, true, false), "community product may use ChemClipse editor only");
+		assertFalse(OpenBaijiuChromatogramHandler.hostedSuccessfully(false, true, true));
+		assertEquals("Could not find satisfiable constructor in org.eclipse.chemclipse.ux.extension.xxd.ui.editors.ChromatogramEditorCSD", OpenBaijiuChromatogramHandler.CREATEGUI_DI_REASON);
+		assertTrue(OpenBaijiuChromatogramHandler.HOST_FAILED_REASON.contains(OpenBaijiuChromatogramHandler.CREATEGUI_DI_REASON));
+		assertTrue(OpenBaijiuChromatogramHandler.HOST_FAILED_REASON.contains("\u8c31\u56fe/\u91c7\u96c6"));
 	}
 
 	@Test

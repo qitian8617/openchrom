@@ -13,6 +13,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.lang.reflect.Proxy;
+import java.util.Map;
+
+import org.eclipse.e4.ui.model.application.ui.basic.MPart;
+import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.junit.jupiter.api.Test;
 
 public class BaijiuWorkbenchParts_1_Test {
@@ -32,6 +37,9 @@ public class BaijiuWorkbenchParts_1_Test {
 		assertFalse(BaijiuWorkbenchParts.addToSharedElements(null, null));
 		assertFalse(BaijiuWorkbenchParts.hostCsdPart(null, null, null, null));
 		assertFalse(BaijiuWorkbenchParts.embedCsdEditor(null, null, null, null));
+		assertFalse(BaijiuWorkbenchParts.createGuiIntoPlantHost());
+		BaijiuWorkbenchParts.restoreChromatogramEmptyState(null, null);
+		BaijiuWorkbenchParts.restoreChromatogramEmptyState((org.eclipse.swt.widgets.Composite)null);
 		assertFalse(BaijiuWorkbenchParts.dockOffWorkflowTabs(null, null, null, null));
 		BaijiuWorkbenchParts.hostEditor(null, null);
 		assertEquals(null, BaijiuWorkbenchParts.homeWidget(null));
@@ -44,6 +52,57 @@ public class BaijiuWorkbenchParts_1_Test {
 		assertFalse(BaijiuWorkbenchParts.switchPerspective(null, null, null, BaijiuPerspectiveIds.ANALYSIS_PERSPECTIVE_ID));
 		assertFalse(BaijiuWorkbenchParts.showPart(null, null, null, BaijiuPerspectiveIds.SEQUENCE_PART_ID));
 		assertFalse(BaijiuWorkbenchParts.showPart(null, null, null, BaijiuPerspectiveIds.SEQUENCE_HOME_PART_ID));
+	}
+
+	@Test
+	public void embedDoesNotSucceedWhenCreateGuiWouldThrowDiException() {
+
+		assertFalse(BaijiuWorkbenchParts.createGuiIntoPlantHost(), "must not createGui ChromatogramEditorCSD into the plant Composite");
+		MPart part = stubPart(Map.of("file", "/tmp/sample.ocb"), "sample.ocb [CSD]");
+		EPartService parts = throwingPartService("Could not find satisfiable constructor in org.eclipse.chemclipse.ux.extension.xxd.ui.editors.ChromatogramEditorCSD");
+		assertFalse(BaijiuWorkbenchParts.embedCsdEditor(null, parts, part, null), "createGui/showPart DI failure is not a successful embed");
+		assertFalse(BaijiuWorkbenchParts.reparentEditorWidget(part, null));
+	}
+
+	private static MPart stubPart(Object object, String label) {
+
+		return (MPart)Proxy.newProxyInstance(MPart.class.getClassLoader(), new Class<?>[] {MPart.class}, (proxy, method, args) -> {
+			if("getObject".equals(method.getName())) {
+				return object;
+			}
+			if("getLabel".equals(method.getName())) {
+				return label;
+			}
+			if("getWidget".equals(method.getName()) || "getParent".equals(method.getName()) || "getContext".equals(method.getName())) {
+				return null;
+			}
+			if(method.getReturnType() == boolean.class || method.getReturnType() == Boolean.class) {
+				return Boolean.FALSE;
+			}
+			if(method.getReturnType() == void.class) {
+				return null;
+			}
+			if(method.getReturnType() == int.class) {
+				return Integer.valueOf(0);
+			}
+			return null;
+		});
+	}
+
+	private static EPartService throwingPartService(String message) {
+
+		return (EPartService)Proxy.newProxyInstance(EPartService.class.getClassLoader(), new Class<?>[] {EPartService.class}, (proxy, method, args) -> {
+			if("showPart".equals(method.getName())) {
+				throw new RuntimeException(message);
+			}
+			if(method.getReturnType() == boolean.class || method.getReturnType() == Boolean.class) {
+				return Boolean.FALSE;
+			}
+			if(method.getReturnType() == void.class) {
+				return null;
+			}
+			return null;
+		});
 	}
 
 	@Test
