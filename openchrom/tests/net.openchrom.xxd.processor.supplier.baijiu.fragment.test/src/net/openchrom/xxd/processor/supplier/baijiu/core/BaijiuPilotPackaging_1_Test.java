@@ -255,6 +255,17 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(chromeSrc.contains("PLANT_WINDOW_CHROME_IDS"), chromeSrc);
 		assertTrue(chromeSrc.contains("isPlantWindowChrome"), chromeSrc);
 		assertTrue(chromeSrc.contains("EDITOR_REQUIRED_MENU_IDS"), chromeSrc);
+		assertTrue(chromeSrc.contains("isEditorRequiredMenu"), chromeSrc);
+		assertTrue(chromeSrc.contains("isHardHideOrRemoveId"), chromeSrc);
+		assertTrue(chromeSrc.contains("AbstractGroupHandler"), chromeSrc);
+		int hiddenListAt = chromeSrc.indexOf("public static final List<String> HIDDEN_ELEMENT_IDS");
+		int hiddenListEnd = chromeSrc.indexOf("public static final List<String> HIDDEN_ID_PREFIXES", hiddenListAt);
+		assertTrue(hiddenListAt > 0 && hiddenListEnd > hiddenListAt, chromeSrc);
+		String hiddenList = chromeSrc.substring(hiddenListAt, hiddenListEnd);
+		assertFalse(hiddenList.contains("VIEW_MENU_ID"), "VIEW_MENU_ID must not be in HIDDEN_ELEMENT_IDS");
+		assertFalse(hiddenList.contains("CHROMATOGRAM_MENU_ID"), "CHROMATOGRAM_MENU_ID must not be in HIDDEN_ELEMENT_IDS");
+		assertFalse(hiddenList.contains("org.eclipse.chemclipse.rcp.app.ui.menu.view"), hiddenList);
+		assertFalse(hiddenList.contains("org.eclipse.chemclipse.ux.extension.ui.menu.chromatogram\""), hiddenList);
 		assertTrue(chromeSrc.contains("PERSPECTIVE_STACK_IDS"), chromeSrc);
 		assertTrue(chromeSrc.contains("org.eclipse.e4.primaryPerspectiveStack"), chromeSrc);
 		assertTrue(chromeSrc.contains("isPerspectiveStackId"), chromeSrc);
@@ -351,7 +362,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(addonSrc.contains("selectPlantHomeIfPresent"), addonSrc);
 		assertTrue(addonSrc.contains("rejectHiddenSelection"), addonSrc);
 		assertTrue(addonSrc.contains("hostOpenCsdEditors"), addonSrc);
-		assertTrue(addonSrc.contains("EDITOR_REQUIRED_MENU_IDS"), addonSrc);
+		assertTrue(addonSrc.contains("isEditorRequiredMenu"), addonSrc);
+		assertTrue(addonSrc.contains("EDITOR_REQUIRED_MENU_IDS") || addonSrc.contains("isEditorRequiredMenu"), addonSrc);
 		assertTrue(addonSrc.contains("recoverPlantHome"), addonSrc);
 		assertFalse(addonSrc.contains("if(!shown && plantHome)"), "plant home must not fall back to the community workbench perspective");
 		assertFalse(addonSrc.contains("findPerspective(application, modelService, BaijiuShellChrome.WORKBENCH_PERSPECTIVE_ID)"), "must not select community 白酒工作台 when plant home is missing");
@@ -432,6 +444,9 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(partsSrc.contains("hasCsdInput"), partsSrc);
 		assertTrue(partsSrc.contains("isParkedEditorArea"), partsSrc);
 		assertTrue(partsSrc.contains("revealPlantWindowChrome"), partsSrc);
+		assertTrue(partsSrc.contains("ensureEditorRequiredMenus"), partsSrc);
+		assertTrue(partsSrc.contains("preferPlantLookupWindow"), partsSrc);
+		assertTrue(partsSrc.contains("EDITOR_REQUIRED_MENU_IDS"), partsSrc);
 		assertTrue(partsSrc.contains("hideNonPlantTopTrim"), partsSrc);
 		assertTrue(partsSrc.contains("isPlantToolbarContribution"), partsSrc);
 		assertTrue(partsSrc.contains("mustForceShowPlantChrome") || partsSrc.contains("forceShowPlantWindowChrome"), partsSrc);

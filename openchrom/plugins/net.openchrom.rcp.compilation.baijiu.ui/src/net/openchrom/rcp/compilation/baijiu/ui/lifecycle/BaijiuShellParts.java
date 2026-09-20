@@ -25,6 +25,7 @@ import org.eclipse.e4.ui.model.application.ui.basic.MTrimBar;
 import org.eclipse.e4.ui.model.application.ui.basic.MTrimmedWindow;
 import org.eclipse.e4.ui.model.application.ui.basic.MWindow;
 import org.eclipse.e4.ui.model.application.ui.menu.MMenu;
+import org.eclipse.e4.ui.model.application.ui.menu.MMenuFactory;
 import org.eclipse.e4.ui.workbench.IPresentationEngine;
 import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
@@ -313,12 +314,15 @@ public final class BaijiuShellParts {
 		if(application == null || modelService == null) {
 			return;
 		}
+		preferPlantLookupWindow(application, modelService);
 		forceShowPlantWindowChrome(application, modelService);
 		reattachWindowMainMenu(application, modelService);
+		ensureEditorRequiredMenus(application, modelService);
 		showTopTrimBars(application, modelService);
 		revealPlantToolbar(application, modelService);
 		hideNonPlantTopTrim(application, modelService);
 		forceShowPlantWindowChrome(application, modelService);
+		ensureEditorRequiredMenus(application, modelService);
 	}
 
 	private static void forceShowPlantWindowChrome(MApplication application, EModelService modelService) {
@@ -329,6 +333,182 @@ public final class BaijiuShellParts {
 			if(found != null && BaijiuShellChrome.mustForceShowPlantChrome(found.getElementId())) {
 				forceCreateElement(application, modelService, found);
 			}
+		}
+	}
+
+	/**
+	 * ChemClipse {@code AbstractGroupHandler} uses
+	 * {@code application.getChildren().get(0).getMainMenu()}. The GC
+	 * console TrimmedWindow must not sit first — it has no View menu.
+	 */
+	static void preferPlantLookupWindow(MApplication application, EModelService modelService) {
+
+		if(application == null) {
+			return;
+		}
+		List<MWindow> children;
+		try {
+			children = application.getChildren();
+		} catch(RuntimeException | LinkageError e) {
+			return;
+		}
+		if(children == null || children.size() < 2) {
+			return;
+		}
+		MWindow plant = null;
+		if(modelService != null) {
+			MUIElement found = modelService.find(BaijiuShellChrome.MAIN_WINDOW_ID, application);
+			if(found instanceof MWindow window && !BaijiuShellChrome.GC_WINDOW_ID.equals(window.getElementId())) {
+				plant = window;
+			}
+		}
+		if(plant == null) {
+			for(MWindow window : children) {
+				if(window != null && BaijiuShellChrome.MAIN_WINDOW_ID.equals(window.getElementId())) {
+					plant = window;
+					break;
+				}
+			}
+		}
+		if(plant == null) {
+			for(MWindow window : children) {
+				if(window != null && !BaijiuShellChrome.GC_WINDOW_ID.equals(window.getElementId())) {
+					plant = window;
+					break;
+				}
+			}
+		}
+		if(plant == null) {
+			return;
+		}
+		int index = children.indexOf(plant);
+		if(index <= 0) {
+			return;
+		}
+		try {
+			children.remove(plant);
+			children.add(0, plant);
+		} catch(RuntimeException | LinkageError e) {
+			// immutable application children
+		}
+	}
+
+	/**
+	 * Keep {@link BaijiuShellChrome#EDITOR_REQUIRED_MENU_IDS} as {@code MMenu}
+	 * children of the live window main menu so GroupHandler
+	 * {@code getSubMenu} does not throw {@code NotDefinedException}. 视图
+	 * stays the ChemClipse View menu id; 色谱 stays defined but hidden
+	 * unless the research escape hatch is on.
+	 */
+	static void ensureEditorRequiredMenus(MApplication application, EModelService modelService) {
+
+		if(application == null || modelService == null) {
+			return;
+		}
+		preferPlantLookupWindow(application, modelService);
+		MMenu mainMenu = windowMainMenu(application);
+		if(mainMenu == null) {
+			mainMenu = findMenu(modelService, application, BaijiuShellChrome.MAIN_MENU_ID);
+		}
+		if(mainMenu == null) {
+			mainMenu = findMenu(modelService, application, BaijiuShellChrome.ECLIPSE_MAIN_MENU_ID);
+		}
+		if(mainMenu == null) {
+			return;
+		}
+		forceShowChrome(mainMenu);
+		for(String id : BaijiuShellChrome.EDITOR_REQUIRED_MENU_IDS) {
+			MMenu menu = findMenu(modelService, application, id);
+			if(menu == null) {
+				menu = createEditorRequiredMenu(modelService, id);
+			}
+			if(menu == null) {
+				continue;
+			}
+			attachMenuChild(mainMenu, menu);
+			removeTag(menu, IPresentationEngine.HIDDEN_EXPLICITLY);
+			menu.setToBeRendered(true);
+			if(BaijiuShellChrome.VIEW_MENU_ID.equals(id) || BaijiuShellChrome.researchMenusVisible()) {
+				menu.setVisible(true);
+			} else {
+				menu.setVisible(false);
+			}
+		}
+	}
+
+	private static MMenu windowMainMenu(MApplication application) {
+
+		if(application == null) {
+			return null;
+		}
+		List<MWindow> windows;
+		try {
+			windows = application.getChildren();
+		} catch(RuntimeException | LinkageError e) {
+			return null;
+		}
+		if(windows == null) {
+			return null;
+		}
+		for(MWindow window : windows) {
+			if(window == null || BaijiuShellChrome.GC_WINDOW_ID.equals(window.getElementId())) {
+				continue;
+			}
+			MMenu mainMenu = window.getMainMenu();
+			if(mainMenu != null) {
+				return mainMenu;
+			}
+		}
+		return null;
+	}
+
+	private static MMenu createEditorRequiredMenu(EModelService modelService, String elementId) {
+
+		MMenu menu = null;
+		if(modelService != null) {
+			try {
+				menu = modelService.createModelElement(MMenu.class);
+			} catch(RuntimeException | LinkageError e) {
+				menu = null;
+			}
+		}
+		if(menu == null) {
+			try {
+				menu = MMenuFactory.INSTANCE.createMenu();
+			} catch(RuntimeException | LinkageError e) {
+				return null;
+			}
+		}
+		menu.setElementId(elementId);
+		if(BaijiuShellChrome.VIEW_MENU_ID.equals(elementId)) {
+			menu.setLabel("视图");
+		} else if(BaijiuShellChrome.CHROMATOGRAM_MENU_ID.equals(elementId)) {
+			menu.setLabel("色谱");
+		}
+		menu.setToBeRendered(true);
+		return menu;
+	}
+
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	private static void attachMenuChild(MMenu parent, MMenu child) {
+
+		if(parent == null || child == null || parent == child) {
+			return;
+		}
+		try {
+			MElementContainer<?> currentParent = child.getParent();
+			if(currentParent != null && currentParent != parent) {
+				List siblings = currentParent.getChildren();
+				if(siblings != null) {
+					siblings.remove(child);
+				}
+			}
+			List children = parent.getChildren();
+			if(children != null && !children.contains(child)) {
+				children.add(child);
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// menu children not writable
 		}
 	}
 

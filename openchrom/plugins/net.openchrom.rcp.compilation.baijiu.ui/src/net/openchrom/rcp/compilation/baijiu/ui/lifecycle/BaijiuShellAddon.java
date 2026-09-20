@@ -370,7 +370,9 @@ public class BaijiuShellAddon {
 	 * Walk the main menu's top {@code MMenu} children and hide 窗口 / Window,
 	 * including Eclipse 3.x ActionSet contributions whose id does not match
 	 * ChemClipse {@code ...menu.window}. Never hide {@link BaijiuShellChrome#PLANT_WINDOW_CHROME_IDS}
-	 * (the menu bar / 文件 / 白酒 / 视图 / 帮助).
+	 * (the menu bar / 文件 / 白酒 / 视图 / 帮助) or
+	 * {@link BaijiuShellChrome#EDITOR_REQUIRED_MENU_IDS} (GroupHandler
+	 * looks up {@code menu.view} as a child of the live main menu).
 	 */
 	static void hideTopWindowMenus(MApplication application, EModelService modelService) {
 
@@ -402,7 +404,7 @@ public class BaijiuShellAddon {
 					if(contribution == null) {
 						continue;
 					}
-					if(BaijiuShellChrome.isPlantWindowChrome(contribution.getElementId())) {
+					if(BaijiuShellChrome.isPlantWindowChrome(contribution.getElementId()) || BaijiuShellChrome.isEditorRequiredMenu(contribution.getElementId())) {
 						continue;
 					}
 					if(BaijiuShellChrome.shouldHideMainMenuChild(contribution.getParentId(), null, contribution.getTags()) //
@@ -533,7 +535,7 @@ public class BaijiuShellAddon {
 		BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
 		List<MUIElement> toHide = new ArrayList<>();
 		for(MUIElement element : elements) {
-			if(element != null && shouldHideElement(element) && !BaijiuShellChrome.isPlantWindowChrome(element.getElementId())) {
+			if(element != null && shouldHideElement(element) && !BaijiuShellChrome.isPlantWindowChrome(element.getElementId()) && !BaijiuShellChrome.isEditorRequiredMenu(element.getElementId())) {
 				toHide.add(element);
 			}
 		}
@@ -602,7 +604,7 @@ public class BaijiuShellAddon {
 	private static boolean shouldHideElement(MUIElement element) {
 
 		String elementId = element.getElementId();
-		if(BaijiuShellChrome.isPlantWindowChrome(elementId)) {
+		if(BaijiuShellChrome.isPlantWindowChrome(elementId) || BaijiuShellChrome.isEditorRequiredMenu(elementId)) {
 			return false;
 		}
 		String label = labelOf(element);
@@ -672,15 +674,11 @@ public class BaijiuShellAddon {
 		if(element == null) {
 			return;
 		}
-		if(BaijiuShellChrome.isPlantWindowChrome(element.getElementId()) || BaijiuShellChrome.KEEP_ELEMENT_IDS.contains(element.getElementId())) {
+		if(BaijiuShellChrome.isPlantWindowChrome(element.getElementId()) || BaijiuShellChrome.isEditorRequiredMenu(element.getElementId()) || BaijiuShellChrome.KEEP_ELEMENT_IDS.contains(element.getElementId())) {
 			return;
 		}
 		BaijiuShellSelection.deselectFromParent(element);
 		element.setVisible(false);
-		if(BaijiuShellChrome.EDITOR_REQUIRED_MENU_IDS.contains(element.getElementId())) {
-			element.setToBeRendered(true);
-			return;
-		}
 		element.setToBeRendered(false);
 	}
 }

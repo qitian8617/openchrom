@@ -294,10 +294,16 @@ public final class BaijiuShellChrome {
 			OPEN_CHROMATOGRAM_TOOLITEM_ID, //
 			TOGGLE_GC_TOOLITEM_ID);
 	/**
-	 * AbstractChromatogramEditor looks these up on mouse/toolbar. Hiding them
-	 * ({@code toBeRendered=false}) throws {@code NotDefinedException} and can
-	 * abort editor UI. Keep them defined; strip 色谱 from the main menu via
-	 * {@link #shouldHideMainMenuChild} labels instead.
+	 * ChemClipse {@code AbstractGroupHandler.getSubMenu} looks these up as
+	 * {@code MMenu} children of {@code application.getChildren().get(0)
+	 * .getMainMenu()}. Missing / removed / {@code toBeRendered=false} yields
+	 * {@code NotDefinedException} log spam on chart toolbar update and window
+	 * close. Keep the contributions registered under the live main menu
+	 * ({@link #VIEW_MENU_ID} is the plant 视图 label). Hide research
+	 * <em>children</em> only — never put these ids on
+	 * {@link #HIDDEN_ELEMENT_IDS} or walk-hide the contribution itself.
+	 * {@link #CHROMATOGRAM_MENU_ID} stays defined for the same lookup; its
+	 * top-level 色谱 label stays off unless {@link #researchMenusVisible()}.
 	 */
 	public static final Set<String> EDITOR_REQUIRED_MENU_IDS = Set.of( //
 			CHROMATOGRAM_MENU_ID, //
@@ -666,6 +672,21 @@ public final class BaijiuShellChrome {
 		return elementId != null && !elementId.isBlank() && PLANT_WINDOW_CHROME_IDS.contains(elementId);
 	}
 
+	public static boolean isEditorRequiredMenu(String elementId) {
+
+		return elementId != null && !elementId.isBlank() && EDITOR_REQUIRED_MENU_IDS.contains(elementId);
+	}
+
+	/**
+	 * Exact-id hard hide / remove list. Editor-required menus must never
+	 * appear here — GroupHandler treats a missing child as
+	 * {@code NotDefinedException}.
+	 */
+	public static boolean isHardHideOrRemoveId(String elementId) {
+
+		return elementId != null && !elementId.isBlank() && HIDDEN_ELEMENT_IDS.contains(elementId);
+	}
+
 	/**
 	 * Plant menu bar / top trim / toolbar.plant must paint even when
 	 * {@code workbench.xmi} restored {@code visible=false},
@@ -798,7 +819,7 @@ public final class BaijiuShellChrome {
 		if(researchMenusVisible()) {
 			return false;
 		}
-		if(elementId != null && !elementId.isBlank() && (isPlantWindowChrome(elementId) || KEEP_ELEMENT_IDS.contains(elementId))) {
+		if(elementId != null && !elementId.isBlank() && (isPlantWindowChrome(elementId) || isEditorRequiredMenu(elementId) || KEEP_ELEMENT_IDS.contains(elementId))) {
 			return false;
 		}
 		if(shouldHide(elementId, label) || shouldHideTopMenu(elementId, label, tags)) {
