@@ -13,10 +13,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableItem;
+import org.eclipse.swt.widgets.Tree;
+import org.eclipse.swt.widgets.TreeItem;
 
 /**
  * Dedicated-product SWT popup cleanup. ChemClipse copies processor menus
@@ -50,9 +57,16 @@ public final class BaijiuShellMenus {
 				Listener listener = event -> {
 					if(event.widget instanceof Menu menu && !menu.isDisposed()) {
 						sanitize(menu);
+					} else if(event.widget instanceof Shell shell && !shell.isDisposed()) {
+						sanitizeSelectView(shell);
+					} else if(event.widget instanceof Table table && !table.isDisposed()) {
+						sanitizeSelectViewTable(table);
+					} else if(event.widget instanceof Tree tree && !tree.isDisposed()) {
+						sanitizeSelectViewTree(tree);
 					}
 				};
 				display.addFilter(SWT.Show, listener);
+				display.addFilter(SWT.Activate, listener);
 				installed = listener;
 			}
 		} catch(RuntimeException | LinkageError e) {
@@ -103,6 +117,93 @@ public final class BaijiuShellMenus {
 		}
 		if(chart || stack) {
 			disposeExtraSeparators(menu);
+		}
+	}
+
+	static void sanitizeSelectView(Shell shell) {
+
+		if(shell == null || shell.isDisposed() || !isSelectViewShell(shell)) {
+			return;
+		}
+		sanitizeSelectViewControl(shell);
+	}
+
+	static boolean isSelectViewShell(Shell shell) {
+
+		if(shell == null || shell.isDisposed()) {
+			return false;
+		}
+		String title = BaijiuShellChrome.normalizeMenuLabel(shell.getText() == null ? "" : shell.getText());
+		return "select view".equals(title) || "选择视图".equals(title) || "show view".equals(title) || "显示视图".equals(title);
+	}
+
+	private static void sanitizeSelectViewControl(Control control) {
+
+		if(control == null || control.isDisposed()) {
+			return;
+		}
+		if(control instanceof Table table) {
+			sanitizeSelectViewTable(table);
+		} else if(control instanceof Tree tree) {
+			sanitizeSelectViewTree(tree);
+		}
+		if(control instanceof Composite composite) {
+			Control[] children = composite.getChildren();
+			if(children != null) {
+				for(Control child : children) {
+					sanitizeSelectViewControl(child);
+				}
+			}
+		}
+	}
+
+	static void sanitizeSelectViewTable(Table table) {
+
+		if(table == null || table.isDisposed() || !isSelectViewShell(table.getShell())) {
+			return;
+		}
+		TableItem[] items = table.getItems();
+		for(int i = items.length - 1; i >= 0; i--) {
+			TableItem item = items[i];
+			if(item == null || item.isDisposed()) {
+				continue;
+			}
+			if(BaijiuShellChrome.shouldHideSelectViewItem(null, item.getText())) {
+				try {
+					item.dispose();
+				} catch(RuntimeException e) {
+					// table refreshing
+				}
+			}
+		}
+	}
+
+	static void sanitizeSelectViewTree(Tree tree) {
+
+		if(tree == null || tree.isDisposed() || !isSelectViewShell(tree.getShell())) {
+			return;
+		}
+		TreeItem[] items = tree.getItems();
+		for(int i = items.length - 1; i >= 0; i--) {
+			disposeHiddenTreeItem(items[i]);
+		}
+	}
+
+	private static void disposeHiddenTreeItem(TreeItem item) {
+
+		if(item == null || item.isDisposed()) {
+			return;
+		}
+		TreeItem[] children = item.getItems();
+		for(int i = children.length - 1; i >= 0; i--) {
+			disposeHiddenTreeItem(children[i]);
+		}
+		if(BaijiuShellChrome.shouldHideSelectViewItem(null, item.getText())) {
+			try {
+				item.dispose();
+			} catch(RuntimeException e) {
+				// tree refreshing
+			}
 		}
 	}
 

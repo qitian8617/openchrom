@@ -234,7 +234,18 @@ public class BaijiuPilotPackaging_1_Test {
 		assertNotNull(chrome);
 		String chromeSrc = Files.readString(chrome, StandardCharsets.UTF_8);
 		assertTrue(chromeSrc.contains("CSD_EDITOR_PART_ID"), chromeSrc);
-		assertTrue(chromeSrc.contains("CHROME_EPOCH = 22"), chromeSrc);
+		assertTrue(chromeSrc.contains("CHROME_EPOCH = 23"), chromeSrc);
+		assertTrue(chromeSrc.contains("SELECT_VIEW_KEEP_ELEMENT_IDS"), chromeSrc);
+		assertTrue(chromeSrc.contains("SELECT_VIEW_KEEP_LABELS"), chromeSrc);
+		assertTrue(chromeSrc.contains("SELECT_VIEW_HIDE_LABELS"), chromeSrc);
+		assertTrue(chromeSrc.contains("shouldHideSelectViewItem"), chromeSrc);
+		assertTrue(chromeSrc.contains("CHROMATOGRAM_OVERLAY_PART_ID"), chromeSrc);
+		assertTrue(chromeSrc.contains("isPlantToolbarContribution"), chromeSrc);
+		assertTrue(chromeSrc.contains("白酒操作"), chromeSrc);
+		assertTrue(chromeSrc.contains("气相色谱控制台"), chromeSrc);
+		assertTrue(chromeSrc.contains("色谱图叠加"), chromeSrc);
+		assertTrue(chromeSrc.contains("进样序列"), chromeSrc);
+		assertTrue(chromeSrc.contains("Mass Spectrum File Explorer") || chromeSrc.contains("mass spectrum file explorer"), chromeSrc);
 		assertTrue(chromeSrc.contains("PLANT_WINDOW_CHROME_IDS"), chromeSrc);
 		assertTrue(chromeSrc.contains("isPlantWindowChrome"), chromeSrc);
 		assertTrue(chromeSrc.contains("EDITOR_REQUIRED_MENU_IDS"), chromeSrc);
@@ -311,6 +322,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(addonSrc.contains("applyGcConsoleVisibility"), addonSrc);
 		assertTrue(addonSrc.contains("suppressE4GcWindow"), addonSrc);
 		assertTrue(addonSrc.contains("hideResearchElements"), addonSrc);
+		assertTrue(addonSrc.contains("hideSelectViewDescriptors"), addonSrc);
+		assertTrue(addonSrc.contains("shouldHideSelectViewItem"), addonSrc);
 		assertTrue(addonSrc.contains("reassignAwayFrom"), addonSrc);
 		assertTrue(addonSrc.contains("clearHiddenSelections"), addonSrc);
 		assertTrue(addonSrc.contains("ensureChemclipsePerspectiveStack"), addonSrc);
@@ -397,6 +410,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(partsSrc.contains("hasCsdInput"), partsSrc);
 		assertTrue(partsSrc.contains("isParkedEditorArea"), partsSrc);
 		assertTrue(partsSrc.contains("revealPlantWindowChrome"), partsSrc);
+		assertTrue(partsSrc.contains("hideNonPlantTopTrim"), partsSrc);
+		assertTrue(partsSrc.contains("isPlantToolbarContribution"), partsSrc);
 		assertTrue(partsSrc.contains("HIDDEN_EXPLICITLY"), partsSrc);
 		assertTrue(partsSrc.contains("setMainMenu"), partsSrc);
 		assertTrue(partsSrc.contains("hostOpenCsdEditors"), partsSrc);
@@ -651,6 +666,9 @@ public class BaijiuPilotPackaging_1_Test {
 		String shellMenusSrc = Files.readString(shellMenus, StandardCharsets.UTF_8);
 		assertTrue(shellMenusSrc.contains("SWT.Show"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("sanitize"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("sanitizeSelectView"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("选择视图"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("shouldHideSelectViewItem"), shellMenusSrc);
 
 		Path seqPart = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/parts/BaijiuSequencePart.java", "plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/parts/BaijiuSequencePart.java");
 		assertNotNull(seqPart);
@@ -669,8 +687,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(cssText.contains("ChromatogramChart"), cssText);
 		assertTrue(cssText.contains("TargetReferenceLabelMarker-Peak-Font"), cssText);
 		assertTrue(cssText.contains("#111111"), cssText);
-		assertTrue(cssText.contains("handledtoolitem.selectView"), cssText);
-		assertTrue(cssText.contains("handledmenuitem.selectView"), cssText);
+		assertTrue(cssText.contains("#org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.selectView"), cssText);
+		assertFalse(cssText.contains("#org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.selectView"), "视图 keeps Select View; Java allowlists the dialog");
 		assertTrue(cssText.contains("toolbar.toggleGcConsole"), cssText);
 		assertFalse(cssText.contains("#org.eclipse.ui.main.toolbar {") || cssText.contains("#org.eclipse.ui.main.toolbar,"), "CSS must not hide the entire top coolbar so the plant toolbar stays painted");
 		assertFalse(cssText.contains("#org.eclipse.chemclipse.ux.extension.ui.menu.process {") || cssText.contains("#org.eclipse.chemclipse.ux.extension.ui.menu.process,"), "CSS must not hide 处理器 so the JVM escape hatch can reveal it");

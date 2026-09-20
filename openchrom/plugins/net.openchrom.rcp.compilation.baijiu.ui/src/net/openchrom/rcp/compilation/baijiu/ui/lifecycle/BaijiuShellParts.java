@@ -316,6 +316,44 @@ public final class BaijiuShellParts {
 		reattachWindowMainMenu(application, modelService);
 		showTopTrimBars(application, modelService);
 		revealPlantToolbar(application, modelService);
+		hideNonPlantTopTrim(application, modelService);
+	}
+
+	static void hideNonPlantTopTrim(MApplication application, EModelService modelService) {
+
+		if(application == null || modelService == null) {
+			return;
+		}
+		hideNonPlantTrimChildren(modelService.find(BaijiuShellChrome.TRIMBAR_TOP_ID, application));
+		hideNonPlantTrimChildren(modelService.find(BaijiuShellChrome.ECLIPSE_MAIN_TOOLBAR_ID, application));
+	}
+
+	private static void hideNonPlantTrimChildren(MUIElement element) {
+
+		if(!(element instanceof MElementContainer<?> container)) {
+			return;
+		}
+		List<?> children = container.getChildren();
+		if(children == null) {
+			return;
+		}
+		for(Object child : children) {
+			if(!(child instanceof MUIElement ui)) {
+				continue;
+			}
+			String id = ui.getElementId();
+			if(BaijiuShellChrome.TRIMBAR_TOP_ID.equals(id) || BaijiuShellChrome.ECLIPSE_MAIN_TOOLBAR_ID.equals(id)) {
+				hideNonPlantTrimChildren(ui);
+				continue;
+			}
+			if(BaijiuShellChrome.isPlantToolbarContribution(id)) {
+				forceShowChrome(ui);
+				hideNonPlantTrimChildren(ui);
+				continue;
+			}
+			ui.setVisible(false);
+			ui.setToBeRendered(false);
+		}
 	}
 
 	public static void syncGcToggleToolItem(MApplication application, EModelService modelService) {

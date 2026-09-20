@@ -20,13 +20,14 @@ import java.util.Set;
  * Unknown / renamed ChemClipse ids are left visible so launch cannot brick.
  * <p>
  * Normal plant top bar: 文件 / 白酒 / 视图 / 帮助. 处理器 / 插件 / 色谱 / 窗口
- * are hidden by id and by top-menu label. Select View / perspective switcher
- * are hidden so the plant home GC console cannot be cloned from the view
- * picker. Plant home sash: left workflow tabs (谱图/采集 + analysis pages) |
- * right fixed 白酒操作 sidebar. GC console is a true top-level SWT Shell
- * (600×1024), toggled from 反控 — never a Part/sash child of plant home.
- * Cold start leaves that Shell hidden (toolbar 反控 unchecked) until the
- * operator clicks 反控 or 白酒 → 气相色谱控制台. Escape hatch (documented, not in the UI):
+ * are hidden by id and by top-menu label. 视图 keeps Select View; the dialog
+ * is an allowlist (白酒操作 / 气相色谱控制台 / 色谱图叠加 / 进样序列).
+ * Perspective switcher stays hidden. Plant home sash: left workflow tabs
+ * (谱图/采集 + analysis pages) | right fixed 白酒操作 sidebar. GC console is
+ * a true top-level SWT Shell (600×1024), toggled from 反控 — never a
+ * Part/sash child of plant home. Cold start leaves that Shell hidden
+ * (toolbar 反控 unchecked) until the operator clicks 反控 or 白酒 →
+ * 气相色谱控制台. Escape hatch (documented, not in the UI):
  * {@code -Dnet.openchrom.baijiu.showResearchMenus=true}.
  */
 public final class BaijiuShellChrome {
@@ -110,6 +111,7 @@ public final class BaijiuShellChrome {
 	public static final String REPORT_HOME_CONTRIBUTION_URI = "bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuReportHomePart";
 	public static final String EDITOR_AREA_ID = "org.eclipse.chemclipse.rcp.app.ui.editor";
 	public static final String CSD_EDITOR_PART_ID = "org.eclipse.chemclipse.ux.extension.xxd.ui.part.chromatogramEditorCSD";
+	public static final String CHROMATOGRAM_OVERLAY_PART_ID = "org.eclipse.chemclipse.ux.extension.xxd.ui.part.chromatogramOverlay";
 	public static final String PRIMARY_EDITOR_STACK_ID = "org.eclipse.e4.primaryDataStack";
 	/**
 	 * Live ChemClipse editor Area hosted as the plant-home 谱图/采集 surface
@@ -185,8 +187,13 @@ public final class BaijiuShellChrome {
 	 * Rebuild {@code workbench.xmi} so a persisted {@code visible=false} /
 	 * {@code toBeRendered=false} main menu or {@code trimbar.top} is not
 	 * restored. Chrome apply now force-shows {@link #PLANT_WINDOW_CHROME_IDS}.
+	 * Epoch 23: Select View is an allowlist (白酒操作 / 气相色谱控制台 /
+	 * 色谱图叠加 / 进样序列). Research MS views stay off. 色谱图叠加 is KEEP
+	 * so FID overlay is not treated as {@code xxd.ui.part.*}. Leftover
+	 * Working Set / perspectives / plugins coolbar children are re-hidden
+	 * after plant-toolbar reveal.
 	 */
-	public static final int CHROME_EPOCH = 22;
+	public static final int CHROME_EPOCH = 23;
 	/**
 	 * Ids that must exist on the live model after plant-home reveal. Missing
 	 * any of these is the empty-left / community-button-column failure mode.
@@ -352,7 +359,6 @@ public final class BaijiuShellChrome {
 			"org.eclipse.chemclipse.ux.extension.ui.menu.scan", //
 			"org.eclipse.chemclipse.ux.extension.ui.menu.peak", //
 			"org.eclipse.chemclipse.ux.extension.ui.menu.spectrum", //
-			SELECT_VIEW_MENU_ID, //
 			PERSPECTIVE_SWITCHER_MENU_ID, //
 			"org.eclipse.ui.views.showView", //
 			"org.eclipse.ui.views.showView.other", //
@@ -427,6 +433,8 @@ public final class BaijiuShellChrome {
 			HELP_MENU_ID, //
 			VIEW_MENU_ID, //
 			CSD_EDITOR_PART_ID, //
+			CHROMATOGRAM_OVERLAY_PART_ID, //
+			SELECT_VIEW_MENU_ID, //
 			MAIN_MENU_ID, //
 			ECLIPSE_MAIN_MENU_ID, //
 			ECLIPSE_MAIN_TOOLBAR_ID, //
@@ -490,7 +498,64 @@ public final class BaijiuShellChrome {
 			"org.eclipse.chemclipse.chromatogram.csd.peak.detector", //
 			"org.eclipse.chemclipse.chromatogram.xxd.peak.detector", //
 			"org.eclipse.chemclipse.chromatogram.xxd.integrator", //
+			"org.eclipse.chemclipse.ux.extension.xxd.ui.part.chromatogramOverlay", //
+			"org.eclipse.chemclipse.ux.extension.xxd.ui.partdescriptor.chromatogramOverlay", //
 			"org.eclipse.chemclipse.chromatogram.peak.detector");
+
+	/**
+	 * Select View / 选择视图 allowlist. ChemClipse {@code 序列} is not the
+	 * plant 进样序列 part — hide it and use left workflow tabs. Overlay is
+	 * the FID 色谱图叠加 view.
+	 */
+	public static final Set<String> SELECT_VIEW_KEEP_ELEMENT_IDS = Set.of( //
+			WORKBENCH_HOME_PART_ID, //
+			WORKBENCH_PART_ID, //
+			GC_HOME_PART_ID, //
+			GC_CONTROL_PART_ID, //
+			CHROMATOGRAM_OVERLAY_PART_ID, //
+			"org.eclipse.chemclipse.ux.extension.xxd.ui.partdescriptor.chromatogramOverlay", //
+			SEQUENCE_HOME_PART_ID, //
+			SEQUENCE_PART_ID, //
+			CHROMATOGRAM_HOME_PART_ID);
+
+	public static final List<String> SELECT_VIEW_KEEP_LABELS = List.of( //
+			"白酒操作", "baijiu actions", //
+			"气相色谱控制台", "temperature control", "gc console", //
+			"色谱图叠加", "chromatogram overlay", //
+			"进样序列", "injection sequence", //
+			"谱图/采集", "谱图 / 采集", "chromatogram / acquisition");
+
+	public static final List<String> SELECT_VIEW_HIDE_LABELS = List.of( //
+			"数据", "data", "data explorer", //
+			"序列", "sequence", //
+			"编辑历史", "edit history", //
+			"反馈", "feedback", //
+			"控制台", "console", //
+			"mass spectrum file explorer", //
+			"mass spectrum header", //
+			"targets", //
+			"mass spectrum overlay", //
+			"pseudo gel", //
+			"mass spectrum peak list", //
+			"mass spectrum", //
+			"热图", "heatmap", //
+			"well data", "plate data", "well channels", //
+			"pca", "nmr", "maldi", "质谱");
+
+	/**
+	 * Research clutter inside 文件 / 白酒 / 视图 / 帮助. Does not hide the
+	 * four top menus or Select View itself (dialog is allowlisted).
+	 */
+	public static final List<String> MENU_CHILD_HIDE_LABELS = List.of( //
+			"tutorials", "教程", //
+			"updates", "更新", //
+			"quick access", "快速访问", //
+			"import", "导入", //
+			"export", "导出", //
+			"show view", "显示视图", //
+			"open perspective", "打开透视图", "选择透视图", //
+			"perspective switcher", "切换透视图", //
+			"install add-ons", "安装加载项", "install addons");
 
 	private static final Set<String> RESEARCH_LABELS = Set.of( //
 			"处理器", "process", "processor", "processors", //
@@ -586,6 +651,17 @@ public final class BaijiuShellChrome {
 		return elementId != null && !elementId.isBlank() && PLANT_WINDOW_CHROME_IDS.contains(elementId);
 	}
 
+	public static boolean isPlantToolbarContribution(String elementId) {
+
+		if(elementId == null || elementId.isBlank()) {
+			return false;
+		}
+		if(PLANT_TOOLBAR_ID.equals(elementId) || isPlantWindowChrome(elementId)) {
+			return true;
+		}
+		return elementId.startsWith("net.openchrom.rcp.compilation.baijiu.ui.toolbar.");
+	}
+
 	public static boolean shouldHide(String elementId) {
 
 		return shouldHide(elementId, null);
@@ -675,7 +751,96 @@ public final class BaijiuShellChrome {
 		if(shouldHide(elementId, label) || shouldHideTopMenu(elementId, label, tags)) {
 			return true;
 		}
+		if(isMenuChildHideLabel(label)) {
+			return true;
+		}
 		return isResearchTopMenuLabel(label);
+	}
+
+	/**
+	 * ChemClipse Select View lists {@code MPartDescriptor}s even when E4
+	 * parts are {@code visible=false}. Allowlist plant views; hide MS /
+	 * Console / Data / ChemClipse {@code 序列}.
+	 */
+	public static boolean shouldHideSelectViewItem(String elementId, String label) {
+
+		if(researchMenusVisible()) {
+			return false;
+		}
+		if(elementId != null && !elementId.isBlank()) {
+			if(SELECT_VIEW_KEEP_ELEMENT_IDS.contains(elementId) || isPlantWindowChrome(elementId)) {
+				return false;
+			}
+			if(KEEP_ELEMENT_IDS.contains(elementId) && isSelectViewKeepId(elementId)) {
+				return false;
+			}
+		}
+		if(isSelectViewKeepLabel(label)) {
+			return false;
+		}
+		if(isSelectViewHideLabel(label)) {
+			return true;
+		}
+		if(elementId != null && !elementId.isBlank() && shouldHide(elementId, label)) {
+			return true;
+		}
+		return true;
+	}
+
+	static boolean isSelectViewKeepId(String elementId) {
+
+		if(elementId == null || elementId.isBlank()) {
+			return false;
+		}
+		if(SELECT_VIEW_KEEP_ELEMENT_IDS.contains(elementId)) {
+			return true;
+		}
+		return elementId.contains("chromatogramOverlay") || elementId.endsWith(".part.workbench") || elementId.endsWith(".part.workbench.plantHome") || elementId.endsWith(".part.control") || elementId.endsWith(".part.control.plantHome") || elementId.endsWith(".part.sequence") || elementId.endsWith(".part.sequence.plantHome");
+	}
+
+	static boolean isSelectViewKeepLabel(String label) {
+
+		if(label == null || label.isBlank()) {
+			return false;
+		}
+		String normalized = normalizeMenuLabel(label);
+		for(String keep : SELECT_VIEW_KEEP_LABELS) {
+			if(normalized.equals(keep)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	static boolean isSelectViewHideLabel(String label) {
+
+		if(label == null || label.isBlank()) {
+			return false;
+		}
+		String normalized = normalizeMenuLabel(label);
+		for(String hide : SELECT_VIEW_HIDE_LABELS) {
+			if(normalized.equals(hide)) {
+				return true;
+			}
+			if(hide.length() >= 8 && normalized.contains(hide)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	static boolean isMenuChildHideLabel(String label) {
+
+		if(label == null || label.isBlank()) {
+			return false;
+		}
+		String normalized = normalizeMenuLabel(label);
+		for(String hide : MENU_CHILD_HIDE_LABELS) {
+			if(normalized.equals(hide)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	static boolean isResearchTopMenuLabel(String label) {
