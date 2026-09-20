@@ -10,6 +10,7 @@
 package net.openchrom.rcp.compilation.baijiu.ui.lifecycle;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
@@ -24,6 +25,14 @@ public class BaijiuShellMenus_1_Test {
 		BaijiuShellMenus.sanitizeSelectView(null);
 		BaijiuShellMenus.sanitizeSelectViewTable(null);
 		BaijiuShellMenus.sanitizeSelectViewTree(null);
+		BaijiuShellMenus.sanitizePlantCascades(null);
+		BaijiuShellMenus.sanitizeViewMenu(null);
+		BaijiuShellMenus.sanitizeFileMenu(null);
 		assertFalse(BaijiuShellMenus.isSelectViewShell(null));
+		assertFalse(BaijiuShellMenus.looksLikePlantFileMenu(java.util.List.of("Close", "Close All", "Restore")));
+		assertTrue(BaijiuShellMenus.looksLikePlantFileMenu(java.util.List.of("Save As...", "Close")));
+		assertTrue(BaijiuShellMenus.looksLikePlantViewMenu(java.util.List.of("选择视图")));
+		assertTrue(BaijiuShellMenus.looksLikePlantViewMenu(java.util.List.of("概览", "叠加")));
+		assertFalse(BaijiuShellMenus.looksLikePlantViewMenu(java.util.List.of("峰")));
 	}
 }

@@ -174,10 +174,15 @@ public class BaijiuShellAddon {
 					return;
 				}
 				Object type = event.getProperty(UIEvents.EventTags.TYPE);
-				if(!BaijiuShellChrome.shouldRestoreChromeAfterChildrenChange(type instanceof String text ? text : null)) {
+				String changeType = type instanceof String text ? text : null;
+				Object container = event.getProperty(UIEvents.EventTags.ELEMENT);
+				String containerId = container instanceof MUIElement ui ? ui.getElementId() : null;
+				if(BaijiuShellChrome.shouldSanitizePlantMenuChildrenAfterChange(containerId, changeType)) {
+					scheduleSanitizePlantMenus(application, modelService);
+				}
+				if(!BaijiuShellChrome.shouldRestoreChromeAfterChildrenChange(changeType)) {
 					return;
 				}
-				Object container = event.getProperty(UIEvents.EventTags.ELEMENT);
 				if(isPlantChromeContainer(container)) {
 					schedulePlantWindowChrome(application, modelService);
 				}
@@ -475,16 +480,16 @@ public class BaijiuShellAddon {
 					if(BaijiuShellChrome.isPlantWindowChrome(contribution.getElementId()) || BaijiuShellChrome.isEditorRequiredMenu(contribution.getElementId())) {
 						continue;
 					}
-					if(BaijiuShellChrome.shouldHideMainMenuChild(contribution.getParentId(), null, contribution.getTags()) //
-							|| BaijiuShellChrome.shouldHideMainMenuChild(contribution.getElementId(), labelOf(contribution), contribution.getTags())) {
+					if(BaijiuShellChrome.shouldHideMenuContribution(contribution.getParentId(), contribution.getElementId(), labelOf(contribution), contribution.getTags())) {
 						hide(contribution);
 					}
-					hideWindowMenuElements(contribution.getChildren());
+					hideWindowMenuElements(contribution.getParentId(), contribution.getChildren());
 				}
 			}
 		}
 		hideSelectViewDescriptors(application, modelService);
 		BaijiuShellParts.revealPlantWindowChrome(application, modelService);
+		BaijiuShellParts.sanitizePlantMenuContributions(application, modelService);
 	}
 
 	/**
@@ -628,6 +633,34 @@ public class BaijiuShellAddon {
 		}
 	}
 
+	private static void scheduleSanitizePlantMenus(MApplication application, EModelService modelService) {
+
+		Runnable sanitize = () -> BaijiuShellParts.sanitizePlantMenuContributions(application, modelService);
+		try {
+			Display display = Display.getCurrent();
+			if(display == null || display.isDisposed()) {
+				display = Display.getDefault();
+			}
+			if(display == null || display.isDisposed()) {
+				sanitize.run();
+				return;
+			}
+			final Display ui = display;
+			ui.asyncExec(() -> {
+				if(!ui.isDisposed() && !shuttingDown) {
+					sanitize.run();
+				}
+			});
+			ui.timerExec(120, () -> {
+				if(!ui.isDisposed() && !shuttingDown) {
+					sanitize.run();
+				}
+			});
+		} catch(RuntimeException | LinkageError e) {
+			sanitize.run();
+		}
+	}
+
 	private static boolean isCsdChromeActivation(Object element) {
 
 		if(!(element instanceof MUIElement ui)) {
@@ -754,11 +787,11 @@ public class BaijiuShellAddon {
 	private static void hideRestrictedMenuChildren(MUIElement menuElement) {
 
 		if(menuElement instanceof MMenu menu) {
-			hideWindowMenuElements(menu.getChildren());
+			hideWindowMenuElements(menu.getElementId(), menu.getChildren());
 		}
 	}
 
-	private static void hideWindowMenuElements(List<MMenuElement> children) {
+	private static void hideWindowMenuElements(String parentId, List<MMenuElement> children) {
 
 		if(children == null) {
 			return;
@@ -767,12 +800,15 @@ public class BaijiuShellAddon {
 			if(child == null) {
 				continue;
 			}
-			if(BaijiuShellChrome.shouldHideMainMenuChild(child.getElementId(), labelOf(child), child.getTags())) {
+			if(BaijiuShellChrome.shouldHidePlantMenuChild(parentId, child.getElementId(), labelOf(child), child.getTags())) {
 				hide(child);
+				if(child instanceof MMenu nested) {
+					hideWindowMenuElements(nested.getElementId(), nested.getChildren());
+				}
 				continue;
 			}
 			if(child instanceof MMenu nested) {
-				hideWindowMenuElements(nested.getChildren());
+				hideWindowMenuElements(nested.getElementId(), nested.getChildren());
 			}
 		}
 	}

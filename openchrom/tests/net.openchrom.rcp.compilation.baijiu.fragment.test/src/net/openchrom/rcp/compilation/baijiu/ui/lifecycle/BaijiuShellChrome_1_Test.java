@@ -66,7 +66,7 @@ public class BaijiuShellChrome_1_Test {
 		assertEquals("白酒FID工作站", BaijiuShellChrome.APPLICATION_NAME_VM);
 		assertFalse(BaijiuShellChrome.APPLICATION_NAME_VM.contains(" "));
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome", BaijiuShellChrome.PERSPECTIVE_ID);
-		assertEquals(27, BaijiuShellChrome.CHROME_EPOCH);
+		assertEquals(28, BaijiuShellChrome.CHROME_EPOCH);
 		assertEquals("org.eclipse.chemclipse.ux.extension.ui.perspective.welcome", BaijiuShellChrome.WELCOME_PERSPECTIVE_ID);
 		assertTrue(BaijiuShellChrome.isHiddenResearchPerspective(BaijiuShellChrome.WELCOME_PERSPECTIVE_ID));
 		assertTrue(BaijiuShellChrome.isHiddenResearchPerspective(BaijiuShellChrome.MALDI_PERSPECTIVE_ID));
@@ -325,6 +325,7 @@ public class BaijiuShellChrome_1_Test {
 		assertTrue(BaijiuShellChrome.isSingletonMenuChildId(BaijiuShellChrome.VIEW_MENU_ID));
 		assertTrue(BaijiuShellChrome.isSingletonMenuChildId(BaijiuShellChrome.SELECT_VIEW_MENU_ID));
 		assertTrue(BaijiuShellChrome.isSingletonMenuChildId(BaijiuShellChrome.CHROMATOGRAM_MENU_ID));
+		assertTrue(BaijiuShellChrome.isSingletonMenuChildId(BaijiuShellChrome.SAVE_MENU_ID));
 		assertFalse(BaijiuShellChrome.shouldAppendMenuChild(java.util.List.of(BaijiuShellChrome.VIEW_MENU_ID), BaijiuShellChrome.VIEW_MENU_ID));
 		assertTrue(BaijiuShellChrome.shouldAppendMenuChild(java.util.List.of(), BaijiuShellChrome.VIEW_MENU_ID));
 		assertTrue(BaijiuShellChrome.shouldAppendMenuChild(java.util.List.of(BaijiuShellChrome.FILE_MENU_ID), BaijiuShellChrome.VIEW_MENU_ID));
@@ -348,6 +349,14 @@ public class BaijiuShellChrome_1_Test {
 		assertFalse(BaijiuShellChrome.shouldRestoreChromeAfterChildrenChange(null));
 		assertTrue(BaijiuShellChrome.shouldRestoreChromeAfterChildrenChange("REMOVE"));
 		assertTrue(BaijiuShellChrome.shouldRestoreChromeAfterChildrenChange("MOVE"));
+		assertTrue(BaijiuShellChrome.shouldSanitizePlantMenuChildrenAfterChange(BaijiuShellChrome.VIEW_MENU_ID, "ADD"), "GroupHandler ADD must re-hide 概览 not reveal chrome");
+		assertTrue(BaijiuShellChrome.shouldSanitizePlantMenuChildrenAfterChange(BaijiuShellChrome.FILE_MENU_ID, "ADD"));
+		assertTrue(BaijiuShellChrome.shouldSanitizePlantMenuChildrenAfterChange("org.eclipse.chemclipse.ux.extension.xxd.ui.view.overview", "ADD"));
+		assertFalse(BaijiuShellChrome.shouldSanitizePlantMenuChildrenAfterChange(BaijiuShellChrome.MAIN_MENU_ID, "ADD"), "main-menu ADD is #64 spam if we full-reveal");
+		assertFalse(BaijiuShellChrome.shouldSanitizePlantMenuChildrenAfterChange(BaijiuShellChrome.VIEW_MENU_ID, null));
+		assertTrue(BaijiuShellChrome.isPlantMenuContributionContainer(BaijiuShellChrome.VIEW_MENU_ID));
+		assertTrue(BaijiuShellChrome.isResearchViewMenuId("org.eclipse.chemclipse.ux.extension.xxd.ui.view.peaks"));
+		assertFalse(BaijiuShellChrome.isResearchViewMenuId(BaijiuShellChrome.VIEW_MENU_ID));
 		assertFalse(BaijiuShellChrome.shouldRestoreMainMenuAfterChange(BaijiuShellChrome.MAIN_MENU_ID));
 		assertFalse(BaijiuShellChrome.shouldRestoreMainMenuAfterChange(BaijiuShellChrome.ECLIPSE_MAIN_MENU_ID));
 		assertTrue(BaijiuShellChrome.shouldRestoreMainMenuAfterChange(null), "bug 398847 detach");
@@ -504,6 +513,71 @@ public class BaijiuShellChrome_1_Test {
 		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem(null, "气相色谱控制台"));
 		assertFalse(BaijiuShellChrome.shouldHideBaijiuMenuChild(BaijiuShellChrome.GC_CONTROL_MENU_ID, "气相色谱控制台"));
 		assertFalse(BaijiuShellChrome.shouldHideMainMenuChild("generated.import", "Import", null));
+		assertFalse(BaijiuShellChrome.shouldHideViewMenuChild(null, "概览"));
+		assertFalse(BaijiuShellChrome.shouldHideFileMenuChild(null, "Import"));
+	}
+
+	@Test
+	public void viewAndFileMenuAllowlistsBlockResearchReinjection() {
+
+		assertFalse(BaijiuShellChrome.shouldHideViewMenuChild(BaijiuShellChrome.SELECT_VIEW_MENU_ID, "选择视图"));
+		assertFalse(BaijiuShellChrome.shouldHideViewMenuChild(BaijiuShellChrome.SELECT_VIEW_MENU_ID, "Select View"));
+		assertFalse(BaijiuShellChrome.shouldHideViewMenuChild(null, "选择视图"));
+		assertTrue(BaijiuShellChrome.shouldHideViewMenuChild(null, "概览"));
+		assertTrue(BaijiuShellChrome.shouldHideViewMenuChild(null, "Overview"));
+		assertTrue(BaijiuShellChrome.shouldHideViewMenuChild(null, "叠加"));
+		assertTrue(BaijiuShellChrome.shouldHideViewMenuChild(null, "Overlay"));
+		assertTrue(BaijiuShellChrome.shouldHideViewMenuChild(null, "扫描"));
+		assertTrue(BaijiuShellChrome.shouldHideViewMenuChild(null, "Scans"));
+		assertTrue(BaijiuShellChrome.shouldHideViewMenuChild(null, "峰"));
+		assertTrue(BaijiuShellChrome.shouldHideViewMenuChild(null, "Peaks"));
+		assertTrue(BaijiuShellChrome.shouldHideViewMenuChild(null, "定性目标"));
+		assertTrue(BaijiuShellChrome.shouldHideViewMenuChild(null, "Targets"));
+		assertTrue(BaijiuShellChrome.shouldHideViewMenuChild(null, "内标"));
+		assertTrue(BaijiuShellChrome.shouldHideViewMenuChild(null, "ISTD (Internal Standards)"));
+		assertTrue(BaijiuShellChrome.shouldHideViewMenuChild(null, "其他"));
+		assertTrue(BaijiuShellChrome.shouldHideViewMenuChild(null, "Miscellaneous"));
+		assertTrue(BaijiuShellChrome.shouldHideViewMenuChild("org.eclipse.chemclipse.ux.extension.xxd.ui.view.overview", "Overview"));
+		assertTrue(BaijiuShellChrome.shouldHideViewMenuChild("org.eclipse.chemclipse.ux.extension.xxd.ui.view.overlay", "叠加"));
+		assertTrue(BaijiuShellChrome.shouldHideViewMenuChild("org.eclipse.chemclipse.ux.extension.xxd.ui.view.scans", "扫描"));
+		assertTrue(BaijiuShellChrome.shouldHideViewMenuChild("org.eclipse.chemclipse.ux.extension.xxd.ui.view.peaks", "峰"));
+		assertTrue(BaijiuShellChrome.shouldHideViewMenuChild("org.eclipse.chemclipse.ux.extension.xxd.ui.view.targets", "定性目标"));
+		assertTrue(BaijiuShellChrome.shouldHideViewMenuChild("org.eclipse.chemclipse.ux.extension.xxd.ui.view.istd", "内标"));
+		assertTrue(BaijiuShellChrome.shouldHideViewMenuChild("org.eclipse.chemclipse.ux.extension.xxd.ui.view.misc", "其他"));
+		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.xxd.ui.view.overview"));
+		assertTrue(BaijiuShellChrome.shouldHide("org.eclipse.chemclipse.ux.extension.xxd.ui.view.peaks"));
+		assertFalse(BaijiuShellChrome.shouldHidePlantMenuChild(BaijiuShellChrome.VIEW_MENU_ID, BaijiuShellChrome.SELECT_VIEW_MENU_ID, "选择视图", null));
+		assertTrue(BaijiuShellChrome.shouldHidePlantMenuChild(BaijiuShellChrome.VIEW_MENU_ID, "org.eclipse.chemclipse.ux.extension.xxd.ui.view.overview", "概览", null));
+		assertFalse(BaijiuShellChrome.shouldHideMenuContribution(BaijiuShellChrome.VIEW_MENU_ID, "org.eclipse.chemclipse.ux.extension.xxd.ui.view.overview", "Overview", null), "GroupHandler getSubMenu needs the contribution defined");
+		assertFalse(BaijiuShellChrome.shouldHideMenuContribution(BaijiuShellChrome.VIEW_MENU_ID, BaijiuShellChrome.SELECT_VIEW_MENU_ID, "选择视图", null));
+		assertFalse(BaijiuShellChrome.shouldHideFileMenuChild(BaijiuShellChrome.SAVE_MENU_ID, "Save"));
+		assertFalse(BaijiuShellChrome.shouldHideFileMenuChild(BaijiuShellChrome.SAVE_MENU_ID, "保存"));
+		assertFalse(BaijiuShellChrome.shouldHideFileMenuChild(null, "保存"));
+		assertFalse(BaijiuShellChrome.shouldHideFileMenuChild(BaijiuShellChrome.SAVE_AS_MENU_ID, "另存为..."));
+		assertFalse(BaijiuShellChrome.shouldHideFileMenuChild(BaijiuShellChrome.CLOSE_MENU_ID, "关闭"));
+		assertFalse(BaijiuShellChrome.shouldHideFileMenuChild(BaijiuShellChrome.CLOSE_ALL_MENU_ID, "全部关闭"));
+		assertFalse(BaijiuShellChrome.shouldHideFileMenuChild(BaijiuShellChrome.QUIT_MENU_ID, "退出"));
+		assertTrue(BaijiuShellChrome.shouldHideFileMenuChild("org.eclipse.chemclipse.rcp.app.ui.menu.item.import", "Import"));
+		assertTrue(BaijiuShellChrome.shouldHideFileMenuChild("org.eclipse.chemclipse.rcp.app.ui.menu.item.export", "导出"));
+		assertTrue(BaijiuShellChrome.shouldHideFileMenuChild("org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.saveAll", "Save All"));
+		assertTrue(BaijiuShellChrome.shouldHideFileMenuChild(null, "Save All"));
+		assertTrue(BaijiuShellChrome.shouldHideFileMenuChild(null, "打印"));
+		assertTrue(BaijiuShellChrome.shouldHidePlantMenuChild(BaijiuShellChrome.FILE_MENU_ID, "org.eclipse.chemclipse.rcp.app.ui.menu.item.import", "导入", null));
+		assertFalse(BaijiuShellChrome.shouldHidePlantMenuChild(BaijiuShellChrome.FILE_MENU_ID, BaijiuShellChrome.SAVE_MENU_ID, "保存", null));
+		assertTrue(BaijiuShellChrome.shouldHideMenuContribution(BaijiuShellChrome.FILE_MENU_ID, "org.eclipse.chemclipse.rcp.app.ui.menu.item.import", "Import", null));
+		assertFalse(BaijiuShellChrome.shouldHideMenuContribution(BaijiuShellChrome.FILE_MENU_ID, BaijiuShellChrome.SAVE_MENU_ID, "Save", null));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.SAVE_MENU_ID));
+		assertFalse(BaijiuShellChrome.shouldHide(BaijiuShellChrome.SAVE_AS_MENU_ID));
+		assertEquals("保存", BaijiuShellChrome.translateFileMenuItem("Save"));
+		assertEquals("另存为...", BaijiuShellChrome.translateFileMenuItem("Save As"));
+		assertEquals("关闭", BaijiuShellChrome.translateFileMenuItem("Close"));
+		assertEquals("全部关闭", BaijiuShellChrome.translateFileMenuItem("Close All"));
+		assertEquals("退出", BaijiuShellChrome.translateFileMenuItem("Quit"));
+		assertEquals(BaijiuShellChrome.SAVE_COMMAND_ID, "org.eclipse.chemclipse.rcp.app.ui.command.save");
+		assertTrue(BaijiuShellChrome.VIEW_MENU_KEEP_ELEMENT_IDS.contains(BaijiuShellChrome.SELECT_VIEW_MENU_ID));
+		assertTrue(BaijiuShellChrome.FILE_MENU_KEEP_ELEMENT_IDS.contains(BaijiuShellChrome.SAVE_MENU_ID));
+		assertFalse(BaijiuShellChrome.shouldHideSelectViewItem(null, "色谱图叠加"), "overlay view is Select View, not the 视图 叠加 cascade");
+		assertTrue(BaijiuShellChrome.shouldHideViewMenuChild(null, "叠加"));
 	}
 
 	@Test

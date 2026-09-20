@@ -63,6 +63,10 @@ public class BaijiuShellParts_1_Test {
 		BaijiuShellParts.ensureEditorRequiredMenus(null, null);
 		BaijiuShellParts.applyEditorRequiredMenuVisibility(null);
 		BaijiuShellParts.ensureViewMenuContents(null, null, null);
+		BaijiuShellParts.ensureFileMenuContents(null, null, null);
+		BaijiuShellParts.sanitizeViewMenuChildren(null);
+		BaijiuShellParts.sanitizeFileMenuChildren(null);
+		BaijiuShellParts.sanitizePlantMenuContributions(null, null);
 		BaijiuShellParts.orderPlantTopMenus(null);
 		BaijiuShellParts.recreatePlantChromeWidgets(null, null);
 		BaijiuShellParts.hideNonPlantTopTrim(null, null);
@@ -135,6 +139,69 @@ public class BaijiuShellParts_1_Test {
 		assertEquals(2, BaijiuShellParts.countMenuChildrenWithId(main, BaijiuShellChrome.VIEW_MENU_ID));
 		BaijiuShellParts.ensureEditorRequiredMenus(main);
 		assertEquals(1, BaijiuShellParts.countMenuChildrenWithId(main, BaijiuShellChrome.VIEW_MENU_ID), "dedupe must collapse a poisoned second 视图");
+	}
+
+	@Test
+	public void viewMenuHidesResearchCascadesAndFileMenuKeepsSave() {
+
+		MMenu view = MMenuFactory.INSTANCE.createMenu();
+		view.setElementId(BaijiuShellChrome.VIEW_MENU_ID);
+		view.setLabel("视图");
+		org.eclipse.e4.ui.model.application.ui.menu.MHandledMenuItem select = org.eclipse.e4.ui.model.application.ui.menu.MMenuFactory.INSTANCE.createHandledMenuItem();
+		select.setElementId(BaijiuShellChrome.SELECT_VIEW_MENU_ID);
+		select.setLabel("Select View");
+		view.getChildren().add(select);
+		MMenu overview = MMenuFactory.INSTANCE.createMenu();
+		overview.setElementId("org.eclipse.chemclipse.ux.extension.xxd.ui.view.overview");
+		overview.setLabel("概览");
+		overview.setVisible(true);
+		overview.setToBeRendered(true);
+		view.getChildren().add(overview);
+		MMenu overlay = MMenuFactory.INSTANCE.createMenu();
+		overlay.setElementId("org.eclipse.chemclipse.ux.extension.xxd.ui.view.overlay");
+		overlay.setLabel("叠加");
+		view.getChildren().add(overlay);
+		BaijiuShellParts.ensureViewMenuContents(null, null, view);
+		assertEquals(1, BaijiuShellParts.countMenuChildrenWithId(view, BaijiuShellChrome.SELECT_VIEW_MENU_ID));
+		assertEquals(BaijiuShellChrome.SELECT_VIEW_TITLE_ZH, select.getLabel());
+		assertTrue(select.isVisible());
+		assertFalse(overview.isVisible(), "GroupHandler 概览 must not paint");
+		assertFalse(overview.isToBeRendered());
+		assertFalse(overlay.isVisible());
+		assertTrue(view.getChildren().contains(overview), "overview stays defined for GroupHandler lookup");
+		BaijiuShellParts.ensureViewMenuContents(null, null, view);
+		assertEquals(3, view.getChildren().size(), "sanitize is hide-only, not remove");
+
+		MMenu file = MMenuFactory.INSTANCE.createMenu();
+		file.setElementId(BaijiuShellChrome.FILE_MENU_ID);
+		org.eclipse.e4.ui.model.application.ui.menu.MHandledMenuItem saveAs = org.eclipse.e4.ui.model.application.ui.menu.MMenuFactory.INSTANCE.createHandledMenuItem();
+		saveAs.setElementId(BaijiuShellChrome.SAVE_AS_MENU_ID);
+		saveAs.setLabel("Save As...");
+		file.getChildren().add(saveAs);
+		org.eclipse.e4.ui.model.application.ui.menu.MHandledMenuItem imported = org.eclipse.e4.ui.model.application.ui.menu.MMenuFactory.INSTANCE.createHandledMenuItem();
+		imported.setElementId("org.eclipse.chemclipse.rcp.app.ui.menu.item.import");
+		imported.setLabel("Import");
+		imported.setVisible(true);
+		imported.setToBeRendered(true);
+		file.getChildren().add(imported);
+		BaijiuShellParts.ensureFileMenuContents(null, null, file);
+		assertEquals(1, BaijiuShellParts.countMenuChildrenWithId(file, BaijiuShellChrome.SAVE_MENU_ID), "Save is created when ChemClipse item was dropped");
+		org.eclipse.e4.ui.model.application.ui.menu.MMenuElement save = null;
+		for(org.eclipse.e4.ui.model.application.ui.menu.MMenuElement child : file.getChildren()) {
+			if(child != null && BaijiuShellChrome.SAVE_MENU_ID.equals(child.getElementId())) {
+				save = child;
+			}
+		}
+		assertTrue(save != null);
+		assertEquals("保存", save.getLabel());
+		assertTrue(save.isVisible());
+		assertEquals("另存为...", saveAs.getLabel());
+		assertTrue(saveAs.isVisible());
+		assertFalse(imported.isVisible());
+		assertFalse(imported.isToBeRendered());
+		int saveCount = BaijiuShellParts.countMenuChildrenWithId(file, BaijiuShellChrome.SAVE_MENU_ID);
+		BaijiuShellParts.ensureFileMenuContents(null, null, file);
+		assertEquals(saveCount, BaijiuShellParts.countMenuChildrenWithId(file, BaijiuShellChrome.SAVE_MENU_ID), "second ensure must not duplicate 保存");
 	}
 
 	private static MMenu findView(MMenu main) {
