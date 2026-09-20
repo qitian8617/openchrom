@@ -65,7 +65,7 @@ public class BaijiuShellChrome_1_Test {
 		assertEquals("白酒FID工作站", BaijiuShellChrome.APPLICATION_NAME_VM);
 		assertFalse(BaijiuShellChrome.APPLICATION_NAME_VM.contains(" "));
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome", BaijiuShellChrome.PERSPECTIVE_ID);
-		assertEquals(24, BaijiuShellChrome.CHROME_EPOCH);
+		assertEquals(25, BaijiuShellChrome.CHROME_EPOCH);
 		assertEquals("org.eclipse.chemclipse.ux.extension.ui.perspective.welcome", BaijiuShellChrome.WELCOME_PERSPECTIVE_ID);
 		assertTrue(BaijiuShellChrome.isHiddenResearchPerspective(BaijiuShellChrome.WELCOME_PERSPECTIVE_ID));
 		assertTrue(BaijiuShellChrome.isHiddenResearchPerspective(BaijiuShellChrome.MALDI_PERSPECTIVE_ID));
@@ -206,9 +206,11 @@ public class BaijiuShellChrome_1_Test {
 		assertFalse(BaijiuShellChrome.shouldHideMainMenuChild("org.eclipse.chemclipse.rcp.app.ui.menu.file", "文件", null));
 		assertFalse(BaijiuShellChrome.shouldHideMainMenuChild("org.eclipse.chemclipse.rcp.app.ui.menu.help", "帮助", null));
 		assertFalse(BaijiuShellChrome.shouldHideMainMenuChild("org.eclipse.chemclipse.rcp.app.ui.menu.view", "视图", null));
-		assertTrue(BaijiuShellChrome.shouldHideMainMenuChild(BaijiuShellChrome.CHROMATOGRAM_MENU_ID, "色谱", null));
+		assertFalse(BaijiuShellChrome.shouldHideMainMenuChild(BaijiuShellChrome.CHROMATOGRAM_MENU_ID, "色谱", null), "chromatogram menu stays defined for GroupHandler");
 		assertTrue(BaijiuShellChrome.EDITOR_REQUIRED_MENU_IDS.contains(BaijiuShellChrome.CHROMATOGRAM_MENU_ID));
 		assertTrue(BaijiuShellChrome.EDITOR_REQUIRED_MENU_IDS.contains(BaijiuShellChrome.VIEW_MENU_ID));
+		assertTrue(BaijiuShellChrome.isEditorRequiredMenu(BaijiuShellChrome.VIEW_MENU_ID));
+		assertTrue(BaijiuShellChrome.isEditorRequiredMenu(BaijiuShellChrome.CHROMATOGRAM_MENU_ID));
 		assertTrue(BaijiuShellChrome.isPlantWindowChrome(BaijiuShellChrome.MAIN_MENU_ID));
 		assertTrue(BaijiuShellChrome.isPlantWindowChrome(BaijiuShellChrome.ECLIPSE_MAIN_MENU_ID));
 		assertTrue(BaijiuShellChrome.isPlantWindowChrome(BaijiuShellChrome.FILE_MENU_ID));
@@ -232,6 +234,35 @@ public class BaijiuShellChrome_1_Test {
 		assertTrue(BaijiuShellChrome.shouldHideMainMenuChild("generated.showview", "Show View", null));
 		assertTrue(BaijiuShellChrome.shouldHideMainMenuChild("generated.perspective", "Open Perspective", null));
 		assertFalse(BaijiuShellChrome.shouldHideMainMenuChild(BaijiuShellChrome.SELECT_VIEW_MENU_ID, "Select View", null), "视图 keeps Select View itself");
+	}
+
+	@Test
+	public void editorRequiredMenusAreNeverHardHidden() {
+
+		for(String id : BaijiuShellChrome.EDITOR_REQUIRED_MENU_IDS) {
+			assertFalse(BaijiuShellChrome.HIDDEN_ELEMENT_IDS.contains(id), id);
+			assertFalse(BaijiuShellChrome.isHardHideOrRemoveId(id), id);
+			assertFalse(BaijiuShellChrome.shouldHide(id), id);
+			assertFalse(BaijiuShellChrome.shouldHideMainMenuChild(id, null, null), id);
+			assertFalse(BaijiuShellChrome.shouldHideMainMenuChild(id, "视图", null), id);
+			assertFalse(BaijiuShellChrome.shouldHideMainMenuChild(id, "色谱", null), id);
+			for(String prefix : BaijiuShellChrome.HIDDEN_ID_PREFIXES) {
+				assertFalse(id.startsWith(prefix), id + " matches hard-hide prefix " + prefix);
+			}
+		}
+		assertTrue(BaijiuShellChrome.EDITOR_REQUIRED_MENU_IDS.contains(BaijiuShellChrome.VIEW_MENU_ID));
+		assertTrue(BaijiuShellChrome.EDITOR_REQUIRED_MENU_IDS.contains(BaijiuShellChrome.CHROMATOGRAM_MENU_ID));
+		assertTrue(BaijiuShellChrome.isPlantWindowChrome(BaijiuShellChrome.VIEW_MENU_ID));
+		assertFalse(BaijiuShellChrome.isPlantWindowChrome(BaijiuShellChrome.CHROMATOGRAM_MENU_ID));
+		assertTrue(BaijiuShellChrome.isHardHideOrRemoveId(BaijiuShellChrome.PROCESS_MENU_ID));
+		assertTrue(BaijiuShellChrome.shouldHideMainMenuChild("generated.chrom", "色谱", null), "generated 色谱 stay hidden");
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem("org.eclipse.chemclipse.ux.extension.xxd.ui.part.targets", "Targets"));
+		assertTrue(BaijiuShellChrome.shouldHideSelectViewItem(null, "Mass Spectrum File Explorer"));
+		assertTrue(BaijiuShellChrome.mustRecreateDetachedMainMenu(false), "compatibility setMainMenu(null) must recreate");
+		assertFalse(BaijiuShellChrome.mustRecreateDetachedMainMenu(true));
+		assertTrue(BaijiuShellChrome.mustRecreateDetachedTopTrim(false, true));
+		assertTrue(BaijiuShellChrome.mustRecreateDetachedTopTrim(true, false));
+		assertFalse(BaijiuShellChrome.mustRecreateDetachedTopTrim(true, true));
 		assertTrue(BaijiuShellChrome.isPlantToolbarContribution(BaijiuShellChrome.PLANT_TOOLBAR_ID));
 		assertTrue(BaijiuShellChrome.isPlantToolbarContribution(BaijiuShellChrome.OPEN_CHROMATOGRAM_TOOLITEM_ID));
 		assertTrue(BaijiuShellChrome.isPlantToolbarContribution(BaijiuShellChrome.TOGGLE_GC_TOOLITEM_ID));

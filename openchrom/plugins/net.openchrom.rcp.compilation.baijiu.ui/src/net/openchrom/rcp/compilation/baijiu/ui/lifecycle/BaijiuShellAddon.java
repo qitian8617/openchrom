@@ -46,6 +46,9 @@ import jakarta.inject.Inject;
  */
 public class BaijiuShellAddon {
 
+	private static final String WINDOW_MAIN_MENU_TOPIC = "org/eclipse/e4/ui/model/application/ui/basic/Window/mainMenu";
+	private static volatile boolean shuttingDown;
+
 	@Inject
 	private MApplication application;
 	@Inject
@@ -59,6 +62,7 @@ public class BaijiuShellAddon {
 		} catch(RuntimeException | LinkageError e) {
 			BaijiuShellLog.warn("BaijiuShellAddon @PostConstruct chrome apply failed; plant home reveal will retry", e);
 		}
+		shuttingDown = false;
 		try {
 			BaijiuChromatogramReadability.apply();
 			BaijiuShellMenus.install();
@@ -111,12 +115,26 @@ public class BaijiuShellAddon {
 			}
 		});
 		eventBroker.subscribe(UIEvents.UILifeCycle.APP_SHUTDOWN_STARTED, event -> {
+			shuttingDown = true;
 			try {
 				BaijiuShellParts.revealPlantWindowChrome(application, modelService);
 			} catch(RuntimeException | LinkageError e) {
 				BaijiuShellLog.warn("Baijiu APP_SHUTDOWN_STARTED plant chrome persist failed", e);
 			}
 		});
+		try {
+			eventBroker.subscribe(WINDOW_MAIN_MENU_TOPIC, event -> {
+				if(shuttingDown) {
+					return;
+				}
+				Object next = event.getProperty(UIEvents.EventTags.NEW_VALUE);
+				if(next == null) {
+					schedulePlantWindowChrome(application, modelService);
+				}
+			});
+		} catch(RuntimeException | LinkageError e) {
+			// topic constant drift on older E4
+		}
 	}
 
 	static void applyChrome(MApplication application, EModelService modelService) {
@@ -370,7 +388,9 @@ public class BaijiuShellAddon {
 	 * Walk the main menu's top {@code MMenu} children and hide 窗口 / Window,
 	 * including Eclipse 3.x ActionSet contributions whose id does not match
 	 * ChemClipse {@code ...menu.window}. Never hide {@link BaijiuShellChrome#PLANT_WINDOW_CHROME_IDS}
-	 * (the menu bar / 文件 / 白酒 / 视图 / 帮助).
+	 * (the menu bar / 文件 / 白酒 / 视图 / 帮助) or
+	 * {@link BaijiuShellChrome#EDITOR_REQUIRED_MENU_IDS} (GroupHandler
+	 * looks up {@code menu.view} as a child of the live main menu).
 	 */
 	static void hideTopWindowMenus(MApplication application, EModelService modelService) {
 
@@ -402,7 +422,7 @@ public class BaijiuShellAddon {
 					if(contribution == null) {
 						continue;
 					}
-					if(BaijiuShellChrome.isPlantWindowChrome(contribution.getElementId())) {
+					if(BaijiuShellChrome.isPlantWindowChrome(contribution.getElementId()) || BaijiuShellChrome.isEditorRequiredMenu(contribution.getElementId())) {
 						continue;
 					}
 					if(BaijiuShellChrome.shouldHideMainMenuChild(contribution.getParentId(), null, contribution.getTags()) //
@@ -516,6 +536,11 @@ public class BaijiuShellAddon {
 					reveal.run();
 				}
 			});
+			ui.timerExec(1500, () -> {
+				if(!ui.isDisposed() && !shuttingDown) {
+					reveal.run();
+				}
+			});
 		} catch(RuntimeException | LinkageError e) {
 			reveal.run();
 		}
@@ -533,7 +558,7 @@ public class BaijiuShellAddon {
 		BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
 		List<MUIElement> toHide = new ArrayList<>();
 		for(MUIElement element : elements) {
-			if(element != null && shouldHideElement(element) && !BaijiuShellChrome.isPlantWindowChrome(element.getElementId())) {
+			if(element != null && shouldHideElement(element) && !BaijiuShellChrome.isPlantWindowChrome(element.getElementId()) && !BaijiuShellChrome.isEditorRequiredMenu(element.getElementId())) {
 				toHide.add(element);
 			}
 		}
@@ -602,7 +627,7 @@ public class BaijiuShellAddon {
 	private static boolean shouldHideElement(MUIElement element) {
 
 		String elementId = element.getElementId();
-		if(BaijiuShellChrome.isPlantWindowChrome(elementId)) {
+		if(BaijiuShellChrome.isPlantWindowChrome(elementId) || BaijiuShellChrome.isEditorRequiredMenu(elementId)) {
 			return false;
 		}
 		String label = labelOf(element);
@@ -672,15 +697,11 @@ public class BaijiuShellAddon {
 		if(element == null) {
 			return;
 		}
-		if(BaijiuShellChrome.isPlantWindowChrome(element.getElementId()) || BaijiuShellChrome.KEEP_ELEMENT_IDS.contains(element.getElementId())) {
+		if(BaijiuShellChrome.isPlantWindowChrome(element.getElementId()) || BaijiuShellChrome.isEditorRequiredMenu(element.getElementId()) || BaijiuShellChrome.KEEP_ELEMENT_IDS.contains(element.getElementId())) {
 			return;
 		}
 		BaijiuShellSelection.deselectFromParent(element);
 		element.setVisible(false);
-		if(BaijiuShellChrome.EDITOR_REQUIRED_MENU_IDS.contains(element.getElementId())) {
-			element.setToBeRendered(true);
-			return;
-		}
 		element.setToBeRendered(false);
 	}
 }

@@ -56,6 +56,10 @@ public class BaijiuShellParts_1_Test {
 		BaijiuShellParts.suppressE4GcWindow(null, null);
 		BaijiuShellParts.revealPlantToolbar(null, null);
 		BaijiuShellParts.revealPlantWindowChrome(null, null);
+		BaijiuShellParts.preferPlantLookupWindow(null, null);
+		BaijiuShellParts.ensurePlantChromeModel(null, null);
+		BaijiuShellParts.ensureEditorRequiredMenus(null, null);
+		BaijiuShellParts.recreatePlantChromeWidgets(null, null);
 		BaijiuShellParts.hideNonPlantTopTrim(null, null);
 		BaijiuShellParts.syncGcToggleToolItem(null, null);
 		BaijiuShellParts.forceCreatePlantHomeGuis(null, null);
