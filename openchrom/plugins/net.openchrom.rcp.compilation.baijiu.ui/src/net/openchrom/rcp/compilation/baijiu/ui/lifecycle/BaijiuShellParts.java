@@ -579,7 +579,7 @@ public final class BaijiuShellParts {
 		return BaijiuShellChrome.countMenuChildrenWithId(childIdsOf(menu), elementId);
 	}
 
-	@SuppressWarnings({"rawtypes", "unchecked"})
+	@SuppressWarnings("rawtypes")
 	static void dedupePlantMenuChildren(MMenu menu) {
 
 		if(menu == null) {
