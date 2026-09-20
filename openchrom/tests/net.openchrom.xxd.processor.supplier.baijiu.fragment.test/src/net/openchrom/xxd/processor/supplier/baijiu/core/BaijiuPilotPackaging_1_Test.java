@@ -232,6 +232,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(shellFrag.contains("icons/plant/chrom.png"), shellFrag);
 		assertTrue(shellFrag.contains("icons/plant/open_chrom.png"), shellFrag);
 		assertTrue(shellFrag.contains("icons/plant/ops.png"), shellFrag);
+		assertTrue(shellFrag.contains("icons/plant/gc_console.png"), shellFrag);
+		assertTrue(shellFrag.contains("toolbar.toggleGcConsole"), shellFrag);
 		assertFalse(shellFrag.contains("org.eclipse.chemclipse.rcp.ui.icons"), shellFrag);
 
 		Path chrome = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellChrome.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellChrome.java");
@@ -298,6 +300,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(chromeSrc.contains("plantToolbarItemIconUri"), chromeSrc);
 		assertTrue(chromeSrc.contains("plantChromeIconUri"), chromeSrc);
 		assertTrue(chromeSrc.contains("PLANT_ICON_OPEN_CHROM"), chromeSrc);
+		assertTrue(chromeSrc.contains("TEMPERATURE_OPEN_TOOLITEM_ID"), chromeSrc);
 		assertTrue(chromeSrc.contains("icons/plant/"), chromeSrc);
 		assertFalse(chromeSrc.contains("org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/"), chromeSrc);
 		assertTrue(chromeSrc.contains("PLANT_TOP_MENU_IDS"), chromeSrc);
@@ -579,6 +582,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(partsSrc.contains("EDITOR_REQUIRED_MENU_IDS"), partsSrc);
 		assertTrue(partsSrc.contains("hideNonPlantTopTrim"), partsSrc);
 		assertTrue(partsSrc.contains("ensurePlantToolbarContents"), partsSrc);
+		assertTrue(partsSrc.contains("restoreGcConsoleToolItemIcon"), partsSrc);
 		assertTrue(partsSrc.contains("bindSelectViewCommand"), partsSrc);
 		assertTrue(partsSrc.contains("preferredPlantMenuChild"), partsSrc);
 		assertTrue(partsSrc.contains("isExecutableSelectViewItem"), partsSrc);
@@ -847,6 +851,12 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(gcPartSrc.contains("@Inject"), gcPartSrc);
 		assertTrue(gcPartSrc.contains("@PostConstruct"), gcPartSrc);
 		assertTrue(gcPartSrc.contains("COLOR_WHITE"), gcPartSrc);
+		Path tempFragment = locate("openchrom/plugins/net.openchrom.xxd.control.supplier.temperature.ui/fragment.e4xmi", "plugins/net.openchrom.xxd.control.supplier.temperature.ui/fragment.e4xmi");
+		assertNotNull(tempFragment);
+		String tempFrag = Files.readString(tempFragment, StandardCharsets.UTF_8);
+		assertTrue(tempFrag.contains("net.openchrom.xxd.control.supplier.temperature.ui.toolbar.open"), tempFrag);
+		assertTrue(tempFrag.contains("icons/plant/gc_console.png"), tempFrag);
+		assertFalse(tempFrag.contains("org.eclipse.chemclipse.rcp.ui.icons"), tempFrag);
 
 		Path gcWorkbench = locate("openchrom/plugins/net.openchrom.xxd.control.supplier.temperature.ui/src/net/openchrom/xxd/control/supplier/temperature/ui/TemperatureControlWorkbench.java", "plugins/net.openchrom.xxd.control.supplier.temperature.ui/src/net/openchrom/xxd/control/supplier/temperature/ui/TemperatureControlWorkbench.java");
 		assertNotNull(gcWorkbench);

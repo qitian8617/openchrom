@@ -681,6 +681,10 @@ public final class BaijiuShellModel {
 		}
 		neverRenderGcWindow(stack);
 		MPart part = part(application, modelService, stack, BaijiuShellChrome.GC_HOME_PART_ID, BaijiuShellChrome.GC_HOME_CONTRIBUTION_URI, "气相色谱控制台");
+		MUIElement sharedGc = modelService.find(BaijiuShellChrome.GC_CONTROL_PART_ID, application);
+		if(sharedGc instanceof MUILabel labeled) {
+			applyPlantChromeIcon(labeled, BaijiuShellChrome.GC_CONTROL_PART_ID);
+		}
 		evacuateGcFromPlantHome(application, modelService, window, stack, part);
 		neverRenderGcWindow(window);
 		neverRenderGcWindow(sash);

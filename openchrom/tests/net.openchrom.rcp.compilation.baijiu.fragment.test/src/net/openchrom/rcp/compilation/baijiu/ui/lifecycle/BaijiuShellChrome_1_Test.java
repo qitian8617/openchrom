@@ -411,6 +411,9 @@ public class BaijiuShellChrome_1_Test {
 		assertEquals("打开谱图", BaijiuShellChrome.plantToolbarItemLabel(BaijiuShellChrome.OPEN_CHROMATOGRAM_TOOLITEM_ID));
 		assertEquals(BaijiuShellChrome.PLANT_ICON_OPEN_CHROM, BaijiuShellChrome.plantToolbarItemIconUri(BaijiuShellChrome.OPEN_CHROMATOGRAM_TOOLITEM_ID));
 		assertEquals(BaijiuShellChrome.PLANT_ICON_GC, BaijiuShellChrome.plantToolbarItemIconUri(BaijiuShellChrome.TOGGLE_GC_TOOLITEM_ID));
+		assertEquals(BaijiuShellChrome.PLANT_ICON_GC, BaijiuShellChrome.plantToolbarItemIconUri(BaijiuShellChrome.TEMPERATURE_OPEN_TOOLITEM_ID));
+		assertEquals(BaijiuShellChrome.PLANT_ICON_GC, BaijiuShellChrome.plantChromeIconUri(BaijiuShellChrome.GC_CONTROL_PART_ID));
+		assertEquals(BaijiuShellChrome.PLANT_ICON_GC, BaijiuShellChrome.plantChromeIconUri(BaijiuShellChrome.GC_HOME_PART_ID));
 		assertEquals(BaijiuShellChrome.PLANT_ICON_START, BaijiuShellChrome.plantToolbarItemIconUri(BaijiuShellChrome.START_ANALYSIS_TOOLITEM_ID));
 		assertEquals(BaijiuShellChrome.PLANT_ICON_INTEGRATE, BaijiuShellChrome.plantToolbarItemIconUri(BaijiuShellChrome.INTEGRATE_TOOLITEM_ID));
 		assertEquals(BaijiuShellChrome.PLANT_ICON_ANALYSIS, BaijiuShellChrome.plantToolbarItemIconUri(BaijiuShellChrome.ANALYSIS_TOOLITEM_ID));
@@ -451,6 +454,7 @@ public class BaijiuShellChrome_1_Test {
 		assertTrue(BaijiuShellChrome.isPlantToolbarContribution(BaijiuShellChrome.PLANT_TOOLBAR_ID));
 		assertTrue(BaijiuShellChrome.isPlantToolbarContribution(BaijiuShellChrome.OPEN_CHROMATOGRAM_TOOLITEM_ID));
 		assertTrue(BaijiuShellChrome.isPlantToolbarContribution(BaijiuShellChrome.TOGGLE_GC_TOOLITEM_ID));
+		assertTrue(BaijiuShellChrome.isPlantToolbarContribution(BaijiuShellChrome.TEMPERATURE_OPEN_TOOLITEM_ID));
 		assertTrue(BaijiuShellChrome.isPlantToolbarContribution("net.openchrom.rcp.compilation.baijiu.ui.toolbar.startAnalysis"));
 		assertTrue(BaijiuShellChrome.isPlantToolbarContribution("net.openchrom.rcp.compilation.baijiu.ui.toolbar.integrate"));
 		assertFalse(BaijiuShellChrome.isPlantToolbarContribution("org.eclipse.ui.WorkingSetActionSet"));

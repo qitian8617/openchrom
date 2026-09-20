@@ -142,6 +142,7 @@ public final class BaijiuShellChrome {
 	public static final String TOGGLE_GC_MENU_ID = "net.openchrom.rcp.compilation.baijiu.ui.menu.toggleGcConsole";
 	public static final String GC_CONTROL_MENU_ID = "net.openchrom.rcp.compilation.baijiu.ui.menu.gcControl";
 	public static final String TEMPERATURE_OPEN_MENU_ID = "net.openchrom.xxd.control.supplier.temperature.ui.menu.open";
+	public static final String TEMPERATURE_OPEN_TOOLITEM_ID = "net.openchrom.xxd.control.supplier.temperature.ui.toolbar.open";
 	public static final String SELECT_VIEW_TITLE_ZH = "选择视图";
 	public static final String SELECT_VIEW_TITLE_EN = "Select View";
 	public static final String OPEN_CHROMATOGRAM_TOOLITEM_ID = "net.openchrom.rcp.compilation.baijiu.ui.toolbar.openChromatogram";
@@ -1194,7 +1195,7 @@ public final class BaijiuShellChrome {
 		if(OPEN_CHROMATOGRAM_TOOLITEM_ID.equals(elementId)) {
 			return PLANT_ICON_OPEN_CHROM;
 		}
-		if(TOGGLE_GC_TOOLITEM_ID.equals(elementId)) {
+		if(TOGGLE_GC_TOOLITEM_ID.equals(elementId) || TEMPERATURE_OPEN_TOOLITEM_ID.equals(elementId)) {
 			return PLANT_ICON_GC;
 		}
 		if(START_ANALYSIS_TOOLITEM_ID.equals(elementId)) {
@@ -1255,7 +1256,7 @@ public final class BaijiuShellChrome {
 		if(WORKBENCH_HOME_PART_ID.equals(elementId) || PERSPECTIVE_ID.equals(elementId)) {
 			return PLANT_ICON_OPS;
 		}
-		if(GC_HOME_PART_ID.equals(elementId) || GC_WINDOW_ID.equals(elementId) || GC_PERSPECTIVE_ID.equals(elementId)) {
+		if(GC_HOME_PART_ID.equals(elementId) || GC_WINDOW_ID.equals(elementId) || GC_PERSPECTIVE_ID.equals(elementId) || GC_CONTROL_PART_ID.equals(elementId) || TEMPERATURE_OPEN_MENU_ID.equals(elementId)) {
 			return PLANT_ICON_GC;
 		}
 		return null;
@@ -1614,7 +1615,7 @@ public final class BaijiuShellChrome {
 		if(elementId == null || elementId.isBlank()) {
 			return false;
 		}
-		if(PLANT_TOOLBAR_ID.equals(elementId) || isPlantWindowChrome(elementId)) {
+		if(PLANT_TOOLBAR_ID.equals(elementId) || isPlantWindowChrome(elementId) || TEMPERATURE_OPEN_TOOLITEM_ID.equals(elementId)) {
 			return true;
 		}
 		return elementId.startsWith("net.openchrom.rcp.compilation.baijiu.ui.toolbar.");
