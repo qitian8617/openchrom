@@ -431,7 +431,7 @@ public class BaijiuShellParts_1_Test {
 		toolbar.getChildren().add(open);
 		BaijiuShellParts.ensurePlantToolbarContents(null, null, toolbar);
 		assertEquals(BaijiuShellChrome.PLANT_TOOLBAR_ITEM_IDS.size(), toolbar.getChildren().size());
-		assertEquals(BaijiuShellChrome.PLANT_ICON_CSD, open.getIconURI());
+		assertEquals(BaijiuShellChrome.PLANT_ICON_OPEN_CHROM, open.getIconURI());
 		assertEquals("打开谱图", open.getLabel());
 		assertTrue(open.isVisible());
 		assertTrue(open.isToBeRendered());

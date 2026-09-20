@@ -9,12 +9,12 @@
     <elements xsi:type="commands:Handler" xmi:id="_tempStartHdl" elementId="net.openchrom.xxd.control.supplier.temperature.ui.handler.startAnalysis" contributionURI="bundleclass://net.openchrom.xxd.control.supplier.temperature.ui/net.openchrom.xxd.control.supplier.temperature.ui.handlers.StartAcquisitionHandler" command="_tempStartCmd"/>
   </fragments>
   <fragments xsi:type="fragment:StringModelFragment" xmi:id="_tempCtrlMenuFrag" featurename="children" parentElementId="org.eclipse.chemclipse.rcp.app.ui.menu.plugins">
-    <elements xsi:type="menu:HandledMenuItem" xmi:id="_tempCtrlMenuItem" elementId="net.openchrom.xxd.control.supplier.temperature.ui.menu.open" label="%menu.openTemperatureControl" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/preferences.gif" command="_tempCtrlCmd"/>
+    <elements xsi:type="menu:HandledMenuItem" xmi:id="_tempCtrlMenuItem" elementId="net.openchrom.xxd.control.supplier.temperature.ui.menu.open" label="%menu.openTemperatureControl" iconURI="platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/gc_console.png" command="_tempCtrlCmd"/>
   </fragments>
   <fragments xsi:type="fragment:StringModelFragment" xmi:id="_tempCtrlToolbarFrag" featurename="children" parentElementId="org.eclipse.chemclipse.rcp.app.ui.toolbar.plugins">
-    <elements xsi:type="menu:HandledToolItem" xmi:id="_tempCtrlToolItem" elementId="net.openchrom.xxd.control.supplier.temperature.ui.toolbar.open" label="%toolbar.openTemperatureControl" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/preferences.gif" command="_tempCtrlCmd"/>
+    <elements xsi:type="menu:HandledToolItem" xmi:id="_tempCtrlToolItem" elementId="net.openchrom.xxd.control.supplier.temperature.ui.toolbar.open" label="%toolbar.openTemperatureControl" iconURI="platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/gc_console.png" command="_tempCtrlCmd"/>
   </fragments>
   <fragments xsi:type="fragment:StringModelFragment" xmi:id="_tempCtrlSharedFrag" featurename="sharedElements" parentElementId="org.eclipse.chemclipse.rcp.app.ui.trimmedwindow.main">
-    <elements xsi:type="basic:Part" xmi:id="_tempCtrlPart" elementId="net.openchrom.xxd.control.supplier.temperature.ui.part.control" contributionURI="bundleclass://net.openchrom.xxd.control.supplier.temperature.ui/net.openchrom.xxd.control.supplier.temperature.ui.parts.TemperatureControlPart" label="%part.temperatureControl" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/preferences.gif" closeable="false"/>
+    <elements xsi:type="basic:Part" xmi:id="_tempCtrlPart" elementId="net.openchrom.xxd.control.supplier.temperature.ui.part.control" contributionURI="bundleclass://net.openchrom.xxd.control.supplier.temperature.ui/net.openchrom.xxd.control.supplier.temperature.ui.parts.TemperatureControlPart" label="%part.temperatureControl" iconURI="platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/gc_console.png" closeable="false"/>
   </fragments>
 </fragment:ModelFragments>

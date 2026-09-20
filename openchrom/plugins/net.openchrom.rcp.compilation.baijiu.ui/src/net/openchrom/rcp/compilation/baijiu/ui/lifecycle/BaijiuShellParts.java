@@ -1090,6 +1090,7 @@ public final class BaijiuShellParts {
 			restorePlantToolItem(modelService, application, item);
 			attachToolItem(toolbar, item);
 		}
+		restoreGcConsoleToolItemIcon(modelService, application);
 	}
 
 	/**
@@ -1282,6 +1283,36 @@ public final class BaijiuShellParts {
 			item.setCommand(command);
 		} catch(RuntimeException | LinkageError e) {
 			// command not writable
+		}
+	}
+
+	/**
+	 * {@code temperature.ui.toolbar.open} (气相色谱控制台 / GC控制台) is
+	 * kept by {@code KEEP_ID_PREFIXES} and can leak onto the plant coolbar
+	 * with a missing ChemClipse GIF. Force the plant {@code gc_console.png}
+	 * without attaching a second GC button to {@code toolbar.plant}.
+	 */
+	private static void restoreGcConsoleToolItemIcon(EModelService modelService, MApplication application) {
+
+		applyPlantChromeIconUri(findElement(modelService, application, BaijiuShellChrome.TOGGLE_GC_TOOLITEM_ID));
+		applyPlantChromeIconUri(findElement(modelService, application, BaijiuShellChrome.TEMPERATURE_OPEN_TOOLITEM_ID));
+		applyPlantChromeIconUri(findElement(modelService, application, BaijiuShellChrome.TEMPERATURE_OPEN_MENU_ID));
+		applyPlantChromeIconUri(findElement(modelService, application, BaijiuShellChrome.GC_CONTROL_PART_ID));
+	}
+
+	private static void applyPlantChromeIconUri(MUIElement element) {
+
+		if(!(element instanceof MUILabel labeled)) {
+			return;
+		}
+		String icon = BaijiuShellChrome.plantChromeIconUri(element.getElementId());
+		if(icon == null || icon.isBlank()) {
+			return;
+		}
+		try {
+			labeled.setIconURI(icon);
+		} catch(RuntimeException | LinkageError e) {
+			// iconURI not writable
 		}
 	}
 

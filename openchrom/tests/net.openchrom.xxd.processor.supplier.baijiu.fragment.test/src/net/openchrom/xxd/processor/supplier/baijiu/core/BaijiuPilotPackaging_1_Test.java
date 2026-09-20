@@ -229,12 +229,18 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(gcWindowIdx > 0 && (gcWindowIdx < chromStackIdx || gcWindowIdx > workflowIdx), "GC console is a TrimmedWindow, not a plant sash child");
 		assertTrue(shellFrag.contains("horizontal=\"true\""), shellFrag);
 		assertTrue(shellFrag.contains("%part.workbenchHome"), shellFrag);
+		assertTrue(shellFrag.contains("icons/plant/chrom.png"), shellFrag);
+		assertTrue(shellFrag.contains("icons/plant/open_chrom.png"), shellFrag);
+		assertTrue(shellFrag.contains("icons/plant/ops.png"), shellFrag);
+		assertTrue(shellFrag.contains("icons/plant/gc_console.png"), shellFrag);
+		assertTrue(shellFrag.contains("toolbar.toggleGcConsole"), shellFrag);
+		assertFalse(shellFrag.contains("org.eclipse.chemclipse.rcp.ui.icons"), shellFrag);
 
 		Path chrome = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellChrome.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellChrome.java");
 		assertNotNull(chrome);
 		String chromeSrc = Files.readString(chrome, StandardCharsets.UTF_8);
 		assertTrue(chromeSrc.contains("CSD_EDITOR_PART_ID"), chromeSrc);
-		assertTrue(chromeSrc.contains("CHROME_EPOCH = 31"), chromeSrc);
+		assertTrue(chromeSrc.contains("CHROME_EPOCH = 32"), chromeSrc);
 		assertTrue(chromeSrc.contains("VIEW_MENU_RESEARCH_SHOW_VIEW_LABELS"), chromeSrc);
 		assertTrue(chromeSrc.contains("显示视图"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldAppendMenuChild"), chromeSrc);
@@ -292,7 +298,11 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(chromeSrc.contains("BaijiuOpenSelectViewHandler"), chromeSrc);
 		assertTrue(chromeSrc.contains("PLANT_TOOLBAR_ITEM_IDS"), chromeSrc);
 		assertTrue(chromeSrc.contains("plantToolbarItemIconUri"), chromeSrc);
-		assertTrue(chromeSrc.contains("PLANT_ICON_CSD"), chromeSrc);
+		assertTrue(chromeSrc.contains("plantChromeIconUri"), chromeSrc);
+		assertTrue(chromeSrc.contains("PLANT_ICON_OPEN_CHROM"), chromeSrc);
+		assertTrue(chromeSrc.contains("TEMPERATURE_OPEN_TOOLITEM_ID"), chromeSrc);
+		assertTrue(chromeSrc.contains("icons/plant/"), chromeSrc);
+		assertFalse(chromeSrc.contains("org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/"), chromeSrc);
 		assertTrue(chromeSrc.contains("PLANT_TOP_MENU_IDS"), chromeSrc);
 		assertTrue(chromeSrc.contains("色谱图"), chromeSrc);
 		assertTrue(chromeSrc.contains("SELECT_VIEW_KEEP_ELEMENT_IDS"), chromeSrc);
@@ -504,6 +514,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(modelSrc.contains("reparentToApplication"), modelSrc);
 		assertFalse(modelSrc.contains("placeholder.setLabel"), modelSrc);
 		assertFalse(modelSrc.contains("placeholder.setIconURI"), modelSrc);
+		assertTrue(modelSrc.contains("plantChromeIconUri"), modelSrc);
+		assertTrue(modelSrc.contains("applyPlantChromeIcon"), modelSrc);
 		assertTrue(modelSrc.contains("MElementContainer<MUIElement> parent = element.getParent()"), modelSrc);
 		Path pluginXml = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/plugin.xml", "plugins/net.openchrom.rcp.compilation.baijiu.ui/plugin.xml");
 		assertNotNull(pluginXml);
@@ -574,6 +586,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(partsSrc.contains("EDITOR_REQUIRED_MENU_IDS"), partsSrc);
 		assertTrue(partsSrc.contains("hideNonPlantTopTrim"), partsSrc);
 		assertTrue(partsSrc.contains("ensurePlantToolbarContents"), partsSrc);
+		assertTrue(partsSrc.contains("restoreGcConsoleToolItemIcon"), partsSrc);
 		assertTrue(partsSrc.contains("bindSelectViewCommand"), partsSrc);
 		assertTrue(partsSrc.contains("preferredPlantMenuChild"), partsSrc);
 		assertTrue(partsSrc.contains("isExecutableSelectViewItem"), partsSrc);
@@ -824,6 +837,11 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(uiBuildSrc.contains("source.. = src/"), uiBuildSrc);
 		assertTrue(uiBuildSrc.contains("icons/"), uiBuildSrc);
 		assertTrue(uiBuildSrc.contains("jre.compilation.profile = JavaSE-21"), uiBuildSrc);
+		for(String plantIcon : new String[] { "chrom.png", "integrate.png", "analysis.png", "wizard.png", "sequence.png", "batch_results.png", "simple_batch.png", "parallel.png", "report.png", "ops.png", "open_chrom.png", "gc_console.png", "start.png" }) {
+			Path icon = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/" + plantIcon, "plugins/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/" + plantIcon);
+			assertNotNull(icon, plantIcon);
+			assertTrue(Files.size(icon) > 0, plantIcon);
+		}
 
 		Path uiClasspath = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/.classpath", "plugins/net.openchrom.rcp.compilation.baijiu.ui/.classpath");
 		assertNotNull(uiClasspath);
@@ -837,6 +855,12 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(gcPartSrc.contains("@Inject"), gcPartSrc);
 		assertTrue(gcPartSrc.contains("@PostConstruct"), gcPartSrc);
 		assertTrue(gcPartSrc.contains("COLOR_WHITE"), gcPartSrc);
+		Path tempFragment = locate("openchrom/plugins/net.openchrom.xxd.control.supplier.temperature.ui/fragment.e4xmi", "plugins/net.openchrom.xxd.control.supplier.temperature.ui/fragment.e4xmi");
+		assertNotNull(tempFragment);
+		String tempFrag = Files.readString(tempFragment, StandardCharsets.UTF_8);
+		assertTrue(tempFrag.contains("net.openchrom.xxd.control.supplier.temperature.ui.toolbar.open"), tempFrag);
+		assertTrue(tempFrag.contains("icons/plant/gc_console.png"), tempFrag);
+		assertFalse(tempFrag.contains("org.eclipse.chemclipse.rcp.ui.icons"), tempFrag);
 
 		Path gcWorkbench = locate("openchrom/plugins/net.openchrom.xxd.control.supplier.temperature.ui/src/net/openchrom/xxd/control/supplier/temperature/ui/TemperatureControlWorkbench.java", "plugins/net.openchrom.xxd.control.supplier.temperature.ui/src/net/openchrom/xxd/control/supplier/temperature/ui/TemperatureControlWorkbench.java");
 		assertNotNull(gcWorkbench);

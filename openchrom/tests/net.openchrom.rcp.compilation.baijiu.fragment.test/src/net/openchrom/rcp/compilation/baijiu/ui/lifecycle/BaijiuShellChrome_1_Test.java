@@ -66,7 +66,7 @@ public class BaijiuShellChrome_1_Test {
 		assertEquals("白酒FID工作站", BaijiuShellChrome.APPLICATION_NAME_VM);
 		assertFalse(BaijiuShellChrome.APPLICATION_NAME_VM.contains(" "));
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome", BaijiuShellChrome.PERSPECTIVE_ID);
-		assertEquals(31, BaijiuShellChrome.CHROME_EPOCH);
+		assertEquals(32, BaijiuShellChrome.CHROME_EPOCH);
 		assertEquals("org.eclipse.chemclipse.ux.extension.ui.perspective.welcome", BaijiuShellChrome.WELCOME_PERSPECTIVE_ID);
 		assertTrue(BaijiuShellChrome.isHiddenResearchPerspective(BaijiuShellChrome.WELCOME_PERSPECTIVE_ID));
 		assertTrue(BaijiuShellChrome.isHiddenResearchPerspective(BaijiuShellChrome.MALDI_PERSPECTIVE_ID));
@@ -409,9 +409,35 @@ public class BaijiuShellChrome_1_Test {
 		assertFalse(BaijiuShellChrome.shouldHideEclipseCoolbarFiller(BaijiuShellChrome.ECLIPSE_MAIN_TOOLBAR_ID));
 		assertEquals(BaijiuShellChrome.SELECT_VIEW_COMMAND_ID, "org.eclipse.chemclipse.rcp.app.ui.command.selectView");
 		assertEquals("打开谱图", BaijiuShellChrome.plantToolbarItemLabel(BaijiuShellChrome.OPEN_CHROMATOGRAM_TOOLITEM_ID));
-		assertEquals(BaijiuShellChrome.PLANT_ICON_CSD, BaijiuShellChrome.plantToolbarItemIconUri(BaijiuShellChrome.OPEN_CHROMATOGRAM_TOOLITEM_ID));
+		assertEquals(BaijiuShellChrome.PLANT_ICON_OPEN_CHROM, BaijiuShellChrome.plantToolbarItemIconUri(BaijiuShellChrome.OPEN_CHROMATOGRAM_TOOLITEM_ID));
+		assertEquals(BaijiuShellChrome.PLANT_ICON_GC, BaijiuShellChrome.plantToolbarItemIconUri(BaijiuShellChrome.TOGGLE_GC_TOOLITEM_ID));
+		assertEquals(BaijiuShellChrome.PLANT_ICON_GC, BaijiuShellChrome.plantToolbarItemIconUri(BaijiuShellChrome.TEMPERATURE_OPEN_TOOLITEM_ID));
+		assertEquals(BaijiuShellChrome.PLANT_ICON_GC, BaijiuShellChrome.plantChromeIconUri(BaijiuShellChrome.GC_CONTROL_PART_ID));
+		assertEquals(BaijiuShellChrome.PLANT_ICON_GC, BaijiuShellChrome.plantChromeIconUri(BaijiuShellChrome.GC_HOME_PART_ID));
+		assertEquals(BaijiuShellChrome.PLANT_ICON_START, BaijiuShellChrome.plantToolbarItemIconUri(BaijiuShellChrome.START_ANALYSIS_TOOLITEM_ID));
+		assertEquals(BaijiuShellChrome.PLANT_ICON_INTEGRATE, BaijiuShellChrome.plantToolbarItemIconUri(BaijiuShellChrome.INTEGRATE_TOOLITEM_ID));
+		assertEquals(BaijiuShellChrome.PLANT_ICON_ANALYSIS, BaijiuShellChrome.plantToolbarItemIconUri(BaijiuShellChrome.ANALYSIS_TOOLITEM_ID));
+		assertEquals(BaijiuShellChrome.PLANT_ICON_REPORT, BaijiuShellChrome.plantToolbarItemIconUri(BaijiuShellChrome.REPORT_TOOLITEM_ID));
+		assertEquals(BaijiuShellChrome.PLANT_ICON_CHROM, BaijiuShellChrome.plantChromeIconUri(BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID));
+		assertEquals(BaijiuShellChrome.PLANT_ICON_OPS, BaijiuShellChrome.plantChromeIconUri(BaijiuShellChrome.WORKBENCH_HOME_PART_ID));
+		assertTrue(BaijiuShellChrome.PLANT_ICON_OPEN_CHROM.startsWith(BaijiuShellChrome.PLANT_ICON_PLUGIN_PREFIX));
+		assertFalse(BaijiuShellChrome.PLANT_ICON_CHROM.equals(BaijiuShellChrome.PLANT_ICON_INTEGRATE));
+		assertFalse(BaijiuShellChrome.PLANT_ICON_OPEN_CHROM.contains("org.eclipse.chemclipse.rcp.ui.icons"));
 		assertEquals(BaijiuShellChrome.TOGGLE_GC_COMMAND_ID, BaijiuShellChrome.plantToolbarItemCommandId(BaijiuShellChrome.TOGGLE_GC_TOOLITEM_ID));
 		assertEquals(6, BaijiuShellChrome.PLANT_TOOLBAR_ITEM_IDS.size());
+		java.util.Set<String> toolbarIcons = new java.util.HashSet<>();
+		for(String id : BaijiuShellChrome.PLANT_TOOLBAR_ITEM_IDS) {
+			String icon = BaijiuShellChrome.plantToolbarItemIconUri(id);
+			assertTrue(icon != null && icon.startsWith(BaijiuShellChrome.PLANT_ICON_PLUGIN_PREFIX), id);
+			assertTrue(icon.endsWith(".png"), id);
+			assertTrue(toolbarIcons.add(icon), "toolbar icons must be distinct: " + id);
+		}
+		java.util.Set<String> tabIcons = new java.util.HashSet<>();
+		for(String id : new String[] { BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID, BaijiuShellChrome.INTEGRATION_HOME_PART_ID, BaijiuShellChrome.ANALYSIS_HOME_PART_ID, BaijiuShellChrome.WIZARD_HOME_PART_ID, BaijiuShellChrome.SEQUENCE_HOME_PART_ID, BaijiuShellChrome.BATCH_RESULTS_HOME_PART_ID, BaijiuShellChrome.SIMPLE_BATCH_HOME_PART_ID, BaijiuShellChrome.PARALLEL_HOME_PART_ID, BaijiuShellChrome.REPORT_HOME_PART_ID, BaijiuShellChrome.WORKBENCH_HOME_PART_ID }) {
+			String icon = BaijiuShellChrome.plantChromeIconUri(id);
+			assertTrue(icon != null && icon.startsWith(BaijiuShellChrome.PLANT_ICON_PLUGIN_PREFIX), id);
+			assertTrue(tabIcons.add(icon), "tab icons must be distinct: " + id);
+		}
 		assertTrue(BaijiuShellChrome.isPlantChromeContainer(BaijiuShellChrome.MAIN_MENU_ID));
 		assertTrue(BaijiuShellChrome.isPlantChromeContainer(BaijiuShellChrome.TRIMBAR_TOP_ID));
 		assertTrue(BaijiuShellChrome.isPlantChromeContainer(BaijiuShellChrome.PLANT_TOOLBAR_ID));
@@ -428,6 +454,7 @@ public class BaijiuShellChrome_1_Test {
 		assertTrue(BaijiuShellChrome.isPlantToolbarContribution(BaijiuShellChrome.PLANT_TOOLBAR_ID));
 		assertTrue(BaijiuShellChrome.isPlantToolbarContribution(BaijiuShellChrome.OPEN_CHROMATOGRAM_TOOLITEM_ID));
 		assertTrue(BaijiuShellChrome.isPlantToolbarContribution(BaijiuShellChrome.TOGGLE_GC_TOOLITEM_ID));
+		assertTrue(BaijiuShellChrome.isPlantToolbarContribution(BaijiuShellChrome.TEMPERATURE_OPEN_TOOLITEM_ID));
 		assertTrue(BaijiuShellChrome.isPlantToolbarContribution("net.openchrom.rcp.compilation.baijiu.ui.toolbar.startAnalysis"));
 		assertTrue(BaijiuShellChrome.isPlantToolbarContribution("net.openchrom.rcp.compilation.baijiu.ui.toolbar.integrate"));
 		assertFalse(BaijiuShellChrome.isPlantToolbarContribution("org.eclipse.ui.WorkingSetActionSet"));
