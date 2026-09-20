@@ -207,13 +207,33 @@ public class BaijiuShellAddon {
 			// older E4
 		}
 		try {
-			eventBroker.subscribe(UIEvents.UILifeCycle.REMOVE_GUI, event -> {
+			eventBroker.subscribe(UIEvents.UIElement.TOPIC_WIDGET, event -> {
 				if(shuttingDown || BaijiuShellParts.isRevealingPlantWindowChrome()) {
+					return;
+				}
+				if(!isWidgetGone(event)) {
 					return;
 				}
 				Object element = event.getProperty(UIEvents.EventTags.ELEMENT);
 				String elementId = element instanceof MUIElement ui ? ui.getElementId() : null;
-				if(BaijiuShellChrome.shouldSanitizeAfterEditorClose(null, elementId, "REMOVE_GUI")) {
+				if(BaijiuShellChrome.shouldSanitizeAfterEditorWidgetTeardown(elementId, true)) {
+					scheduleSanitizePlantMenus(application, modelService);
+				}
+			});
+		} catch(RuntimeException | LinkageError e) {
+			// older E4
+		}
+		try {
+			eventBroker.subscribe(UIEvents.UIElement.TOPIC_TOBERENDERED, event -> {
+				if(shuttingDown || BaijiuShellParts.isRevealingPlantWindowChrome()) {
+					return;
+				}
+				if(Boolean.TRUE.equals(event.getProperty(UIEvents.EventTags.NEW_VALUE))) {
+					return;
+				}
+				Object element = event.getProperty(UIEvents.EventTags.ELEMENT);
+				String elementId = element instanceof MUIElement ui ? ui.getElementId() : null;
+				if(BaijiuShellChrome.shouldSanitizeAfterEditorClose(null, elementId, UIEvents.EventTypes.REMOVE)) {
 					scheduleSanitizePlantMenus(application, modelService);
 				}
 			});
@@ -701,6 +721,30 @@ public class BaijiuShellAddon {
 		} catch(RuntimeException | LinkageError e) {
 			sanitize.run();
 		}
+	}
+
+	/**
+	 * {@code UIElement.TOPIC_WIDGET}: renderer unbound the SWT widget
+	 * ({@link UIEvents.EventTypes#REMOVE} / {@code REMOVE_MANY}, or SET
+	 * {@code newValue == null}). Public e4 stand-in for editor GUI teardown
+	 * on this target — {@code UILifeCycle} has no such field.
+	 */
+	private static boolean isWidgetGone(Event event) {
+
+		if(event == null) {
+			return false;
+		}
+		try {
+			if(UIEvents.isREMOVE(event)) {
+				return true;
+			}
+		} catch(RuntimeException | LinkageError e) {
+			Object type = event.getProperty(UIEvents.EventTags.TYPE);
+			if(UIEvents.EventTypes.REMOVE.equals(type) || UIEvents.EventTypes.REMOVE_MANY.equals(type)) {
+				return true;
+			}
+		}
+		return event.getProperty(UIEvents.EventTags.NEW_VALUE) == null;
 	}
 
 	private static boolean isCsdChromeActivation(Object element) {
