@@ -283,42 +283,63 @@ public final class BaijiuWorkbenchParts {
 		if(part == null) {
 			return false;
 		}
-		if(host != null && !host.isDisposed()) {
-			Object widget = part.getWidget();
-			if(widget instanceof Control control && !control.isDisposed()) {
-				hostEditor(host, control);
-				return true;
-			}
-			IPresentationEngine engine = presentationEngine(application, part);
-			if(engine != null) {
-				try {
-					IEclipseContext context = application == null ? null : application.getContext();
-					Object created = engine.createGui(part, host, context);
-					hostEditor(host, part.getWidget() != null ? part.getWidget() : created);
-					if(part.getWidget() != null || created != null) {
-						return true;
-					}
-				} catch(RuntimeException | LinkageError e) {
-					// showPart below
-				}
-			}
+		if(reparentEditorWidget(part, host)) {
+			return true;
 		}
-		if(host != null && !host.isDisposed() && partService != null) {
+		if(partService != null) {
 			try {
 				partService.showPart(part, PartState.CREATE);
 			} catch(RuntimeException | LinkageError e) {
 				try {
 					partService.showPart(part, PartState.ACTIVATE);
 				} catch(RuntimeException | LinkageError e2) {
-					// widget reparent below
+					return reparentEditorWidget(part, host);
 				}
 			}
 		}
-		if(host != null && !host.isDisposed() && part.getWidget() instanceof Control control && !control.isDisposed()) {
+		return reparentEditorWidget(part, host);
+	}
+
+	static boolean reparentEditorWidget(MPart part, Composite host) {
+
+		if(part == null || host == null || host.isDisposed()) {
+			return false;
+		}
+		if(part.getWidget() instanceof Control control && !control.isDisposed()) {
 			hostEditor(host, control);
-			return true;
+			return control.getParent() == host || isControlAncestor(control, host) || isControlAncestor(host, control);
 		}
 		return false;
+	}
+
+	/**
+	 * ChromatogramEditorCSD has no satisfiable constructor for
+	 * {@code IPresentationEngine.createGui(part, plantHost, context)}.
+	 */
+	public static boolean createGuiIntoPlantHost() {
+
+		return false;
+	}
+
+	public static void restoreChromatogramEmptyState(MApplication application, EModelService modelService) {
+
+		MPart home = findPart(modelService, application, BaijiuPerspectiveIds.CHROMATOGRAM_HOME_PART_ID);
+		restoreChromatogramEmptyState(homeWidget(home));
+	}
+
+	public static void restoreChromatogramEmptyState(Composite host) {
+
+		if(host == null || host.isDisposed()) {
+			return;
+		}
+		try {
+			Class<?> type = Class.forName("net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuHomePanels");
+			type.getMethod("createChromatogramEmptyState", Composite.class).invoke(null, host);
+		} catch(ClassNotFoundException | LinkageError e) {
+			// community product
+		} catch(Throwable t) {
+			// do not crash restore
+		}
 	}
 
 	static void hostEditor(Composite host, Object editorWidget) {
@@ -327,6 +348,9 @@ public final class BaijiuWorkbenchParts {
 			return;
 		}
 		Control editor = editorWidget instanceof Control control && !control.isDisposed() ? control : null;
+		if(editor == null) {
+			return;
+		}
 		Control[] children = host.getChildren();
 		if(children != null) {
 			for(Control child : children) {
@@ -422,7 +446,7 @@ public final class BaijiuWorkbenchParts {
 		try {
 			engine.createGui(part);
 		} catch(RuntimeException | LinkageError e) {
-			// embed still tries createGui(part, host)
+			// home part only; ChromatogramEditorCSD is hosted via reparent
 		}
 	}
 

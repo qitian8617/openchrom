@@ -11,18 +11,12 @@ package net.openchrom.xxd.processor.supplier.baijiu.ui.handlers;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.eclipse.chemclipse.logging.core.Logger;
 import org.eclipse.chemclipse.model.types.DataType;
 import org.eclipse.chemclipse.support.ui.activator.ContextAddon;
-import org.eclipse.chemclipse.support.ui.workbench.EditorSupport;
 import org.eclipse.chemclipse.ux.extension.ui.provider.ISupplierEditorSupport;
-import org.eclipse.chemclipse.ux.extension.xxd.ui.editors.AbstractChromatogramEditor;
-import org.eclipse.chemclipse.ux.extension.xxd.ui.editors.ChromatogramEditorCSD;
 import org.eclipse.chemclipse.ux.extension.xxd.ui.editors.EditorSupportFactory;
 import org.eclipse.core.commands.ParameterizedCommand;
 import org.eclipse.e4.core.commands.ECommandService;
@@ -32,7 +26,6 @@ import org.eclipse.e4.core.contexts.IEclipseContext;
 import org.eclipse.e4.core.di.annotations.Execute;
 import org.eclipse.e4.core.di.annotations.Optional;
 import org.eclipse.e4.ui.model.application.MApplication;
-import org.eclipse.e4.ui.model.application.ui.basic.MPart;
 import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.jface.preference.IPreferenceStore;
@@ -63,6 +56,13 @@ public class OpenBaijiuChromatogramHandler {
 	public static final String NO_CONTEXT_REASON = "\u65e0\u6cd5\u628a\u8c31\u56fe\u8f7d\u5165\u300c\u8c31\u56fe/\u91c7\u96c6\u300d\uff1a\u672a\u83b7\u5f97\u5de5\u4f5c\u53f0\u4e0a\u4e0b\u6587\u3002";
 	public static final String MISSING_FILE_REASON = "\u6ca1\u6709\u53ef\u8bfb\u7684\u8272\u8c31\u56fe\u6587\u4ef6\u3002";
 	public static final String OPEN_FAILED_REASON = "\u65e0\u6cd5\u6253\u5f00\u6240\u9009\u8272\u8c31\u56fe\u3002\u8bf7\u786e\u8ba4\u6587\u4ef6\u662f FID CSD\uff08*.ocb / *.cdf\uff09\u3002";
+	/**
+	 * {@code IPresentationEngine.createGui(part, plantHost, context)} cannot
+	 * construct {@code ChromatogramEditorCSD} (unsatisfiable constructor).
+	 * Open via ChemClipse {@code ISupplierEditorSupport.openEditor} then reparent.
+	 */
+	public static final String CREATEGUI_DI_REASON = "Could not find satisfiable constructor in org.eclipse.chemclipse.ux.extension.xxd.ui.editors.ChromatogramEditorCSD";
+	public static final String HOST_FAILED_REASON = "\u65e0\u6cd5\u628a\u8272\u8c31\u56fe\u8f7d\u5165\u300c\u8c31\u56fe/\u91c7\u96c6\u300d\u3002" + CREATEGUI_DI_REASON;
 
 	private static final Logger logger = Logger.getLogger(OpenBaijiuChromatogramHandler.class);
 
@@ -97,30 +97,41 @@ public class OpenBaijiuChromatogramHandler {
 			lastOpenFailure = NO_CONTEXT_REASON;
 			return false;
 		}
+		boolean chemclipse = false;
 		boolean hosted = false;
 		try {
-			hosted = openInPlantStack(file, live);
-		} catch(RuntimeException | LinkageError e) {
-			logger.warn("Plant-stack CSD open failed for " + file.getAbsolutePath(), e);
-		}
-		boolean chemclipse = false;
-		if(!hosted) {
 			chemclipse = openViaChemClipseSupport(file, live);
-			if(chemclipse) {
-				hosted = hostExistingEditors(live) || hosted;
-			}
+			hosted = hostExistingEditors(live);
+		} catch(RuntimeException | LinkageError e) {
+			logger.warn("ChemClipse CSD open failed for " + file.getAbsolutePath(), e);
+			recordOpenFailure(e);
 		}
-		showPlantChromatogram(live);
-		boolean ok = hostedSuccessfully(hosted, chemclipse);
-		if(!ok) {
-			lastOpenFailure = OPEN_FAILED_REASON;
+		boolean plantProduct = isPlantProduct(live);
+		if(hosted) {
+			showPlantChromatogram(live);
+			return true;
 		}
-		return ok;
+		if(!plantProduct && chemclipse) {
+			return true;
+		}
+		restorePlantEmptyState(live);
+		if(lastOpenFailure == null) {
+			lastOpenFailure = plantProduct ? HOST_FAILED_REASON : OPEN_FAILED_REASON;
+		}
+		return false;
 	}
 
 	public static boolean hostedSuccessfully(boolean plantHosted, boolean chemclipseOpened) {
 
-		return plantHosted || chemclipseOpened;
+		return hostedSuccessfully(plantHosted, chemclipseOpened, true);
+	}
+
+	public static boolean hostedSuccessfully(boolean plantHosted, boolean chemclipseOpened, boolean plantProduct) {
+
+		if(plantHosted) {
+			return true;
+		}
+		return !plantProduct && chemclipseOpened;
 	}
 
 	public static String lastOpenFailure() {
@@ -186,6 +197,7 @@ public class OpenBaijiuChromatogramHandler {
 			showPlantChromatogramInBranding(application, modelService, partService);
 			return hosted;
 		} catch(RuntimeException | LinkageError e) {
+			recordOpenFailure(e);
 			return false;
 		}
 	}
@@ -198,56 +210,49 @@ public class OpenBaijiuChromatogramHandler {
 				return false;
 			}
 			boolean opened = support.openEditor(file);
-			if(opened) {
-				showPlantChromatogram(context);
-			}
 			return opened;
 		} catch(RuntimeException | LinkageError e) {
 			logger.warn("ChemClipse CSD open failed for " + file.getAbsolutePath(), e);
+			recordOpenFailure(e);
 			return false;
 		}
 	}
 
-	private static boolean openInPlantStack(File file, IEclipseContext context) {
+	private static boolean isPlantProduct(IEclipseContext context) {
 
-		MApplication application = context.get(MApplication.class);
-		EModelService modelService = context.get(EModelService.class);
-		EPartService partService = context.get(EPartService.class);
-		if(application == null || modelService == null) {
-			return false;
-		}
-		if(BaijiuWorkbenchParts.findPlantChromatogramStack(application, modelService) == null) {
-			return false;
-		}
-		MPart part = createCsdPart(modelService, file);
-		if(part == null) {
-			return false;
-		}
-		return BaijiuWorkbenchParts.hostCsdPart(application, modelService, partService, part);
-	}
-
-	private static MPart createCsdPart(EModelService modelService, File file) {
-
-		MPart part = modelService.createModelElement(MPart.class);
-		part.getTags().add(EPartService.REMOVE_ON_HIDE_TAG);
-		part.setElementId(ChromatogramEditorCSD.ID);
-		part.setContributionURI(ChromatogramEditorCSD.CONTRIBUTION_URI);
-		Map<String, Object> map = new HashMap<>();
-		map.put(EditorSupport.MAP_FILE, file.getAbsolutePath());
-		map.put(EditorSupport.MAP_BATCH, Boolean.FALSE);
-		map.put(EditorSupport.MAP_HEADER_MAP, Collections.emptyMap());
-		part.setObject(map);
-		part.setLabel(file.getName());
 		try {
-			part.setIconURI(ChromatogramEditorCSD.ICON_URI);
+			MApplication application = context.get(MApplication.class);
+			EModelService modelService = context.get(EModelService.class);
+			return BaijiuWorkbenchParts.findPlantChromatogramStack(application, modelService) != null;
 		} catch(RuntimeException | LinkageError e) {
-			// icon is optional
+			return false;
 		}
-		part.setTooltip(AbstractChromatogramEditor.TOOLTIP);
-		part.setCloseable(true);
-		part.setVisible(true);
-		part.setToBeRendered(true);
-		return part;
+	}
+
+	private static void restorePlantEmptyState(IEclipseContext context) {
+
+		try {
+			MApplication application = context.get(MApplication.class);
+			EModelService modelService = context.get(EModelService.class);
+			BaijiuWorkbenchParts.restoreChromatogramEmptyState(application, modelService);
+		} catch(RuntimeException | LinkageError e) {
+			logger.warn("Failed to restore 谱图/采集 empty state", e);
+		}
+	}
+
+	private static void recordOpenFailure(Throwable t) {
+
+		if(t == null) {
+			return;
+		}
+		String message = t.getMessage();
+		if(message != null && message.contains("satisfiable constructor")) {
+			lastOpenFailure = HOST_FAILED_REASON;
+			return;
+		}
+		if(message != null && !message.isBlank()) {
+			lastOpenFailure = message;
+		}
 	}
 
 	private static void showPlantChromatogramInBranding(MApplication application, EModelService modelService, EPartService partService) {

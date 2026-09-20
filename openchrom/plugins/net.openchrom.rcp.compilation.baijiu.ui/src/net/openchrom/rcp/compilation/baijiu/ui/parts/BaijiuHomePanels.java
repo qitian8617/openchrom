@@ -198,6 +198,9 @@ public final class BaijiuHomePanels {
 			return;
 		}
 		Control editor = editorWidget instanceof Control control && !control.isDisposed() ? control : null;
+		if(editor == null) {
+			return;
+		}
 		Control[] children = home.getChildren();
 		if(children != null) {
 			for(Control child : children) {
@@ -234,7 +237,7 @@ public final class BaijiuHomePanels {
 		layout(home);
 	}
 
-	static boolean isAncestor(Control child, Control ancestor) {
+	public static boolean isAncestor(Control child, Control ancestor) {
 
 		Control walk = child;
 		while(walk != null) {
