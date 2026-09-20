@@ -10,8 +10,10 @@
 package net.openchrom.xxd.processor.supplier.baijiu.ui.handlers;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.chemclipse.logging.core.Logger;
@@ -22,13 +24,15 @@ import org.eclipse.chemclipse.ux.extension.ui.provider.ISupplierEditorSupport;
 import org.eclipse.chemclipse.ux.extension.xxd.ui.editors.AbstractChromatogramEditor;
 import org.eclipse.chemclipse.ux.extension.xxd.ui.editors.ChromatogramEditorCSD;
 import org.eclipse.chemclipse.ux.extension.xxd.ui.editors.EditorSupportFactory;
+import org.eclipse.core.commands.ParameterizedCommand;
+import org.eclipse.e4.core.commands.ECommandService;
+import org.eclipse.e4.core.commands.EHandlerService;
 import org.eclipse.e4.core.contexts.Active;
 import org.eclipse.e4.core.contexts.IEclipseContext;
 import org.eclipse.e4.core.di.annotations.Execute;
 import org.eclipse.e4.core.di.annotations.Optional;
 import org.eclipse.e4.ui.model.application.MApplication;
 import org.eclipse.e4.ui.model.application.ui.basic.MPart;
-import org.eclipse.e4.ui.model.application.ui.basic.MPartStack;
 import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.jface.preference.IPreferenceStore;
@@ -55,38 +59,102 @@ public class OpenBaijiuChromatogramHandler {
 
 	public static final String FILTER_PATH_KEY = "baijiu.filter.path.chromatogram";
 	public static final String COMMAND_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.command.openChromatogram";
+	public static final String NO_SHELL_REASON = "\u65e0\u6cd5\u6253\u5f00\u6587\u4ef6\u9009\u62e9\u6846\uff1a\u5de5\u4f5c\u53f0\u7a97\u53e3\u672a\u5c31\u7eea\u3002";
+	public static final String NO_CONTEXT_REASON = "\u65e0\u6cd5\u628a\u8c31\u56fe\u8f7d\u5165\u300c\u8c31\u56fe/\u91c7\u96c6\u300d\uff1a\u672a\u83b7\u5f97\u5de5\u4f5c\u53f0\u4e0a\u4e0b\u6587\u3002";
+	public static final String MISSING_FILE_REASON = "\u6ca1\u6709\u53ef\u8bfb\u7684\u8272\u8c31\u56fe\u6587\u4ef6\u3002";
+	public static final String OPEN_FAILED_REASON = "\u65e0\u6cd5\u6253\u5f00\u6240\u9009\u8272\u8c31\u56fe\u3002\u8bf7\u786e\u8ba4\u6587\u4ef6\u662f FID CSD\uff08*.ocb / *.cdf\uff09\u3002";
 
 	private static final Logger logger = Logger.getLogger(OpenBaijiuChromatogramHandler.class);
+
+	private static volatile String lastAlert;
+	private static volatile String lastOpenFailure;
 
 	@Execute
 	public void execute(@Optional @Active Shell shell, @Optional IEclipseContext context) {
 
-		openViaFileDialog(activeShell(shell), resolveContext(context));
+		try {
+			openViaFileDialog(activeShell(shell), resolveContext(context));
+		} catch(Throwable t) {
+			alert(shell, formatThrowable(t));
+		}
 	}
 
 	/**
 	 * Opens one CSD chromatogram in the editor without a file dialog.
 	 * Used by post-acquisition handoff into the Baijiu workbench.
 	 *
-	 * @return true if the editor support or plant stack accepted the file
+	 * @return true if the chart was hosted in 谱图/采集 or ChemClipse visibly opened the editor
 	 */
 	public static boolean openFile(File file, IEclipseContext context) {
 
-		if(file == null || !file.isFile() || context == null) {
+		lastOpenFailure = null;
+		if(file == null || !file.isFile()) {
+			lastOpenFailure = MISSING_FILE_REASON;
 			return false;
 		}
-		showPlantChromatogram(context);
-		boolean opened = false;
+		IEclipseContext live = resolveContext(context);
+		if(live == null) {
+			lastOpenFailure = NO_CONTEXT_REASON;
+			return false;
+		}
+		boolean hosted = false;
 		try {
-			opened = openInPlantStack(file, context);
+			hosted = openInPlantStack(file, live);
 		} catch(RuntimeException | LinkageError e) {
 			logger.warn("Plant-stack CSD open failed for " + file.getAbsolutePath(), e);
 		}
-		if(!opened) {
-			opened = openViaChemClipseSupport(file, context);
+		boolean chemclipse = false;
+		if(!hosted) {
+			chemclipse = openViaChemClipseSupport(file, live);
+			if(chemclipse) {
+				hosted = hostExistingEditors(live) || hosted;
+			}
 		}
-		showPlantChromatogram(context);
-		return opened;
+		showPlantChromatogram(live);
+		boolean ok = hostedSuccessfully(hosted, chemclipse);
+		if(!ok) {
+			lastOpenFailure = OPEN_FAILED_REASON;
+		}
+		return ok;
+	}
+
+	public static boolean hostedSuccessfully(boolean plantHosted, boolean chemclipseOpened) {
+
+		return plantHosted || chemclipseOpened;
+	}
+
+	public static String lastOpenFailure() {
+
+		return lastOpenFailure;
+	}
+
+	public static String lastAlert() {
+
+		return lastAlert;
+	}
+
+	/**
+	 * True when a workbench {@link Shell} is available to open {@link FileDialog}.
+	 * On failure records {@link #lastAlert()} and shows a MessageBox when SWT can.
+	 * Never a silent no-op: callers must not return without this or a chooser.
+	 */
+	public static boolean beginFileDialog(Shell hinted) {
+
+		String reason = fileDialogBlockReason(hinted);
+		if(reason != null) {
+			alert(hinted, reason);
+			return false;
+		}
+		return true;
+	}
+
+	public static String fileDialogBlockReason(Shell hinted) {
+
+		Shell active = activeShell(hinted);
+		if(active == null || active.isDisposed()) {
+			return NO_SHELL_REASON;
+		}
+		return null;
 	}
 
 	static void showPlantChromatogram(IEclipseContext context) {
@@ -102,6 +170,23 @@ public class OpenBaijiuChromatogramHandler {
 			showPlantChromatogramInBranding(application, modelService, partService);
 		} catch(RuntimeException | LinkageError e) {
 			// community product has no plant-home tab
+		}
+	}
+
+	private static boolean hostExistingEditors(IEclipseContext context) {
+
+		if(context == null) {
+			return false;
+		}
+		try {
+			MApplication application = context.get(MApplication.class);
+			EModelService modelService = context.get(EModelService.class);
+			EPartService partService = context.get(EPartService.class);
+			boolean hosted = BaijiuWorkbenchParts.hostOpenCsdEditors(application, modelService, partService);
+			showPlantChromatogramInBranding(application, modelService, partService);
+			return hosted;
+		} catch(RuntimeException | LinkageError e) {
+			return false;
 		}
 	}
 
@@ -127,12 +212,22 @@ public class OpenBaijiuChromatogramHandler {
 
 		MApplication application = context.get(MApplication.class);
 		EModelService modelService = context.get(EModelService.class);
+		EPartService partService = context.get(EPartService.class);
 		if(application == null || modelService == null) {
 			return false;
 		}
 		if(BaijiuWorkbenchParts.findPlantChromatogramStack(application, modelService) == null) {
 			return false;
 		}
+		MPart part = createCsdPart(modelService, file);
+		if(part == null) {
+			return false;
+		}
+		return BaijiuWorkbenchParts.hostCsdPart(application, modelService, partService, part);
+	}
+
+	private static MPart createCsdPart(EModelService modelService, File file) {
+
 		MPart part = modelService.createModelElement(MPart.class);
 		part.getTags().add(EPartService.REMOVE_ON_HIDE_TAG);
 		part.setElementId(ChromatogramEditorCSD.ID);
@@ -152,13 +247,7 @@ public class OpenBaijiuChromatogramHandler {
 		part.setCloseable(true);
 		part.setVisible(true);
 		part.setToBeRendered(true);
-		MPartStack stack = BaijiuWorkbenchParts.findPrimaryEditorStack(application, modelService);
-		if(stack != null && !stack.getChildren().contains(part)) {
-			stack.getChildren().add(part);
-		} else {
-			BaijiuWorkbenchParts.addToSharedElements(application, part);
-		}
-		return true;
+		return part;
 	}
 
 	private static void showPlantChromatogramInBranding(MApplication application, EModelService modelService, EPartService partService) {
@@ -212,8 +301,12 @@ public class OpenBaijiuChromatogramHandler {
 
 	public static Shell activeShell(Shell hinted) {
 
-		if(hinted != null && !hinted.isDisposed()) {
+		if(usable(hinted)) {
 			return hinted;
+		}
+		Shell workbench = workbenchWindowShell();
+		if(usable(workbench)) {
+			return workbench;
 		}
 		try {
 			Display display = Display.getCurrent();
@@ -224,13 +317,13 @@ public class OpenBaijiuChromatogramHandler {
 				return null;
 			}
 			Shell active = display.getActiveShell();
-			if(active != null && !active.isDisposed()) {
+			if(usable(active)) {
 				return active;
 			}
 			Shell[] shells = display.getShells();
 			if(shells != null) {
 				for(Shell shell : shells) {
-					if(shell != null && !shell.isDisposed()) {
+					if(usable(shell)) {
 						return shell;
 					}
 				}
@@ -241,55 +334,167 @@ public class OpenBaijiuChromatogramHandler {
 		return hinted;
 	}
 
+	/**
+	 * Fire the same E4 command the toolbar uses. Returns false when the
+	 * handler service is missing so callers can invoke {@link #execute} directly.
+	 */
+	public static boolean executeRegisteredCommand(IEclipseContext context) {
+
+		if(context == null) {
+			return false;
+		}
+		try {
+			EHandlerService handlers = context.get(EHandlerService.class);
+			ECommandService commands = context.get(ECommandService.class);
+			if(handlers == null || commands == null) {
+				return false;
+			}
+			ParameterizedCommand command = commands.createCommand(COMMAND_ID, null);
+			if(command == null || !handlers.canExecute(command)) {
+				return false;
+			}
+			handlers.executeHandler(command);
+			return true;
+		} catch(RuntimeException | LinkageError e) {
+			logger.warn("E4 command " + COMMAND_ID + " failed; falling back to direct execute", e);
+			return false;
+		}
+	}
+
+	public static void alert(Shell hinted, String message) {
+
+		String text = message == null || message.isBlank() ? OPEN_FAILED_REASON : message;
+		lastAlert = text;
+		try {
+			Shell shell = activeShell(hinted);
+			if(!usable(shell)) {
+				Display display = Display.getCurrent();
+				if(display == null || display.isDisposed()) {
+					logger.warn(text);
+					return;
+				}
+				shell = new Shell(display);
+				try {
+					info(shell, text);
+				} finally {
+					if(!shell.isDisposed()) {
+						shell.dispose();
+					}
+				}
+				return;
+			}
+			info(shell, text);
+		} catch(Throwable t) {
+			logger.warn(text, t);
+		}
+	}
+
+	private static boolean usable(Shell shell) {
+
+		return shell != null && !shell.isDisposed();
+	}
+
+	private static Shell workbenchWindowShell() {
+
+		try {
+			if(!PlatformUI.isWorkbenchRunning()) {
+				return null;
+			}
+			IWorkbench workbench = PlatformUI.getWorkbench();
+			IWorkbenchWindow window = workbench.getActiveWorkbenchWindow();
+			if(window != null && usable(window.getShell())) {
+				return window.getShell();
+			}
+			IWorkbenchWindow[] windows = workbench.getWorkbenchWindows();
+			if(windows != null) {
+				for(IWorkbenchWindow candidate : windows) {
+					if(candidate != null && usable(candidate.getShell())) {
+						return candidate.getShell();
+					}
+				}
+			}
+		} catch(RuntimeException | LinkageError e) {
+			return null;
+		}
+		return null;
+	}
+
 	private void openViaFileDialog(Shell shell, IEclipseContext context) {
 
-		Shell active = activeShell(shell);
-		if(active == null || active.isDisposed()) {
-			logger.warn("CSD FileDialog skipped: no workbench shell");
+		if(!beginFileDialog(shell)) {
 			return;
 		}
-		String chosen;
-		FileDialog dialog;
+		Shell active = activeShell(shell);
+		List<File> chosen;
 		try {
-			dialog = new FileDialog(active, SWT.OPEN | SWT.MULTI);
-			dialog.setFilterExtensions(new String[] {"*.ocb;*.cdf;*.CSD;*.csd", "*.ocb", "*.*"});
-			dialog.setFilterNames(new String[] {"白酒 FID 色谱图 (*.ocb, *.cdf)", "OpenChrom CSD (*.ocb)", "所有文件 (*.*)"});
-			dialog.setText("\u6253\u5f00\u767d\u9152 FID \u8272\u8c31\u56fe");
-			String lastPath = filterPath();
-			if(lastPath != null && !lastPath.isBlank()) {
-				dialog.setFilterPath(lastPath);
-			}
-			chosen = dialog.open();
+			chosen = chooseFiles(active);
 		} catch(RuntimeException | LinkageError e) {
-			info(active, "无法打开文件选择框：" + (e.getMessage() == null || e.getMessage().isBlank() ? e.getClass().getSimpleName() : e.getMessage()));
+			alert(active, "\u65e0\u6cd5\u6253\u5f00\u6587\u4ef6\u9009\u62e9\u6846\uff1a" + formatThrowable(e));
 			return;
 		}
 		if(chosen == null) {
 			return;
 		}
-		rememberFilterPath(dialog.getFilterPath());
 		IEclipseContext live = resolveContext(context);
 		if(live == null) {
-			info(active, "无法把谱图载入「谱图/采集」：未获得工作台上下文。");
+			alert(active, NO_CONTEXT_REASON);
 			return;
 		}
 		try {
 			boolean opened = false;
-			String[] names = dialog.getFileNames();
-			if(names == null || names.length == 0) {
-				opened = openFile(new File(chosen), live);
-			} else {
-				for(String name : names) {
-					opened |= openFile(new File(dialog.getFilterPath(), name), live);
-				}
+			for(File file : chosen) {
+				opened |= openFile(file, live);
 			}
 			showPlantChromatogram(live);
 			if(!opened) {
-				info(active, "无法打开所选色谱图。请确认文件是 FID CSD（*.ocb / *.cdf）。");
+				alert(active, lastOpenFailure() != null ? lastOpenFailure() : OPEN_FAILED_REASON);
 			}
 		} catch(RuntimeException e) {
-			info(active, "无法打开所选色谱图：" + (e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()));
+			alert(active, "\u65e0\u6cd5\u6253\u5f00\u6240\u9009\u8272\u8c31\u56fe\uff1a" + formatThrowable(e));
 		}
+	}
+
+	private static List<File> chooseFiles(Shell active) {
+
+		FileDialog dialog = new FileDialog(active, SWT.OPEN | SWT.MULTI);
+		dialog.setFilterExtensions(new String[] {"*.ocb;*.cdf;*.CSD;*.csd", "*.ocb", "*.*"});
+		dialog.setFilterNames(new String[] { //
+			"\u767d\u9152 FID \u8272\u8c31\u56fe (*.ocb, *.cdf)", //
+			"OpenChrom CSD (*.ocb)", //
+			"\u6240\u6709\u6587\u4ef6 (*.*)" //
+		});
+		dialog.setText("\u6253\u5f00\u767d\u9152 FID \u8272\u8c31\u56fe");
+		String lastPath = filterPath();
+		if(lastPath != null && !lastPath.isBlank()) {
+			dialog.setFilterPath(lastPath);
+		}
+		String chosen = dialog.open();
+		if(chosen == null) {
+			return null;
+		}
+		rememberFilterPath(dialog.getFilterPath());
+		List<File> files = new ArrayList<>();
+		String[] names = dialog.getFileNames();
+		if(names == null || names.length == 0) {
+			files.add(new File(chosen));
+		} else {
+			for(String name : names) {
+				files.add(new File(dialog.getFilterPath(), name));
+			}
+		}
+		return files;
+	}
+
+	private static String formatThrowable(Throwable t) {
+
+		if(t == null) {
+			return OPEN_FAILED_REASON;
+		}
+		String message = t.getMessage();
+		if(message == null || message.isBlank()) {
+			return t.getClass().getSimpleName();
+		}
+		return message;
 	}
 
 	private static String filterPath() {

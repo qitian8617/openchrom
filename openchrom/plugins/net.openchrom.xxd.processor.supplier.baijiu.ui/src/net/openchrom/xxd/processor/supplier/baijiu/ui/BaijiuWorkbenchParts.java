@@ -136,7 +136,47 @@ public final class BaijiuWorkbenchParts {
 		return null;
 	}
 
-	static boolean hostOpenCsdEditors(MApplication application, EModelService modelService, EPartService partService) {
+	/**
+	 * Dock a created CSD editor off the left workflow tabs, force 谱图/采集
+	 * GUI, and embed the chart into that home Composite. Returns true only
+	 * when the editor was hosted (not merely added to a stack).
+	 */
+	public static boolean hostCsdPart(MApplication application, EModelService modelService, EPartService partService, MPart part) {
+
+		if(application == null || modelService == null || part == null) {
+			return false;
+		}
+		MPartStack plantStack = findPlantChromatogramStack(application, modelService);
+		if(plantStack == null) {
+			return false;
+		}
+		if(!dockOffWorkflowTabs(application, modelService, plantStack, part)) {
+			return false;
+		}
+		MPart home = findPart(modelService, application, BaijiuPerspectiveIds.CHROMATOGRAM_HOME_PART_ID);
+		ensurePartGui(application, home);
+		if(partService != null && home != null && homeWidget(home) == null) {
+			try {
+				partService.showPart(home, PartState.CREATE);
+			} catch(RuntimeException | LinkageError e) {
+				try {
+					partService.showPart(home, PartState.ACTIVATE);
+				} catch(RuntimeException | LinkageError e2) {
+					// embed below
+				}
+			}
+			ensurePartGui(application, home);
+		}
+		Composite host = homeWidget(home);
+		boolean embedded = embedCsdEditor(application, partService, part, host);
+		boolean hosted = hostOpenCsdEditors(application, modelService, partService);
+		if((embedded || hosted) && home != null) {
+			selectInParent(home);
+		}
+		return embedded || hosted;
+	}
+
+	public static boolean hostOpenCsdEditors(MApplication application, EModelService modelService, EPartService partService) {
 
 		if(application == null || modelService == null) {
 			return false;
@@ -263,7 +303,7 @@ public final class BaijiuWorkbenchParts {
 				}
 			}
 		}
-		if(partService != null) {
+		if(host != null && !host.isDisposed() && partService != null) {
 			try {
 				partService.showPart(part, PartState.CREATE);
 			} catch(RuntimeException | LinkageError e) {
@@ -278,7 +318,7 @@ public final class BaijiuWorkbenchParts {
 			hostEditor(host, control);
 			return true;
 		}
-		return part.getWidget() != null || part.getObject() != null;
+		return false;
 	}
 
 	static void hostEditor(Composite host, Object editorWidget) {
