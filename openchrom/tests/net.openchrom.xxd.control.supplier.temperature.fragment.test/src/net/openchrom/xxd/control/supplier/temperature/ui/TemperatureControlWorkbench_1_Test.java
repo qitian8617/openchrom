@@ -46,6 +46,7 @@ public class TemperatureControlWorkbench_1_Test {
 		assertFalse(TemperatureControlWorkbench.hasCsdInput(null));
 		assertFalse(TemperatureControlWorkbench.embedCsdEditor(null, null, null, null));
 		assertFalse(TemperatureControlWorkbench.dockOffWorkflowTabs(null, null, null, null));
+		assertFalse(TemperatureControlWorkbench.dockIntoPlantChromatogramStack(null, null));
 		assertFalse(TemperatureControlWorkbench.addToSharedElements(null, null));
 		TemperatureControlWorkbench.hostEditor(null, null);
 		assertEquals(null, TemperatureControlWorkbench.homeWidget(null));

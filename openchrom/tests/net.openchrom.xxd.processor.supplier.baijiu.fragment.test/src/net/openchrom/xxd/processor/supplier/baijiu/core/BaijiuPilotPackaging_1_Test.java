@@ -234,7 +234,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertNotNull(chrome);
 		String chromeSrc = Files.readString(chrome, StandardCharsets.UTF_8);
 		assertTrue(chromeSrc.contains("CSD_EDITOR_PART_ID"), chromeSrc);
-		assertTrue(chromeSrc.contains("CHROME_EPOCH = 20"), chromeSrc);
+		assertTrue(chromeSrc.contains("CHROME_EPOCH = 21"), chromeSrc);
+		assertTrue(chromeSrc.contains("EDITOR_REQUIRED_MENU_IDS"), chromeSrc);
 		assertTrue(chromeSrc.contains("PERSPECTIVE_STACK_IDS"), chromeSrc);
 		assertTrue(chromeSrc.contains("org.eclipse.e4.primaryPerspectiveStack"), chromeSrc);
 		assertTrue(chromeSrc.contains("isPerspectiveStackId"), chromeSrc);
@@ -309,6 +310,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(addonSrc.contains("ensurePlantHome"), addonSrc);
 		assertTrue(addonSrc.contains("selectPlantHomeIfPresent"), addonSrc);
 		assertTrue(addonSrc.contains("rejectHiddenSelection"), addonSrc);
+		assertTrue(addonSrc.contains("hostOpenCsdEditors"), addonSrc);
+		assertTrue(addonSrc.contains("EDITOR_REQUIRED_MENU_IDS"), addonSrc);
 		assertTrue(addonSrc.contains("recoverPlantHome"), addonSrc);
 		assertFalse(addonSrc.contains("if(!shown && plantHome)"), "plant home must not fall back to the community workbench perspective");
 		assertFalse(addonSrc.contains("findPerspective(application, modelService, BaijiuShellChrome.WORKBENCH_PERSPECTIVE_ID)"), "must not select community 白酒工作台 when plant home is missing");
@@ -388,7 +391,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(partsSrc.contains("hostOpenCsdEditors"), partsSrc);
 		assertFalse(partsSrc.contains("getParent() != plantStack"), "MElementContainer<MUIElement> vs MPartStack is incomparable on Java 21");
 		assertTrue(partsSrc.contains("plantStack.getChildren().contains(part)"), partsSrc);
-		assertTrue(partsSrc.contains("plantStack.getChildren().remove(part)"), partsSrc);
+		assertTrue(partsSrc.contains("dockIntoPlantChromatogramStack"), partsSrc);
+		assertTrue(partsSrc.contains("selectionClearsHostedEditor"), partsSrc);
 		assertTrue(partsSrc.contains("embedCsdEditor"), partsSrc);
 		assertFalse(partsSrc.contains("createGui(part, host"), "ChromatogramEditorCSD cannot be constructed via createGui into the plant Composite");
 		assertTrue(partsSrc.contains("BaijiuHomePanels.hostEditor"), partsSrc);
@@ -398,6 +402,7 @@ public class BaijiuPilotPackaging_1_Test {
 		int embedEnd = partsSrc.indexOf("\n\tstatic ", embedAt + 10);
 		String embedBody = partsSrc.substring(embedAt, embedEnd > embedAt ? embedEnd : embedAt + 2500);
 		assertFalse(embedBody.contains("createGui"), "branding embed must not createGui ChromatogramEditorCSD");
+		assertFalse(embedBody.contains("setParent"), "must not steal the editor widget from its e4 parent");
 		assertFalse(embedBody.contains("return part.getWidget() != null || part.getObject() != null"), "branding embed must not succeed only because MPart.setObject was set");
 		assertTrue(partsSrc.contains("dockOffWorkflowTabs"), partsSrc);
 		assertTrue(partsSrc.contains("persistGcConsoleHidden"), partsSrc);
@@ -501,7 +506,7 @@ public class BaijiuPilotPackaging_1_Test {
 		String chromHomeSrc = Files.readString(chromHomePart, StandardCharsets.UTF_8);
 		assertTrue(chromHomeSrc.contains("@PostConstruct"), chromHomeSrc);
 		assertTrue(chromHomeSrc.contains("createChromatogramEmptyState"), chromHomeSrc);
-		assertTrue(chromHomeSrc.contains("embeds the ChromatogramEditorCSD"), chromHomeSrc);
+		assertTrue(chromHomeSrc.contains("selects ChromatogramEditorCSD"), chromHomeSrc);
 		assertTrue(chromHomeSrc.contains("catch(Throwable"), chromHomeSrc);
 
 		Path intHomePart = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/parts/BaijiuIntegrationHomePart.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/parts/BaijiuIntegrationHomePart.java");
@@ -569,10 +574,10 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(gcWorkbenchSrc.contains("hasCsdInput"), gcWorkbenchSrc);
 		assertFalse(gcWorkbenchSrc.contains("getParent() != plantStack"), "MElementContainer<MUIElement> vs MPartStack is incomparable on Java 21");
 		assertTrue(gcWorkbenchSrc.contains("plantStack.getChildren().contains(part)"), gcWorkbenchSrc);
-		assertTrue(gcWorkbenchSrc.contains("plantStack.getChildren().remove(part)"), gcWorkbenchSrc);
+		assertTrue(gcWorkbenchSrc.contains("dockIntoPlantChromatogramStack"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("embedCsdEditor"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("CHROMATOGRAM_HOME_PART_ID"), gcWorkbenchSrc);
-		assertTrue(gcWorkbenchSrc.contains("createGui(part, host"), gcWorkbenchSrc);
+		assertFalse(gcWorkbenchSrc.contains("createGui(part, host"), "ChromatogramEditorCSD unsatisfiable constructor via createGui into plant host");
 		assertTrue(gcWorkbenchSrc.contains("if(!hosted && home != null)"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("PLANT_CHROMATOGRAM_STACK_ID"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("unhideGcConsole"), gcWorkbenchSrc);
@@ -600,7 +605,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(seqWorkbenchSrc.contains("hasCsdInput"), seqWorkbenchSrc);
 		assertFalse(seqWorkbenchSrc.contains("getParent() != plantStack"), "MElementContainer<MUIElement> vs MPartStack is incomparable on Java 21");
 		assertTrue(seqWorkbenchSrc.contains("plantStack.getChildren().contains(part)"), seqWorkbenchSrc);
-		assertTrue(seqWorkbenchSrc.contains("plantStack.getChildren().remove(part)"), seqWorkbenchSrc);
+		assertTrue(seqWorkbenchSrc.contains("dockIntoPlantChromatogramStack"), seqWorkbenchSrc);
+		assertTrue(seqWorkbenchSrc.contains("selectionClearsHostedEditor"), seqWorkbenchSrc);
 		assertTrue(seqWorkbenchSrc.contains("embedCsdEditor"), seqWorkbenchSrc);
 		assertTrue(seqWorkbenchSrc.contains("reparentEditorWidget"), seqWorkbenchSrc);
 		assertFalse(seqWorkbenchSrc.contains("createGui(part, host"), "ChromatogramEditorCSD unsatisfiable constructor via createGui into plant host");
@@ -609,6 +615,7 @@ public class BaijiuPilotPackaging_1_Test {
 		int seqEmbedEnd = seqWorkbenchSrc.indexOf("\n\tstatic ", seqEmbedAt + 10);
 		String seqEmbedBody = seqWorkbenchSrc.substring(seqEmbedAt, seqEmbedEnd > seqEmbedAt ? seqEmbedEnd : seqEmbedAt + 2500);
 		assertFalse(seqEmbedBody.contains("createGui"), "embed must not createGui ChromatogramEditorCSD");
+		assertFalse(seqEmbedBody.contains("setParent"), "must not steal the editor widget from its e4 parent");
 		assertFalse(seqEmbedBody.contains("part.getObject() != null"), "embed must not claim success when createGui throws DI exception");
 		assertTrue(seqWorkbenchSrc.contains("findPlantChromatogramStack"), seqWorkbenchSrc);
 		assertTrue(seqWorkbenchSrc.contains("findPrimaryEditorStack"), seqWorkbenchSrc);
@@ -748,7 +755,8 @@ public class BaijiuPilotPackaging_1_Test {
 		String partsHostSrc = Files.readString(parts, StandardCharsets.UTF_8);
 		assertTrue(partsHostSrc.contains("embedCsdEditor"), partsHostSrc);
 		assertTrue(partsHostSrc.contains("hostOpenCsdEditors"), partsHostSrc);
-		assertTrue(partsHostSrc.contains("reparentEditorWidget"), partsHostSrc);
+		assertTrue(partsHostSrc.contains("dockIntoPlantChromatogramStack"), partsHostSrc);
+		assertTrue(partsHostSrc.contains("selectionClearsHostedEditor"), partsHostSrc);
 		assertTrue(partsHostSrc.contains("restoreChromatogramEmptyState"), partsHostSrc);
 		assertFalse(partsHostSrc.contains("createGui(part, host"), "ChromatogramEditorCSD unsatisfiable constructor via createGui into plant host");
 		assertFalse(partsHostSrc.contains("return part.getWidget() != null || part.getObject() != null"), "embed must not succeed only because MPart.setObject was set");

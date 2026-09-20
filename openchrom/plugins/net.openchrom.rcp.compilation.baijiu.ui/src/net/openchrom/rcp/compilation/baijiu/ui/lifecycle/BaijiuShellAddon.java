@@ -72,8 +72,12 @@ public class BaijiuShellAddon {
 				Object selected = event.getProperty(UIEvents.EventTags.NEW_VALUE);
 				Object container = event.getProperty(UIEvents.EventTags.ELEMENT);
 				BaijiuShellSelection.rejectHiddenSelection(container, selected);
-				if(selected instanceof MUIElement element && BaijiuShellSelection.isForbiddenSelection(element.getElementId())) {
-					BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
+				if(selected instanceof MUIElement element) {
+					if(BaijiuShellSelection.isForbiddenSelection(element.getElementId())) {
+						BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
+					} else if(BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID.equals(element.getElementId())) {
+						BaijiuShellParts.hostOpenCsdEditors(application, modelService, partService(application));
+					}
 				}
 			} catch(RuntimeException | LinkageError e) {
 				// never let a selection bounce abort the workbench
@@ -566,6 +570,10 @@ public class BaijiuShellAddon {
 		}
 		BaijiuShellSelection.deselectFromParent(element);
 		element.setVisible(false);
+		if(BaijiuShellChrome.EDITOR_REQUIRED_MENU_IDS.contains(element.getElementId())) {
+			element.setToBeRendered(true);
+			return;
+		}
 		element.setToBeRendered(false);
 	}
 }

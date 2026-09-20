@@ -30,9 +30,9 @@ public final class BaijiuPerspectiveIds {
 	public static final String CHROMATOGRAM_HOME_PART_ID = "net.openchrom.rcp.compilation.baijiu.ui.part.chromatogramHome";
 	public static final String EDITOR_AREA_ID = "org.eclipse.chemclipse.rcp.app.ui.editor";
 	/**
-	 * ChemClipse CSD editor part id. Opened chromatograms are parked off the
-	 * left workflow {@link #CHROMATOGRAM_STACK_ID} and embedded into
-	 * {@link #CHROMATOGRAM_HOME_PART_ID} (谱图/采集).
+	 * ChemClipse CSD editor part id. Opened chromatograms are children of
+	 * {@link #CHROMATOGRAM_STACK_ID} (谱图/采集), not stolen widgets inside
+	 * {@link #CHROMATOGRAM_HOME_PART_ID}.
 	 */
 	public static final String CSD_EDITOR_PART_ID = "org.eclipse.chemclipse.ux.extension.xxd.ui.part.chromatogramEditorCSD";
 	public static final String PRIMARY_EDITOR_STACK_ID = "org.eclipse.e4.primaryDataStack";
