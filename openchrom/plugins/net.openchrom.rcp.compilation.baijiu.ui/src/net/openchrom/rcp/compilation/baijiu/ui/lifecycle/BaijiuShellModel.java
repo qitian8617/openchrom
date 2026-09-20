@@ -15,6 +15,7 @@ import java.util.List;
 import org.eclipse.e4.ui.model.application.MApplication;
 import org.eclipse.e4.ui.model.application.ui.MElementContainer;
 import org.eclipse.e4.ui.model.application.ui.MUIElement;
+import org.eclipse.e4.ui.model.application.ui.MUILabel;
 import org.eclipse.e4.ui.model.application.ui.advanced.MAdvancedFactory;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPerspective;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPerspectiveStack;
@@ -155,9 +156,9 @@ public final class BaijiuShellModel {
 			}
 			plant.setElementId(BaijiuShellChrome.PERSPECTIVE_ID);
 			plant.setLabel("厂工作台");
-			plant.setIconURI(BaijiuShellChrome.PLANT_ICON_PREFERENCES);
 			tagNoDetach(plant);
 		}
+		applyPlantChromeIcon(plant, BaijiuShellChrome.PERSPECTIVE_ID);
 		plant.setVisible(true);
 		plant.setToBeRendered(true);
 		attachToStack(stack, plant);
@@ -633,17 +634,17 @@ public final class BaijiuShellModel {
 		if(chromatogramStack == null || workflow == null) {
 			return false;
 		}
-		MPart chromatogramHome = part(application, modelService, chromatogramStack, BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID, BaijiuShellChrome.CHROMATOGRAM_HOME_CONTRIBUTION_URI, "谱图 / 采集", BaijiuShellChrome.PLANT_ICON_CSD);
+		MPart chromatogramHome = part(application, modelService, chromatogramStack, BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID, BaijiuShellChrome.CHROMATOGRAM_HOME_CONTRIBUTION_URI, "谱图 / 采集");
 		placeholder(application, modelService, chromatogramStack, BaijiuShellChrome.CHROMATOGRAM_PLACEHOLDER_ID, BaijiuShellChrome.EDITOR_AREA_ID);
-		MPart integration = part(application, modelService, chromatogramStack, BaijiuShellChrome.INTEGRATION_HOME_PART_ID, BaijiuShellChrome.INTEGRATION_HOME_CONTRIBUTION_URI, "推荐积分", BaijiuShellChrome.PLANT_ICON_PEAK);
-		MPart analysis = part(application, modelService, chromatogramStack, BaijiuShellChrome.ANALYSIS_HOME_PART_ID, BaijiuShellChrome.ANALYSIS_HOME_CONTRIBUTION_URI, "白酒分析", BaijiuShellChrome.PLANT_ICON_PEAK);
-		MPart wizard = part(application, modelService, chromatogramStack, BaijiuShellChrome.WIZARD_HOME_PART_ID, BaijiuShellChrome.WIZARD_HOME_CONTRIBUTION_URI, "三步向导", BaijiuShellChrome.PLANT_ICON_PEAK);
-		MPart sequence = part(application, modelService, chromatogramStack, BaijiuShellChrome.SEQUENCE_HOME_PART_ID, BaijiuShellChrome.SEQUENCE_HOME_CONTRIBUTION_URI, "进样序列", BaijiuShellChrome.PLANT_ICON_PEAK);
-		MPart batchResults = part(application, modelService, chromatogramStack, BaijiuShellChrome.BATCH_RESULTS_HOME_PART_ID, BaijiuShellChrome.BATCH_RESULTS_HOME_CONTRIBUTION_URI, "批处理结果", BaijiuShellChrome.PLANT_ICON_PEAK);
-		MPart simpleBatch = part(application, modelService, chromatogramStack, BaijiuShellChrome.SIMPLE_BATCH_HOME_PART_ID, BaijiuShellChrome.SIMPLE_BATCH_HOME_CONTRIBUTION_URI, "简单批量", BaijiuShellChrome.PLANT_ICON_PEAK);
-		MPart parallel = part(application, modelService, chromatogramStack, BaijiuShellChrome.PARALLEL_HOME_PART_ID, BaijiuShellChrome.PARALLEL_HOME_CONTRIBUTION_URI, "平行样", BaijiuShellChrome.PLANT_ICON_PEAK);
-		MPart report = part(application, modelService, chromatogramStack, BaijiuShellChrome.REPORT_HOME_PART_ID, BaijiuShellChrome.REPORT_HOME_CONTRIBUTION_URI, "预览报告", BaijiuShellChrome.PLANT_ICON_PEAK);
-		MPart workbench = part(application, modelService, workflow, BaijiuShellChrome.WORKBENCH_HOME_PART_ID, BaijiuShellChrome.WORKBENCH_HOME_CONTRIBUTION_URI, "白酒操作", BaijiuShellChrome.PLANT_ICON_PEAK);
+		MPart integration = part(application, modelService, chromatogramStack, BaijiuShellChrome.INTEGRATION_HOME_PART_ID, BaijiuShellChrome.INTEGRATION_HOME_CONTRIBUTION_URI, "推荐积分");
+		MPart analysis = part(application, modelService, chromatogramStack, BaijiuShellChrome.ANALYSIS_HOME_PART_ID, BaijiuShellChrome.ANALYSIS_HOME_CONTRIBUTION_URI, "白酒分析");
+		MPart wizard = part(application, modelService, chromatogramStack, BaijiuShellChrome.WIZARD_HOME_PART_ID, BaijiuShellChrome.WIZARD_HOME_CONTRIBUTION_URI, "三步向导");
+		MPart sequence = part(application, modelService, chromatogramStack, BaijiuShellChrome.SEQUENCE_HOME_PART_ID, BaijiuShellChrome.SEQUENCE_HOME_CONTRIBUTION_URI, "进样序列");
+		MPart batchResults = part(application, modelService, chromatogramStack, BaijiuShellChrome.BATCH_RESULTS_HOME_PART_ID, BaijiuShellChrome.BATCH_RESULTS_HOME_CONTRIBUTION_URI, "批处理结果");
+		MPart simpleBatch = part(application, modelService, chromatogramStack, BaijiuShellChrome.SIMPLE_BATCH_HOME_PART_ID, BaijiuShellChrome.SIMPLE_BATCH_HOME_CONTRIBUTION_URI, "简单批量");
+		MPart parallel = part(application, modelService, chromatogramStack, BaijiuShellChrome.PARALLEL_HOME_PART_ID, BaijiuShellChrome.PARALLEL_HOME_CONTRIBUTION_URI, "平行样");
+		MPart report = part(application, modelService, chromatogramStack, BaijiuShellChrome.REPORT_HOME_PART_ID, BaijiuShellChrome.REPORT_HOME_CONTRIBUTION_URI, "预览报告");
+		MPart workbench = part(application, modelService, workflow, BaijiuShellChrome.WORKBENCH_HOME_PART_ID, BaijiuShellChrome.WORKBENCH_HOME_CONTRIBUTION_URI, "白酒操作");
 		MPart gc = ensureIndependentGcWindow(application, modelService);
 		return chromatogramHome != null && workbench != null && sequence != null && analysis != null && integration != null && wizard != null && batchResults != null && simpleBatch != null && parallel != null && report != null && gc != null;
 	}
@@ -679,7 +680,7 @@ public final class BaijiuShellModel {
 			return null;
 		}
 		neverRenderGcWindow(stack);
-		MPart part = part(application, modelService, stack, BaijiuShellChrome.GC_HOME_PART_ID, BaijiuShellChrome.GC_HOME_CONTRIBUTION_URI, "气相色谱控制台", BaijiuShellChrome.PLANT_ICON_PREFERENCES);
+		MPart part = part(application, modelService, stack, BaijiuShellChrome.GC_HOME_PART_ID, BaijiuShellChrome.GC_HOME_CONTRIBUTION_URI, "气相色谱控制台");
 		evacuateGcFromPlantHome(application, modelService, window, stack, part);
 		neverRenderGcWindow(window);
 		neverRenderGcWindow(sash);
@@ -694,6 +695,7 @@ public final class BaijiuShellModel {
 		MUIElement found = modelService.find(BaijiuShellChrome.GC_WINDOW_ID, application);
 		if(found instanceof MTrimmedWindow existing) {
 			applyGcWindowBounds(existing);
+			applyPlantChromeIcon(existing, BaijiuShellChrome.GC_WINDOW_ID);
 			reparentToApplication(application, existing);
 			neverRenderGcWindow(existing);
 			disposeGcWindowWidget(existing);
@@ -710,7 +712,7 @@ public final class BaijiuShellModel {
 		}
 		created.setElementId(BaijiuShellChrome.GC_WINDOW_ID);
 		created.setLabel("气相色谱控制台");
-		created.setIconURI(BaijiuShellChrome.PLANT_ICON_PREFERENCES);
+		applyPlantChromeIcon(created, BaijiuShellChrome.GC_WINDOW_ID);
 		applyGcWindowBounds(created);
 		neverRenderGcWindow(created);
 		addChild(application, created, false);
@@ -890,7 +892,7 @@ public final class BaijiuShellModel {
 		return created;
 	}
 
-	private static MPart part(MApplication application, EModelService modelService, MElementContainer<?> parent, String id, String contributionUri, String label, String iconUri) {
+	private static MPart part(MApplication application, EModelService modelService, MElementContainer<?> parent, String id, String contributionUri, String label) {
 
 		MUIElement found = modelService.find(id, application);
 		if(found instanceof MPart existing) {
@@ -899,9 +901,7 @@ public final class BaijiuShellModel {
 			if(existing.getContributionURI() == null || existing.getContributionURI().isBlank()) {
 				existing.setContributionURI(contributionUri);
 			}
-			if(iconUri != null && !iconUri.isBlank()) {
-				existing.setIconURI(iconUri);
-			}
+			applyPlantChromeIcon(existing, id);
 			if((existing.getLabel() == null || existing.getLabel().isBlank()) && label != null && !label.isBlank()) {
 				existing.setLabel(label);
 			}
@@ -915,13 +915,29 @@ public final class BaijiuShellModel {
 		created.setElementId(id);
 		created.setContributionURI(contributionUri);
 		created.setLabel(label);
-		created.setIconURI(iconUri);
+		applyPlantChromeIcon(created, id);
 		created.setCloseable(false);
 		created.setVisible(true);
 		created.setToBeRendered(true);
 		tagNoDetach(created);
 		addChild(parent, created, false);
 		return created;
+	}
+
+	private static void applyPlantChromeIcon(MUILabel labeled, String elementId) {
+
+		if(labeled == null) {
+			return;
+		}
+		String iconUri = BaijiuShellChrome.plantChromeIconUri(elementId);
+		if(iconUri == null || iconUri.isBlank()) {
+			return;
+		}
+		try {
+			labeled.setIconURI(iconUri);
+		} catch(RuntimeException | LinkageError e) {
+			// iconURI not writable
+		}
 	}
 
 	private static MPlaceholder placeholder(MApplication application, EModelService modelService, MElementContainer<?> parent, String id, String refId) {

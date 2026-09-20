@@ -154,9 +154,25 @@ public final class BaijiuShellChrome {
 	public static final String INTEGRATE_COMMAND_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.command.integrate";
 	public static final String ANALYSIS_COMMAND_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.command.open";
 	public static final String REPORT_COMMAND_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.command.report";
-	public static final String PLANT_ICON_CSD = "platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/importChromatogramCSD.gif";
-	public static final String PLANT_ICON_PEAK = "platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/peak.gif";
-	public static final String PLANT_ICON_PREFERENCES = "platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/preferences.gif";
+	/**
+	 * Plant tab / toolbar glyphs live in this branding plug-in. ChemClipse
+	 * {@code icons/16x16/*.gif} are missing on the plant classpath and
+	 * render as Eclipse red-person placeholders.
+	 */
+	public static final String PLANT_ICON_PLUGIN_PREFIX = "platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/";
+	public static final String PLANT_ICON_CHROM = PLANT_ICON_PLUGIN_PREFIX + "chrom.png";
+	public static final String PLANT_ICON_INTEGRATE = PLANT_ICON_PLUGIN_PREFIX + "integrate.png";
+	public static final String PLANT_ICON_ANALYSIS = PLANT_ICON_PLUGIN_PREFIX + "analysis.png";
+	public static final String PLANT_ICON_WIZARD = PLANT_ICON_PLUGIN_PREFIX + "wizard.png";
+	public static final String PLANT_ICON_SEQUENCE = PLANT_ICON_PLUGIN_PREFIX + "sequence.png";
+	public static final String PLANT_ICON_BATCH_RESULTS = PLANT_ICON_PLUGIN_PREFIX + "batch_results.png";
+	public static final String PLANT_ICON_SIMPLE_BATCH = PLANT_ICON_PLUGIN_PREFIX + "simple_batch.png";
+	public static final String PLANT_ICON_PARALLEL = PLANT_ICON_PLUGIN_PREFIX + "parallel.png";
+	public static final String PLANT_ICON_REPORT = PLANT_ICON_PLUGIN_PREFIX + "report.png";
+	public static final String PLANT_ICON_OPS = PLANT_ICON_PLUGIN_PREFIX + "ops.png";
+	public static final String PLANT_ICON_OPEN_CHROM = PLANT_ICON_PLUGIN_PREFIX + "open_chrom.png";
+	public static final String PLANT_ICON_GC = PLANT_ICON_PLUGIN_PREFIX + "gc_console.png";
+	public static final String PLANT_ICON_START = PLANT_ICON_PLUGIN_PREFIX + "start.png";
 	public static final List<String> PLANT_TOOLBAR_ITEM_IDS = List.of( //
 			OPEN_CHROMATOGRAM_TOOLITEM_ID, //
 			TOGGLE_GC_TOOLITEM_ID, //
@@ -328,8 +344,13 @@ public final class BaijiuShellChrome {
 	 * workbench.xmi. Runtime: one DirectMenuItem 关于 (plant About dialog);
 	 * treat Eclipse {@code help} aliases as plant chrome so the hide walk
 	 * cannot drop the top-level label.
+	 * Epoch 32: plant tab titles and plant toolbar used ChemClipse 16x16
+	 * GIFs missing on the plant classpath (Eclipse red-person placeholders).
+	 * Bundle 16×16 PNGs under {@code icons/plant/} and point fragment +
+	 * runtime {@code iconURI} at this branding plug-in. Rebuild
+	 * workbench.xmi so persisted ChemClipse GIFs do not stick.
 	 */
-	public static final int CHROME_EPOCH = 31;
+	public static final int CHROME_EPOCH = 32;
 	/**
 	 * Ids that must exist on the live model after plant-home reveal. Missing
 	 * any of these is the empty-left / community-button-column failure mode.
@@ -1171,13 +1192,71 @@ public final class BaijiuShellChrome {
 	public static String plantToolbarItemIconUri(String elementId) {
 
 		if(OPEN_CHROMATOGRAM_TOOLITEM_ID.equals(elementId)) {
-			return PLANT_ICON_CSD;
+			return PLANT_ICON_OPEN_CHROM;
 		}
 		if(TOGGLE_GC_TOOLITEM_ID.equals(elementId)) {
-			return PLANT_ICON_PREFERENCES;
+			return PLANT_ICON_GC;
 		}
-		if(isPlantToolbarContribution(elementId) && !PLANT_TOOLBAR_ID.equals(elementId)) {
-			return PLANT_ICON_PEAK;
+		if(START_ANALYSIS_TOOLITEM_ID.equals(elementId)) {
+			return PLANT_ICON_START;
+		}
+		if(INTEGRATE_TOOLITEM_ID.equals(elementId)) {
+			return PLANT_ICON_INTEGRATE;
+		}
+		if(ANALYSIS_TOOLITEM_ID.equals(elementId)) {
+			return PLANT_ICON_ANALYSIS;
+		}
+		if(REPORT_TOOLITEM_ID.equals(elementId)) {
+			return PLANT_ICON_REPORT;
+		}
+		if(elementId != null && elementId.startsWith("net.openchrom.rcp.compilation.baijiu.ui.toolbar.") && !PLANT_TOOLBAR_ID.equals(elementId)) {
+			return PLANT_ICON_START;
+		}
+		return null;
+	}
+
+	/**
+	 * Distinct plant PNG for a Part / Perspective / window / toolbar item.
+	 * Missing ChemClipse GIF URIs become red-person tab titles.
+	 */
+	public static String plantChromeIconUri(String elementId) {
+
+		String toolbar = plantToolbarItemIconUri(elementId);
+		if(toolbar != null) {
+			return toolbar;
+		}
+		if(CHROMATOGRAM_HOME_PART_ID.equals(elementId)) {
+			return PLANT_ICON_CHROM;
+		}
+		if(INTEGRATION_HOME_PART_ID.equals(elementId)) {
+			return PLANT_ICON_INTEGRATE;
+		}
+		if(ANALYSIS_HOME_PART_ID.equals(elementId) || ANALYSIS_PERSPECTIVE_ID.equals(elementId)) {
+			return PLANT_ICON_ANALYSIS;
+		}
+		if(WIZARD_HOME_PART_ID.equals(elementId)) {
+			return PLANT_ICON_WIZARD;
+		}
+		if(SEQUENCE_HOME_PART_ID.equals(elementId)) {
+			return PLANT_ICON_SEQUENCE;
+		}
+		if(BATCH_RESULTS_HOME_PART_ID.equals(elementId)) {
+			return PLANT_ICON_BATCH_RESULTS;
+		}
+		if(SIMPLE_BATCH_HOME_PART_ID.equals(elementId)) {
+			return PLANT_ICON_SIMPLE_BATCH;
+		}
+		if(PARALLEL_HOME_PART_ID.equals(elementId)) {
+			return PLANT_ICON_PARALLEL;
+		}
+		if(REPORT_HOME_PART_ID.equals(elementId)) {
+			return PLANT_ICON_REPORT;
+		}
+		if(WORKBENCH_HOME_PART_ID.equals(elementId) || PERSPECTIVE_ID.equals(elementId)) {
+			return PLANT_ICON_OPS;
+		}
+		if(GC_HOME_PART_ID.equals(elementId) || GC_WINDOW_ID.equals(elementId) || GC_PERSPECTIVE_ID.equals(elementId)) {
+			return PLANT_ICON_GC;
 		}
 		return null;
 	}
