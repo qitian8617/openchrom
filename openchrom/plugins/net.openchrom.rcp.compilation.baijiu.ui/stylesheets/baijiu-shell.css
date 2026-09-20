@@ -3,6 +3,8 @@
  * visibility in BaijiuShellChrome is the buckle. Keep File / 白酒 / View /
  * Help. Do NOT CSS-hide 处理器 / 插件 / 色谱 / 窗口 — those ids are toggled
  * in Java so -Dnet.openchrom.baijiu.showResearchMenus=true can reveal them.
+ * Do NOT CSS-hide org.eclipse.ui.main.toolbar: after CSD editor action bars
+ * attach, that id is the live top coolbar that hosts the plant toolbar.
  *******************************************************************************/
 #org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.updates,
 #org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.updates,
@@ -18,7 +20,6 @@
 #org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.selectView,
 #org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.selectView,
 #org.eclipse.chemclipse.rcp.app.ui.handledtoolitem.resetperspective,
-#org.eclipse.ui.main.toolbar,
 #org.eclipse.chemclipse.ux.extension.msd.ui.handledmenuitem.openChromatogram,
 #org.eclipse.chemclipse.ux.extension.wsd.ui.handledmenuitem.openChromatogram,
 #org.eclipse.chemclipse.ux.extension.ui.menu.scan,
