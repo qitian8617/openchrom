@@ -250,6 +250,14 @@ public final class BaijiuShellChrome {
 	public static final String NO_MOVE_TAG = "NoMove";
 	public static final String NO_DETACH_TAG = "NoDetach";
 	public static final String NO_CLOSE_TAG = "NoClose";
+	/**
+	 * Eclipse Show View only lists {@code MPartDescriptor}s tagged
+	 * {@code View}. ChemClipse Select View lists {@code MPart}s; the SWT
+	 * sanitizer still filters that dialog. {@link #SELECT_VIEW_HIDDEN_TAG}
+	 * records a stripped View tag so the research escape hatch can restore it.
+	 */
+	public static final String VIEW_DESCRIPTOR_TAG = "View";
+	public static final String SELECT_VIEW_HIDDEN_TAG = "BaijiuSelectViewHidden";
 
 	public static final String PROCESS_MENU_ID = "org.eclipse.chemclipse.ux.extension.ui.menu.process";
 	public static final String PLUGINS_MENU_ID = "org.eclipse.chemclipse.rcp.app.ui.menu.plugins";
@@ -758,8 +766,9 @@ public final class BaijiuShellChrome {
 	}
 
 	/**
-	 * ChemClipse Select View lists {@code MPartDescriptor}s even when E4
-	 * parts are {@code visible=false}. Allowlist plant views; hide MS /
+	 * ChemClipse Select View lists live {@code MPart}s even when E4 parts
+	 * are {@code visible=false}. Eclipse Show View lists descriptors tagged
+	 * {@link #VIEW_DESCRIPTOR_TAG}. Allowlist plant views; hide MS /
 	 * Console / Data / ChemClipse {@code 序列}.
 	 */
 	public static boolean shouldHideSelectViewItem(String elementId, String label) {
@@ -827,6 +836,29 @@ public final class BaijiuShellChrome {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * {@code MPartDescriptor} is not an {@code MUIElement} — it has
+	 * {@code getTags()} but not {@code setVisible}/{@code setToBeRendered}.
+	 * Strip {@link #VIEW_DESCRIPTOR_TAG} so Eclipse Show View omits the
+	 * descriptor. ChemClipse Select View still needs the SWT sanitizer.
+	 */
+	public static void applySelectViewDescriptorTags(List<String> tags, boolean hide) {
+
+		if(tags == null) {
+			return;
+		}
+		if(hide) {
+			tags.remove(VIEW_DESCRIPTOR_TAG);
+			if(!tags.contains(SELECT_VIEW_HIDDEN_TAG)) {
+				tags.add(SELECT_VIEW_HIDDEN_TAG);
+			}
+			return;
+		}
+		if(tags.remove(SELECT_VIEW_HIDDEN_TAG) && !tags.contains(VIEW_DESCRIPTOR_TAG)) {
+			tags.add(VIEW_DESCRIPTOR_TAG);
+		}
 	}
 
 	static boolean isMenuChildHideLabel(String label) {

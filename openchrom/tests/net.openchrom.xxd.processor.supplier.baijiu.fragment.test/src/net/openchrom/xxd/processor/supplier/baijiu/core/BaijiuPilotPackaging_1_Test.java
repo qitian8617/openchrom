@@ -239,6 +239,9 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(chromeSrc.contains("SELECT_VIEW_KEEP_LABELS"), chromeSrc);
 		assertTrue(chromeSrc.contains("SELECT_VIEW_HIDE_LABELS"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldHideSelectViewItem"), chromeSrc);
+		assertTrue(chromeSrc.contains("applySelectViewDescriptorTags"), chromeSrc);
+		assertTrue(chromeSrc.contains("VIEW_DESCRIPTOR_TAG"), chromeSrc);
+		assertTrue(chromeSrc.contains("SELECT_VIEW_HIDDEN_TAG"), chromeSrc);
 		assertTrue(chromeSrc.contains("CHROMATOGRAM_OVERLAY_PART_ID"), chromeSrc);
 		assertTrue(chromeSrc.contains("isPlantToolbarContribution"), chromeSrc);
 		assertTrue(chromeSrc.contains("白酒操作"), chromeSrc);
@@ -324,6 +327,11 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(addonSrc.contains("hideResearchElements"), addonSrc);
 		assertTrue(addonSrc.contains("hideSelectViewDescriptors"), addonSrc);
 		assertTrue(addonSrc.contains("shouldHideSelectViewItem"), addonSrc);
+		assertTrue(addonSrc.contains("applySelectViewDescriptorTags"), addonSrc);
+		assertTrue(addonSrc.contains("getTags()"), addonSrc);
+		assertFalse(addonSrc.contains("descriptor.setVisible"), "MPartDescriptor has no setVisible");
+		assertFalse(addonSrc.contains("descriptor.setToBeRendered"), "MPartDescriptor has no setToBeRendered");
+		assertFalse(addonSrc.contains("MPartDescriptor.class"), "MPartDescriptor is not an MUIElement for findElements");
 		assertTrue(addonSrc.contains("reassignAwayFrom"), addonSrc);
 		assertTrue(addonSrc.contains("clearHiddenSelections"), addonSrc);
 		assertTrue(addonSrc.contains("ensureChemclipsePerspectiveStack"), addonSrc);

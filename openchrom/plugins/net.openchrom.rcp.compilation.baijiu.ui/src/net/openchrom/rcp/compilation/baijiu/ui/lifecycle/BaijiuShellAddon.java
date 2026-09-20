@@ -410,6 +410,12 @@ public class BaijiuShellAddon {
 		BaijiuShellParts.revealPlantWindowChrome(application, modelService);
 	}
 
+	/**
+	 * ChemClipse Select View lists {@code MPart}s (SWT sanitizer). Eclipse
+	 * Show View lists {@code MPartDescriptor}s tagged {@code View}.
+	 * {@code MPartDescriptor} is not an {@code MUIElement}: use tags, never
+	 * {@code setVisible}/{@code setToBeRendered}.
+	 */
 	static void hideSelectViewDescriptors(MApplication application, EModelService modelService) {
 
 		if(application == null) {
@@ -417,27 +423,14 @@ public class BaijiuShellAddon {
 		}
 		try {
 			List<MPartDescriptor> descriptors = application.getDescriptors();
-			if(descriptors != null) {
-				for(MPartDescriptor descriptor : descriptors) {
-					applySelectViewDescriptorVisibility(descriptor);
-				}
-			}
-		} catch(RuntimeException | LinkageError e) {
-			BaijiuShellLog.warn("Hiding Select View descriptors from MApplication failed", e);
-		}
-		if(modelService == null) {
-			return;
-		}
-		try {
-			List<MPartDescriptor> found = modelService.findElements(application, null, MPartDescriptor.class, null);
-			if(found == null) {
+			if(descriptors == null) {
 				return;
 			}
-			for(MPartDescriptor descriptor : found) {
+			for(MPartDescriptor descriptor : descriptors) {
 				applySelectViewDescriptorVisibility(descriptor);
 			}
 		} catch(RuntimeException | LinkageError e) {
-			BaijiuShellLog.warn("Hiding Select View descriptors from EModelService failed", e);
+			BaijiuShellLog.warn("Hiding Select View descriptors from MApplication failed", e);
 		}
 	}
 
@@ -450,13 +443,7 @@ public class BaijiuShellAddon {
 		if(label == null || label.isBlank()) {
 			label = descriptor.getLabel();
 		}
-		if(BaijiuShellChrome.shouldHideSelectViewItem(descriptor.getElementId(), label)) {
-			descriptor.setVisible(false);
-			descriptor.setToBeRendered(false);
-		} else {
-			descriptor.setVisible(true);
-			descriptor.setToBeRendered(true);
-		}
+		BaijiuShellChrome.applySelectViewDescriptorTags(descriptor.getTags(), BaijiuShellChrome.shouldHideSelectViewItem(descriptor.getElementId(), label));
 	}
 
 	private static void schedulePlantHomeRender(MApplication application, EModelService modelService) {
