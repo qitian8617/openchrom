@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Locale;
 
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
@@ -107,10 +106,7 @@ public final class BaijiuSequenceResultsShell {
 		BaijiuPlantLayout.hint(body, "按当前（或打开的）进样序列汇总：每一针一行。已完成且有谱图路径的行按厂方法定量；未进样 / 已跳过 / 失败的行仍列出原因，不会悄悄丢掉。" + BaijiuCalibrationGate.OPERATOR_HINT + " 平行针在备注中写甲醇均值与相对偏差，详细仍用工作台「" + BaijiuTerms.PARALLEL + "」。离线演示：打开指向 demo .ocb 的序列 JSON。");
 
 		Composite header = BaijiuPlantLayout.row(body, 6);
-		Label method = new Label(header, SWT.NONE);
-		method.setLayoutData(BaijiuPlantLayout.wrapHint());
-		((GridData)method.getLayoutData()).horizontalSpan = 6;
-		method.setText("方法：" + settings.getMethodName() + "    内标：" + settings.getIstdName());
+		BaijiuPlantLayout.hint(header, "方法：" + settings.getMethodName() + "    内标：" + settings.getIstdName(), 6);
 
 		Label abvLabel = new Label(header, SWT.NONE);
 		abvLabel.setText("默认酒精度 %vol");

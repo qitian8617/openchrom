@@ -45,15 +45,9 @@ public class BaijiuLicensePreferencePage extends PreferencePage implements IWork
 
 		Composite root = new Composite(parent, SWT.NONE);
 		root.setLayout(new GridLayout(1, false));
-		Label version = new Label(root, SWT.WRAP);
-		version.setLayoutData(BaijiuPlantLayout.wrapHint());
-		version.setText("\u63d2\u4ef6 " + BaijiuPluginInfo.bundleVersion() + "    " + BaijiuPluginInfo.FEATURE_ID);
-		status = new Label(root, SWT.WRAP);
-		status.setLayoutData(BaijiuPlantLayout.wrapHint());
-		status.setText(BaijiuLicenseGate.statusLine());
-		Label hint = new Label(root, SWT.WRAP);
-		hint.setLayoutData(BaijiuPlantLayout.wrapHint());
-		hint.setText(BaijiuLicenseGate.OPERATOR_HINT);
+		BaijiuPlantLayout.hint(root, "\u63d2\u4ef6 " + BaijiuPluginInfo.bundleVersion() + "    " + BaijiuPluginInfo.FEATURE_ID);
+		status = BaijiuPlantLayout.hint(root, BaijiuLicenseGate.statusLine());
+		BaijiuPlantLayout.hint(root, BaijiuLicenseGate.OPERATOR_HINT);
 		Button open = new Button(root, SWT.PUSH);
 		open.setText("\u6253\u5f00\u8bb8\u53ef\u5bf9\u8bdd\u6846\u2026 / Open license dialog");
 		open.addListener(SWT.Selection, e -> {

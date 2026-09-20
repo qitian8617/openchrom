@@ -20,7 +20,6 @@ import java.util.Locale;
 
 import org.eclipse.chemclipse.model.core.IChromatogram;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
@@ -86,10 +85,7 @@ public final class BaijiuBatchShell {
 		BaijiuPlantLayout.hint(body, "\u9009\u62e9\u591a\u4e2a .ocb\uff0c\u6309\u540c\u4e00\u5382\u65b9\u6cd5\u5b9a\u91cf\uff0c\u5f97\u5230\u6837\u54c1\u00d7\u7ec4\u5206\u6c47\u603b\u8868\u3002" + BaijiuCalibrationGate.OPERATOR_HINT + " \u76f8\u540c\u6837\u54c1\u7f16\u53f7\u7684\u4e24\u884c\u4f5c\u4e3a" + BaijiuTerms.PARALLEL + "\uff08\u5747\u503c\u4e0e\u76f8\u5bf9\u504f\u5dee\uff09\u3002\u8fdb\u6837\u961f\u5217\uff08\u7a7a\u767d/\u6df7\u6807/QC/\u6837\u54c1\uff09\u5728\u767d\u9152\u5de5\u4f5c\u53f0\u300c\u8fdb\u6837\u5e8f\u5217\u300d\uff1b\u6309\u5e8f\u5217\u6c47\u603b\u8bf7\u7528\u300c" + BaijiuTerms.BATCH_RESULTS + "\u300d\u3002\u672c\u7a97\u4ecd\u662f\u4efb\u9009\u5df2\u4fdd\u5b58\u8c31\u56fe\uff0c\u4e0d\u505a\u81ea\u52a8\u8fdb\u6837\u5668\u6392\u7a0b\u3002\u82e5\u8c31\u56fe\u5c1a\u65e0\u5cf0\uff0c\u4f1a\u5148\u8dd1\u63a8\u8350\u79ef\u5206\u3002");
 
 		Composite header = BaijiuPlantLayout.row(body, 6);
-		Label method = new Label(header, SWT.NONE);
-		method.setLayoutData(BaijiuPlantLayout.wrapHint());
-		((GridData)method.getLayoutData()).horizontalSpan = 6;
-		method.setText("\u65b9\u6cd5\uff1a" + settings.getMethodName() + "    \u5185\u6807\uff1a" + settings.getIstdName());
+		BaijiuPlantLayout.hint(header, "\u65b9\u6cd5\uff1a" + settings.getMethodName() + "    \u5185\u6807\uff1a" + settings.getIstdName(), 6);
 
 		Label abvLabel = new Label(header, SWT.NONE);
 		abvLabel.setText("\u9ed8\u8ba4\u9152\u7cbe\u5ea6 %vol");
@@ -109,9 +105,7 @@ public final class BaijiuBatchShell {
 		addColumn(table, "GB 2757", 80);
 		addColumn(table, "\u8bf4\u660e", 240);
 
-		Label parallelTitle = new Label(body, SWT.NONE);
-		parallelTitle.setText(BaijiuTerms.PARALLEL + " \u2014 " + BaijiuParallelEngine.FORMULA_ZH);
-		parallelTitle.setLayoutData(BaijiuPlantLayout.wrapHint());
+		BaijiuPlantLayout.hint(body, BaijiuTerms.PARALLEL + " \u2014 " + BaijiuParallelEngine.FORMULA_ZH);
 		Label parallelHint = BaijiuPlantLayout.hint(body, "\u76f8\u540c\u6837\u54c1\u7f16\u53f7\u7684\u4e24\u884c\u4f1a\u914d\u5bf9\u3002\u6f14\u793a\u53ef\u590d\u5236 sample-nongxiang.ocb\uff0c\u6216\u7528\u5de5\u4f5c\u53f0\u300c" + BaijiuTerms.PARALLEL + "\u300d\u5404\u9009\u9488 A/B\u3002");
 
 		Table parallelTable = BaijiuPlantLayout.table(body, 160);

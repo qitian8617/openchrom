@@ -49,6 +49,15 @@ public class BaijiuPlantLayout_1_Test {
 	}
 
 	@Test
+	public void wrapHintAllowsMultiColumnSpan() {
+
+		GridData wrap = BaijiuPlantLayout.wrapHint();
+		wrap.horizontalSpan = 6;
+		assertEquals(6, wrap.horizontalSpan);
+		assertEquals(1, wrap.widthHint);
+	}
+
+	@Test
 	public void tablesAskForClientWidthSoColumnsCanScroll() {
 
 		GridData table = BaijiuPlantLayout.tableFill(160);

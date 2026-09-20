@@ -291,9 +291,7 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 
 	private Label wrapLabel(Composite parent) {
 
-		Label label = new Label(parent, SWT.WRAP);
-		label.setLayoutData(BaijiuPlantLayout.wrapHint());
-		return label;
+		return BaijiuPlantLayout.hint(parent, "");
 	}
 
 	private void fillTypeCombo() {

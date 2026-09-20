@@ -102,6 +102,7 @@ public final class BaijiuPlantLayout {
 		ScrolledComposite scroll = new ScrolledComposite(parent, SWT.V_SCROLL | SWT.H_SCROLL);
 		scroll.setExpandHorizontal(true);
 		scroll.setExpandVertical(true);
+		scroll.setAlwaysShowScrollBars(false);
 		scroll.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		Composite body = new Composite(scroll, SWT.NONE);
 		GridLayout layout = new GridLayout(1, false);
@@ -175,9 +176,10 @@ public final class BaijiuPlantLayout {
 			busy[0] = true;
 			try {
 				int client = scroll.getClientArea().width;
-				int wrap = client > 40 ? client : SWT.DEFAULT;
+				int wrap = client > 40 ? Math.max(1, client - 24) : SWT.DEFAULT;
 				if(wrap != SWT.DEFAULT) {
 					reflowWraps(body, wrap);
+					body.layout(true, false);
 				}
 				Point wrapped = body.computeSize(wrap, SWT.DEFAULT);
 				scroll.setMinSize(wrapped);
@@ -199,10 +201,14 @@ public final class BaijiuPlantLayout {
 			return;
 		}
 		if(root instanceof Label label && (label.getStyle() & SWT.WRAP) != 0) {
-			Object layoutData = label.getLayoutData();
-			if(layoutData instanceof GridData data && (data.grabExcessHorizontalSpace || data.horizontalSpan > 1 || data.widthHint == 1)) {
-				data.widthHint = Math.max(1, width - 16);
+			applyWrapWidth(label, width);
+			Composite host = label.getParent();
+			if(host != null && host.getLayout() instanceof FillLayout) {
+				applyWrapWidth(host, width);
 			}
+		}
+		if(root instanceof Text text && (text.getStyle() & SWT.WRAP) != 0 && (text.getStyle() & SWT.BORDER) == 0) {
+			applyWrapWidth(text, width);
 		}
 		if(root instanceof Composite composite) {
 			int inner = width;
@@ -215,6 +221,17 @@ public final class BaijiuPlantLayout {
 					reflowWraps(child, inner);
 				}
 			}
+		}
+	}
+
+	private static void applyWrapWidth(Control control, int width) {
+
+		if(control == null || control.isDisposed()) {
+			return;
+		}
+		Object layoutData = control.getLayoutData();
+		if(layoutData instanceof GridData data && (data.grabExcessHorizontalSpace || data.horizontalSpan > 1 || data.widthHint == 1 || data.widthHint == SWT.DEFAULT)) {
+			data.widthHint = Math.max(1, width - 8);
 		}
 	}
 
@@ -237,8 +254,22 @@ public final class BaijiuPlantLayout {
 
 	public static Label hint(Composite parent, String text) {
 
-		Label label = new Label(parent, SWT.WRAP);
-		label.setLayoutData(wrapHint());
+		return hint(parent, text, 1);
+	}
+
+	/**
+	 * GTK {@code Label} WRAP only reflows when the control is given a real
+	 * width (FillLayout host + {@code widthHint}). Direct GridData on the
+	 * Label still clips the right edge of plant chrome.
+	 */
+	public static Label hint(Composite parent, String text, int horizontalSpan) {
+
+		Composite host = new Composite(parent, SWT.NONE);
+		host.setLayout(new FillLayout());
+		GridData data = wrapHint();
+		data.horizontalSpan = Math.max(1, horizontalSpan);
+		host.setLayoutData(data);
+		Label label = new Label(host, SWT.WRAP);
 		label.setText(text == null ? "" : text);
 		return label;
 	}

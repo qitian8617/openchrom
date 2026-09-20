@@ -203,8 +203,7 @@ public final class BaijiuAnalysisShell {
 		Composite bottom = new Composite(root, SWT.NONE);
 		bottom.setLayout(new GridLayout(2, false));
 		bottom.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		status = new Label(bottom, SWT.WRAP);
-		status.setLayoutData(BaijiuPlantLayout.wrapHint());
+		status = BaijiuPlantLayout.hint(bottom, "");
 		Button close = new Button(bottom, SWT.PUSH);
 		close.setText(dialogChrome ? "\u5173\u95ed" : "\u4fdd\u5b58\u65b9\u6cd5");
 		Composite saveRoot = root;
@@ -448,8 +447,7 @@ public final class BaijiuAnalysisShell {
 		Composite level = BaijiuPlantLayout.row(root, 6);
 		mixScale = BaijiuPlantLayout.labeledText(level, "\u672c\u9488\u6df7\u6807\u500d\u6570", BaijiuPlantLayout.NUMERIC);
 		mixScale.setText("1.0");
-		mixLevelHint = BaijiuPlantLayout.hint(level, "");
-		((GridData)mixLevelHint.getLayoutData()).horizontalSpan = 4;
+		mixLevelHint = BaijiuPlantLayout.hint(level, "", 4);
 		mixScale.addModifyListener(e -> updateMixLevelHint());
 		scaleAreas = new Button(root, SWT.CHECK);
 		scaleAreas.setText("\u79bb\u7ebf\u6f14\u793a\uff1a\u6309\u500d\u6570\u7f29\u653e\u5f85\u6d4b\u5cf0\u9762\u79ef\uff08\u5185\u6807\u4e0d\u53d8\uff09");
