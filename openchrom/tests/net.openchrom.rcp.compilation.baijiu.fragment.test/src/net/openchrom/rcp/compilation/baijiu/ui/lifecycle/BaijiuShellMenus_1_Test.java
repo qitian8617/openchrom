@@ -33,6 +33,8 @@ public class BaijiuShellMenus_1_Test {
 		BaijiuShellMenus.sanitizeFileMenu(null);
 		BaijiuShellMenus.sanitizeBaijiuMenu(null);
 		BaijiuShellMenus.sanitizeHelpMenu(null);
+		BaijiuShellMenus.ensureAboutOpensOnClick(null);
+		net.openchrom.rcp.compilation.baijiu.ui.handlers.BaijiuAboutHandler.executeFromShell(null);
 		assertFalse(BaijiuShellMenus.isSelectViewShell(null));
 		assertFalse(BaijiuShellMenus.looksLikePlantFileMenu(java.util.List.of("Close", "Close All", "Restore")));
 		assertTrue(BaijiuShellMenus.looksLikePlantFileMenu(java.util.List.of("Save As...", "Close")));
@@ -41,7 +43,9 @@ public class BaijiuShellMenus_1_Test {
 		assertFalse(BaijiuShellMenus.looksLikePlantViewMenu(java.util.List.of("峰")));
 		assertTrue(BaijiuShellMenus.looksLikePlantBaijiuMenu(java.util.List.of("打开谱图", "推荐积分")));
 		assertFalse(BaijiuShellMenus.looksLikePlantBaijiuMenu(java.util.List.of("Close", "Restore")));
-		assertTrue(BaijiuShellMenus.looksLikePlantHelpMenu(java.util.List.of("About", "Preferences")));
+		assertTrue(BaijiuShellMenus.looksLikePlantHelpMenu(java.util.List.of("About")));
+		assertTrue(BaijiuShellMenus.looksLikePlantHelpMenu(java.util.List.of("关于")));
+		assertFalse(BaijiuShellMenus.looksLikePlantHelpMenu(java.util.List.of("许可 / 版本…")));
 		assertFalse(BaijiuShellMenus.looksLikePlantHelpMenu(java.util.List.of("Save", "Save As")));
 	}
 }

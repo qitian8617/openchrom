@@ -511,6 +511,14 @@ public final class BaijiuShellParts {
 			file = findMenu(modelService, application, BaijiuShellChrome.FILE_MENU_ID);
 		}
 		ensureFileMenuContents(modelService, application, file);
+		MMenu help = liveMenuChild(mainMenu, BaijiuShellChrome.HELP_MENU_ID);
+		if(help == null) {
+			help = findMenu(modelService, application, BaijiuShellChrome.HELP_MENU_ID);
+		}
+		if(help == null) {
+			help = liveMenuChild(mainMenu, BaijiuShellChrome.ECLIPSE_HELP_MENU_ID);
+		}
+		ensureHelpMenuContents(modelService, application, help);
 		dedupePlantMenuChildren(mainMenu);
 		dedupePlantMenuChildren(view);
 		orderPlantTopMenus(mainMenu);
@@ -1462,6 +1470,12 @@ public final class BaijiuShellParts {
 			menu.setLabel("视图");
 		} else if(BaijiuShellChrome.CHROMATOGRAM_MENU_ID.equals(elementId)) {
 			menu.setLabel("色谱");
+		} else if(BaijiuShellChrome.isHelpMenuId(elementId)) {
+			menu.setLabel("帮助");
+		} else if(BaijiuShellChrome.FILE_MENU_ID.equals(elementId)) {
+			menu.setLabel("文件");
+		} else if(BaijiuShellChrome.BAIJIU_MENU_ID.equals(elementId)) {
+			menu.setLabel("白酒");
 		}
 		menu.setToBeRendered(true);
 		if(BaijiuShellChrome.isEditorRequiredMenu(elementId)) {
@@ -1955,6 +1969,144 @@ public final class BaijiuShellParts {
 		sanitizeFileMenuChildren(fileMenu);
 	}
 
+	/**
+	 * JFace MenuManager omits an empty 帮助 cascade (same as 视图). Keep a
+	 * single 关于 DirectMenuItem so the top-level label paints. ChemClipse
+	 * / Eclipse About stay hidden.
+	 */
+	static void ensureHelpMenuContents(EModelService modelService, MApplication application, MMenu helpMenu) {
+
+		if(helpMenu == null) {
+			return;
+		}
+		if(helpMenu.getLabel() == null || helpMenu.getLabel().isBlank()) {
+			helpMenu.setLabel("帮助");
+		}
+		forceShowChrome(helpMenu);
+		MUIElement about = bestHelpAboutItem(helpMenu);
+		if(about == null && modelService != null && application != null) {
+			about = findHelpAboutElement(modelService, application);
+		}
+		if(about == null) {
+			about = createAboutDirectItem(modelService);
+		}
+		about = ensureAboutExecutable(helpMenu, about);
+		if(about instanceof MMenuElement item) {
+			forceShowChrome(about);
+			if(about instanceof MUILabel labeled) {
+				labeled.setLabel(BaijiuShellChrome.ABOUT_LABEL_ZH);
+			}
+			attachMenuElement(helpMenu, item);
+		}
+		dedupePlantMenuChildren(helpMenu);
+		sanitizeHelpMenuChildren(helpMenu);
+	}
+
+	private static MUIElement bestHelpAboutItem(MMenu helpMenu) {
+
+		MUIElement first = mainMenuChild(helpMenu, BaijiuShellChrome.PLANT_ABOUT_MENU_ID);
+		MUIElement best = first;
+		try {
+			List<?> children = helpMenu.getChildren();
+			if(children != null) {
+				for(Object child : children) {
+					if(!(child instanceof MUIElement element)) {
+						continue;
+					}
+					if(isPlantAboutItem(element)) {
+						best = preferredPlantMenuChild(best, element);
+					}
+				}
+			}
+		} catch(RuntimeException | LinkageError e) {
+			return first;
+		}
+		return best;
+	}
+
+	private static MUIElement findHelpAboutElement(EModelService modelService, MApplication application) {
+
+		MUIElement found = findElement(modelService, application, BaijiuShellChrome.PLANT_ABOUT_MENU_ID);
+		return found instanceof MMenuElement ? found : null;
+	}
+
+	private static boolean isPlantAboutItem(MUIElement element) {
+
+		if(element == null) {
+			return false;
+		}
+		if(BaijiuShellChrome.PLANT_ABOUT_MENU_ID.equals(element.getElementId())) {
+			return true;
+		}
+		if(element instanceof MDirectMenuItem direct) {
+			try {
+				if(BaijiuShellChrome.isAboutDirectHandlerUri(direct.getContributionURI())) {
+					return true;
+				}
+			} catch(RuntimeException | LinkageError e) {
+				// uri not readable
+			}
+		}
+		String id = element.getElementId();
+		if(id != null && !id.isBlank()) {
+			return false;
+		}
+		return BaijiuShellChrome.isHelpMenuKeepLabel(labelOf(element));
+	}
+
+	private static MUIElement ensureAboutExecutable(MMenu helpMenu, MUIElement about) {
+
+		if(about instanceof MDirectMenuItem direct) {
+			bindAboutDirectHandler(direct);
+			return direct;
+		}
+		MDirectMenuItem created = createAboutDirectItem(null);
+		if(created == null) {
+			return about;
+		}
+		if(about != null) {
+			replaceMenuChild(helpMenu, about, created);
+		}
+		return created;
+	}
+
+	private static MDirectMenuItem createAboutDirectItem(EModelService modelService) {
+
+		MDirectMenuItem item = null;
+		if(modelService != null) {
+			try {
+				item = modelService.createModelElement(MDirectMenuItem.class);
+			} catch(RuntimeException | LinkageError e) {
+				item = null;
+			}
+		}
+		if(item == null) {
+			try {
+				item = MMenuFactory.INSTANCE.createDirectMenuItem();
+			} catch(RuntimeException | LinkageError e) {
+				return null;
+			}
+		}
+		item.setElementId(BaijiuShellChrome.PLANT_ABOUT_MENU_ID);
+		item.setLabel(BaijiuShellChrome.ABOUT_LABEL_ZH);
+		item.setToBeRendered(true);
+		item.setVisible(true);
+		bindAboutDirectHandler(item);
+		return item;
+	}
+
+	private static void bindAboutDirectHandler(MDirectMenuItem item) {
+
+		if(item == null) {
+			return;
+		}
+		try {
+			item.setContributionURI(BaijiuShellChrome.ABOUT_DIRECT_HANDLER_URI);
+		} catch(RuntimeException | LinkageError e) {
+			// uri not writable
+		}
+	}
+
 	static void sanitizeFileMenuChildren(MMenu fileMenu) {
 
 		if(fileMenu == null || BaijiuShellChrome.researchMenusVisible()) {
@@ -2040,7 +2192,10 @@ public final class BaijiuShellParts {
 		if(help == null && modelService != null) {
 			help = findMenu(modelService, application, BaijiuShellChrome.HELP_MENU_ID);
 		}
-		sanitizeHelpMenuChildren(help);
+		if(help == null && mainMenu != null) {
+			help = liveMenuChild(mainMenu, BaijiuShellChrome.ECLIPSE_HELP_MENU_ID);
+		}
+		ensureHelpMenuContents(modelService, application, help);
 		hideChromatogramMenuLabel(application, modelService);
 		hideNonPlantTopTrim(application, modelService);
 		MWindow plant = plantWindow(application, modelService);
@@ -2092,6 +2247,8 @@ public final class BaijiuShellParts {
 				}
 				if(BaijiuShellChrome.shouldHideHelpMenuChild(element.getElementId(), labelOf(element))) {
 					hideMenuChild(element);
+				} else {
+					forceShowChrome(element);
 				}
 			}
 		} catch(RuntimeException | LinkageError e) {
