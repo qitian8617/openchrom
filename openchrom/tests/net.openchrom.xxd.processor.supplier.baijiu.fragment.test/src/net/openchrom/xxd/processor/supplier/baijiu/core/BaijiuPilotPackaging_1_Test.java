@@ -939,6 +939,9 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(shellMenusSrc.contains("SWT.Activate"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("SWT.MenuDetect"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("shouldHidePlantChartMenuItem"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("hideMenuItem"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("item.dispose()"), shellMenusSrc);
+		assertFalse(shellMenusSrc.contains("item.setVisible"), "SWT MenuItem has no setVisible; dispose is the hide");
 		assertTrue(shellMenusSrc.contains("isChartRangeSelectionLabel"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("sanitizeChartMenuLater"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("sanitize"), shellMenusSrc);
