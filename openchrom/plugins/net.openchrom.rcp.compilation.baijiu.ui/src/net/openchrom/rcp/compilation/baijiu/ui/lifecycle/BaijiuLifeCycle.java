@@ -49,6 +49,7 @@ public class BaijiuLifeCycle {
 		MUIElement window = modelService.find(BaijiuShellChrome.MAIN_WINDOW_ID, application);
 		if(window instanceof MWindow trimmed) {
 			trimmed.setLabel(BaijiuShellChrome.WINDOW_TITLE);
+			BaijiuWindowIcons.applyIconUri(trimmed);
 		}
 		try {
 			BaijiuShellAddon.applyChrome(application, modelService);

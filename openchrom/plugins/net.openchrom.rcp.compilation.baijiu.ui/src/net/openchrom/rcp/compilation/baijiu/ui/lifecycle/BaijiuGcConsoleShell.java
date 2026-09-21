@@ -139,6 +139,7 @@ public final class BaijiuGcConsoleShell {
 		Shell created = new Shell(display, SWT.SHELL_TRIM);
 		created.setData("laiende.skip.localization", Boolean.TRUE);
 		created.setText("气相色谱控制台");
+		BaijiuWindowIcons.applyToShell(created);
 		created.setLayout(new FillLayout());
 		applySize(created);
 		created.setSize(BaijiuShellChrome.GC_WINDOW_WIDTH, BaijiuShellChrome.GC_WINDOW_HEIGHT);

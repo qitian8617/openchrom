@@ -66,7 +66,7 @@ public class BaijiuShellChrome_1_Test {
 		assertEquals("白酒FID工作站", BaijiuShellChrome.APPLICATION_NAME_VM);
 		assertFalse(BaijiuShellChrome.APPLICATION_NAME_VM.contains(" "));
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome", BaijiuShellChrome.PERSPECTIVE_ID);
-		assertEquals(32, BaijiuShellChrome.CHROME_EPOCH);
+		assertEquals(33, BaijiuShellChrome.CHROME_EPOCH);
 		assertEquals("org.eclipse.chemclipse.ux.extension.ui.perspective.welcome", BaijiuShellChrome.WELCOME_PERSPECTIVE_ID);
 		assertTrue(BaijiuShellChrome.isHiddenResearchPerspective(BaijiuShellChrome.WELCOME_PERSPECTIVE_ID));
 		assertTrue(BaijiuShellChrome.isHiddenResearchPerspective(BaijiuShellChrome.MALDI_PERSPECTIVE_ID));
@@ -420,6 +420,19 @@ public class BaijiuShellChrome_1_Test {
 		assertEquals(BaijiuShellChrome.PLANT_ICON_REPORT, BaijiuShellChrome.plantToolbarItemIconUri(BaijiuShellChrome.REPORT_TOOLITEM_ID));
 		assertEquals(BaijiuShellChrome.PLANT_ICON_CHROM, BaijiuShellChrome.plantChromeIconUri(BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID));
 		assertEquals(BaijiuShellChrome.PLANT_ICON_OPS, BaijiuShellChrome.plantChromeIconUri(BaijiuShellChrome.WORKBENCH_HOME_PART_ID));
+		assertEquals(BaijiuShellChrome.WINDOW_ICON_URI, BaijiuShellChrome.plantChromeIconUri(BaijiuShellChrome.MAIN_WINDOW_ID));
+		assertTrue(BaijiuShellChrome.isPlantWindowIconUri(BaijiuShellChrome.WINDOW_ICON_URI));
+		assertTrue(BaijiuShellChrome.WINDOW_ICON_URI.startsWith(BaijiuShellChrome.WINDOW_ICON_PLUGIN_PREFIX));
+		assertEquals(5, BaijiuShellChrome.WINDOW_ICON_FILES.size());
+		assertEquals(5, BaijiuShellChrome.WINDOW_ICON_URIS.size());
+		assertTrue(BaijiuShellChrome.WINDOW_ICON_FILES.contains("icons/logo_128x128.png"));
+		assertFalse(BaijiuShellChrome.WINDOW_ICON_URI.contains("community.ui"));
+		assertFalse(BaijiuShellChrome.WINDOW_ICON_URI.contains("org.eclipse.chemclipse.rcp.ui.icons"));
+		assertTrue(BaijiuShellChrome.isForeignWindowIconUri(null));
+		assertTrue(BaijiuShellChrome.isForeignWindowIconUri(""));
+		assertTrue(BaijiuShellChrome.isForeignWindowIconUri("platform:/plugin/net.openchrom.rcp.compilation.community.ui/icons/logo_16x16.png"));
+		assertTrue(BaijiuShellChrome.isForeignWindowIconUri("platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/peak.gif"));
+		assertFalse(BaijiuShellChrome.isForeignWindowIconUri(BaijiuShellChrome.WINDOW_ICON_URI));
 		assertTrue(BaijiuShellChrome.PLANT_ICON_OPEN_CHROM.startsWith(BaijiuShellChrome.PLANT_ICON_PLUGIN_PREFIX));
 		assertFalse(BaijiuShellChrome.PLANT_ICON_CHROM.equals(BaijiuShellChrome.PLANT_ICON_INTEGRATE));
 		assertFalse(BaijiuShellChrome.PLANT_ICON_OPEN_CHROM.contains("org.eclipse.chemclipse.rcp.ui.icons"));

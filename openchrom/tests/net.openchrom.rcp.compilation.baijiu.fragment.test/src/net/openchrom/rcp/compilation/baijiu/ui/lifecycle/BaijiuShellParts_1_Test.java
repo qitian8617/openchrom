@@ -58,6 +58,9 @@ public class BaijiuShellParts_1_Test {
 		BaijiuShellParts.suppressE4GcWindow(null, null);
 		BaijiuShellParts.revealPlantToolbar(null, null);
 		BaijiuShellParts.revealPlantWindowChrome(null, null);
+		BaijiuWindowIcons.apply(null, null);
+		BaijiuWindowIcons.applyIconUri((org.eclipse.e4.ui.model.application.ui.basic.MWindow)null);
+		BaijiuWindowIcons.applyToShell(null);
 		BaijiuShellParts.preferPlantLookupWindow(null, null);
 		BaijiuShellParts.ensurePlantChromeModel(null, null);
 		BaijiuShellParts.ensureEditorRequiredMenus(null, null);

@@ -239,6 +239,26 @@ public final class BaijiuShellChrome {
 	public static final String ABOUT_DIRECT_HANDLER_URI = "bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.handlers.BaijiuAboutHandler";
 	public static final String ABOUT_LABEL_ZH = "关于";
 	public static final String ABOUT_LOGO_PATH = "icons/about_logo.png";
+	/**
+	 * Plant window / taskbar images on this branding plug-in. Product
+	 * {@code windowImages} and these URIs must never point at ChemClipse /
+	 * community OpenChrom peak. Title bar and taskbar use these files plus
+	 * {@code Shell.setImages}; About may keep the full wordmark separately.
+	 */
+	public static final String WINDOW_ICON_PLUGIN_PREFIX = "platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/";
+	public static final List<String> WINDOW_ICON_FILES = List.of( //
+			"icons/logo_16x16.png", //
+			"icons/logo_32x32.png", //
+			"icons/logo_48x48.png", //
+			"icons/logo_64x64.png", //
+			"icons/logo_128x128.png");
+	public static final String WINDOW_ICON_URI = WINDOW_ICON_PLUGIN_PREFIX + "logo_32x32.png";
+	public static final List<String> WINDOW_ICON_URIS = List.of( //
+			WINDOW_ICON_PLUGIN_PREFIX + "logo_16x16.png", //
+			WINDOW_ICON_PLUGIN_PREFIX + "logo_32x32.png", //
+			WINDOW_ICON_PLUGIN_PREFIX + "logo_48x48.png", //
+			WINDOW_ICON_PLUGIN_PREFIX + "logo_64x64.png", //
+			WINDOW_ICON_PLUGIN_PREFIX + "logo_128x128.png");
 	public static final String LICENSE_MENU_ID = "net.openchrom.rcp.compilation.baijiu.ui.menu.license";
 	public static final String LICENSE_COMMAND_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.command.license";
 	public static final String BAIJIU_MENU_ID = "net.openchrom.rcp.compilation.baijiu.ui.menu.baijiu";
@@ -353,8 +373,12 @@ public final class BaijiuShellChrome {
 	 * Bundle 16×16 PNGs under {@code icons/plant/} and point fragment +
 	 * runtime {@code iconURI} at this branding plug-in. Rebuild
 	 * workbench.xmi so persisted ChemClipse GIFs do not stick.
+	 * Epoch 33: force plant window/taskbar images (Leyend graphic, not
+	 * OpenChrom red peak) via {@code Shell.setImages} + TrimmedWindow
+	 * {@code iconURI}. Rebuild workbench.xmi so a persisted ChemClipse
+	 * window iconURI cannot stick.
 	 */
-	public static final int CHROME_EPOCH = 32;
+	public static final int CHROME_EPOCH = 33;
 	/**
 	 * Ids that must exist on the live model after plant-home reveal. Missing
 	 * any of these is the empty-left / community-button-column failure mode.
@@ -1286,7 +1310,37 @@ public final class BaijiuShellChrome {
 		if(GC_HOME_PART_ID.equals(elementId) || GC_WINDOW_ID.equals(elementId) || GC_PERSPECTIVE_ID.equals(elementId) || GC_CONTROL_PART_ID.equals(elementId) || TEMPERATURE_OPEN_MENU_ID.equals(elementId)) {
 			return PLANT_ICON_GC;
 		}
+		if(MAIN_WINDOW_ID.equals(elementId)) {
+			return WINDOW_ICON_URI;
+		}
 		return null;
+	}
+
+	public static boolean isPlantWindowIconUri(String uri) {
+
+		return uri != null && !uri.isBlank() && WINDOW_ICON_URIS.contains(uri);
+	}
+
+	/**
+	 * ChemClipse / community OpenChrom peak (or any non-plant URI). Plant
+	 * chrome overwrites these; it never falls back to them.
+	 */
+	public static boolean isForeignWindowIconUri(String uri) {
+
+		if(uri == null || uri.isBlank()) {
+			return true;
+		}
+		if(isPlantWindowIconUri(uri)) {
+			return false;
+		}
+		String lower = uri.toLowerCase(Locale.ROOT);
+		if(lower.contains("net.openchrom.rcp.compilation.community.ui")) {
+			return true;
+		}
+		if(lower.contains("org.eclipse.chemclipse.rcp.ui.icons")) {
+			return true;
+		}
+		return lower.contains("openchrom") && !lower.contains("net.openchrom.rcp.compilation.baijiu.ui");
 	}
 
 	public static String plantToolbarItemLabel(String elementId) {
