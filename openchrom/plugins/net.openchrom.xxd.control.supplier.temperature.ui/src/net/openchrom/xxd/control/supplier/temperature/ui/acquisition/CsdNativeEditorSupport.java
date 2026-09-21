@@ -42,6 +42,12 @@ public final class CsdNativeEditorSupport {
 
 	private static final Logger logger = Logger.getLogger(CsdNativeEditorSupport.class);
 	private static final int MIN_SCANS_TO_OPEN = 2;
+	/**
+	 * Must stay equal to {@code CsdEditorReusePolicy.SAVED_FILE_KEY} in the
+	 * Baijiu UI plugin (no hard require-bundle cycle).
+	 */
+	public static final String SAVED_FILE_KEY = "net.openchrom.gcws.savedFile";
+	public static final String FILE_KEY = "file";
 
 	private CsdNativeEditorSupport() {
 	}
@@ -88,8 +94,14 @@ public final class CsdNativeEditorSupport {
 			return false;
 		}
 		if(display.getThread() != Thread.currentThread()) {
-			display.asyncExec(() -> openSavedFileIfNoLiveEditorOnUi(chromatogram, file, liveEditorRequested));
-			return false;
+			boolean[] shown = {false};
+			try {
+				display.syncExec(() -> shown[0] = openSavedFileIfNoLiveEditorOnUi(chromatogram, file, liveEditorRequested));
+			} catch(RuntimeException e) {
+				logger.warn("Cannot rebind live CSD editor on UI thread", e);
+				return false;
+			}
+			return shown[0];
 		}
 		return openSavedFileIfNoLiveEditorOnUi(chromatogram, file, liveEditorRequested);
 	}
@@ -178,16 +190,17 @@ public final class CsdNativeEditorSupport {
 
 		MPart livePart = findOpenedPart(chromatogram);
 		if(liveEditorRequested || livePart != null) {
-			keepLiveEditorOnUi(chromatogram, livePart);
+			keepLiveEditorOnUi(chromatogram, livePart, file);
 			logger.info("Kept live CSD editor; skipped second tab for " + file.getAbsolutePath());
 			return false;
 		}
 		return replaceWithFileEditorOnUi(chromatogram, file);
 	}
 
-	private static void keepLiveEditorOnUi(IChromatogramCSD chromatogram, MPart livePart) {
+	private static void keepLiveEditorOnUi(IChromatogramCSD chromatogram, MPart livePart, File file) {
 
 		if(livePart != null) {
+			bindLivePartToSavedFile(livePart, chromatogram, file);
 			clearDirty(livePart);
 			EPartService partService = ContextAddon.getWindowPartService();
 			if(partService != null) {
@@ -211,6 +224,44 @@ public final class CsdNativeEditorSupport {
 		ChromatogramEditorNotifier.publishFinalUpdate(chromatogram);
 	}
 
+	static void bindLivePartToSavedFile(MPart livePart, IChromatogramCSD chromatogram, File file) {
+
+		if(livePart == null || file == null) {
+			return;
+		}
+		livePart.setLabel(savedEditorLabel(file));
+		livePart.setTooltip(file.getAbsolutePath());
+		try {
+			livePart.getTransientData().put(SAVED_FILE_KEY, file.getAbsolutePath());
+			livePart.getTransientData().put(FILE_KEY, file.getAbsolutePath());
+			livePart.getPersistedState().put(SAVED_FILE_KEY, file.getAbsolutePath());
+			livePart.getPersistedState().put(FILE_KEY, file.getAbsolutePath());
+		} catch(RuntimeException | LinkageError e) {
+			logger.warn("Could not tag live CSD part with saved path", e);
+		}
+		if(chromatogram != null && chromatogram.getFile() == null) {
+			chromatogram.setFile(file);
+		}
+		if(chromatogram != null) {
+			try {
+				chromatogram.setDirty(false);
+			} catch(RuntimeException | LinkageError e) {
+				// optional on some ChemClipse builds
+			}
+		}
+	}
+
+	public static String savedEditorLabel(File file) {
+
+		if(file == null) {
+			return "";
+		}
+		String name = file.getName();
+		int dot = name.lastIndexOf('.');
+		String base = dot > 0 ? name.substring(0, dot) : name;
+		return base + " [CSD]";
+	}
+
 	private static boolean replaceWithFileEditorOnUi(IChromatogramCSD chromatogram, File file) {
 
 		try {
@@ -225,7 +276,7 @@ public final class CsdNativeEditorSupport {
 			}
 			MPart livePart = findOpenedPart(chromatogram);
 			if(livePart != null) {
-				keepLiveEditorOnUi(chromatogram, livePart);
+				keepLiveEditorOnUi(chromatogram, livePart, file);
 				logger.info("Kept live CSD editor; skipped second tab for " + file.getAbsolutePath());
 				return false;
 			}

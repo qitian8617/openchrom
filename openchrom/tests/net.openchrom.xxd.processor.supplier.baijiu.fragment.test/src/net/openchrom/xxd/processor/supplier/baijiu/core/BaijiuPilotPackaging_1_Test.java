@@ -1104,14 +1104,20 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(openFileAt > 0, handlerSrc);
 		int openFileEnd = handlerSrc.indexOf("\n\tpublic static boolean hostedSuccessfully");
 		String openFileBody = handlerSrc.substring(openFileAt, openFileEnd > openFileAt ? openFileEnd : openFileAt + 2500);
+		int reuseCall = openFileBody.indexOf("reuseOpenEditor");
 		int chemclipseCall = openFileBody.indexOf("openViaChemClipseSupport");
 		int hostCall = openFileBody.indexOf("hostExistingEditors");
-		assertTrue(chemclipseCall >= 0 && hostCall > chemclipseCall, "openFile prefers ChemClipse openEditor then host widget");
+		assertTrue(reuseCall >= 0 && reuseCall < chemclipseCall, "openFile reuses a live CSD part before ChemClipse openEditor");
+		assertTrue(chemclipseCall >= 0 && hostCall > chemclipseCall, "when no live editor, ChemClipse openEditor then host widget");
 		assertTrue(openFileBody.contains("restorePlantEmptyState"), openFileBody);
 		assertTrue(handlerSrc.contains("showPlantChromatogram"), handlerSrc);
 		assertTrue(handlerSrc.contains("BaijiuShellParts"), handlerSrc);
 		assertTrue(handlerSrc.contains("findPlantChromatogramStack"), handlerSrc);
 		assertTrue(handlerSrc.contains("hostExistingEditors"), handlerSrc);
+		assertTrue(handlerSrc.contains("reuseOpenEditor"), handlerSrc);
+		assertTrue(handlerSrc.contains("findCsdPartForFile"), handlerSrc);
+		assertTrue(handlerSrc.contains("shouldCloseThenOpen"), handlerSrc);
+		assertTrue(handlerSrc.contains("closeCsdPart"), handlerSrc);
 		assertTrue(handlerSrc.contains("beginFileDialog"), handlerSrc);
 		assertTrue(handlerSrc.contains("fileDialogBlockReason"), handlerSrc);
 		assertTrue(handlerSrc.contains("executeRegisteredCommand"), handlerSrc);
@@ -1128,6 +1134,9 @@ public class BaijiuPilotPackaging_1_Test {
 		String partsHostSrc = Files.readString(parts, StandardCharsets.UTF_8);
 		assertTrue(partsHostSrc.contains("embedCsdEditor"), partsHostSrc);
 		assertTrue(partsHostSrc.contains("hostOpenCsdEditors"), partsHostSrc);
+		assertTrue(partsHostSrc.contains("findCsdPartForFile"), partsHostSrc);
+		assertTrue(partsHostSrc.contains("closeCsdPart"), partsHostSrc);
+		assertTrue(partsHostSrc.contains("activateCsdPart"), partsHostSrc);
 		assertTrue(partsHostSrc.contains("dockIntoPlantChromatogramStack"), partsHostSrc);
 		assertTrue(partsHostSrc.contains("selectionClearsHostedEditor"), partsHostSrc);
 		assertTrue(partsHostSrc.contains("restoreChromatogramEmptyState"), partsHostSrc);
@@ -1243,12 +1252,18 @@ public class BaijiuPilotPackaging_1_Test {
 		String editorSrc = Files.readString(editor, StandardCharsets.UTF_8);
 		assertTrue(editorSrc.contains("liveEditorRequested || livePart != null"), editorSrc);
 		assertTrue(editorSrc.contains("skipped second tab"), editorSrc);
+		assertTrue(editorSrc.contains("bindLivePartToSavedFile"), editorSrc);
+		assertTrue(editorSrc.contains("SAVED_FILE_KEY"), editorSrc);
+		assertTrue(editorSrc.contains("savedEditorLabel"), editorSrc);
+		assertTrue(editorSrc.contains("syncExec"), editorSrc);
 
 		Path saveDoc = locate("openchrom/plugins/net.openchrom.xxd.control.supplier.temperature.ui/docs/GCWS-ACQUISITION-SAVE.md", "plugins/net.openchrom.xxd.control.supplier.temperature.ui/docs/GCWS-ACQUISITION-SAVE.md");
 		assertNotNull(saveDoc);
 		String saveText = Files.readString(saveDoc, StandardCharsets.UTF_8);
 		assertFalse(saveText.contains("The generic chromatogram editor still opens that file."), saveText);
 		assertTrue(saveText.contains("does **not** open a second chromatogram tab"), saveText);
+		assertTrue(saveText.contains("OpenBaijiuChromatogramHandler.openFile"), saveText);
+		assertTrue(saveText.contains("**reuses** the live chromatogram editor") || saveText.contains("reuses the live chromatogram editor"), saveText);
 		assertTrue(saveText.contains("**one 白酒操作**") || saveText.contains("one **白酒操作**"), saveText);
 
 		Path chrome = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellChrome.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellChrome.java");
@@ -1296,10 +1311,19 @@ public class BaijiuPilotPackaging_1_Test {
 		String handoffSrc = Files.readString(handoff, StandardCharsets.UTF_8);
 		assertTrue(handoffSrc.contains("WORKBENCH_HOME_PART_ID"), handoffSrc);
 		assertTrue(handoffSrc.contains("PLANT_HOME_PERSPECTIVE_ID"), handoffSrc);
+		assertTrue(handoffSrc.contains("OpenBaijiuChromatogramHandler.openFile"), handoffSrc);
+
+		Path reusePolicy = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/CsdEditorReusePolicy.java", "plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/CsdEditorReusePolicy.java");
+		assertNotNull(reusePolicy, "CsdEditorReusePolicy.java");
+		String reuseSrc = Files.readString(reusePolicy, StandardCharsets.UTF_8);
+		assertTrue(reuseSrc.contains("shouldOpenChemClipseEditor"), reuseSrc);
+		assertTrue(reuseSrc.contains("liveAcquisitionLabelMatchesSavedFile"), reuseSrc);
+		assertTrue(reuseSrc.contains("net.openchrom.gcws.savedFile"), reuseSrc);
 
 		Path manual = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/docs/\u767d\u9152FID\u8bd5\u70b9\u64cd\u4f5c\u624b\u518c.md", "plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/docs/\u767d\u9152FID\u8bd5\u70b9\u64cd\u4f5c\u624b\u518c.md");
 		assertNotNull(manual);
 		assertTrue(Files.readString(manual, StandardCharsets.UTF_8).contains("不要再为同一文件打开第二个色谱图编辑器"));
+		assertTrue(Files.readString(manual, StandardCharsets.UTF_8).contains("沿用该页签") || Files.readString(manual, StandardCharsets.UTF_8).contains("沿用实时页签"));
 		assertTrue(Files.readString(manual, StandardCharsets.UTF_8).contains("只保留一个 **白酒操作**") || Files.readString(manual, StandardCharsets.UTF_8).contains("右侧只保留一个"));
 	}
 

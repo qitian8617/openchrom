@@ -26,6 +26,7 @@ import org.eclipse.e4.core.contexts.IEclipseContext;
 import org.eclipse.e4.core.di.annotations.Execute;
 import org.eclipse.e4.core.di.annotations.Optional;
 import org.eclipse.e4.ui.model.application.MApplication;
+import org.eclipse.e4.ui.model.application.ui.basic.MPart;
 import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.jface.preference.IPreferenceStore;
@@ -40,6 +41,7 @@ import org.eclipse.ui.PlatformUI;
 
 import net.openchrom.xxd.processor.supplier.baijiu.ui.Activator;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.BaijiuWorkbenchParts;
+import net.openchrom.xxd.processor.supplier.baijiu.ui.CsdEditorReusePolicy;
 
 /**
  * Opens a CSD chromatogram into the plant-home left 谱图/采集 page. Uses an
@@ -82,6 +84,8 @@ public class OpenBaijiuChromatogramHandler {
 	/**
 	 * Opens one CSD chromatogram in the editor without a file dialog.
 	 * Used by post-acquisition handoff into the Baijiu workbench.
+	 * When a live acquisition editor for this file/run is already open, hosts
+	 * that part and does <em>not</em> call ChemClipse {@code openEditor}.
 	 *
 	 * @return true if the chart was hosted in 谱图/采集 or ChemClipse visibly opened the editor
 	 */
@@ -100,6 +104,9 @@ public class OpenBaijiuChromatogramHandler {
 		boolean chemclipse = false;
 		boolean hosted = false;
 		try {
+			if(reuseOpenEditor(file, live)) {
+				return true;
+			}
 			chemclipse = openViaChemClipseSupport(file, live);
 			hosted = hostExistingEditors(live);
 		} catch(RuntimeException | LinkageError e) {
@@ -181,6 +188,40 @@ public class OpenBaijiuChromatogramHandler {
 			showPlantChromatogramInBranding(application, modelService, partService);
 		} catch(RuntimeException | LinkageError e) {
 			// community product has no plant-home tab
+		}
+	}
+
+	/**
+	 * Host/activate an already-open live or file CSD editor for {@code file}.
+	 * Returns true when ChemClipse {@code openEditor} must not run.
+	 */
+	static boolean reuseOpenEditor(File file, IEclipseContext context) {
+
+		if(file == null || context == null) {
+			return false;
+		}
+		try {
+			MApplication application = context.get(MApplication.class);
+			EModelService modelService = context.get(EModelService.class);
+			EPartService partService = context.get(EPartService.class);
+			MPart existing = BaijiuWorkbenchParts.findCsdPartForFile(application, modelService, file);
+			if(existing == null) {
+				return false;
+			}
+			existing.setLabel(CsdEditorReusePolicy.savedEditorLabel(file));
+			existing.setDirty(false);
+			boolean reused = BaijiuWorkbenchParts.activateCsdPart(application, modelService, partService, existing);
+			if(reused) {
+				showPlantChromatogram(context);
+				return true;
+			}
+			if(CsdEditorReusePolicy.shouldCloseThenOpen(true, false)) {
+				BaijiuWorkbenchParts.closeCsdPart(partService, existing);
+			}
+			return false;
+		} catch(RuntimeException | LinkageError e) {
+			logger.warn("Reuse of live CSD editor failed for " + file.getAbsolutePath(), e);
+			return false;
 		}
 	}
 
