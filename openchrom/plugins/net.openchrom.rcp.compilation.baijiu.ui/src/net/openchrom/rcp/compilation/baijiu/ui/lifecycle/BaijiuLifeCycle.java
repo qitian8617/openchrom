@@ -47,9 +47,10 @@ public class BaijiuLifeCycle {
 		System.setProperty(BaijiuShellChrome.PERSPECTIVE_PROPERTY, BaijiuShellChrome.PERSPECTIVE_ID);
 		BaijiuShellModel.ensureChemclipsePerspectiveStack(application, modelService);
 		MUIElement window = modelService.find(BaijiuShellChrome.MAIN_WINDOW_ID, application);
-		if(window instanceof MWindow trimmed) {
+		if(window instanceof MWindow) {
+			MWindow trimmed = (MWindow)window;
 			trimmed.setLabel(BaijiuShellChrome.WINDOW_TITLE);
-			BaijiuWindowIcons.applyIconUri(trimmed);
+			BaijiuShellParts.applyWindowIconUri(trimmed);
 		}
 		try {
 			BaijiuShellAddon.applyChrome(application, modelService);

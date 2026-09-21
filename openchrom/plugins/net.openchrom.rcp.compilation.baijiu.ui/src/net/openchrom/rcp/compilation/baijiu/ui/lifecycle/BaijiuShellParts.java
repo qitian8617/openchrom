@@ -10,12 +10,16 @@
 package net.openchrom.rcp.compilation.baijiu.ui.lifecycle;
 
 import java.io.File;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.core.runtime.FileLocator;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.e4.core.contexts.IEclipseContext;
 import org.eclipse.e4.ui.model.application.MApplication;
 import org.eclipse.e4.ui.model.application.commands.MCommand;
@@ -43,12 +47,16 @@ import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService.PartState;
 import org.eclipse.e4.ui.workbench.modeling.IWindowCloseHandler;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Widget;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.FrameworkUtil;
 
 import net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuHomePanels;
 
@@ -71,6 +79,8 @@ import net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuHomePanels;
 public final class BaijiuShellParts {
 
 	private static final AtomicBoolean revealingPlantWindowChrome = new AtomicBoolean();
+	private static volatile Display cachedWindowIconDisplay;
+	private static volatile Image[] cachedWindowImages;
 
 	private BaijiuShellParts() {
 
@@ -344,7 +354,7 @@ public final class BaijiuShellParts {
 			return;
 		}
 		if(!revealingPlantWindowChrome.compareAndSet(false, true)) {
-			BaijiuWindowIcons.apply(application, modelService);
+			applyWindowIcons(application, modelService);
 			return;
 		}
 		try {
@@ -361,9 +371,245 @@ public final class BaijiuShellParts {
 			ensureEditorRequiredMenus(application, modelService);
 			recreatePlantChromeWidgets(application, modelService);
 			sanitizePlantMenuContributions(application, modelService);
-			BaijiuWindowIcons.apply(application, modelService);
+			applyWindowIcons(application, modelService);
 		} finally {
 			revealingPlantWindowChrome.set(false);
+		}
+	}
+
+	/**
+	 * Force Leyend company graphics onto the plant OS window after the Shell
+	 * exists. Product {@code windowImages} is not enough: ChemClipse / community
+	 * OpenChrom peak branding can win the title bar and taskbar. Re-apply on
+	 * every chrome pass. Never fall back to community OpenChrom assets.
+	 * Lives here (not a separate type) so Eclipse always compiles it with this
+	 * unit. {@link BaijiuShellChrome} stays SWT-free; {@code WINDOW_ICON_*}
+	 * constants remain there.
+	 */
+	public static void applyWindowIcons(MApplication application, EModelService modelService) {
+
+		applyWindowIconUri(application, modelService);
+		applyWindowIconsToLiveShells(application, modelService);
+	}
+
+	public static void applyWindowIconUri(MApplication application, EModelService modelService) {
+
+		if(application == null) {
+			return;
+		}
+		MWindow plant = plantWindow(application, modelService);
+		applyWindowIconUri(plant);
+		try {
+			List<MWindow> children = application.getChildren();
+			if(children == null) {
+				return;
+			}
+			for(MWindow window : children) {
+				if(window == null || BaijiuShellChrome.GC_WINDOW_ID.equals(window.getElementId())) {
+					continue;
+				}
+				applyWindowIconUri(window);
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// older E4 / immutable children
+		}
+	}
+
+	public static void applyWindowIconUri(MWindow window) {
+
+		if(window == null) {
+			return;
+		}
+		String uri = BaijiuShellChrome.WINDOW_ICON_URI;
+		if(uri == null || uri.isBlank()) {
+			return;
+		}
+		try {
+			window.setIconURI(uri);
+		} catch(RuntimeException | LinkageError e) {
+			try {
+				if(window instanceof MUILabel) {
+					((MUILabel)window).setIconURI(uri);
+				}
+			} catch(RuntimeException | LinkageError inner) {
+				// iconURI not writable
+			}
+		}
+	}
+
+	public static void applyWindowIconsToShell(Shell shell) {
+
+		if(shell == null || shell.isDisposed()) {
+			return;
+		}
+		try {
+			Display display = shell.getDisplay();
+			Image[] images = plantWindowImages(display);
+			if(images == null || images.length == 0) {
+				return;
+			}
+			shell.setImages(images);
+		} catch(RuntimeException | LinkageError e) {
+			BaijiuShellLog.warn("Plant window images could not be applied to Shell", e);
+		}
+	}
+
+	private static void applyWindowIconsToLiveShells(MApplication application, EModelService modelService) {
+
+		try {
+			Display display = windowIconDisplay();
+			if(display == null || display.isDisposed()) {
+				return;
+			}
+			if(display.getThread() != Thread.currentThread()) {
+				display.asyncExec(() -> applyWindowIconsToLiveShells(application, modelService));
+				return;
+			}
+			Image[] images = plantWindowImages(display);
+			if(images == null || images.length == 0) {
+				return;
+			}
+			MWindow plant = plantWindow(application, modelService);
+			if(plant != null) {
+				applyWindowIconsToWidget(plant.getWidget(), images);
+			}
+			for(Shell shell : display.getShells()) {
+				applyWindowIconsToShell(shell, images);
+			}
+		} catch(RuntimeException | LinkageError e) {
+			BaijiuShellLog.warn("Plant window images could not be applied", e);
+		}
+	}
+
+	private static void applyWindowIconsToWidget(Object widget, Image[] images) {
+
+		if(widget instanceof Shell) {
+			applyWindowIconsToShell((Shell)widget, images);
+		}
+	}
+
+	private static void applyWindowIconsToShell(Shell shell, Image[] images) {
+
+		if(shell == null || shell.isDisposed() || images == null || images.length == 0) {
+			return;
+		}
+		try {
+			shell.setImages(images);
+		} catch(RuntimeException | LinkageError e) {
+			// disposed display / GTK
+		}
+	}
+
+	static Image[] plantWindowImages(Display display) {
+
+		if(display == null || display.isDisposed()) {
+			return null;
+		}
+		Image[] cached = cachedWindowImages;
+		Display owner = cachedWindowIconDisplay;
+		if(cached != null && owner == display && windowImagesLive(cached)) {
+			return cached;
+		}
+		if(cached != null) {
+			disposeCachedWindowIcons();
+		}
+		List<Image> loaded = new ArrayList<>();
+		for(String path : BaijiuShellChrome.WINDOW_ICON_FILES) {
+			Image image = loadWindowIcon(display, path);
+			if(image != null && !image.isDisposed()) {
+				loaded.add(image);
+			}
+		}
+		if(loaded.isEmpty()) {
+			BaijiuShellLog.warn("Plant window images missing; refusing community OpenChrom fallback");
+			return null;
+		}
+		Image[] next = loaded.toArray(new Image[0]);
+		cachedWindowIconDisplay = display;
+		cachedWindowImages = next;
+		try {
+			display.disposeExec(BaijiuShellParts::disposeCachedWindowIcons);
+		} catch(RuntimeException | LinkageError e) {
+			// headless
+		}
+		return next;
+	}
+
+	private static Image loadWindowIcon(Display display, String path) {
+
+		if(display == null || display.isDisposed() || path == null || path.isBlank()) {
+			return null;
+		}
+		try(InputStream in = openWindowIcon(path)) {
+			if(in == null) {
+				return null;
+			}
+			return new Image(display, in);
+		} catch(RuntimeException | LinkageError | java.io.IOException e) {
+			BaijiuShellLog.warn("Plant window icon could not load: " + path, e);
+			return null;
+		}
+	}
+
+	static InputStream openWindowIcon(String path) {
+
+		try {
+			Bundle bundle = FrameworkUtil.getBundle(BaijiuShellParts.class);
+			if(bundle != null) {
+				URL url = FileLocator.find(bundle, new Path(path), null);
+				if(url != null) {
+					return FileLocator.resolve(url).openStream();
+				}
+			}
+		} catch(RuntimeException | LinkageError | java.io.IOException e) {
+			// fragment tests / bundle not resolved
+		}
+		String resource = path.startsWith("/") ? path : "/" + path;
+		return BaijiuShellParts.class.getResourceAsStream(resource);
+	}
+
+	private static boolean windowImagesLive(Image[] images) {
+
+		if(images == null || images.length == 0) {
+			return false;
+		}
+		for(Image image : images) {
+			if(image == null || image.isDisposed()) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private static void disposeCachedWindowIcons() {
+
+		Image[] images = cachedWindowImages;
+		cachedWindowImages = null;
+		cachedWindowIconDisplay = null;
+		if(images == null) {
+			return;
+		}
+		for(Image image : images) {
+			try {
+				if(image != null && !image.isDisposed()) {
+					image.dispose();
+				}
+			} catch(RuntimeException | LinkageError e) {
+				// already disposed
+			}
+		}
+	}
+
+	private static Display windowIconDisplay() {
+
+		try {
+			Display current = Display.getCurrent();
+			if(current != null && !current.isDisposed()) {
+				return current;
+			}
+			return Display.getDefault();
+		} catch(RuntimeException | LinkageError e) {
+			return null;
 		}
 	}
 

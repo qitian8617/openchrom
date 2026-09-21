@@ -262,9 +262,10 @@ public class BaijiuShellAddon {
 	private static void applyChromeUnguarded(MApplication application, EModelService modelService) {
 
 		MUIElement window = modelService.find(BaijiuShellChrome.MAIN_WINDOW_ID, application);
-		if(window instanceof MWindow trimmed) {
+		if(window instanceof MWindow) {
+			MWindow trimmed = (MWindow)window;
 			trimmed.setLabel(BaijiuShellChrome.WINDOW_TITLE);
-			BaijiuWindowIcons.applyIconUri(trimmed);
+			BaijiuShellParts.applyWindowIconUri(trimmed);
 		}
 		dropDeadPlantEditorPlaceholder(application, modelService);
 		BaijiuShellModel.ensureChemclipsePerspectiveStack(application, modelService);

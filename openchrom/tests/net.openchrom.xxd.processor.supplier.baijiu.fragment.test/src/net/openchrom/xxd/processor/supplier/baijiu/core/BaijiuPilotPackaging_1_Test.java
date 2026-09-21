@@ -400,14 +400,16 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(lifeCycleSrc.contains("@PreSave") || lifeCycleSrc.contains("PreSave"), lifeCycleSrc);
 		assertTrue(lifeCycleSrc.contains("preSave"), lifeCycleSrc);
 		assertTrue(lifeCycleSrc.contains("revealPlantWindowChrome"), lifeCycleSrc);
-		assertTrue(lifeCycleSrc.contains("BaijiuWindowIcons.applyIconUri"), lifeCycleSrc);
+		assertTrue(lifeCycleSrc.contains("BaijiuShellParts.applyWindowIconUri"), lifeCycleSrc);
+		assertFalse(lifeCycleSrc.contains("BaijiuWindowIcons"), lifeCycleSrc);
 		assertTrue(lifeCycleSrc.contains("ensureChemclipsePerspectiveStack"), lifeCycleSrc);
 
 		Path addon = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellAddon.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellAddon.java");
 		assertNotNull(addon);
 		String addonSrc = Files.readString(addon, StandardCharsets.UTF_8);
 		assertTrue(addonSrc.contains("showPlantHomeParts"), addonSrc);
-		assertTrue(addonSrc.contains("BaijiuWindowIcons.applyIconUri"), addonSrc);
+		assertTrue(addonSrc.contains("BaijiuShellParts.applyWindowIconUri"), addonSrc);
+		assertFalse(addonSrc.contains("BaijiuWindowIcons"), addonSrc);
 		assertTrue(addonSrc.contains("forceCreatePlantHomeGuis"), addonSrc);
 		assertTrue(addonSrc.contains("parkChromatogramEditorArea"), addonSrc);
 		assertTrue(addonSrc.contains("hideTopWindowMenus"), addonSrc);
@@ -560,7 +562,13 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(partsSrc.contains("hasCsdInput"), partsSrc);
 		assertTrue(partsSrc.contains("isParkedEditorArea"), partsSrc);
 		assertTrue(partsSrc.contains("revealPlantWindowChrome"), partsSrc);
-		assertTrue(partsSrc.contains("BaijiuWindowIcons.apply"), partsSrc);
+		assertTrue(partsSrc.contains("applyWindowIcons("), partsSrc);
+		assertTrue(partsSrc.contains("applyWindowIconUri"), partsSrc);
+		assertTrue(partsSrc.contains("applyWindowIconsToShell"), partsSrc);
+		assertTrue(partsSrc.contains("setImages"), partsSrc);
+		assertTrue(partsSrc.contains("refusing community OpenChrom fallback"), partsSrc);
+		assertFalse(partsSrc.contains("community.ui/icons/logo_"), partsSrc);
+		assertFalse(partsSrc.contains("BaijiuWindowIcons"), partsSrc);
 		assertTrue(partsSrc.contains("ensureEditorRequiredMenus"), partsSrc);
 		assertTrue(partsSrc.contains("applyEditorRequiredMenuVisibility"), partsSrc);
 		assertTrue(partsSrc.contains("ensureViewMenuContents"), partsSrc);
@@ -779,7 +787,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(gcOsSrc.contains("GC_WINDOW_WIDTH"), gcOsSrc);
 		assertTrue(gcOsSrc.contains("GC_WINDOW_HEIGHT"), gcOsSrc);
 		assertTrue(gcOsSrc.contains("BaijiuGcHomePart"), gcOsSrc);
-		assertTrue(gcOsSrc.contains("BaijiuWindowIcons.applyToShell"), gcOsSrc);
+		assertTrue(gcOsSrc.contains("BaijiuShellParts.applyWindowIconsToShell"), gcOsSrc);
+		assertFalse(gcOsSrc.contains("BaijiuWindowIcons"), gcOsSrc);
 
 		Path toggleGc = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/handlers/ToggleGcConsoleHandler.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/handlers/ToggleGcConsoleHandler.java");
 		assertNotNull(toggleGc, "GC sash toolbar toggle");
@@ -1176,13 +1185,20 @@ public class BaijiuPilotPackaging_1_Test {
 			assertTrue(Files.size(file) > 0, logo);
 		}
 
-		Path windowIcons = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuWindowIcons.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuWindowIcons.java");
-		assertNotNull(windowIcons);
-		String windowIconsSrc = Files.readString(windowIcons, StandardCharsets.UTF_8);
-		assertTrue(windowIconsSrc.contains("setImages"), windowIconsSrc);
-		assertTrue(windowIconsSrc.contains("WINDOW_ICON_URI"), windowIconsSrc);
-		assertTrue(windowIconsSrc.contains("refusing community OpenChrom fallback"), windowIconsSrc);
-		assertFalse(windowIconsSrc.contains("community.ui/icons/logo_"), windowIconsSrc);
+		assertTrue(locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuWindowIcons.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuWindowIcons.java") == null, "BaijiuWindowIcons must not remain a separate compilation unit");
+		assertTrue(locate("openchrom/tests/net.openchrom.rcp.compilation.baijiu.fragment.test/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuWindowIcons_1_Test.java", "tests/net.openchrom.rcp.compilation.baijiu.fragment.test/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuWindowIcons_1_Test.java") == null, "BaijiuWindowIcons_1_Test must be folded into Parts tests");
+
+		Path partsIcons = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellParts.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellParts.java");
+		assertNotNull(partsIcons);
+		String partsIconsSrc = Files.readString(partsIcons, StandardCharsets.UTF_8);
+		assertTrue(partsIconsSrc.contains("applyWindowIcons("), partsIconsSrc);
+		assertTrue(partsIconsSrc.contains("applyWindowIconUri"), partsIconsSrc);
+		assertTrue(partsIconsSrc.contains("applyWindowIconsToShell"), partsIconsSrc);
+		assertTrue(partsIconsSrc.contains("setImages"), partsIconsSrc);
+		assertTrue(partsIconsSrc.contains("WINDOW_ICON_URI"), partsIconsSrc);
+		assertTrue(partsIconsSrc.contains("refusing community OpenChrom fallback"), partsIconsSrc);
+		assertFalse(partsIconsSrc.contains("community.ui/icons/logo_"), partsIconsSrc);
+		assertFalse(partsIconsSrc.contains("BaijiuWindowIcons"), partsIconsSrc);
 
 		Path pluginXml = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/plugin.xml", "plugins/net.openchrom.rcp.compilation.baijiu.ui/plugin.xml");
 		assertNotNull(pluginXml);

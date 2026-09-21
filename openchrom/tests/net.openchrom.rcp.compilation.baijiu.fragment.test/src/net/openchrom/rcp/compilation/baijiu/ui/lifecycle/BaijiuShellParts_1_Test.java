@@ -13,6 +13,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.eclipse.e4.ui.model.application.ui.basic.MBasicFactory;
+import org.eclipse.e4.ui.model.application.ui.basic.MTrimmedWindow;
 import org.eclipse.e4.ui.model.application.ui.menu.MMenu;
 import org.eclipse.e4.ui.model.application.ui.menu.MMenuFactory;
 import org.junit.jupiter.api.Test;
@@ -58,9 +60,10 @@ public class BaijiuShellParts_1_Test {
 		BaijiuShellParts.suppressE4GcWindow(null, null);
 		BaijiuShellParts.revealPlantToolbar(null, null);
 		BaijiuShellParts.revealPlantWindowChrome(null, null);
-		BaijiuWindowIcons.apply(null, null);
-		BaijiuWindowIcons.applyIconUri((org.eclipse.e4.ui.model.application.ui.basic.MWindow)null);
-		BaijiuWindowIcons.applyToShell(null);
+		BaijiuShellParts.applyWindowIcons(null, null);
+		BaijiuShellParts.applyWindowIconUri((org.eclipse.e4.ui.model.application.MApplication)null, null);
+		BaijiuShellParts.applyWindowIconUri((org.eclipse.e4.ui.model.application.ui.basic.MWindow)null);
+		BaijiuShellParts.applyWindowIconsToShell(null);
 		BaijiuShellParts.preferPlantLookupWindow(null, null);
 		BaijiuShellParts.ensurePlantChromeModel(null, null);
 		BaijiuShellParts.ensureEditorRequiredMenus(null, null);
@@ -101,6 +104,21 @@ public class BaijiuShellParts_1_Test {
 		assertFalse(BaijiuShellModel.plantHomeSurfacePresent(null, null));
 		assertTrue(BaijiuShellModel.missingPlantHomeIds(null, null).contains(BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID));
 		BaijiuShellSelection.selectInParent(null);
+	}
+
+	@Test
+	public void applyWindowIconUriOverwritesChemclipsePeak() {
+
+		MTrimmedWindow window = MBasicFactory.INSTANCE.createTrimmedWindow();
+		window.setElementId(BaijiuShellChrome.MAIN_WINDOW_ID);
+		window.setIconURI("platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/peak.gif");
+		assertTrue(BaijiuShellChrome.isForeignWindowIconUri(window.getIconURI()));
+		BaijiuShellParts.applyWindowIconUri(window);
+		assertEquals(BaijiuShellChrome.WINDOW_ICON_URI, window.getIconURI());
+		assertTrue(BaijiuShellChrome.isPlantWindowIconUri(window.getIconURI()));
+		assertFalse(BaijiuShellChrome.isForeignWindowIconUri(window.getIconURI()));
+		BaijiuShellParts.applyWindowIconUri(window);
+		assertEquals(BaijiuShellChrome.WINDOW_ICON_URI, window.getIconURI(), "re-apply stays on plant logos");
 	}
 
 	@Test
