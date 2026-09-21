@@ -67,7 +67,9 @@ public final class BaijiuWorkbenchHandoff {
 	}
 
 	/**
-	 * Switch to the Baijiu workbench and open {@code file} in the CSD editor.
+	 * Switch to the Baijiu workbench and show {@code file}. If a live
+	 * acquisition CSD editor for this run is already open, it is hosted/activated
+	 * and ChemClipse {@code openEditor} is not called (one tab).
 	 * Safe to call off the UI thread (marshals with {@code syncExec}).
 	 *
 	 * @return empty string on success; otherwise a Chinese operator message

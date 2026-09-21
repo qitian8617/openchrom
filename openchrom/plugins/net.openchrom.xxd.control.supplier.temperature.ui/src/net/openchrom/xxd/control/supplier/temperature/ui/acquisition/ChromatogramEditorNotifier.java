@@ -9,6 +9,7 @@
  *******************************************************************************/
 package net.openchrom.xxd.control.supplier.temperature.ui.acquisition;
 
+import java.io.File;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -107,9 +108,65 @@ public final class ChromatogramEditorNotifier {
 		if(chromatogram == null) {
 			return null;
 		}
+		File file = chromatogram.getFile();
+		String liveLabel = liveEditorLabel(chromatogram);
 		for(MPart part : collectCandidateParts()) {
 			if(part.getObject() == chromatogram || extractSelection(part, chromatogram) != null) {
 				return part;
+			}
+			IChromatogramCSD extracted = extractChromatogram(part);
+			if(extracted == chromatogram) {
+				return part;
+			}
+			if(file != null && extracted != null && fileEquals(file, extracted.getFile())) {
+				return part;
+			}
+			if(liveLabel != null && liveLabel.equals(part.getLabel())) {
+				return part;
+			}
+		}
+		return null;
+	}
+
+	private static String liveEditorLabel(IChromatogramCSD chromatogram) {
+
+		String name = chromatogram.getDataName();
+		if(name == null || name.isBlank()) {
+			name = chromatogram.getName();
+		}
+		if(name == null || name.isBlank()) {
+			return null;
+		}
+		return name + " [CSD]";
+	}
+
+	private static boolean fileEquals(File a, File b) {
+
+		if(a == null || b == null) {
+			return false;
+		}
+		return a.getAbsoluteFile().equals(b.getAbsoluteFile());
+	}
+
+	private static IChromatogramCSD extractChromatogram(MPart part) {
+
+		IChromatogramSelectionCSD selection = extractCsdSelection(part);
+		if(selection != null && selection.getChromatogram() instanceof IChromatogramCSD chromatogram) {
+			return chromatogram;
+		}
+		Object object = part == null ? null : part.getObject();
+		if(object instanceof IChromatogramCSD chromatogram) {
+			return chromatogram;
+		}
+		IEclipseContext context = part == null ? null : part.getContext();
+		if(context != null) {
+			try {
+				IChromatogramCSD fromContext = context.get(IChromatogramCSD.class);
+				if(fromContext != null) {
+					return fromContext;
+				}
+			} catch(RuntimeException | LinkageError e) {
+				return null;
 			}
 		}
 		return null;

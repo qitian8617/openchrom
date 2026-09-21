@@ -57,6 +57,7 @@ public class OpenBaijiuChromatogramHandler_1_Test {
 		assertFalse(OpenBaijiuChromatogramHandler.openFile(temp, null), "null context cannot host into 谱图/采集");
 		assertEquals(OpenBaijiuChromatogramHandler.NO_CONTEXT_REASON, OpenBaijiuChromatogramHandler.lastOpenFailure());
 		assertNotNull(OpenBaijiuChromatogramHandler.lastOpenFailure());
+		assertFalse(OpenBaijiuChromatogramHandler.reuseOpenEditor(temp, null));
 	}
 
 	@Test

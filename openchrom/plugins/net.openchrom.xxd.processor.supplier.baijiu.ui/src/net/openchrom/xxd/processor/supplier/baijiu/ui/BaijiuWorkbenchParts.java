@@ -9,7 +9,9 @@
  *******************************************************************************/
 package net.openchrom.xxd.processor.supplier.baijiu.ui;
 
+import java.io.File;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.e4.core.contexts.IEclipseContext;
 import org.eclipse.e4.ui.model.application.MApplication;
@@ -194,6 +196,118 @@ public final class BaijiuWorkbenchParts {
 			hideEmptyChromatogramHome(home, false);
 		}
 		return hosted;
+	}
+
+	/**
+	 * Existing CSD editor for {@code file} (live acquisition rebound on Stop, or
+	 * a file-backed tab). Null when ChemClipse {@code openEditor} should run.
+	 */
+	public static MPart findCsdPartForFile(MApplication application, EModelService modelService, File file) {
+
+		if(application == null || modelService == null || file == null) {
+			return null;
+		}
+		List<MPart> editors = modelService.findElements(application, BaijiuPerspectiveIds.CSD_EDITOR_PART_ID, MPart.class, null);
+		if(editors == null) {
+			return null;
+		}
+		for(MPart part : editors) {
+			if(partMatchesSavedFile(part, file)) {
+				return part;
+			}
+		}
+		return null;
+	}
+
+	static boolean partMatchesSavedFile(MPart part, File file) {
+
+		if(part == null || file == null) {
+			return false;
+		}
+		return CsdEditorReusePolicy.partMatchesSavedFile(part.getLabel(), part.getObject(), storedSavedPath(part), file);
+	}
+
+	static String storedSavedPath(MPart part) {
+
+		if(part == null) {
+			return null;
+		}
+		try {
+			Map<String, Object> transientData = part.getTransientData();
+			if(transientData != null) {
+				Object tagged = transientData.get(CsdEditorReusePolicy.SAVED_FILE_KEY);
+				if(tagged instanceof String path && !path.isBlank()) {
+					return path;
+				}
+				if(tagged instanceof File taggedFile) {
+					return taggedFile.getAbsolutePath();
+				}
+				Object mapped = transientData.get(CsdEditorReusePolicy.FILE_KEY);
+				if(mapped instanceof String path && !path.isBlank()) {
+					return path;
+				}
+				if(mapped instanceof File mappedFile) {
+					return mappedFile.getAbsolutePath();
+				}
+			}
+			Map<String, String> persisted = part.getPersistedState();
+			if(persisted != null) {
+				String tagged = persisted.get(CsdEditorReusePolicy.SAVED_FILE_KEY);
+				if(tagged != null && !tagged.isBlank()) {
+					return tagged;
+				}
+				String mapped = persisted.get(CsdEditorReusePolicy.FILE_KEY);
+				if(mapped != null && !mapped.isBlank()) {
+					return mapped;
+				}
+			}
+		} catch(RuntimeException | LinkageError e) {
+			return null;
+		}
+		return null;
+	}
+
+	public static boolean activateCsdPart(MApplication application, EModelService modelService, EPartService partService, MPart part) {
+
+		if(part == null) {
+			return false;
+		}
+		boolean hosted = hostCsdPart(application, modelService, partService, part);
+		if(hosted) {
+			return true;
+		}
+		if(partService == null) {
+			return false;
+		}
+		try {
+			partService.showPart(part, PartState.ACTIVATE);
+			return true;
+		} catch(RuntimeException | LinkageError e) {
+			return false;
+		}
+	}
+
+	/**
+	 * Fallback when the live part cannot be rebound/hosted: drop it so
+	 * ChemClipse {@code openEditor} can open the saved file once.
+	 */
+	public static boolean closeCsdPart(EPartService partService, MPart part) {
+
+		if(part == null) {
+			return false;
+		}
+		try {
+			if(partService != null) {
+				partService.hidePart(part, true);
+			}
+			MElementContainer<MUIElement> parent = part.getParent();
+			if(parent != null) {
+				parent.getChildren().remove(part);
+			}
+			return true;
+		} catch(RuntimeException | LinkageError e) {
+			return false;
+		}
 	}
 
 	/**

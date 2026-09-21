@@ -9,6 +9,7 @@
  *******************************************************************************/
 package net.openchrom.xxd.control.supplier.temperature.ui.acquisition;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -46,9 +47,21 @@ public class RealtimeAcquisitionSave_1_Test {
 		assertTrue(editorSrc.contains("liveEditorRequested || livePart != null"), editorSrc);
 		assertTrue(editorSrc.contains("skipped second tab"), editorSrc);
 		assertTrue(editorSrc.contains("keepLiveEditorOnUi"), editorSrc);
+		assertTrue(editorSrc.contains("bindLivePartToSavedFile"), editorSrc);
+		assertTrue(editorSrc.contains("SAVED_FILE_KEY"), editorSrc);
+		assertTrue(editorSrc.contains("savedEditorLabel"), editorSrc);
+		assertTrue(editorSrc.contains("syncExec"), "rebind live editor before notifySaved/handoff");
 		assertTrue(editorSrc.contains("replaceWithFileEditorOnUi"), "edge case: open saved file when no live editor");
 		assertTrue(editorSrc.contains("MPart existing = findOpenedPart(chromatogram)"), editorSrc);
 		assertFalse(editorSrc.contains("removePart(livePart)"), "must not close the live editor to swap in a file tab");
+		assertEquals("net.openchrom.gcws.savedFile", CsdNativeEditorSupport.SAVED_FILE_KEY);
+		assertEquals("GC-FID_20260921_113323 [CSD]", CsdNativeEditorSupport.savedEditorLabel(new java.io.File("GC-FID_20260921_113323.ocb")));
+
+		Path notifier = locate("openchrom/plugins/net.openchrom.xxd.control.supplier.temperature.ui/src/net/openchrom/xxd/control/supplier/temperature/ui/acquisition/ChromatogramEditorNotifier.java", "plugins/net.openchrom.xxd.control.supplier.temperature.ui/src/net/openchrom/xxd/control/supplier/temperature/ui/acquisition/ChromatogramEditorNotifier.java");
+		assertNotNull(notifier);
+		String notifierSrc = Files.readString(notifier, StandardCharsets.UTF_8);
+		assertTrue(notifierSrc.contains("extractChromatogram"), notifierSrc);
+		assertTrue(notifierSrc.contains("liveEditorLabel"), notifierSrc);
 
 		Path sequence = locate("openchrom/plugins/net.openchrom.xxd.control.supplier.temperature.ui/src/net/openchrom/xxd/control/supplier/temperature/ui/sequence/InjectionSequenceManager.java", "plugins/net.openchrom.xxd.control.supplier.temperature.ui/src/net/openchrom/xxd/control/supplier/temperature/ui/sequence/InjectionSequenceManager.java");
 		assertNotNull(sequence);
@@ -69,6 +82,7 @@ public class RealtimeAcquisitionSave_1_Test {
 		String saveText = Files.readString(saveDoc, StandardCharsets.UTF_8);
 		assertFalse(saveText.contains("The generic chromatogram editor still opens that file."), saveText);
 		assertTrue(saveText.contains("does **not** open a second chromatogram tab"), saveText);
+		assertTrue(saveText.contains("OpenBaijiuChromatogramHandler.openFile"), saveText);
 		assertTrue(saveText.contains("skipFidReadinessGate"), saveText);
 		assertTrue(saveText.contains("**one 白酒操作**") || saveText.contains("one **白酒操作**"), saveText);
 
@@ -76,6 +90,7 @@ public class RealtimeAcquisitionSave_1_Test {
 		assertNotNull(manual, "Chinese operator manual");
 		String manualText = Files.readString(manual, StandardCharsets.UTF_8);
 		assertTrue(manualText.contains("不要再为同一文件打开第二个色谱图编辑器"), manualText);
+		assertTrue(manualText.contains("沿用该页签") || manualText.contains("沿用实时页签"), manualText);
 		assertTrue(manualText.contains("右侧只保留一个"), manualText);
 		assertTrue(manualText.contains("保存后自动打开白酒工作台"), manualText);
 	}

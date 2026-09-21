@@ -31,6 +31,10 @@ public class BaijiuWorkbenchParts_1_Test {
 		assertFalse(BaijiuWorkbenchParts.showChromatogram(null, null, null));
 		assertFalse(BaijiuWorkbenchParts.hostOpenCsdEditors(null, null, null));
 		assertFalse(BaijiuWorkbenchParts.hasCsdInput(null));
+		assertEquals(null, BaijiuWorkbenchParts.findCsdPartForFile(null, null, null));
+		assertFalse(BaijiuWorkbenchParts.closeCsdPart(null, null));
+		assertFalse(BaijiuWorkbenchParts.activateCsdPart(null, null, null, null));
+		assertFalse(BaijiuWorkbenchParts.partMatchesSavedFile(null, null));
 		assertEquals(null, BaijiuWorkbenchParts.findPlantEditorStack(null, null));
 		assertEquals(null, BaijiuWorkbenchParts.findPlantChromatogramStack(null, null));
 		assertEquals(null, BaijiuWorkbenchParts.findPrimaryEditorStack(null, null));
@@ -110,7 +114,16 @@ public class BaijiuWorkbenchParts_1_Test {
 	}
 
 	@Test
-	public void dedicatedShellIdsAreStable() {
+	public void stubLivePartMatchesSavedAcquisitionFile() {
+
+		java.io.File saved = new java.io.File("/tmp/GC-FID_20260921_113323.ocb");
+		MPart live = stubPart(new Object(), "GC-FID [CSD]");
+		assertTrue(BaijiuWorkbenchParts.partMatchesSavedFile(live, saved));
+		MPart rebound = stubPart(Map.of("file", saved.getAbsolutePath()), "GC-FID_20260921_113323 [CSD]");
+		assertTrue(BaijiuWorkbenchParts.partMatchesSavedFile(rebound, saved));
+		MPart other = stubPart(Map.of("file", "/tmp/other.ocb"), "other.ocb [CSD]");
+		assertFalse(BaijiuWorkbenchParts.partMatchesSavedFile(other, saved));
+	}
 
 		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui.part.sequence", BaijiuPerspectiveIds.SEQUENCE_PART_ID);
 		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui.part.sequence.plantHome", BaijiuPerspectiveIds.SEQUENCE_HOME_PART_ID);
