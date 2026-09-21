@@ -1205,6 +1205,38 @@ public class BaijiuPilotPackaging_1_Test {
 	}
 
 	@Test
+	public void stopDoesNotOpenSecondCsdTabWhenLiveEditorOpen() throws Exception {
+
+		Path manager = locate("openchrom/plugins/net.openchrom.xxd.control.supplier.temperature.ui/src/net/openchrom/xxd/control/supplier/temperature/ui/acquisition/RealtimeAcquisitionManager.java", "plugins/net.openchrom.xxd.control.supplier.temperature.ui/src/net/openchrom/xxd/control/supplier/temperature/ui/acquisition/RealtimeAcquisitionManager.java");
+		assertNotNull(manager, "RealtimeAcquisitionManager.java");
+		String managerSrc = Files.readString(manager, StandardCharsets.UTF_8);
+		int saveAt = managerSrc.indexOf("private void saveOpenAndComplete");
+		assertTrue(saveAt > 0, managerSrc);
+		int saveEnd = managerSrc.indexOf("\n\tprivate void notifyStarted", saveAt);
+		String saveBody = managerSrc.substring(saveAt, saveEnd > saveAt ? saveEnd : saveAt + 2000);
+		assertTrue(saveBody.contains("AcquisitionChromatogramStore.save(current)"), saveBody);
+		assertTrue(saveBody.contains("openSavedFileIfNoLiveEditor(current, file, nativeEditorOpened)"), saveBody);
+		assertTrue(saveBody.contains("notifySaved(file, current, result)"), saveBody);
+		assertFalse(saveBody.contains("replaceWithFileEditor(current, file)"), "Stop/ACQ_DONE must not always open a second CSD tab");
+
+		Path editor = locate("openchrom/plugins/net.openchrom.xxd.control.supplier.temperature.ui/src/net/openchrom/xxd/control/supplier/temperature/ui/acquisition/CsdNativeEditorSupport.java", "plugins/net.openchrom.xxd.control.supplier.temperature.ui/src/net/openchrom/xxd/control/supplier/temperature/ui/acquisition/CsdNativeEditorSupport.java");
+		assertNotNull(editor);
+		String editorSrc = Files.readString(editor, StandardCharsets.UTF_8);
+		assertTrue(editorSrc.contains("liveEditorRequested || livePart != null"), editorSrc);
+		assertTrue(editorSrc.contains("skipped second tab"), editorSrc);
+
+		Path saveDoc = locate("openchrom/plugins/net.openchrom.xxd.control.supplier.temperature.ui/docs/GCWS-ACQUISITION-SAVE.md", "plugins/net.openchrom.xxd.control.supplier.temperature.ui/docs/GCWS-ACQUISITION-SAVE.md");
+		assertNotNull(saveDoc);
+		String saveText = Files.readString(saveDoc, StandardCharsets.UTF_8);
+		assertFalse(saveText.contains("The generic chromatogram editor still opens that file."), saveText);
+		assertTrue(saveText.contains("does **not** open a second chromatogram tab"), saveText);
+
+		Path manual = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/docs/\u767d\u9152FID\u8bd5\u70b9\u64cd\u4f5c\u624b\u518c.md", "plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/docs/\u767d\u9152FID\u8bd5\u70b9\u64cd\u4f5c\u624b\u518c.md");
+		assertNotNull(manual);
+		assertTrue(Files.readString(manual, StandardCharsets.UTF_8).contains("不要再为同一文件打开第二个色谱图编辑器"));
+	}
+
+	@Test
 	public void hideMenuItemDisposesWithoutSetVisible() throws Exception {
 
 		Path shellMenus = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellMenus.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellMenus.java");
