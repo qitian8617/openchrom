@@ -933,7 +933,6 @@ public final class BaijiuShellModel {
 		return created;
 	}
 
-	@SuppressWarnings({"rawtypes", "unchecked"})
 	private static MPart findExistingSingletonPart(MApplication application, EModelService modelService, MElementContainer<?> parent, String id, String label) {
 
 		if(id == null || id.isBlank()) {
@@ -960,7 +959,7 @@ public final class BaijiuShellModel {
 		if(parent == null) {
 			return null;
 		}
-		List children;
+		List<?> children;
 		try {
 			children = parent.getChildren();
 		} catch(RuntimeException | LinkageError e) {
@@ -998,20 +997,19 @@ public final class BaijiuShellModel {
 		return fallback;
 	}
 
-	@SuppressWarnings({"rawtypes", "unchecked"})
 	private static void reparentSingleton(MElementContainer<?> parent, MPart part) {
 
 		if(parent == null || part == null) {
 			return;
 		}
 		try {
-			List children = parent.getChildren();
+			List<?> children = parent.getChildren();
 			if(children != null && children.contains(part)) {
 				return;
 			}
-			MElementContainer old = part.getParent();
+			MElementContainer<?> old = part.getParent();
 			if(old != null && old != parent) {
-				List oldChildren = old.getChildren();
+				List<?> oldChildren = old.getChildren();
 				if(oldChildren != null) {
 					oldChildren.remove(part);
 				}

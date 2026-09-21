@@ -13,11 +13,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.eclipse.e4.ui.model.application.MApplication;
 import org.eclipse.e4.ui.model.application.ui.basic.MBasicFactory;
 import org.eclipse.e4.ui.model.application.ui.basic.MPart;
 import org.eclipse.e4.ui.model.application.ui.basic.MPartStack;
 import org.eclipse.e4.ui.model.application.ui.menu.MMenu;
 import org.eclipse.e4.ui.model.application.ui.menu.MMenuFactory;
+import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.junit.jupiter.api.Test;
 
 public class BaijiuShellParts_1_Test {
@@ -37,8 +39,8 @@ public class BaijiuShellParts_1_Test {
 		assertFalse(BaijiuShellParts.forceCreateGui(null, null, ""));
 		assertFalse(BaijiuShellParts.showChromatogram(null, null, null));
 		assertFalse(BaijiuShellParts.hostOpenCsdEditors(null, null, null));
-		BaijiuShellParts.dedupePlantWorkflowStack(null, null);
-		BaijiuShellParts.dedupePlantWorkflowStack((MPartStack)null, null);
+		BaijiuShellParts.dedupePlantWorkflowStack((MApplication)null, (EModelService)null);
+		BaijiuShellParts.dedupePlantWorkflowStack((MPartStack)null, (MPartStack)null);
 		assertFalse(BaijiuShellParts.hasCsdInput(null));
 		assertFalse(BaijiuShellParts.isParkedEditorArea(null));
 		assertFalse(BaijiuShellParts.embedCsdEditor(null, null, null, null));
