@@ -344,6 +344,7 @@ public final class BaijiuShellParts {
 			return;
 		}
 		if(!revealingPlantWindowChrome.compareAndSet(false, true)) {
+			BaijiuWindowIcons.apply(application, modelService);
 			return;
 		}
 		try {
@@ -360,6 +361,7 @@ public final class BaijiuShellParts {
 			ensureEditorRequiredMenus(application, modelService);
 			recreatePlantChromeWidgets(application, modelService);
 			sanitizePlantMenuContributions(application, modelService);
+			BaijiuWindowIcons.apply(application, modelService);
 		} finally {
 			revealingPlantWindowChrome.set(false);
 		}

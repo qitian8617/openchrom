@@ -240,7 +240,12 @@ public class BaijiuPilotPackaging_1_Test {
 		assertNotNull(chrome);
 		String chromeSrc = Files.readString(chrome, StandardCharsets.UTF_8);
 		assertTrue(chromeSrc.contains("CSD_EDITOR_PART_ID"), chromeSrc);
-		assertTrue(chromeSrc.contains("CHROME_EPOCH = 32"), chromeSrc);
+		assertTrue(chromeSrc.contains("CHROME_EPOCH = 33"), chromeSrc);
+		assertTrue(chromeSrc.contains("WINDOW_ICON_URI"), chromeSrc);
+		assertTrue(chromeSrc.contains("WINDOW_ICON_FILES"), chromeSrc);
+		assertTrue(chromeSrc.contains("isPlantWindowIconUri"), chromeSrc);
+		assertTrue(chromeSrc.contains("isForeignWindowIconUri"), chromeSrc);
+		assertTrue(chromeSrc.contains("icons/logo_32x32.png"), chromeSrc);
 		assertTrue(chromeSrc.contains("VIEW_MENU_RESEARCH_SHOW_VIEW_LABELS"), chromeSrc);
 		assertTrue(chromeSrc.contains("显示视图"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldAppendMenuChild"), chromeSrc);
@@ -395,12 +400,14 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(lifeCycleSrc.contains("@PreSave") || lifeCycleSrc.contains("PreSave"), lifeCycleSrc);
 		assertTrue(lifeCycleSrc.contains("preSave"), lifeCycleSrc);
 		assertTrue(lifeCycleSrc.contains("revealPlantWindowChrome"), lifeCycleSrc);
+		assertTrue(lifeCycleSrc.contains("BaijiuWindowIcons.applyIconUri"), lifeCycleSrc);
 		assertTrue(lifeCycleSrc.contains("ensureChemclipsePerspectiveStack"), lifeCycleSrc);
 
 		Path addon = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellAddon.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellAddon.java");
 		assertNotNull(addon);
 		String addonSrc = Files.readString(addon, StandardCharsets.UTF_8);
 		assertTrue(addonSrc.contains("showPlantHomeParts"), addonSrc);
+		assertTrue(addonSrc.contains("BaijiuWindowIcons.applyIconUri"), addonSrc);
 		assertTrue(addonSrc.contains("forceCreatePlantHomeGuis"), addonSrc);
 		assertTrue(addonSrc.contains("parkChromatogramEditorArea"), addonSrc);
 		assertTrue(addonSrc.contains("hideTopWindowMenus"), addonSrc);
@@ -553,6 +560,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(partsSrc.contains("hasCsdInput"), partsSrc);
 		assertTrue(partsSrc.contains("isParkedEditorArea"), partsSrc);
 		assertTrue(partsSrc.contains("revealPlantWindowChrome"), partsSrc);
+		assertTrue(partsSrc.contains("BaijiuWindowIcons.apply"), partsSrc);
 		assertTrue(partsSrc.contains("ensureEditorRequiredMenus"), partsSrc);
 		assertTrue(partsSrc.contains("applyEditorRequiredMenuVisibility"), partsSrc);
 		assertTrue(partsSrc.contains("ensureViewMenuContents"), partsSrc);
@@ -771,6 +779,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(gcOsSrc.contains("GC_WINDOW_WIDTH"), gcOsSrc);
 		assertTrue(gcOsSrc.contains("GC_WINDOW_HEIGHT"), gcOsSrc);
 		assertTrue(gcOsSrc.contains("BaijiuGcHomePart"), gcOsSrc);
+		assertTrue(gcOsSrc.contains("BaijiuWindowIcons.applyToShell"), gcOsSrc);
 
 		Path toggleGc = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/handlers/ToggleGcConsoleHandler.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/handlers/ToggleGcConsoleHandler.java");
 		assertNotNull(toggleGc, "GC sash toolbar toggle");
@@ -1114,6 +1123,88 @@ public class BaijiuPilotPackaging_1_Test {
 	}
 
 	@Test
+	public void plantWindowIconsAreLeyendNotOpenChromPeak() throws Exception {
+
+		Path ico = locate("openchrom/products/net.openchrom.rcp.compilation.baijiu.product/icons/windows/Icon.ico", "products/net.openchrom.rcp.compilation.baijiu.product/icons/windows/Icon.ico");
+		assertNotNull(ico, "plant Windows launcher ICO");
+		Path communityIco = locate("openchrom/products/net.openchrom.rcp.compilation.community.product/icons/windows/Icon.ico", "products/net.openchrom.rcp.compilation.community.product/icons/windows/Icon.ico");
+		assertNotNull(communityIco);
+		assertTrue(Files.mismatch(ico, communityIco) != -1L, "Icon.ico must not ship the community OpenChrom red peak");
+		byte[] icoBytes = Files.readAllBytes(ico);
+		assertTrue(containsBytes(icoBytes, new byte[] {(byte)0x89, 0x50, 0x4E, 0x47}), "Leyend ICO stores PNG images");
+
+		Path linuxXpm = locate("openchrom/products/net.openchrom.rcp.compilation.baijiu.product/icons/linux/Icon.xpm", "products/net.openchrom.rcp.compilation.baijiu.product/icons/linux/Icon.xpm");
+		assertNotNull(linuxXpm);
+		Path communityXpm = locate("openchrom/products/net.openchrom.rcp.compilation.community.product/icons/linux/Icon.xpm", "products/net.openchrom.rcp.compilation.community.product/icons/linux/Icon.xpm");
+		assertNotNull(communityXpm);
+		assertTrue(Files.mismatch(linuxXpm, communityXpm) != -1L, "linux Icon.xpm must not ship OpenChrom peak");
+		String xpm = Files.readString(linuxXpm, StandardCharsets.US_ASCII);
+		int red = 0;
+		int blue = 0;
+		for(String line : xpm.split("\\R")) {
+			int idx = line.indexOf("c #");
+			if(idx < 0) {
+				continue;
+			}
+			String hex = line.substring(idx + 3, Math.min(line.length(), idx + 9));
+			if(hex.length() < 6) {
+				continue;
+			}
+			int r = Integer.parseInt(hex.substring(0, 2), 16);
+			int g = Integer.parseInt(hex.substring(2, 4), 16);
+			int b = Integer.parseInt(hex.substring(4, 6), 16);
+			if(r > g + 25 && r > b + 25) {
+				red++;
+			} else if(b > r + 15) {
+				blue++;
+			}
+		}
+		assertTrue(blue > red, "linux launcher XPM must be Leyend-blue, not OpenChrom-red: blue=" + blue + " red=" + red);
+
+		Path pluginIconXpm = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/icons/icon.xpm", "plugins/net.openchrom.rcp.compilation.baijiu.ui/icons/icon.xpm");
+		Path pluginLogoXpm = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/icons/logo.xpm", "plugins/net.openchrom.rcp.compilation.baijiu.ui/icons/logo.xpm");
+		Path communityIconXpm = locate("openchrom/plugins/net.openchrom.rcp.compilation.community.ui/icons/icon.xpm", "plugins/net.openchrom.rcp.compilation.community.ui/icons/icon.xpm");
+		Path communityLogoXpm = locate("openchrom/plugins/net.openchrom.rcp.compilation.community.ui/icons/logo.xpm", "plugins/net.openchrom.rcp.compilation.community.ui/icons/logo.xpm");
+		assertNotNull(pluginIconXpm);
+		assertNotNull(pluginLogoXpm);
+		assertTrue(Files.mismatch(pluginIconXpm, communityIconXpm) != -1L);
+		assertTrue(Files.mismatch(pluginLogoXpm, communityLogoXpm) != -1L);
+
+		for(String logo : new String[] {"logo_16x16.png", "logo_32x32.png", "logo_48x48.png", "logo_64x64.png", "logo_128x128.png", "about_logo.png", "about_250x330.png"}) {
+			Path file = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/icons/" + logo, "plugins/net.openchrom.rcp.compilation.baijiu.ui/icons/" + logo);
+			assertNotNull(file, logo);
+			assertTrue(Files.size(file) > 0, logo);
+		}
+
+		Path windowIcons = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuWindowIcons.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuWindowIcons.java");
+		assertNotNull(windowIcons);
+		String windowIconsSrc = Files.readString(windowIcons, StandardCharsets.UTF_8);
+		assertTrue(windowIconsSrc.contains("setImages"), windowIconsSrc);
+		assertTrue(windowIconsSrc.contains("WINDOW_ICON_URI"), windowIconsSrc);
+		assertTrue(windowIconsSrc.contains("refusing community OpenChrom fallback"), windowIconsSrc);
+		assertFalse(windowIconsSrc.contains("community.ui/icons/logo_"), windowIconsSrc);
+
+		Path pluginXml = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/plugin.xml", "plugins/net.openchrom.rcp.compilation.baijiu.ui/plugin.xml");
+		assertNotNull(pluginXml);
+		String pluginXmlText = Files.readString(pluginXml, StandardCharsets.UTF_8);
+		assertTrue(pluginXmlText.contains("name=\"windowImages\""), pluginXmlText);
+		assertTrue(pluginXmlText.contains("icons/logo_16x16.png,icons/logo_32x32.png,icons/logo_48x48.png,icons/logo_64x64.png,icons/logo_128x128.png"), pluginXmlText);
+		assertTrue(pluginXmlText.contains("icons/about_250x330.png"), pluginXmlText);
+
+		Path product = locate("openchrom/products/net.openchrom.rcp.compilation.baijiu.product/openchrom.compilation.baijiu.product", "products/net.openchrom.rcp.compilation.baijiu.product/openchrom.compilation.baijiu.product");
+		assertNotNull(product);
+		String productXml = Files.readString(product, StandardCharsets.UTF_8);
+		assertTrue(productXml.contains("icons/windows/Icon.ico"), productXml);
+		assertTrue(productXml.contains("/net.openchrom.rcp.compilation.baijiu.ui/icons/logo_16x16.png"), productXml);
+		assertFalse(productXml.contains("community.ui/icons/logo_"), productXml);
+
+		Path macIcns = locate("openchrom/products/net.openchrom.rcp.compilation.baijiu.product/icons/mac/Icon.icns", "products/net.openchrom.rcp.compilation.baijiu.product/icons/mac/Icon.icns");
+		Path communityIcns = locate("openchrom/products/net.openchrom.rcp.compilation.community.product/icons/mac/Icon.icns", "products/net.openchrom.rcp.compilation.community.product/icons/mac/Icon.icns");
+		assertNotNull(macIcns);
+		assertTrue(Files.mismatch(macIcns, communityIcns) != -1L, "mac Icon.icns must not ship OpenChrom peak");
+	}
+
+	@Test
 	public void hideMenuItemDisposesWithoutSetVisible() throws Exception {
 
 		Path shellMenus = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellMenus.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellMenus.java");
@@ -1146,6 +1237,22 @@ public class BaijiuPilotPackaging_1_Test {
 			}
 			assertTrue(!token.contains(" ") && !token.contains("\t"), "unquoted space in <" + tag + ">: " + token);
 		}
+	}
+
+	private static boolean containsBytes(byte[] haystack, byte[] needle) {
+
+		if(haystack == null || needle == null || haystack.length < needle.length) {
+			return false;
+		}
+		outer: for(int i = 0; i <= haystack.length - needle.length; i++) {
+			for(int j = 0; j < needle.length; j++) {
+				if(haystack[i + j] != needle[j]) {
+					continue outer;
+				}
+			}
+			return true;
+		}
+		return false;
 	}
 
 	private static Path locate(String... relative) {

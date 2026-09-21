@@ -7,3 +7,7 @@
 *.yml eol=lf
 *.html eol=lf
 * text=lf
+*.png binary
+*.ico binary
+*.icns binary
+*.bmp binary
