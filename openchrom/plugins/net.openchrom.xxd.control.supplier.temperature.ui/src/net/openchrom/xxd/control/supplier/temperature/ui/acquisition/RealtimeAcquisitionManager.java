@@ -310,7 +310,7 @@ public final class RealtimeAcquisitionManager {
 			File file = result.getFile();
 			logger.info("Saved acquisition data to " + file.getAbsolutePath() + " (" + result.getFormat() + ")");
 			ChromatogramEditorNotifier.publishFinalUpdate(current);
-			CsdNativeEditorSupport.replaceWithFileEditor(current, file);
+			CsdNativeEditorSupport.openSavedFileIfNoLiveEditor(current, file, nativeEditorOpened);
 			notifySaved(file, current, result);
 			notifyCompleted(current);
 			return;

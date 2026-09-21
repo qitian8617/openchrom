@@ -645,6 +645,7 @@ public final class BaijiuShellModel {
 		MPart parallel = part(application, modelService, chromatogramStack, BaijiuShellChrome.PARALLEL_HOME_PART_ID, BaijiuShellChrome.PARALLEL_HOME_CONTRIBUTION_URI, "平行样");
 		MPart report = part(application, modelService, chromatogramStack, BaijiuShellChrome.REPORT_HOME_PART_ID, BaijiuShellChrome.REPORT_HOME_CONTRIBUTION_URI, "预览报告");
 		MPart workbench = part(application, modelService, workflow, BaijiuShellChrome.WORKBENCH_HOME_PART_ID, BaijiuShellChrome.WORKBENCH_HOME_CONTRIBUTION_URI, "白酒操作");
+		BaijiuShellParts.dedupePlantWorkflowStack(workflow, chromatogramStack);
 		MPart gc = ensureIndependentGcWindow(application, modelService);
 		return chromatogramHome != null && workbench != null && sequence != null && analysis != null && integration != null && wizard != null && batchResults != null && simpleBatch != null && parallel != null && report != null && gc != null;
 	}
@@ -898,8 +899,8 @@ public final class BaijiuShellModel {
 
 	private static MPart part(MApplication application, EModelService modelService, MElementContainer<?> parent, String id, String contributionUri, String label) {
 
-		MUIElement found = modelService.find(id, application);
-		if(found instanceof MPart existing) {
+		MPart existing = findExistingSingletonPart(application, modelService, parent, id, label);
+		if(existing != null) {
 			existing.setVisible(true);
 			existing.setToBeRendered(true);
 			if(existing.getContributionURI() == null || existing.getContributionURI().isBlank()) {
@@ -909,7 +910,11 @@ public final class BaijiuShellModel {
 			if((existing.getLabel() == null || existing.getLabel().isBlank()) && label != null && !label.isBlank()) {
 				existing.setLabel(label);
 			}
+			if(BaijiuShellChrome.WORKBENCH_HOME_PART_ID.equals(id) && (existing.getElementId() == null || existing.getElementId().isBlank() || BaijiuShellChrome.isPlantWorkbenchCloneId(existing.getElementId()))) {
+				existing.setElementId(id);
+			}
 			tagNoDetach(existing);
+			reparentSingleton(parent, existing);
 			return existing;
 		}
 		MPart created = create(MPart.class);
@@ -926,6 +931,95 @@ public final class BaijiuShellModel {
 		tagNoDetach(created);
 		addChild(parent, created, false);
 		return created;
+	}
+
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	private static MPart findExistingSingletonPart(MApplication application, EModelService modelService, MElementContainer<?> parent, String id, String label) {
+
+		if(id == null || id.isBlank()) {
+			return null;
+		}
+		MUIElement found = modelService == null ? null : modelService.find(id, application);
+		if(found instanceof MPart exact) {
+			return exact;
+		}
+		if(modelService != null && application != null) {
+			try {
+				List<MPart> listed = modelService.findElements(application, id, MPart.class, null);
+				if(listed != null) {
+					for(MPart candidate : listed) {
+						if(candidate != null) {
+							return candidate;
+						}
+					}
+				}
+			} catch(RuntimeException | LinkageError e) {
+				// search flags
+			}
+		}
+		if(parent == null) {
+			return null;
+		}
+		List children;
+		try {
+			children = parent.getChildren();
+		} catch(RuntimeException | LinkageError e) {
+			return null;
+		}
+		if(children == null) {
+			return null;
+		}
+		MPart fallback = null;
+		int fallbackPriority = 0;
+		for(Object child : children) {
+			if(!(child instanceof MPart part)) {
+				continue;
+			}
+			String childId = part.getElementId();
+			String childLabel = part.getLabel();
+			if(id.equals(childId)) {
+				return part;
+			}
+			if(id.equals(BaijiuShellChrome.plantHomePartIdFor(childId)) || BaijiuShellChrome.isGeneratedCloneOf(id, childId)) {
+				int priority = BaijiuShellChrome.plantWorkflowOpsPriority(childId, childLabel);
+				if(priority >= fallbackPriority) {
+					fallback = part;
+					fallbackPriority = Math.max(priority, 1);
+				}
+			}
+			if(BaijiuShellChrome.WORKBENCH_HOME_PART_ID.equals(id) && BaijiuShellChrome.isPlantWorkflowOpsChild(childId, childLabel)) {
+				int priority = BaijiuShellChrome.plantWorkflowOpsPriority(childId, childLabel);
+				if(priority > fallbackPriority) {
+					fallback = part;
+					fallbackPriority = priority;
+				}
+			}
+		}
+		return fallback;
+	}
+
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	private static void reparentSingleton(MElementContainer<?> parent, MPart part) {
+
+		if(parent == null || part == null) {
+			return;
+		}
+		try {
+			List children = parent.getChildren();
+			if(children != null && children.contains(part)) {
+				return;
+			}
+			MElementContainer old = part.getParent();
+			if(old != null && old != parent) {
+				List oldChildren = old.getChildren();
+				if(oldChildren != null) {
+					oldChildren.remove(part);
+				}
+			}
+			addChild(parent, part, false);
+		} catch(RuntimeException | LinkageError e) {
+			// containment not writable
+		}
 	}
 
 	private static void applyPlantChromeIcon(MUILabel labeled, String elementId) {

@@ -2351,6 +2351,89 @@ public final class BaijiuShellChrome {
 		return elementId != null && PLANT_SINGLETON_SHARED_PART_IDS.contains(elementId);
 	}
 
+	public static boolean isPlantWorkbenchHomeId(String elementId) {
+
+		return WORKBENCH_HOME_PART_ID.equals(elementId);
+	}
+
+	public static boolean isGeneratedCloneOf(String canonicalId, String elementId) {
+
+		if(canonicalId == null || canonicalId.isBlank() || elementId == null || elementId.isBlank()) {
+			return false;
+		}
+		if(!elementId.startsWith(canonicalId + ".")) {
+			return false;
+		}
+		return elementId.length() > canonicalId.length() + 1;
+	}
+
+	/**
+	 * Community shared {@link #WORKBENCH_PART_ID} or an E4 generated copy of
+	 * the plant-home 白酒操作 part ({@code *.plantHome.N}). Show View / CSD
+	 * {@code showPart} clones these into {@link #WORKFLOW_STACK_ID}.
+	 */
+	public static boolean isPlantWorkbenchCloneId(String elementId) {
+
+		if(elementId == null || elementId.isBlank() || isPlantWorkbenchHomeId(elementId)) {
+			return false;
+		}
+		if(WORKBENCH_PART_ID.equals(elementId)) {
+			return true;
+		}
+		return isGeneratedCloneOf(WORKBENCH_HOME_PART_ID, elementId) || isGeneratedCloneOf(WORKBENCH_PART_ID, elementId);
+	}
+
+	public static boolean isBaijiuOpsLabel(String label) {
+
+		if(label == null || label.isBlank()) {
+			return false;
+		}
+		String trimmed = label.trim();
+		if("白酒操作".equals(trimmed) || "%part.workbenchHome".equals(trimmed) || "part.workbenchHome".equals(trimmed)) {
+			return true;
+		}
+		return "白酒操作".equals(normalizeMenuLabel(trimmed));
+	}
+
+	public static boolean isPlantWorkflowOpsChild(String elementId, String label) {
+
+		return plantWorkflowOpsPriority(elementId, label) > 0;
+	}
+
+	/**
+	 * Canonical plant-home 白酒操作 wins (2). Community / generated clones
+	 * and ops-labeled extras are 1. Anything else is not an ops tab.
+	 */
+	public static int plantWorkflowOpsPriority(String elementId, String label) {
+
+		if(isPlantWorkbenchHomeId(elementId)) {
+			return 2;
+		}
+		if(isPlantWorkbenchCloneId(elementId) || isBaijiuOpsLabel(label)) {
+			return 1;
+		}
+		return 0;
+	}
+
+	/**
+	 * Right sash ({@link #WORKFLOW_STACK_ID}) keeps exactly one 白酒操作.
+	 */
+	public static boolean shouldKeepPlantWorkflowChild(String elementId, String label, boolean alreadyKeptOps) {
+
+		if(alreadyKeptOps) {
+			return false;
+		}
+		return plantWorkflowOpsPriority(elementId, label) > 0;
+	}
+
+	public static boolean shouldMoveOffPlantWorkflow(String elementId, String label) {
+
+		if(CSD_EDITOR_PART_ID.equals(elementId) || isGeneratedCloneOf(CSD_EDITOR_PART_ID, elementId)) {
+			return true;
+		}
+		return label != null && label.contains("[CSD]");
+	}
+
 	public static String plantHomePartIdFor(String elementId) {
 
 		if(GC_CONTROL_PART_ID.equals(elementId) || GC_HOME_PART_ID.equals(elementId)) {

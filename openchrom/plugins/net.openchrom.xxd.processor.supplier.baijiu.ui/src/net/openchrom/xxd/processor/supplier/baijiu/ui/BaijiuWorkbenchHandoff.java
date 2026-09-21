@@ -144,10 +144,24 @@ public final class BaijiuWorkbenchHandoff {
 
 		try {
 			EPartService partService = resolvePartService();
+			MApplication application = ContextAddon.getApplication();
+			EModelService modelService = ContextAddon.getModelService();
+			if(BaijiuWorkbenchParts.showWorkbench(application, modelService, partService)) {
+				return true;
+			}
 			if(partService == null) {
 				return false;
 			}
-			MPart part = partService.findPart(PART_ID);
+			MPart part = partService.findPart(BaijiuPerspectiveIds.WORKBENCH_HOME_PART_ID);
+			if(part == null) {
+				part = findSharedPart(BaijiuPerspectiveIds.WORKBENCH_HOME_PART_ID);
+			}
+			if(part == null) {
+				if(application != null && modelService != null && modelService.find(BaijiuPerspectiveIds.PLANT_HOME_PERSPECTIVE_ID, application) != null) {
+					return true;
+				}
+				part = partService.findPart(PART_ID);
+			}
 			if(part == null) {
 				part = findSharedPart();
 			}
@@ -184,17 +198,22 @@ public final class BaijiuWorkbenchHandoff {
 
 	private static MPart findSharedPart() {
 
+		return findSharedPart(PART_ID);
+	}
+
+	private static MPart findSharedPart(String partId) {
+
 		try {
 			EModelService modelService = ContextAddon.getModelService();
 			MApplication application = ContextAddon.getApplication();
-			if(modelService == null || application == null) {
+			if(modelService == null || application == null || partId == null || partId.isBlank()) {
 				return null;
 			}
-			MUIElement element = modelService.find(PART_ID, application);
+			MUIElement element = modelService.find(partId, application);
 			if(element instanceof MPart part) {
 				return part;
 			}
-			List<MPart> parts = modelService.findElements(application, PART_ID, MPart.class, null);
+			List<MPart> parts = modelService.findElements(application, partId, MPart.class, null);
 			if(parts != null && !parts.isEmpty()) {
 				return parts.get(0);
 			}

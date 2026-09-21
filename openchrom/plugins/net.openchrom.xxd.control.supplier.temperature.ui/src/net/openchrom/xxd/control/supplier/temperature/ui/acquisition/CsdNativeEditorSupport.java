@@ -24,7 +24,6 @@ import org.eclipse.chemclipse.ux.extension.xxd.ui.editors.AbstractChromatogramEd
 import org.eclipse.chemclipse.ux.extension.xxd.ui.editors.ChromatogramEditorCSD;
 import org.eclipse.e4.core.contexts.IEclipseContext;
 import org.eclipse.e4.ui.model.application.MApplication;
-import org.eclipse.e4.ui.model.application.ui.MElementContainer;
 import org.eclipse.e4.ui.model.application.ui.MDirtyable;
 import org.eclipse.e4.ui.model.application.ui.MUIElement;
 import org.eclipse.e4.ui.model.application.ui.basic.MPart;
@@ -71,8 +70,33 @@ public final class CsdNativeEditorSupport {
 	}
 
 	/**
-	 * Opens the saved chromatogram file. When already on the UI thread the
-	 * live in-memory editor is kept until the file editor is shown.
+	 * After a successful save: keep the live in-memory CSD editor when it is
+	 * already open (or was requested for this run). Open the saved file once
+	 * only when there is no live editor.
+	 *
+	 * @return true if a file editor was shown on this call
+	 */
+	public static boolean openSavedFileIfNoLiveEditor(IChromatogramCSD chromatogram, File file, boolean liveEditorRequested) {
+
+		if(chromatogram == null || file == null || !file.isFile()) {
+			logger.warn("Cannot open saved CSD file: invalid input file " + file);
+			return false;
+		}
+		Display display = Display.getDefault();
+		if(display == null) {
+			logger.warn("Cannot open saved CSD file: no SWT display");
+			return false;
+		}
+		if(display.getThread() != Thread.currentThread()) {
+			display.asyncExec(() -> openSavedFileIfNoLiveEditorOnUi(chromatogram, file, liveEditorRequested));
+			return false;
+		}
+		return openSavedFileIfNoLiveEditorOnUi(chromatogram, file, liveEditorRequested);
+	}
+
+	/**
+	 * Opens the saved chromatogram file only when no live editor is already
+	 * showing this chromatogram. Prefer {@link #openSavedFileIfNoLiveEditor}.
 	 *
 	 * @return true if the file editor was shown on this call
 	 */
@@ -107,6 +131,12 @@ public final class CsdNativeEditorSupport {
 				logger.warn("Cannot open CSD editor: E4 services unavailable (modelService="
 						+ (modelService != null) + ", application=" + (application != null)
 						+ ", partService=" + (partService != null) + ")");
+				return;
+			}
+			MPart existing = findOpenedPart(chromatogram);
+			if(existing != null) {
+				partService.showPart(existing, PartState.ACTIVATE);
+				ChromatogramEditorNotifier.publishFinalUpdate(chromatogram);
 				return;
 			}
 			try {
@@ -144,6 +174,43 @@ public final class CsdNativeEditorSupport {
 		}
 	}
 
+	private static boolean openSavedFileIfNoLiveEditorOnUi(IChromatogramCSD chromatogram, File file, boolean liveEditorRequested) {
+
+		MPart livePart = findOpenedPart(chromatogram);
+		if(liveEditorRequested || livePart != null) {
+			keepLiveEditorOnUi(chromatogram, livePart);
+			logger.info("Kept live CSD editor; skipped second tab for " + file.getAbsolutePath());
+			return false;
+		}
+		return replaceWithFileEditorOnUi(chromatogram, file);
+	}
+
+	private static void keepLiveEditorOnUi(IChromatogramCSD chromatogram, MPart livePart) {
+
+		if(livePart != null) {
+			clearDirty(livePart);
+			EPartService partService = ContextAddon.getWindowPartService();
+			if(partService != null) {
+				partService.showPart(livePart, PartState.ACTIVATE);
+			}
+			EModelService modelService = ContextAddon.getModelService();
+			MApplication application = ContextAddon.getApplication();
+			MWindow window = null;
+			if(application != null && !application.getChildren().isEmpty()) {
+				window = application.getChildren().get(0);
+			}
+			if(modelService != null && application != null && partService != null) {
+				try {
+					net.openchrom.xxd.control.supplier.temperature.ui.TemperatureControlWorkbench.showAcquisitionSurface(application, modelService, partService);
+				} catch(RuntimeException | LinkageError e) {
+					// plant stack selection above
+				}
+			}
+			refreshEditorLayout(window, livePart);
+		}
+		ChromatogramEditorNotifier.publishFinalUpdate(chromatogram);
+	}
+
 	private static boolean replaceWithFileEditorOnUi(IChromatogramCSD chromatogram, File file) {
 
 		try {
@@ -156,12 +223,17 @@ public final class CsdNativeEditorSupport {
 						+ ", partService=" + (partService != null) + ")");
 				return false;
 			}
+			MPart livePart = findOpenedPart(chromatogram);
+			if(livePart != null) {
+				keepLiveEditorOnUi(chromatogram, livePart);
+				logger.info("Kept live CSD editor; skipped second tab for " + file.getAbsolutePath());
+				return false;
+			}
 			MPartStack partStack = resolveEditorStack(modelService, application);
 			if(partStack == null) {
 				logger.warn("Cannot open saved CSD file: editor part stack not found");
 				return false;
 			}
-			MPart livePart = findOpenedPart(chromatogram);
 			MWindow window = application.getChildren().isEmpty() ? null : application.getChildren().get(0);
 			MPart part = modelService.createModelElement(MPart.class);
 			part.getTags().add(EPartService.REMOVE_ON_HIDE_TAG);
@@ -178,10 +250,6 @@ public final class CsdNativeEditorSupport {
 				net.openchrom.xxd.control.supplier.temperature.ui.TemperatureControlWorkbench.showAcquisitionSurface(application, modelService, partService);
 			} catch(RuntimeException | LinkageError e) {
 				// plant stack selection above
-			}
-			if(livePart != null && livePart != part) {
-				clearDirty(livePart);
-				removePart(livePart);
 			}
 			refreshEditorLayout(window, part);
 			schedulePostOpenFileRefresh(Display.getDefault(), partService, part, window);
@@ -204,15 +272,6 @@ public final class CsdNativeEditorSupport {
 			return stack;
 		}
 		return null;
-	}
-
-	private static void removePart(MPart part) {
-
-		part.setToBeRendered(false);
-		MElementContainer<MUIElement> parent = part.getParent();
-		if(parent != null) {
-			parent.getChildren().remove(part);
-		}
 	}
 
 	private static void clearDirty(MPart part) {
