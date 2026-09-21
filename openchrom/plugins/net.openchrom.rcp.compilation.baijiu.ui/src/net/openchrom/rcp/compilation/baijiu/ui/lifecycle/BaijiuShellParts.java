@@ -3047,13 +3047,12 @@ public final class BaijiuShellParts {
 	 * community shared workbench part, and E4 generated clones are removed.
 	 * A CSD editor that landed here is moved to 谱图/采集.
 	 */
-	@SuppressWarnings({"rawtypes", "unchecked"})
 	static void dedupePlantWorkflowStack(MPartStack workflow, MPartStack chromatogram) {
 
 		if(workflow == null) {
 			return;
 		}
-		List children;
+		List<?> children;
 		try {
 			children = workflow.getChildren();
 		} catch(RuntimeException | LinkageError e) {

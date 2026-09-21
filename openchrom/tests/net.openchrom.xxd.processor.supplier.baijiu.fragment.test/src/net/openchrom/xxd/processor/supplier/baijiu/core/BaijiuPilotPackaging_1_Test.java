@@ -1256,6 +1256,34 @@ public class BaijiuPilotPackaging_1_Test {
 		String partsDedupeSrc = Files.readString(parts, StandardCharsets.UTF_8);
 		assertTrue(partsDedupeSrc.contains("dedupePlantWorkflowStack"));
 		assertTrue(partsDedupeSrc.contains("shouldKeepPlantWorkflowChild"));
+		int stackAt = partsDedupeSrc.indexOf("static void dedupePlantWorkflowStack(MPartStack");
+		assertTrue(stackAt > 0, partsDedupeSrc);
+		int stackEnd = partsDedupeSrc.indexOf("static boolean isParkedEditorArea", stackAt);
+		String stackBody = partsDedupeSrc.substring(stackAt, stackEnd > stackAt ? stackEnd : Math.min(partsDedupeSrc.length(), stackAt + 2000));
+		assertTrue(stackBody.contains("List<?> children"), stackBody);
+		assertFalse(stackBody.contains("@SuppressWarnings"), "workflow stack children are List<?> so JDT does not need unchecked");
+
+		Path model = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellModel.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellModel.java");
+		assertNotNull(model);
+		String modelSrc = Files.readString(model, StandardCharsets.UTF_8);
+		int findAt = modelSrc.indexOf("private static MPart findExistingSingletonPart");
+		assertTrue(findAt > 0, modelSrc);
+		int reparentAt = modelSrc.indexOf("private static void reparentSingleton", findAt);
+		assertTrue(reparentAt > findAt, modelSrc);
+		String findBody = modelSrc.substring(findAt, reparentAt);
+		assertTrue(findBody.contains("List<?> children"), findBody);
+		assertFalse(findBody.contains("@SuppressWarnings"), "singleton lookup uses List<?> so JDT does not need unchecked");
+		int reparentEnd = modelSrc.indexOf("private static void applyPlantChromeIcon", reparentAt);
+		String reparentBody = modelSrc.substring(reparentAt, reparentEnd > reparentAt ? reparentEnd : Math.min(modelSrc.length(), reparentAt + 800));
+		assertTrue(reparentBody.contains("List<?> children"), reparentBody);
+		assertFalse(reparentBody.contains("@SuppressWarnings"), "reparentSingleton uses List<?> so JDT does not need unchecked");
+
+		Path partsTest = locate("openchrom/tests/net.openchrom.rcp.compilation.baijiu.fragment.test/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellParts_1_Test.java", "tests/net.openchrom.rcp.compilation.baijiu.fragment.test/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellParts_1_Test.java");
+		assertNotNull(partsTest, "BaijiuShellParts_1_Test.java");
+		String partsTestSrc = Files.readString(partsTest, StandardCharsets.UTF_8);
+		assertTrue(partsTestSrc.contains("dedupePlantWorkflowStack((MApplication)null, (EModelService)null)"), partsTestSrc);
+		assertTrue(partsTestSrc.contains("dedupePlantWorkflowStack((MPartStack)null, (MPartStack)null)"), partsTestSrc);
+		assertFalse(partsTestSrc.contains("dedupePlantWorkflowStack(null, null)"), "raw (null, null) is ambiguous across the two overloads");
 
 		Path handoff = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/BaijiuWorkbenchHandoff.java", "plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/BaijiuWorkbenchHandoff.java");
 		assertNotNull(handoff);
