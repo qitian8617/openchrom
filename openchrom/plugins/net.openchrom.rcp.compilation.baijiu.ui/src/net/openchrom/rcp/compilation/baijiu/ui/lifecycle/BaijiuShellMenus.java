@@ -773,11 +773,6 @@ public final class BaijiuShellMenus {
 			return;
 		}
 		try {
-			item.setVisible(false);
-		} catch(RuntimeException e) {
-			// older SWT / item already tearing down
-		}
-		try {
 			item.dispose();
 		} catch(RuntimeException e) {
 			// menu already closing

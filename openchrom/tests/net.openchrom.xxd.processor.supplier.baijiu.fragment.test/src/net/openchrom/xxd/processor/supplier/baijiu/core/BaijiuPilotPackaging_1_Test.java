@@ -939,6 +939,9 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(shellMenusSrc.contains("SWT.Activate"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("SWT.MenuDetect"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("shouldHidePlantChartMenuItem"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("hideMenuItem"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("item.dispose()"), shellMenusSrc);
+		assertFalse(shellMenusSrc.contains("item.setVisible"), "SWT MenuItem has no setVisible; dispose is the hide");
 		assertTrue(shellMenusSrc.contains("isChartRangeSelectionLabel"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("sanitizeChartMenuLater"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("sanitize"), shellMenusSrc);
@@ -1108,6 +1111,17 @@ public class BaijiuPilotPackaging_1_Test {
 		String cdfXml = Files.readString(cdfPrefs, StandardCharsets.UTF_8);
 		assertFalse(cdfXml.contains("org.eclipse.chemclipse.csd.converter.ui.converterPreferencePage"), cdfXml);
 		assertTrue(cdfXml.contains("net.openchrom.csd.converter.supplier.cdf.ui.preferences.preferencePage"), cdfXml);
+	}
+
+	@Test
+	public void hideMenuItemDisposesWithoutSetVisible() throws Exception {
+
+		Path shellMenus = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellMenus.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellMenus.java");
+		assertNotNull(shellMenus, "plant SWT popup sanitizer");
+		String shellMenusSrc = Files.readString(shellMenus, StandardCharsets.UTF_8);
+		assertTrue(shellMenusSrc.contains("hideMenuItem"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("item.dispose()"), shellMenusSrc);
+		assertFalse(shellMenusSrc.contains("item.setVisible"), "SWT MenuItem has no setVisible; dispose is the hide");
 	}
 
 	/**
