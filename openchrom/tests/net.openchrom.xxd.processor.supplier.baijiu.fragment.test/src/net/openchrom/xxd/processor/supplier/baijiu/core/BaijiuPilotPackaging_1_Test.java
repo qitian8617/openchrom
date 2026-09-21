@@ -1113,6 +1113,17 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(cdfXml.contains("net.openchrom.csd.converter.supplier.cdf.ui.preferences.preferencePage"), cdfXml);
 	}
 
+	@Test
+	public void hideMenuItemDisposesWithoutSetVisible() throws Exception {
+
+		Path shellMenus = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellMenus.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellMenus.java");
+		assertNotNull(shellMenus, "plant SWT popup sanitizer");
+		String shellMenusSrc = Files.readString(shellMenus, StandardCharsets.UTF_8);
+		assertTrue(shellMenusSrc.contains("hideMenuItem"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("item.dispose()"), shellMenusSrc);
+		assertFalse(shellMenusSrc.contains("item.setVisible"), "SWT MenuItem has no setVisible; dispose is the hide");
+	}
+
 	/**
 	 * PDE copies {@code <vmArgs>}/{@code <programArgs>} into the Eclipse
 	 * Application launch config by splitting on whitespace. An unquoted space
