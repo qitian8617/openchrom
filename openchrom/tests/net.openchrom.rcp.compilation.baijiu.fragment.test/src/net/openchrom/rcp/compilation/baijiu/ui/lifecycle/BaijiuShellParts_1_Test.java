@@ -13,6 +13,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.eclipse.e4.ui.model.application.ui.basic.MBasicFactory;
+import org.eclipse.e4.ui.model.application.ui.basic.MPart;
+import org.eclipse.e4.ui.model.application.ui.basic.MPartStack;
 import org.eclipse.e4.ui.model.application.ui.menu.MMenu;
 import org.eclipse.e4.ui.model.application.ui.menu.MMenuFactory;
 import org.junit.jupiter.api.Test;
@@ -34,6 +37,8 @@ public class BaijiuShellParts_1_Test {
 		assertFalse(BaijiuShellParts.forceCreateGui(null, null, ""));
 		assertFalse(BaijiuShellParts.showChromatogram(null, null, null));
 		assertFalse(BaijiuShellParts.hostOpenCsdEditors(null, null, null));
+		BaijiuShellParts.dedupePlantWorkflowStack(null, null);
+		BaijiuShellParts.dedupePlantWorkflowStack((MPartStack)null, null);
 		assertFalse(BaijiuShellParts.hasCsdInput(null));
 		assertFalse(BaijiuShellParts.isParkedEditorArea(null));
 		assertFalse(BaijiuShellParts.embedCsdEditor(null, null, null, null));
@@ -454,6 +459,64 @@ public class BaijiuShellParts_1_Test {
 		assertTrue(BaijiuShellParts.toolbarContains(toolbar, open));
 		assertFalse(BaijiuShellParts.toolbarContains(toolbar, null));
 		assertFalse(BaijiuShellParts.toolbarContains(null, open));
+	}
+
+	@Test
+	public void duplicateBaijiuOpsTabsCollapseToOneHomePart() {
+
+		MPartStack workflow = MBasicFactory.INSTANCE.createPartStack();
+		workflow.setElementId(BaijiuShellChrome.WORKFLOW_STACK_ID);
+		MPart home = MBasicFactory.INSTANCE.createPart();
+		home.setElementId(BaijiuShellChrome.WORKBENCH_HOME_PART_ID);
+		home.setLabel("白酒操作");
+		MPart clone = MBasicFactory.INSTANCE.createPart();
+		clone.setElementId(BaijiuShellChrome.WORKBENCH_PART_ID);
+		clone.setLabel("白酒操作");
+		MPart generated = MBasicFactory.INSTANCE.createPart();
+		generated.setElementId(BaijiuShellChrome.WORKBENCH_HOME_PART_ID + ".1");
+		generated.setLabel("白酒操作");
+		workflow.getChildren().add(clone);
+		workflow.getChildren().add(home);
+		workflow.getChildren().add(generated);
+		BaijiuShellParts.dedupePlantWorkflowStack(workflow, null);
+		assertEquals(1, workflow.getChildren().size());
+		assertEquals(BaijiuShellChrome.WORKBENCH_HOME_PART_ID, ((MPart)workflow.getChildren().get(0)).getElementId());
+	}
+
+	@Test
+	public void duplicateBaijiuOpsWithoutHomeKeepsOneClone() {
+
+		MPartStack workflow = MBasicFactory.INSTANCE.createPartStack();
+		MPart community = MBasicFactory.INSTANCE.createPart();
+		community.setElementId(BaijiuShellChrome.WORKBENCH_PART_ID);
+		community.setLabel("白酒操作");
+		MPart generated = MBasicFactory.INSTANCE.createPart();
+		generated.setElementId(BaijiuShellChrome.WORKBENCH_HOME_PART_ID + ".1");
+		generated.setLabel("白酒操作");
+		workflow.getChildren().add(community);
+		workflow.getChildren().add(generated);
+		BaijiuShellParts.dedupePlantWorkflowStack(workflow, null);
+		assertEquals(1, workflow.getChildren().size());
+		assertTrue(workflow.getChildren().contains(community) || workflow.getChildren().contains(generated));
+	}
+
+	@Test
+	public void csdOnPlantWorkflowMovesToChromatogramStack() {
+
+		MPartStack workflow = MBasicFactory.INSTANCE.createPartStack();
+		MPartStack chromatogram = MBasicFactory.INSTANCE.createPartStack();
+		MPart home = MBasicFactory.INSTANCE.createPart();
+		home.setElementId(BaijiuShellChrome.WORKBENCH_HOME_PART_ID);
+		home.setLabel("白酒操作");
+		MPart csd = MBasicFactory.INSTANCE.createPart();
+		csd.setElementId(BaijiuShellChrome.CSD_EDITOR_PART_ID);
+		csd.setLabel("GC-FID_1 [CSD]");
+		workflow.getChildren().add(home);
+		workflow.getChildren().add(csd);
+		BaijiuShellParts.dedupePlantWorkflowStack(workflow, chromatogram);
+		assertEquals(1, workflow.getChildren().size());
+		assertEquals(home, workflow.getChildren().get(0));
+		assertTrue(chromatogram.getChildren().contains(csd));
 	}
 
 	private static MMenu findView(MMenu main) {

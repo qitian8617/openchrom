@@ -360,6 +360,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(chromeSrc.contains("BaijiuChromatogramHomePart"), chromeSrc);
 		assertTrue(chromeSrc.contains("placeholder.plantChromatogram"), chromeSrc);
 		assertTrue(chromeSrc.contains("partstack.plantWorkflow"), chromeSrc);
+		assertTrue(chromeSrc.contains("shouldKeepPlantWorkflowChild"), chromeSrc);
+		assertTrue(chromeSrc.contains("isPlantWorkbenchCloneId"), chromeSrc);
 		assertTrue(chromeSrc.contains("partstack.plantChromatogram"), chromeSrc);
 		assertTrue(chromeSrc.contains("window.gcConsole"), chromeSrc);
 		assertTrue(chromeSrc.contains("GC_WINDOW_WIDTH = 600"), chromeSrc);
@@ -498,6 +500,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(modelSrc.contains("ensureChemclipsePerspectiveStack"), modelSrc);
 		assertTrue(modelSrc.contains("publishChemclipseStackId"), modelSrc);
 		assertTrue(modelSrc.contains("ensurePlantHome"), modelSrc);
+		assertTrue(modelSrc.contains("findExistingSingletonPart"), modelSrc);
+		assertTrue(modelSrc.contains("dedupePlantWorkflowStack"), modelSrc);
 		assertTrue(modelSrc.contains("findPerspectiveStack"), modelSrc);
 		assertTrue(modelSrc.contains("findOrCreatePerspectiveStack"), modelSrc);
 		assertTrue(modelSrc.contains("createPerspectiveStack"), modelSrc);
@@ -552,6 +556,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(partsSrc.contains("SEQUENCE_HOME_PART_ID"), partsSrc);
 		assertTrue(partsSrc.contains("ANALYSIS_HOME_PART_ID"), partsSrc);
 		assertTrue(partsSrc.contains("WORKBENCH_HOME_PART_ID"), partsSrc);
+		assertTrue(partsSrc.contains("dedupePlantWorkflowStack"), partsSrc);
+		assertTrue(partsSrc.contains("shouldKeepPlantWorkflowChild"), partsSrc);
 		assertTrue(partsSrc.contains("CHROMATOGRAM_HOME_PART_ID"), partsSrc);
 		assertTrue(partsSrc.contains("revealStackChildren"), partsSrc);
 		assertTrue(partsSrc.contains("restoreDefaultTabSelection"), partsSrc);
@@ -876,7 +882,8 @@ public class BaijiuPilotPackaging_1_Test {
 		String gcWorkbenchSrc = Files.readString(gcWorkbench, StandardCharsets.UTF_8);
 		assertTrue(gcWorkbenchSrc.contains("PLANT_HOME_PART_ID"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("activateExisting"), gcWorkbenchSrc);
-		assertTrue(gcWorkbenchSrc.contains("showAcquisitionSurface"), gcWorkbenchSrc);
+		assertTrue(gcWorkbenchSrc.contains("dedupePlantWorkflowStack"), gcWorkbenchSrc);
+		assertTrue(gcWorkbenchSrc.contains("PLANT_WORKBENCH_HOME_PART_ID"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("hostOpenCsdEditors"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("hasCsdInput"), gcWorkbenchSrc);
 		assertFalse(gcWorkbenchSrc.contains("getParent() != plantStack"), "MElementContainer<MUIElement> vs MPartStack is incomparable on Java 21");
@@ -909,6 +916,12 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(seqWorkbenchSrc.contains("SEQUENCE_HOME_PART_ID"), seqWorkbenchSrc);
 		assertTrue(seqWorkbenchSrc.contains("ANALYSIS_HOME_PART_ID"), seqWorkbenchSrc);
 		assertTrue(seqWorkbenchSrc.contains("WORKBENCH_HOME_PART_ID"), seqWorkbenchSrc);
+		int showWorkbenchAt = seqWorkbenchSrc.indexOf("public static boolean showWorkbench");
+		assertTrue(showWorkbenchAt > 0, seqWorkbenchSrc);
+		int showWorkbenchEnd = seqWorkbenchSrc.indexOf("\n\tpublic static boolean showChromatogram", showWorkbenchAt);
+		String showWorkbenchBody = seqWorkbenchSrc.substring(showWorkbenchAt, showWorkbenchEnd > showWorkbenchAt ? showWorkbenchEnd : showWorkbenchAt + 800);
+		assertTrue(showWorkbenchBody.contains("if(plant)"), showWorkbenchBody);
+		assertFalse(showWorkbenchBody.contains("|| showPart(application, modelService, partService, BaijiuPerspectiveIds.PART_ID)"), "plant must not clone community workbench into plantWorkflow");
 		assertTrue(seqWorkbenchSrc.contains("showChromatogram"), seqWorkbenchSrc);
 		assertTrue(seqWorkbenchSrc.contains("hostOpenCsdEditors"), seqWorkbenchSrc);
 		assertTrue(seqWorkbenchSrc.contains("hasCsdInput"), seqWorkbenchSrc);
@@ -1230,10 +1243,30 @@ public class BaijiuPilotPackaging_1_Test {
 		String saveText = Files.readString(saveDoc, StandardCharsets.UTF_8);
 		assertFalse(saveText.contains("The generic chromatogram editor still opens that file."), saveText);
 		assertTrue(saveText.contains("does **not** open a second chromatogram tab"), saveText);
+		assertTrue(saveText.contains("**one 白酒操作**") || saveText.contains("one **白酒操作**"), saveText);
+
+		Path chrome = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellChrome.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellChrome.java");
+		assertNotNull(chrome);
+		String chromeSrc = Files.readString(chrome, StandardCharsets.UTF_8);
+		assertTrue(chromeSrc.contains("shouldKeepPlantWorkflowChild"), chromeSrc);
+		assertTrue(chromeSrc.contains("isPlantWorkbenchCloneId"), chromeSrc);
+
+		Path parts = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellParts.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellParts.java");
+		assertNotNull(parts);
+		String partsDedupeSrc = Files.readString(parts, StandardCharsets.UTF_8);
+		assertTrue(partsDedupeSrc.contains("dedupePlantWorkflowStack"));
+		assertTrue(partsDedupeSrc.contains("shouldKeepPlantWorkflowChild"));
+
+		Path handoff = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/BaijiuWorkbenchHandoff.java", "plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/BaijiuWorkbenchHandoff.java");
+		assertNotNull(handoff);
+		String handoffSrc = Files.readString(handoff, StandardCharsets.UTF_8);
+		assertTrue(handoffSrc.contains("WORKBENCH_HOME_PART_ID"), handoffSrc);
+		assertTrue(handoffSrc.contains("PLANT_HOME_PERSPECTIVE_ID"), handoffSrc);
 
 		Path manual = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/docs/\u767d\u9152FID\u8bd5\u70b9\u64cd\u4f5c\u624b\u518c.md", "plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/docs/\u767d\u9152FID\u8bd5\u70b9\u64cd\u4f5c\u624b\u518c.md");
 		assertNotNull(manual);
 		assertTrue(Files.readString(manual, StandardCharsets.UTF_8).contains("不要再为同一文件打开第二个色谱图编辑器"));
+		assertTrue(Files.readString(manual, StandardCharsets.UTF_8).contains("只保留一个 **白酒操作**") || Files.readString(manual, StandardCharsets.UTF_8).contains("右侧只保留一个"));
 	}
 
 	@Test

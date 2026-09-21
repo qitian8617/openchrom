@@ -45,6 +45,13 @@ public final class TemperatureControlIds {
 	public static final String PRIMARY_EDITOR_STACK_ID = "org.eclipse.e4.primaryDataStack";
 	public static final String TOGGLE_GC_TOOLITEM_ID = "net.openchrom.rcp.compilation.baijiu.ui.toolbar.toggleGcConsole";
 	public static final String GC_CONSOLE_HIDDEN_TAG = "BaijiuGcConsoleHidden";
+	/**
+	 * Right-hand plant 白酒操作. Distinct from {@link #PLANT_WORKBENCH_PART_ID}
+	 * so {@code showPart} of the community shared workbench cannot clone a
+	 * second ops tab into {@link #PLANT_WORKFLOW_STACK_ID}.
+	 */
+	public static final String PLANT_WORKBENCH_HOME_PART_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.part.workbench.plantHome";
+	public static final String PLANT_WORKBENCH_PART_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.part.workbench";
 
 	private TemperatureControlIds() {
 

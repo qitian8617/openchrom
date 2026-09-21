@@ -69,13 +69,14 @@ public class RealtimeAcquisitionSave_1_Test {
 		String saveText = Files.readString(saveDoc, StandardCharsets.UTF_8);
 		assertFalse(saveText.contains("The generic chromatogram editor still opens that file."), saveText);
 		assertTrue(saveText.contains("does **not** open a second chromatogram tab"), saveText);
-		assertTrue(saveText.contains("handoff.autoOpenBaijiu"), saveText);
 		assertTrue(saveText.contains("skipFidReadinessGate"), saveText);
+		assertTrue(saveText.contains("**one 白酒操作**") || saveText.contains("one **白酒操作**"), saveText);
 
 		Path manual = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/docs/\u767d\u9152FID\u8bd5\u70b9\u64cd\u4f5c\u624b\u518c.md", "plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/docs/\u767d\u9152FID\u8bd5\u70b9\u64cd\u4f5c\u624b\u518c.md");
 		assertNotNull(manual, "Chinese operator manual");
 		String manualText = Files.readString(manual, StandardCharsets.UTF_8);
 		assertTrue(manualText.contains("不要再为同一文件打开第二个色谱图编辑器"), manualText);
+		assertTrue(manualText.contains("右侧只保留一个"), manualText);
 		assertTrue(manualText.contains("保存后自动打开白酒工作台"), manualText);
 	}
 

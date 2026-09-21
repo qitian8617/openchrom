@@ -127,6 +127,7 @@ public final class TemperatureControlWorkbench {
 			workflow.setToBeRendered(true);
 		}
 		boolean hosted = hostOpenCsdEditors(application, modelService, partService);
+		dedupePlantWorkflowStack(application, modelService);
 		if(!hosted && home != null) {
 			selectInParent(home);
 			ensurePartGui(application, home);
@@ -173,6 +174,125 @@ public final class TemperatureControlWorkbench {
 			hideEmptyChromatogramHome(home, false);
 		}
 		return hosted;
+	}
+
+	/**
+	 * Right sash is a single 白酒操作. Stop/save/CSD host must not leave a
+	 * community shared clone or a second plant-home copy on
+	 * {@link TemperatureControlIds#PLANT_WORKFLOW_STACK_ID}.
+	 */
+	static void dedupePlantWorkflowStack(MApplication application, EModelService modelService) {
+
+		if(application == null || modelService == null) {
+			return;
+		}
+		MUIElement found = modelService.find(TemperatureControlIds.PLANT_WORKFLOW_STACK_ID, application);
+		if(!(found instanceof MPartStack workflow)) {
+			return;
+		}
+		MUIElement chromatogramFound = modelService.find(TemperatureControlIds.PLANT_CHROMATOGRAM_STACK_ID, application);
+		MPartStack chromatogram = chromatogramFound instanceof MPartStack stack ? stack : null;
+		dedupePlantWorkflowStack(workflow, chromatogram);
+	}
+
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	static void dedupePlantWorkflowStack(MPartStack workflow, MPartStack chromatogram) {
+
+		if(workflow == null) {
+			return;
+		}
+		List children;
+		try {
+			children = workflow.getChildren();
+		} catch(RuntimeException | LinkageError e) {
+			return;
+		}
+		if(children == null || children.isEmpty()) {
+			return;
+		}
+		MUIElement keep = null;
+		for(Object child : children) {
+			if(child instanceof MPart part && TemperatureControlIds.PLANT_WORKBENCH_HOME_PART_ID.equals(part.getElementId())) {
+				keep = part;
+				break;
+			}
+		}
+		if(keep == null) {
+			for(Object child : children) {
+				if(child instanceof MPart part && isPlantWorkflowOpsClone(part)) {
+					keep = part;
+					break;
+				}
+			}
+		}
+		for(int i = 0; i < children.size();) {
+			Object child = children.get(i);
+			if(!(child instanceof MUIElement element)) {
+				i++;
+				continue;
+			}
+			if(element == keep) {
+				element.setVisible(true);
+				element.setToBeRendered(true);
+				i++;
+				continue;
+			}
+			if(isPlantWorkflowCsd(element)) {
+				if(chromatogram != null && element instanceof MPart part && dockIntoPlantChromatogramStack(chromatogram, part)) {
+					continue;
+				}
+				i++;
+				continue;
+			}
+			if(element instanceof MPart part && isPlantWorkflowOpsClone(part)) {
+				element.setVisible(false);
+				element.setToBeRendered(false);
+				children.remove(i);
+				continue;
+			}
+			i++;
+		}
+		if(keep != null) {
+			selectInParent(keep);
+		}
+	}
+
+	static boolean isPlantWorkflowOpsClone(MPart part) {
+
+		if(part == null) {
+			return false;
+		}
+		String id = part.getElementId();
+		if(TemperatureControlIds.PLANT_WORKBENCH_HOME_PART_ID.equals(id)) {
+			return false;
+		}
+		if(TemperatureControlIds.PLANT_WORKBENCH_PART_ID.equals(id)) {
+			return true;
+		}
+		if(id != null && id.startsWith(TemperatureControlIds.PLANT_WORKBENCH_HOME_PART_ID + ".")) {
+			return true;
+		}
+		if(id != null && id.startsWith(TemperatureControlIds.PLANT_WORKBENCH_PART_ID + ".") && !id.startsWith(TemperatureControlIds.PLANT_WORKBENCH_HOME_PART_ID)) {
+			return true;
+		}
+		String label = part.getLabel();
+		return label != null && (label.contains("白酒操作") || label.contains("part.workbenchHome"));
+	}
+
+	static boolean isPlantWorkflowCsd(MUIElement element) {
+
+		if(element == null) {
+			return false;
+		}
+		String id = element.getElementId();
+		if(TemperatureControlIds.CSD_EDITOR_PART_ID.equals(id) || (id != null && id.startsWith(TemperatureControlIds.CSD_EDITOR_PART_ID + "."))) {
+			return true;
+		}
+		if(element instanceof MPart part) {
+			String label = part.getLabel();
+			return label != null && label.contains("[CSD]");
+		}
+		return false;
 	}
 
 	/**

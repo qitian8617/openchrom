@@ -11,7 +11,13 @@ package net.openchrom.xxd.control.supplier.temperature.ui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.eclipse.e4.ui.model.application.MApplication;
+import org.eclipse.e4.ui.model.application.ui.basic.MBasicFactory;
+import org.eclipse.e4.ui.model.application.ui.basic.MPart;
+import org.eclipse.e4.ui.model.application.ui.basic.MPartStack;
+import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.junit.jupiter.api.Test;
 
 public class TemperatureControlWorkbench_1_Test {
@@ -34,6 +40,8 @@ public class TemperatureControlWorkbench_1_Test {
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.toolbar.toggleGcConsole", TemperatureControlIds.TOGGLE_GC_TOOLITEM_ID);
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.window.gcConsole", TemperatureControlIds.PLANT_GC_WINDOW_ID);
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.partstack.gcHome", TemperatureControlIds.PLANT_GC_STACK_ID);
+		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui.part.workbench.plantHome", TemperatureControlIds.PLANT_WORKBENCH_HOME_PART_ID);
+		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui.part.workbench", TemperatureControlIds.PLANT_WORKBENCH_PART_ID);
 	}
 
 	@Test
@@ -43,6 +51,37 @@ public class TemperatureControlWorkbench_1_Test {
 		assertFalse(TemperatureControlWorkbench.activateExisting(null, null, null, TemperatureControlIds.PLANT_HOME_PART_ID, TemperatureControlIds.PLANT_HOME_PERSPECTIVE_ID));
 		assertFalse(TemperatureControlWorkbench.showAcquisitionSurface(null, null, null));
 		assertFalse(TemperatureControlWorkbench.hostOpenCsdEditors(null, null, null));
+		TemperatureControlWorkbench.dedupePlantWorkflowStack((MApplication)null, (EModelService)null);
+		TemperatureControlWorkbench.dedupePlantWorkflowStack((MPartStack)null, null);
+		assertFalse(TemperatureControlWorkbench.isPlantWorkflowOpsClone(null));
+		assertFalse(TemperatureControlWorkbench.isPlantWorkflowCsd(null));
+		MPart home = MBasicFactory.INSTANCE.createPart();
+		home.setElementId(TemperatureControlIds.PLANT_WORKBENCH_HOME_PART_ID);
+		home.setLabel("白酒操作");
+		assertFalse(TemperatureControlWorkbench.isPlantWorkflowOpsClone(home));
+		MPart community = MBasicFactory.INSTANCE.createPart();
+		community.setElementId(TemperatureControlIds.PLANT_WORKBENCH_PART_ID);
+		community.setLabel("白酒操作");
+		assertTrue(TemperatureControlWorkbench.isPlantWorkflowOpsClone(community));
+		MPart generated = MBasicFactory.INSTANCE.createPart();
+		generated.setElementId(TemperatureControlIds.PLANT_WORKBENCH_HOME_PART_ID + ".1");
+		generated.setLabel("白酒操作");
+		assertTrue(TemperatureControlWorkbench.isPlantWorkflowOpsClone(generated));
+		MPart communityClone = MBasicFactory.INSTANCE.createPart();
+		communityClone.setElementId(TemperatureControlIds.PLANT_WORKBENCH_PART_ID + ".1");
+		communityClone.setLabel("白酒操作");
+		assertTrue(TemperatureControlWorkbench.isPlantWorkflowOpsClone(communityClone));
+		MPart csd = MBasicFactory.INSTANCE.createPart();
+		csd.setElementId(TemperatureControlIds.CSD_EDITOR_PART_ID);
+		csd.setLabel("GC-FID_1 [CSD]");
+		assertTrue(TemperatureControlWorkbench.isPlantWorkflowCsd(csd));
+		MPartStack workflow = MBasicFactory.INSTANCE.createPartStack();
+		workflow.getChildren().add(community);
+		workflow.getChildren().add(home);
+		workflow.getChildren().add(generated);
+		TemperatureControlWorkbench.dedupePlantWorkflowStack(workflow, null);
+		assertEquals(1, workflow.getChildren().size());
+		assertEquals(home, workflow.getChildren().get(0));
 		assertFalse(TemperatureControlWorkbench.hasCsdInput(null));
 		assertFalse(TemperatureControlWorkbench.embedCsdEditor(null, null, null, null));
 		assertFalse(TemperatureControlWorkbench.dockOffWorkflowTabs(null, null, null, null));

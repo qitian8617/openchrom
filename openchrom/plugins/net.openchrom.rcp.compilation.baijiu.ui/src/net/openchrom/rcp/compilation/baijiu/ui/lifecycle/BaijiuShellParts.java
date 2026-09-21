@@ -110,6 +110,7 @@ public final class BaijiuShellParts {
 		boolean workbench = showPart(application, modelService, partService, BaijiuShellChrome.WORKBENCH_HOME_PART_ID, null);
 		boolean chromatogram = revealChromatogramHost(application, modelService, partService);
 		forceCreatePlantHomeGuis(application, modelService);
+		dedupePlantWorkflowStack(application, modelService);
 		revealPlantWindowChrome(application, modelService);
 		syncGcToggleToolItem(application, modelService);
 		if(!BaijiuShellModel.plantHomeSurfacePresent(application, modelService)) {
@@ -151,6 +152,7 @@ public final class BaijiuShellParts {
 		showElementAndAncestors(modelService.find(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, application));
 		showElementAndAncestors(modelService.find(BaijiuShellChrome.WORKFLOW_STACK_ID, application));
 		boolean hosted = hostOpenCsdEditors(application, modelService, partService);
+		dedupePlantWorkflowStack(application, modelService);
 		if(!hosted) {
 			MPart home = findPart(modelService, application, BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID);
 			if(home != null) {
@@ -350,6 +352,7 @@ public final class BaijiuShellParts {
 		try {
 			preferPlantLookupWindow(application, modelService);
 			ensurePlantChromeModel(application, modelService);
+			dedupePlantWorkflowStack(application, modelService);
 			forceShowPlantWindowChrome(application, modelService);
 			reattachWindowMainMenu(application, modelService);
 			ensureEditorRequiredMenus(application, modelService);
@@ -2783,6 +2786,7 @@ public final class BaijiuShellParts {
 		if(hosted && last != null) {
 			hideEmptyChromatogramHome(home, true);
 			BaijiuShellSelection.selectInParent(last);
+			dedupePlantWorkflowStack(application, modelService);
 			revealPlantWindowChrome(application, modelService);
 		} else {
 			hideEmptyChromatogramHome(home, false);
@@ -3023,6 +3027,86 @@ public final class BaijiuShellParts {
 				element.setVisible(true);
 				element.setToBeRendered(true);
 			}
+		}
+	}
+
+	static void dedupePlantWorkflowStack(MApplication application, EModelService modelService) {
+
+		if(application == null || modelService == null) {
+			return;
+		}
+		MUIElement workflow = modelService.find(BaijiuShellChrome.WORKFLOW_STACK_ID, application);
+		MUIElement chromatogram = modelService.find(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, application);
+		if(workflow instanceof MPartStack workflowStack) {
+			dedupePlantWorkflowStack(workflowStack, chromatogram instanceof MPartStack chromatogramStack ? chromatogramStack : null);
+		}
+	}
+
+	/**
+	 * Right sash is a single 白酒操作 tab. Extra plant-home copies, the
+	 * community shared workbench part, and E4 generated clones are removed.
+	 * A CSD editor that landed here is moved to 谱图/采集.
+	 */
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	static void dedupePlantWorkflowStack(MPartStack workflow, MPartStack chromatogram) {
+
+		if(workflow == null) {
+			return;
+		}
+		List children;
+		try {
+			children = workflow.getChildren();
+		} catch(RuntimeException | LinkageError e) {
+			return;
+		}
+		if(children == null || children.isEmpty()) {
+			return;
+		}
+		MUIElement keep = null;
+		int keepPriority = 0;
+		for(Object child : children) {
+			if(!(child instanceof MUIElement element)) {
+				continue;
+			}
+			int priority = BaijiuShellChrome.plantWorkflowOpsPriority(element.getElementId(), labelOf(element));
+			if(priority > keepPriority) {
+				keep = element;
+				keepPriority = priority;
+			}
+		}
+		boolean alreadyKeptOps = false;
+		for(int i = 0; i < children.size();) {
+			Object child = children.get(i);
+			if(!(child instanceof MUIElement element)) {
+				i++;
+				continue;
+			}
+			String id = element.getElementId();
+			String label = labelOf(element);
+			if(element == keep) {
+				element.setVisible(true);
+				element.setToBeRendered(true);
+				alreadyKeptOps = true;
+				i++;
+				continue;
+			}
+			if(BaijiuShellChrome.shouldMoveOffPlantWorkflow(id, label)) {
+				if(chromatogram != null && element instanceof MPart part && dockIntoPlantChromatogramStack(chromatogram, part)) {
+					continue;
+				}
+				i++;
+				continue;
+			}
+			if(!BaijiuShellChrome.shouldKeepPlantWorkflowChild(id, label, alreadyKeptOps) && BaijiuShellChrome.isPlantWorkflowOpsChild(id, label)) {
+				element.setVisible(false);
+				element.setToBeRendered(false);
+				children.remove(i);
+				continue;
+			}
+			i++;
+		}
+		if(keep != null) {
+			BaijiuShellSelection.selectInParent(keep);
 		}
 	}
 

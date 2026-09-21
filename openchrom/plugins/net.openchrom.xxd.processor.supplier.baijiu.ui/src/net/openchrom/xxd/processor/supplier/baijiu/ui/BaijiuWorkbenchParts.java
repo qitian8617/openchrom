@@ -54,9 +54,13 @@ public final class BaijiuWorkbenchParts {
 	public static boolean showWorkbench(MApplication application, EModelService modelService, EPartService partService) {
 
 		boolean plant = switchPerspective(application, modelService, partService, BaijiuPerspectiveIds.PLANT_HOME_PERSPECTIVE_ID);
-		boolean shown = showPart(application, modelService, partService, BaijiuPerspectiveIds.WORKBENCH_HOME_PART_ID) //
-				|| showPart(application, modelService, partService, BaijiuPerspectiveIds.PART_ID);
-		return shown || plant;
+		if(showPart(application, modelService, partService, BaijiuPerspectiveIds.WORKBENCH_HOME_PART_ID)) {
+			return true;
+		}
+		if(plant) {
+			return true;
+		}
+		return showPart(application, modelService, partService, BaijiuPerspectiveIds.PART_ID);
 	}
 
 	public static boolean showChromatogram(MApplication application, EModelService modelService, EPartService partService) {
