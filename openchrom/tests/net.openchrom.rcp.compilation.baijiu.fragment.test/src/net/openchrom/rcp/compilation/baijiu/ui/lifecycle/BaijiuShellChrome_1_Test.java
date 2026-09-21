@@ -425,7 +425,17 @@ public class BaijiuShellChrome_1_Test {
 		assertTrue(BaijiuShellChrome.WINDOW_ICON_URI.startsWith(BaijiuShellChrome.WINDOW_ICON_PLUGIN_PREFIX));
 		assertEquals(5, BaijiuShellChrome.WINDOW_ICON_FILES.size());
 		assertEquals(5, BaijiuShellChrome.WINDOW_ICON_URIS.size());
+		assertEquals(BaijiuShellChrome.WINDOW_ICON_PLUGIN_PREFIX + "logo_32x32.png", BaijiuShellChrome.WINDOW_ICON_URI);
+		assertTrue(BaijiuShellChrome.WINDOW_ICON_FILES.contains("icons/logo_16x16.png"));
+		assertTrue(BaijiuShellChrome.WINDOW_ICON_FILES.contains("icons/logo_32x32.png"));
+		assertTrue(BaijiuShellChrome.WINDOW_ICON_FILES.contains("icons/logo_48x48.png"));
+		assertTrue(BaijiuShellChrome.WINDOW_ICON_FILES.contains("icons/logo_64x64.png"));
 		assertTrue(BaijiuShellChrome.WINDOW_ICON_FILES.contains("icons/logo_128x128.png"));
+		for(int i = 0; i < BaijiuShellChrome.WINDOW_ICON_FILES.size(); i++) {
+			String file = BaijiuShellChrome.WINDOW_ICON_FILES.get(i);
+			assertTrue(file.startsWith("icons/"), file);
+			assertEquals(BaijiuShellChrome.WINDOW_ICON_PLUGIN_PREFIX + file.substring("icons/".length()), BaijiuShellChrome.WINDOW_ICON_URIS.get(i));
+		}
 		assertFalse(BaijiuShellChrome.WINDOW_ICON_URI.contains("community.ui"));
 		assertFalse(BaijiuShellChrome.WINDOW_ICON_URI.contains("org.eclipse.chemclipse.rcp.ui.icons"));
 		assertTrue(BaijiuShellChrome.isForeignWindowIconUri(null));

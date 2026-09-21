@@ -17,6 +17,7 @@ import java.util.List;
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.e4.ui.model.application.MApplication;
+import org.eclipse.e4.ui.model.application.ui.MUIElement;
 import org.eclipse.e4.ui.model.application.ui.MUILabel;
 import org.eclipse.e4.ui.model.application.ui.basic.MWindow;
 import org.eclipse.e4.ui.workbench.modeling.EModelService;
@@ -52,8 +53,7 @@ public final class BaijiuWindowIcons {
 		if(application == null) {
 			return;
 		}
-		MWindow plant = BaijiuShellParts.plantWindow(application, modelService);
-		applyIconUri(plant);
+		applyIconUri(plantWindow(application, modelService));
 		try {
 			List<MWindow> children = application.getChildren();
 			if(children == null) {
@@ -80,15 +80,11 @@ public final class BaijiuWindowIcons {
 			return;
 		}
 		try {
-			window.setIconURI(uri);
-		} catch(RuntimeException | LinkageError e) {
-			try {
-				if(window instanceof MUILabel labeled) {
-					labeled.setIconURI(uri);
-				}
-			} catch(RuntimeException | LinkageError inner) {
-				// iconURI not writable
+			if(window instanceof MUILabel labeled) {
+				labeled.setIconURI(uri);
 			}
+		} catch(RuntimeException | LinkageError e) {
+			// iconURI not writable on this E4 model
 		}
 	}
 
@@ -124,7 +120,7 @@ public final class BaijiuWindowIcons {
 			if(images == null || images.length == 0) {
 				return;
 			}
-			MWindow plant = BaijiuShellParts.plantWindow(application, modelService);
+			MWindow plant = plantWindow(application, modelService);
 			if(plant != null) {
 				applyToWidget(plant.getWidget(), images);
 			}
@@ -204,6 +200,42 @@ public final class BaijiuWindowIcons {
 			BaijiuShellLog.warn("Plant window icon could not load: " + path, e);
 			return null;
 		}
+	}
+
+	private static MWindow plantWindow(MApplication application, EModelService modelService) {
+
+		if(application == null) {
+			return null;
+		}
+		if(modelService != null) {
+			try {
+				MUIElement found = modelService.find(BaijiuShellChrome.MAIN_WINDOW_ID, application);
+				if(found instanceof MWindow window && !BaijiuShellChrome.GC_WINDOW_ID.equals(window.getElementId())) {
+					return window;
+				}
+			} catch(RuntimeException | LinkageError e) {
+				// older E4
+			}
+		}
+		try {
+			List<MWindow> children = application.getChildren();
+			if(children == null) {
+				return null;
+			}
+			for(MWindow window : children) {
+				if(window != null && BaijiuShellChrome.MAIN_WINDOW_ID.equals(window.getElementId())) {
+					return window;
+				}
+			}
+			for(MWindow window : children) {
+				if(window != null && !BaijiuShellChrome.GC_WINDOW_ID.equals(window.getElementId())) {
+					return window;
+				}
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// older E4 / immutable children
+		}
+		return null;
 	}
 
 	static InputStream open(String path) {

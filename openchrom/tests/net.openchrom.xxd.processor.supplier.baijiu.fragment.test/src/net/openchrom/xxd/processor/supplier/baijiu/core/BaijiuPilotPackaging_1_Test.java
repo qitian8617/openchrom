@@ -1181,8 +1181,11 @@ public class BaijiuPilotPackaging_1_Test {
 		String windowIconsSrc = Files.readString(windowIcons, StandardCharsets.UTF_8);
 		assertTrue(windowIconsSrc.contains("setImages"), windowIconsSrc);
 		assertTrue(windowIconsSrc.contains("WINDOW_ICON_URI"), windowIconsSrc);
+		assertTrue(windowIconsSrc.contains("WINDOW_ICON_FILES"), windowIconsSrc);
+		assertTrue(windowIconsSrc.contains("labeled.setIconURI"), windowIconsSrc);
 		assertTrue(windowIconsSrc.contains("refusing community OpenChrom fallback"), windowIconsSrc);
 		assertFalse(windowIconsSrc.contains("community.ui/icons/logo_"), windowIconsSrc);
+		assertFalse(windowIconsSrc.contains("BaijiuShellParts"), windowIconsSrc);
 
 		Path pluginXml = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/plugin.xml", "plugins/net.openchrom.rcp.compilation.baijiu.ui/plugin.xml");
 		assertNotNull(pluginXml);
