@@ -883,6 +883,12 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(gcWorkbenchSrc.contains("PLANT_HOME_PART_ID"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("activateExisting"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("dedupePlantWorkflowStack"), gcWorkbenchSrc);
+		int gcStackAt = gcWorkbenchSrc.indexOf("static void dedupePlantWorkflowStack(MPartStack");
+		assertTrue(gcStackAt > 0, gcWorkbenchSrc);
+		int gcStackEnd = gcWorkbenchSrc.indexOf("static boolean isPlantWorkflowOpsClone", gcStackAt);
+		String gcStackBody = gcWorkbenchSrc.substring(gcStackAt, gcStackEnd > gcStackAt ? gcStackEnd : Math.min(gcWorkbenchSrc.length(), gcStackAt + 2000));
+		assertTrue(gcStackBody.contains("List<?> children"), gcStackBody);
+		assertFalse(gcStackBody.contains("@SuppressWarnings"), "workflow stack children are List<?> so JDT does not need unchecked");
 		assertTrue(gcWorkbenchSrc.contains("PLANT_WORKBENCH_HOME_PART_ID"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("hostOpenCsdEditors"), gcWorkbenchSrc);
 		assertTrue(gcWorkbenchSrc.contains("hasCsdInput"), gcWorkbenchSrc);
