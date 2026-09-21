@@ -195,13 +195,12 @@ public final class TemperatureControlWorkbench {
 		dedupePlantWorkflowStack(workflow, chromatogram);
 	}
 
-	@SuppressWarnings({"rawtypes", "unchecked"})
 	static void dedupePlantWorkflowStack(MPartStack workflow, MPartStack chromatogram) {
 
 		if(workflow == null) {
 			return;
 		}
-		List children;
+		List<?> children;
 		try {
 			children = workflow.getChildren();
 		} catch(RuntimeException | LinkageError e) {
