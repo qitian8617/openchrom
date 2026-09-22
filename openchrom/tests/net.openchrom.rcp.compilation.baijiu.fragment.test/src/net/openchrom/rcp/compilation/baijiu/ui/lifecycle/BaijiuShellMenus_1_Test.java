@@ -51,5 +51,7 @@ public class BaijiuShellMenus_1_Test {
 		assertTrue(BaijiuShellChrome.shouldHidePlantChartMenuItem("峰检测器"));
 		assertFalse(BaijiuShellChrome.shouldHidePlantChartMenuItem("重置图表"));
 		BaijiuShellMenus.hideChromatogramTargetLabelControls();
+		BaijiuShellMenus.hideChromatogramPolarityControls();
+		BaijiuShellMenus.lockChromatogramSeriesColorColumns();
 	}
 }

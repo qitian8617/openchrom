@@ -277,6 +277,11 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(chromeSrc.contains("TARGET_LABEL_SETTINGS_TITLE"), chromeSrc);
 		assertTrue(chromeSrc.contains("CHROMATOGRAM_TARGET_LABEL_TOOLTIP"), chromeSrc);
 		assertTrue(chromeSrc.contains("isChromatogramTargetLabelControl"), chromeSrc);
+		assertTrue(chromeSrc.contains("isSeparationColumnCombo"), chromeSrc);
+		assertTrue(chromeSrc.contains("isChromatogramPolarityCompanionButton"), chromeSrc);
+		assertTrue(chromeSrc.contains("looksLikeChromatogramSeriesLegend"), chromeSrc);
+		assertTrue(chromeSrc.contains("SEPARATION_COLUMN_TOOLTIP"), chromeSrc);
+		assertFalse(chromeSrc.contains("CHROME_EPOCH = 36"), "polarity widgets are SWT-only; do not bump chrome epoch");
 		assertTrue(chromeSrc.contains("shouldCloseTargetLabelSettingsShell"), chromeSrc);
 		assertTrue(chromeSrc.contains("PLANT_ABOUT_MENU_ID"), chromeSrc);
 		assertTrue(chromeSrc.contains("ABOUT_DIRECT_HANDLER_URI"), chromeSrc);
@@ -436,6 +441,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(addonSrc.contains("shouldSanitizePlantMenuChildrenAfterChange"), addonSrc);
 		assertTrue(addonSrc.contains("scheduleSanitizePlantMenus"), addonSrc);
 		assertTrue(addonSrc.contains("hideChromatogramTargetLabelControls"), addonSrc);
+		assertTrue(addonSrc.contains("hideChromatogramPolarityControls"), addonSrc);
+		assertTrue(addonSrc.contains("lockChromatogramSeriesColorColumns"), addonSrc);
 		assertTrue(addonSrc.contains("sanitizeGeneration"), addonSrc);
 		assertTrue(addonSrc.contains("shouldSanitizeAfterPartActivation"), addonSrc);
 		assertTrue(addonSrc.contains("shouldSanitizeAfterVisibilityChange"), addonSrc);
@@ -1024,6 +1031,16 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(shellMenusSrc.contains("closeTargetLabelSettingsShell"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("isChromatogramTargetLabelControl"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("disposeIfTargetLabelSettings"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("hideChromatogramPolarityControls"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("concealSeparationColumnCombo"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("isSeparationColumnCombo"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("isChromatogramPolarityCompanionButton"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("lockChromatogramSeriesColorColumns"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("lockSeriesLegendColorColumn"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("setEditingSupport"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("org.eclipse.jface.columnViewer"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("reinforceHiddenTargetLabel"), shellMenusSrc);
+		assertFalse(shellMenusSrc.contains("Image.dispose"), "sanitizer must not dispose Images owned by cell editors or shared icons");
 
 		Path seqPart = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/parts/BaijiuSequencePart.java", "plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/parts/BaijiuSequencePart.java");
 		assertNotNull(seqPart);

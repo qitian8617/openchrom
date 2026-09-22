@@ -14,9 +14,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.jface.viewers.ViewerColumn;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
@@ -26,6 +28,7 @@ import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.ToolBar;
@@ -51,12 +54,26 @@ import net.openchrom.rcp.compilation.baijiu.ui.handlers.BaijiuOpenSelectViewHand
  * in ChemClipse {@code ExtendedChromatogramUI.createButtonTargetLabels}
  * with no E4 id. Dispose that button, any menu item that carries the
  * same tooltip or wizard title, and a shell titled Target Label Settings,
- * on Show / Paint and on every plant-menu sanitize.
+ * on Show / Paint and on every plant-menu sanitize. The same pass drops
+ * the separation-column polarity group (info toggle, {@code semi-polar}
+ * combo, adjacent +) and collapses the series-legend color column so
+ * {@code ColorCellEditor} never runs. Widget dispose does not dispose
+ * Images: button icons are shared, and a live cell-editor swatch stays
+ * owned by JFace until the editor itself is disposed.
  */
 public final class BaijiuShellMenus {
 
 	private static final Object LOCK = new Object();
 	private static final String TARGET_LABEL_HIDDEN = "net.openchrom.baijiu.targetLabelHidden";
+	private static final String TARGET_LABEL_DISPOSE_QUEUED = "net.openchrom.baijiu.targetLabelDisposeQueued";
+	private static final String POLARITY_HIDDEN = "net.openchrom.baijiu.polarityHidden";
+	private static final String POLARITY_DISPOSE_QUEUED = "net.openchrom.baijiu.polarityDisposeQueued";
+	private static final String SERIES_COLOR_LOCKED = "net.openchrom.baijiu.seriesColorLocked";
+	/**
+	 * {@code ViewerColumn.COLUMN_VIEWER_KEY} ({@code Policy.JFACE + ".columnViewer"}).
+	 * Package-private in JFace; the string is the public widget data key.
+	 */
+	private static final String JFACE_COLUMN_VIEWER = "org.eclipse.jface.columnViewer";
 	private static final String SELECT_VIEW_FALLBACK = "net.openchrom.baijiu.selectViewFallback";
 	private static final String ABOUT_FALLBACK = "net.openchrom.baijiu.aboutFallback";
 	private static final String CHART_SANITIZE_RETRY = "net.openchrom.baijiu.chartSanitizeRetry";
@@ -84,6 +101,10 @@ public final class BaijiuShellMenus {
 					if(event.type == SWT.Paint) {
 						if(event.widget instanceof Button button && !button.isDisposed()) {
 							concealTargetLabelButton(button);
+						} else if(event.widget instanceof Combo combo && !combo.isDisposed()) {
+							concealSeparationColumnCombo(combo);
+						} else if(event.widget instanceof Table table && !table.isDisposed()) {
+							lockSeriesLegendColorColumn(table);
 						}
 						return;
 					}
@@ -107,12 +128,16 @@ public final class BaijiuShellMenus {
 						}
 					} else if(event.widget instanceof Button button && !button.isDisposed()) {
 						concealTargetLabelButton(button);
+					} else if(event.widget instanceof Combo combo && !combo.isDisposed()) {
+						concealSeparationColumnCombo(combo);
 					} else if(event.widget instanceof ToolBar toolBar && !toolBar.isDisposed()) {
 						concealTargetLabelToolBar(toolBar);
 					} else if(event.type == SWT.Show && event.widget instanceof Composite composite && !composite.isDisposed()) {
 						hideTargetLabelButtonsIn(composite);
+						hidePolarityControlsIn(composite, 0);
 					} else if(event.widget instanceof Table table && !table.isDisposed()) {
 						sanitizeSelectViewTable(table);
+						lockSeriesLegendColorColumn(table);
 					} else if(event.widget instanceof Tree tree && !tree.isDisposed()) {
 						sanitizeSelectViewTree(tree);
 					} else if(event.type == SWT.MenuDetect && event.widget instanceof Control control && !control.isDisposed()) {
@@ -835,6 +860,405 @@ public final class BaijiuShellMenus {
 		}
 	}
 
+	/**
+	 * Drop the separation-column polarity combo and the adjacent i / +
+	 * buttons from every live shell. Headless fragment tests have no
+	 * current display and return. Does not dispose Images.
+	 */
+	public static void hideChromatogramPolarityControls() {
+
+		try {
+			Display display = Display.getCurrent();
+			if(display == null || display.isDisposed()) {
+				return;
+			}
+			Shell[] shells = display.getShells();
+			for(int i = 0; i < shells.length; i++) {
+				Shell shell = shells[i];
+				if(shell == null || shell.isDisposed()) {
+					continue;
+				}
+				hidePolarityControlsIn(shell, 0);
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// headless fragment tests / Display not ready
+		}
+	}
+
+	/**
+	 * Collapse the series-legend color column and clear its
+	 * {@code EditingSupport} so a click cannot open {@code ColorCellEditor}.
+	 * The swatch {@code Image} is allocated inside
+	 * {@code ColorCellEditor.updateContents}; SWT non-dispose tracking then
+	 * reports {@code Resource.initNonDisposeTracking}. Leaving the column
+	 * non-editable means that image is never created. This method does not
+	 * dispose Images owned by a cell editor that is already open.
+	 */
+	public static void lockChromatogramSeriesColorColumns() {
+
+		try {
+			Display display = Display.getCurrent();
+			if(display == null || display.isDisposed()) {
+				return;
+			}
+			Shell[] shells = display.getShells();
+			for(int i = 0; i < shells.length; i++) {
+				Shell shell = shells[i];
+				if(shell == null || shell.isDisposed()) {
+					continue;
+				}
+				lockSeriesColorColumnsIn(shell, 0);
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// headless fragment tests / Display not ready
+		}
+	}
+
+	private static void hidePolarityControlsIn(Composite composite, int depth) {
+
+		if(composite == null || composite.isDisposed() || depth > 24) {
+			return;
+		}
+		Control[] children;
+		try {
+			children = composite.getChildren();
+		} catch(RuntimeException e) {
+			return;
+		}
+		for(int i = 0; i < children.length; i++) {
+			Control child = children[i];
+			if(child instanceof Combo combo) {
+				concealSeparationColumnCombo(combo);
+			} else if(child instanceof Composite nested) {
+				hidePolarityControlsIn(nested, depth + 1);
+			}
+		}
+	}
+
+	private static void lockSeriesColorColumnsIn(Composite composite, int depth) {
+
+		if(composite == null || composite.isDisposed() || depth > 24) {
+			return;
+		}
+		if(composite instanceof Table table) {
+			lockSeriesLegendColorColumn(table);
+		}
+		Control[] children;
+		try {
+			children = composite.getChildren();
+		} catch(RuntimeException e) {
+			return;
+		}
+		for(int i = 0; i < children.length; i++) {
+			if(children[i] instanceof Composite nested) {
+				lockSeriesColorColumnsIn(nested, depth + 1);
+			}
+		}
+	}
+
+	/**
+	 * Dispose the polarity combo and every companion button on the same
+	 * toolbar (info toggle, references / + , Edit Columns). The combo's
+	 * {@code SeparationColumnUI} ancestor goes with it so an add button
+	 * nested inside the column widget cannot remain.
+	 */
+	private static void concealSeparationColumnCombo(Combo combo) {
+
+		if(combo == null || combo.isDisposed()) {
+			return;
+		}
+		if(Boolean.TRUE.equals(combo.getData(POLARITY_HIDDEN))) {
+			Control columnRoot = columnRootIn(combo);
+			concealPolarityCompanionsBeside(columnRoot);
+			excludeFromToolbar(columnRoot);
+			scheduleDisposeControl(columnRoot, POLARITY_DISPOSE_QUEUED);
+			return;
+		}
+		String text;
+		String tip;
+		String[] items;
+		try {
+			text = combo.getText();
+			tip = combo.getToolTipText();
+			items = combo.getItems();
+		} catch(RuntimeException e) {
+			return;
+		}
+		if(!BaijiuShellChrome.isSeparationColumnCombo(text, tip, items)) {
+			return;
+		}
+		combo.setData(POLARITY_HIDDEN, Boolean.TRUE);
+		Control columnRoot = columnRootIn(combo);
+		concealPolarityCompanionsBeside(columnRoot);
+		excludeFromToolbar(columnRoot);
+		scheduleDisposeControl(columnRoot, POLARITY_DISPOSE_QUEUED);
+	}
+
+	private static void concealPolarityCompanionsBeside(Control columnRoot) {
+
+		if(columnRoot == null || columnRoot.isDisposed()) {
+			return;
+		}
+		Composite toolbar;
+		try {
+			toolbar = columnRoot.getParent();
+		} catch(RuntimeException e) {
+			return;
+		}
+		if(toolbar == null || toolbar.isDisposed()) {
+			return;
+		}
+		Control[] children;
+		try {
+			children = toolbar.getChildren();
+		} catch(RuntimeException e) {
+			return;
+		}
+		for(int i = 0; i < children.length; i++) {
+			Control child = children[i];
+			if(child == null || child.isDisposed() || child == columnRoot) {
+				continue;
+			}
+			if(child instanceof Button button) {
+				concealPolarityCompanion(button);
+			} else if(child instanceof ToolBar toolBar) {
+				concealPolarityToolBar(toolBar);
+			}
+		}
+	}
+
+	private static void concealPolarityCompanion(Button button) {
+
+		if(button == null || button.isDisposed()) {
+			return;
+		}
+		if(Boolean.TRUE.equals(button.getData(POLARITY_HIDDEN))) {
+			excludeFromToolbar(button);
+			scheduleDisposeControl(button, POLARITY_DISPOSE_QUEUED);
+			return;
+		}
+		String text;
+		String tip;
+		try {
+			text = button.getText();
+			tip = button.getToolTipText();
+		} catch(RuntimeException e) {
+			return;
+		}
+		if(!BaijiuShellChrome.isChromatogramPolarityCompanionButton(text, tip)) {
+			return;
+		}
+		button.setData(POLARITY_HIDDEN, Boolean.TRUE);
+		try {
+			Listener[] selection = button.getListeners(SWT.Selection);
+			if(selection != null) {
+				for(int i = 0; i < selection.length; i++) {
+					button.removeListener(SWT.Selection, selection[i]);
+				}
+			}
+			button.setEnabled(false);
+		} catch(RuntimeException e) {
+			// widget mid-create
+		}
+		excludeFromToolbar(button);
+		scheduleDisposeControl(button, POLARITY_DISPOSE_QUEUED);
+	}
+
+	private static void concealPolarityToolBar(ToolBar toolBar) {
+
+		if(toolBar == null || toolBar.isDisposed()) {
+			return;
+		}
+		ToolItem[] items;
+		try {
+			items = toolBar.getItems();
+		} catch(RuntimeException e) {
+			return;
+		}
+		for(int i = 0; i < items.length; i++) {
+			ToolItem item = items[i];
+			if(item == null || item.isDisposed() || Boolean.TRUE.equals(item.getData(POLARITY_HIDDEN))) {
+				continue;
+			}
+			String text;
+			String tip;
+			try {
+				text = item.getText();
+				tip = item.getToolTipText();
+			} catch(RuntimeException e) {
+				continue;
+			}
+			if(!BaijiuShellChrome.isChromatogramPolarityCompanionButton(text, tip)) {
+				continue;
+			}
+			item.setData(POLARITY_HIDDEN, Boolean.TRUE);
+			try {
+				item.dispose();
+			} catch(RuntimeException e) {
+				// toolbar already closing
+			}
+		}
+	}
+
+	private static void lockSeriesLegendColorColumn(Table table) {
+
+		if(table == null || table.isDisposed()) {
+			return;
+		}
+		TableColumn[] columns;
+		try {
+			columns = table.getColumns();
+		} catch(RuntimeException e) {
+			return;
+		}
+		if(columns == null || columns.length == 0) {
+			return;
+		}
+		ArrayList<String> titles = new ArrayList<>(columns.length);
+		for(int i = 0; i < columns.length; i++) {
+			TableColumn column = columns[i];
+			if(column == null || column.isDisposed()) {
+				titles.add("");
+				continue;
+			}
+			try {
+				titles.add(column.getText());
+			} catch(RuntimeException e) {
+				titles.add("");
+			}
+		}
+		if(!BaijiuShellChrome.looksLikeChromatogramSeriesLegend(titles)) {
+			return;
+		}
+		table.setData(SERIES_COLOR_LOCKED, Boolean.TRUE);
+		for(int i = 0; i < columns.length; i++) {
+			TableColumn column = columns[i];
+			if(column == null || column.isDisposed() || !BaijiuShellChrome.isSeriesLegendColorColumn(titles.get(i))) {
+				continue;
+			}
+			try {
+				Object viewerColumn = column.getData(JFACE_COLUMN_VIEWER);
+				if(viewerColumn instanceof ViewerColumn columnViewer) {
+					columnViewer.setEditingSupport(null);
+				}
+				column.setResizable(false);
+				column.setMoveable(false);
+				if(column.getWidth() != 0) {
+					column.setWidth(0);
+				}
+			} catch(RuntimeException e) {
+				// table is closing
+			}
+		}
+	}
+
+	/**
+	 * Outermost single-child wrapper around the combo. For
+	 * {@code SeparationColumnUI} that is the column widget itself, so a
+	 * nested add button is disposed with the combo and does not remain.
+	 */
+	private static Control columnRootIn(Control start) {
+
+		Control node = start;
+		for(int depth = 0; node != null && !node.isDisposed() && depth < 8; depth++) {
+			Composite parent;
+			try {
+				parent = node.getParent();
+			} catch(RuntimeException e) {
+				return node;
+			}
+			if(parent == null || parent.isDisposed() || parent instanceof Shell) {
+				return node;
+			}
+			Control[] children;
+			try {
+				children = parent.getChildren();
+			} catch(RuntimeException e) {
+				return node;
+			}
+			if(children.length != 1) {
+				return node;
+			}
+			node = parent;
+		}
+		return node == null ? start : node;
+	}
+
+	/**
+	 * Pull a toolbar child out of the grid without disposing its
+	 * image. ChemClipse icons are shared factory instances, and a live
+	 * {@code ColorCellEditor} swatch stays owned by JFace.
+	 */
+	private static void excludeFromToolbar(Control control) {
+
+		if(control == null || control.isDisposed()) {
+			return;
+		}
+		try {
+			control.setVisible(false);
+			Object layoutData = control.getLayoutData();
+			if(layoutData instanceof GridData grid) {
+				grid.exclude = true;
+			} else {
+				GridData grid = new GridData();
+				grid.exclude = true;
+				control.setLayoutData(grid);
+			}
+		} catch(RuntimeException e) {
+			// widget mid-create
+		}
+	}
+
+	/**
+	 * Dispose off the paint stack. One queued runnable per control; a failed
+	 * dispose clears the flag so the next Show / Paint can retry. Does not
+	 * dispose Images.
+	 */
+	private static void scheduleDisposeControl(Control control, String queuedKey) {
+
+		if(control == null || control.isDisposed() || Boolean.TRUE.equals(control.getData(queuedKey))) {
+			return;
+		}
+		Display display;
+		try {
+			display = control.getDisplay();
+		} catch(RuntimeException e) {
+			return;
+		}
+		if(display == null || display.isDisposed()) {
+			return;
+		}
+		control.setData(queuedKey, Boolean.TRUE);
+		Composite parent;
+		try {
+			parent = control.getParent();
+		} catch(RuntimeException e) {
+			parent = null;
+		}
+		final Composite toolbar = parent;
+		display.asyncExec(() -> {
+			if(!control.isDisposed()) {
+				try {
+					control.setData(queuedKey, null);
+				} catch(RuntimeException e) {
+					// disposing next
+				}
+				try {
+					control.dispose();
+				} catch(RuntimeException e) {
+					return;
+				}
+			}
+			if(toolbar != null && !toolbar.isDisposed()) {
+				try {
+					toolbar.layout(true, true);
+				} catch(RuntimeException e) {
+					// toolbar already closing
+				}
+			}
+		});
+	}
+
 	private static boolean disposeIfTargetLabelSettings(MenuItem item) {
 
 		if(item == null || item.isDisposed() || (item.getStyle() & SWT.SEPARATOR) != 0) {
@@ -906,7 +1330,11 @@ public final class BaijiuShellMenus {
 	 */
 	private static void concealTargetLabelButton(Button button) {
 
-		if(button == null || button.isDisposed() || Boolean.TRUE.equals(button.getData(TARGET_LABEL_HIDDEN))) {
+		if(button == null || button.isDisposed()) {
+			return;
+		}
+		if(Boolean.TRUE.equals(button.getData(TARGET_LABEL_HIDDEN))) {
+			reinforceHiddenTargetLabel(button);
 			return;
 		}
 		String text;
@@ -928,52 +1356,29 @@ public final class BaijiuShellMenus {
 					button.removeListener(SWT.Selection, selection[i]);
 				}
 			}
+		} catch(RuntimeException e) {
+			// widget mid-create; hide and dispose still run
+		}
+		excludeFromToolbar(button);
+		scheduleDisposeControl(button, TARGET_LABEL_DISPOSE_QUEUED);
+	}
+
+	/**
+	 * A marked T that is still in the widget tree (dispose raced with
+	 * recreate, or the first async dispose failed) must not paint again.
+	 */
+	private static void reinforceHiddenTargetLabel(Button button) {
+
+		if(button == null || button.isDisposed()) {
+			return;
+		}
+		try {
 			button.setEnabled(false);
-			button.setVisible(false);
-			Object layoutData = button.getLayoutData();
-			if(layoutData instanceof GridData grid) {
-				grid.exclude = true;
-			} else {
-				GridData grid = new GridData();
-				grid.exclude = true;
-				button.setLayoutData(grid);
-			}
-		} catch(RuntimeException e) {
-			// widget mid-create; async dispose still runs
-		}
-		Composite parent;
-		try {
-			parent = button.getParent();
-		} catch(RuntimeException e) {
-			parent = null;
-		}
-		Display display;
-		try {
-			display = button.getDisplay();
 		} catch(RuntimeException e) {
 			return;
 		}
-		if(display == null || display.isDisposed()) {
-			return;
-		}
-		final Composite toolbar = parent;
-		display.asyncExec(() -> {
-			if(button.isDisposed()) {
-				return;
-			}
-			try {
-				button.dispose();
-			} catch(RuntimeException e) {
-				return;
-			}
-			if(toolbar != null && !toolbar.isDisposed()) {
-				try {
-					toolbar.layout(true, true);
-				} catch(RuntimeException e) {
-					// toolbar already closing
-				}
-			}
-		});
+		excludeFromToolbar(button);
+		scheduleDisposeControl(button, TARGET_LABEL_DISPOSE_QUEUED);
 	}
 
 	private static void concealTargetLabelToolBar(ToolBar toolBar) {
