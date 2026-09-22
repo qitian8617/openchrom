@@ -66,7 +66,7 @@ public class BaijiuShellChrome_1_Test {
 		assertEquals("白酒FID工作站", BaijiuShellChrome.APPLICATION_NAME_VM);
 		assertFalse(BaijiuShellChrome.APPLICATION_NAME_VM.contains(" "));
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome", BaijiuShellChrome.PERSPECTIVE_ID);
-		assertEquals(34, BaijiuShellChrome.CHROME_EPOCH);
+		assertEquals(35, BaijiuShellChrome.CHROME_EPOCH);
 		assertEquals("org.eclipse.chemclipse.ux.extension.ui.perspective.welcome", BaijiuShellChrome.WELCOME_PERSPECTIVE_ID);
 		assertTrue(BaijiuShellChrome.isHiddenResearchPerspective(BaijiuShellChrome.WELCOME_PERSPECTIVE_ID));
 		assertTrue(BaijiuShellChrome.isHiddenResearchPerspective(BaijiuShellChrome.MALDI_PERSPECTIVE_ID));

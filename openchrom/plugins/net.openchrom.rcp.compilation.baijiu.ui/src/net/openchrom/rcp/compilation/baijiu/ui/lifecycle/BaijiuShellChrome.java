@@ -42,6 +42,9 @@ import java.util.Set;
  * right fixed 白酒操作 sidebar. The left column is a vertical sash —
  * upper workflow pages (白酒分析 / 推荐积分 / …) and a lower 谱图/采集
  * host that is the only place CSD editors and live acquisition open.
+ * Both dividers stay draggable. {@code NoMove} on an
+ * {@code MPartSashContainer} makes Eclipse {@code SashLayout} ignore that
+ * sash; parts and stacks still use it so tabs cannot be dragged out.
  * GC console is a true top-level SWT Shell (600×1024), toggled from 反控 — never a
  * Part/sash child of plant home. Cold start leaves that Shell hidden
  * (toolbar 反控 unchecked) until the operator clicks 反控. Escape hatch
@@ -92,6 +95,8 @@ public final class BaijiuShellChrome {
 	/**
 	 * Left column of {@link #PLANT_SASH_ID}. {@code horizontal=false} so
 	 * children stack top (workflow pages) to bottom (chromatogram host).
+	 * Must not be tagged {@link #NO_MOVE_TAG}: Eclipse {@code SashLayout}
+	 * then refuses to drag this divider.
 	 */
 	public static final String PLANT_LEFT_SASH_ID = "net.openchrom.rcp.compilation.baijiu.ui.partsash.plantLeft";
 	public static final String PLANT_LEFT_WEIGHT = "7400";
@@ -401,8 +406,18 @@ public final class BaijiuShellChrome {
 	 * {@link #CHROMATOGRAM_STACK_ID} is the only CSD / live-acquisition
 	 * host. Rebuild workbench.xmi so a persisted single left stack cannot
 	 * put mix/sample editors back beside 白酒分析.
+	 * Epoch 35: {@code NoMove} on an {@code MPartSashContainer} makes
+	 * Eclipse {@code SashLayout.getSashRects} skip that divider (arrow
+	 * cursor, drag never starts). #91 tagged {@link #PLANT_LEFT_SASH_ID}
+	 * {@code NoMove}, so the boundary between the workflow tabs and
+	 * 谱图/采集 could not be dragged. Pin-chrome also tagged
+	 * {@link #PLANT_SASH_ID}, which locks the vertical divider the same
+	 * way. Rebuild workbench.xmi so a persisted {@code NoMove} on either
+	 * sash cannot stick. Runtime still strips that tag from sash
+	 * containers; parts and stacks keep it. Positive {@code containerData}
+	 * is left alone so a completed drag is not reset on the next chrome pass.
 	 */
-	public static final int CHROME_EPOCH = 34;
+	public static final int CHROME_EPOCH = 35;
 	/**
 	 * Ids that must exist on the live model after plant-home reveal. Missing
 	 * any of these is the empty-left / community-button-column failure mode.
