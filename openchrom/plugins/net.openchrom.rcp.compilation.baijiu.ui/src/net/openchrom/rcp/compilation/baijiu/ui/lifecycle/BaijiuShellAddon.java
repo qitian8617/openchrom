@@ -199,6 +199,9 @@ public class BaijiuShellAddon {
 				if(BaijiuShellChrome.shouldSanitizePlantMenuChildrenAfterChange(containerId, changeType) || BaijiuShellChrome.shouldSanitizeAfterEditorClose(containerId, childId, changeType)) {
 					scheduleSanitizePlantMenus(application, modelService);
 				}
+				if(BaijiuShellChrome.shouldRehostChromatogramEditor(containerId, childId, changeType)) {
+					BaijiuShellParts.hostOpenCsdEditors(application, modelService, partService(application));
+				}
 				if(!BaijiuShellChrome.shouldRestoreChromeAfterChildrenChange(changeType)) {
 					return;
 				}
@@ -399,8 +402,10 @@ public class BaijiuShellAddon {
 		show(modelService.find(BaijiuShellChrome.OPEN_CHROMATOGRAM_TOOLITEM_ID, application));
 		show(modelService.find(BaijiuShellChrome.TOGGLE_GC_TOOLITEM_ID, application));
 		show(modelService.find(BaijiuShellChrome.PLANT_SASH_ID, application));
+		show(modelService.find(BaijiuShellChrome.PLANT_LEFT_SASH_ID, application));
 		BaijiuShellParts.suppressE4GcWindow(application, modelService);
 		show(modelService.find(BaijiuShellChrome.WORKFLOW_STACK_ID, application));
+		show(modelService.find(BaijiuShellChrome.PAGES_STACK_ID, application));
 		show(modelService.find(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, application));
 		show(modelService.find(BaijiuShellChrome.INTEGRATION_HOME_PART_ID, application));
 		show(modelService.find(BaijiuShellChrome.WIZARD_HOME_PART_ID, application));
@@ -455,8 +460,10 @@ public class BaijiuShellAddon {
 		tagNoDetach(modelService.find(BaijiuShellChrome.GC_HOME_STACK_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.SEQUENCE_HOME_STACK_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.WORKFLOW_STACK_ID, application));
+		tagNoDetach(modelService.find(BaijiuShellChrome.PAGES_STACK_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.PLANT_SASH_ID, application));
+		tagNoDetach(modelService.find(BaijiuShellChrome.PLANT_LEFT_SASH_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.CHROMATOGRAM_PLACEHOLDER_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.GC_CONTROL_PART_ID, application));
 		tagNoDetach(modelService.find(BaijiuShellChrome.SEQUENCE_PART_ID, application));

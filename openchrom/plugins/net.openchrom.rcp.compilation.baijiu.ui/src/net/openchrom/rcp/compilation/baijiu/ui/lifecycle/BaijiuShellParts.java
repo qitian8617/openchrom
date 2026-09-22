@@ -26,6 +26,7 @@ import org.eclipse.e4.ui.model.application.ui.SideValue;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPlaceholder;
 import org.eclipse.e4.ui.model.application.ui.basic.MBasicFactory;
 import org.eclipse.e4.ui.model.application.ui.basic.MPart;
+import org.eclipse.e4.ui.model.application.ui.basic.MPartSashContainer;
 import org.eclipse.e4.ui.model.application.ui.basic.MPartStack;
 import org.eclipse.e4.ui.model.application.ui.basic.MTrimBar;
 import org.eclipse.e4.ui.model.application.ui.basic.MTrimmedWindow;
@@ -59,11 +60,13 @@ import net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuHomePanels;
  * {@code BaijiuAnalysisHomePart} / {@code BaijiuWorkbenchHomePart} /
  * {@code BaijiuChromatogramHomePart}) so {@code @PostConstruct} runs in this
  * bundle. Those hosts OSGi-load the real SWT panels; rendering does not
- * depend on foreign-bundle {@code contributionURI}. Chromatogram / live
- * acquisition embeds the ChemClipse CSD editor into the left 谱图/采集
- * PartStack ({@code partstack.plantChromatogram}) as a real e4 child, not a
- * stolen widget inside {@code part.chromatogramHome}. A concrete empty-state
- * Part sits first in that stack so cold start is not a blank gray void. The GC
+ * depend on foreign-bundle {@code contributionURI}. The left column is a
+ * vertical sash: workflow pages on top, and the lower 谱图/采集 PartStack
+ * ({@code partstack.plantChromatogram}) as the only host for ChemClipse CSD
+ * editors (opened files and live acquisition). Those editors are real e4
+ * children of that stack, not stolen widgets and not tabs beside 白酒分析.
+ * A concrete empty-state Part sits in the lower stack so cold start is not
+ * a blank gray void. The GC
  * console is a singleton top-level SWT Shell ({@code BaijiuGcConsoleShell}),
  * not a sash child and not a rendered E4 TrimmedWindow. No Java
  * dependency on baijiu.ui / temperature.ui (branding stays soft).
@@ -71,6 +74,7 @@ import net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuHomePanels;
 public final class BaijiuShellParts {
 
 	private static final AtomicBoolean revealingPlantWindowChrome = new AtomicBoolean();
+	private static final AtomicBoolean hostingCsdEditors = new AtomicBoolean();
 
 	private BaijiuShellParts() {
 
@@ -84,11 +88,12 @@ public final class BaijiuShellParts {
 	/**
 	 * Show plant-home hosts. Workbench (白酒操作) is activated last so the
 	 * right sidebar PartStack opens on that tab. Sequence, analysis, and the
-	 * other workflow pages stay visible siblings on the left stack (GUI is
-	 * created when the operator selects the tab — not during cold start).
-	 * Chromatogram stays on the left sash: empty-state Part selected until a
-	 * CSD is opened. The ChemClipse editor Area placeholder stays in the
-	 * model but is not rendered into that stack (nested empty frames).
+	 * other workflow pages stay visible siblings on the upper-left stack
+	 * (GUI is created when the operator selects the tab — not during cold
+	 * start). Chromatograms stay in the lower-left stack: empty-state Part
+	 * selected until a CSD is opened. The ChemClipse editor Area placeholder
+	 * stays in the model but is not rendered into that stack (nested empty
+	 * frames).
 	 * GC console is an independent OS window (default hidden; toolbar 反控
 	 * shows it). Returns true when the plant-home surface is shown —
 	 * never fall back to the community workbench perspective.
@@ -102,6 +107,8 @@ public final class BaijiuShellParts {
 		suppressE4GcWindow(application, modelService);
 		applyGcConsoleVisibility(application, modelService);
 		boolean gc = BaijiuGcConsoleShell.isShowing();
+		separateChromatogramHost(application, modelService);
+		revealStackChildren(application, modelService, BaijiuShellChrome.PAGES_STACK_ID);
 		revealStackChildren(application, modelService, BaijiuShellChrome.CHROMATOGRAM_STACK_ID);
 		revealStackChildren(application, modelService, BaijiuShellChrome.WORKFLOW_STACK_ID);
 		boolean sequence = findPart(modelService, application, BaijiuShellChrome.SEQUENCE_HOME_PART_ID) != null //
@@ -120,12 +127,12 @@ public final class BaijiuShellParts {
 	}
 
 	/**
-	 * Create only the first-paint plant-home widgets: left 谱图/采集 and
-	 * right 白酒操作. Other left workflow tabs stay as CTabItems; their
-	 * {@code @PostConstruct} runs when selected. Does not createGui the
-	 * ChemClipse editor Area into the left stack. Ends by selecting 白酒操作
-	 * on the right and 谱图/采集 on the left (empty-state, or the embedded
-	 * CSD chart).
+	 * Create only the first-paint plant-home widgets: lower 谱图/采集,
+	 * the selected upper workflow page, and right 白酒操作. Other upper
+	 * workflow tabs stay as CTabItems; their {@code @PostConstruct} runs
+	 * when selected. Does not createGui the ChemClipse editor Area into
+	 * the chromatogram stack. Ends by selecting 白酒操作 on the right and
+	 * 谱图/采集 below (empty-state, or the open CSD tab).
 	 */
 	public static void forceCreatePlantHomeGuis(MApplication application, EModelService modelService) {
 
@@ -137,9 +144,14 @@ public final class BaijiuShellParts {
 			BaijiuGcConsoleShell.hide();
 		}
 		parkChromatogramEditorArea(application, modelService);
+		separateChromatogramHost(application, modelService);
 		forceCreateGui(application, modelService, BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID);
 		forceCreateGui(application, modelService, BaijiuShellChrome.WORKBENCH_HOME_PART_ID);
 		restoreDefaultTabSelection(application, modelService);
+		MPart analysis = findPart(modelService, application, BaijiuShellChrome.ANALYSIS_HOME_PART_ID);
+		if(analysis != null && analysis.getParent() instanceof MPartStack pages && pages.getSelectedElement() == analysis) {
+			forceCreateGui(application, modelService, BaijiuShellChrome.ANALYSIS_HOME_PART_ID);
+		}
 	}
 
 	public static boolean showChromatogram(MApplication application, EModelService modelService, EPartService partService) {
@@ -148,6 +160,9 @@ public final class BaijiuShellParts {
 			return false;
 		}
 		parkChromatogramEditorArea(application, modelService);
+		separateChromatogramHost(application, modelService);
+		showElementAndAncestors(modelService.find(BaijiuShellChrome.PLANT_LEFT_SASH_ID, application));
+		showElementAndAncestors(modelService.find(BaijiuShellChrome.PAGES_STACK_ID, application));
 		showElementAndAncestors(modelService.find(BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID, application));
 		showElementAndAncestors(modelService.find(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, application));
 		showElementAndAncestors(modelService.find(BaijiuShellChrome.WORKFLOW_STACK_ID, application));
@@ -2762,15 +2777,29 @@ public final class BaijiuShellParts {
 		if(application == null || modelService == null) {
 			return false;
 		}
+		if(!hostingCsdEditors.compareAndSet(false, true)) {
+			return false;
+		}
+		try {
+			return hostOpenCsdEditorsLocked(application, modelService, partService);
+		} finally {
+			hostingCsdEditors.set(false);
+		}
+	}
+
+	private static boolean hostOpenCsdEditorsLocked(MApplication application, EModelService modelService, EPartService partService) {
+
+		separateChromatogramHost(application, modelService);
 		MUIElement stackElement = modelService.find(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, application);
 		if(!(stackElement instanceof MPartStack plantStack)) {
 			return false;
 		}
+		MPart home = findPart(modelService, application, BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID);
 		List<MPart> editors = modelService.findElements(application, BaijiuShellChrome.CSD_EDITOR_PART_ID, MPart.class, null);
 		if(editors == null || editors.isEmpty()) {
+			hideEmptyChromatogramHome(home, false);
 			return false;
 		}
-		MPart home = findPart(modelService, application, BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID);
 		boolean hosted = false;
 		MPart last = null;
 		for(MPart part : editors) {
@@ -2854,6 +2883,25 @@ public final class BaijiuShellParts {
 		return false;
 	}
 
+	static void separateChromatogramHost(MApplication application, EModelService modelService) {
+
+		if(application == null || modelService == null) {
+			return;
+		}
+		MUIElement pagesElement = modelService.find(BaijiuShellChrome.PAGES_STACK_ID, application);
+		MUIElement chromatogramElement = modelService.find(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, application);
+		MUIElement leftElement = modelService.find(BaijiuShellChrome.PLANT_LEFT_SASH_ID, application);
+		MUIElement plantElement = modelService.find(BaijiuShellChrome.PLANT_SASH_ID, application);
+		MUIElement workflowElement = modelService.find(BaijiuShellChrome.WORKFLOW_STACK_ID, application);
+		if(plantElement instanceof MPartSashContainer plantSash && leftElement instanceof MPartSashContainer leftSash && pagesElement instanceof MPartStack pages && chromatogramElement instanceof MPartStack chromatogram && workflowElement instanceof MPartStack workflow) {
+			BaijiuShellModel.arrangePlantHome(plantSash, leftSash, pages, chromatogram, workflow);
+			return;
+		}
+		if(pagesElement instanceof MPartStack pages && chromatogramElement instanceof MPartStack chromatogram) {
+			BaijiuShellModel.separatePlantColumns(pages, chromatogram);
+		}
+	}
+
 	static boolean embedCsdEditor(MApplication application, EPartService partService, MPart part, Composite host) {
 
 		if(part == null || application == null) {
@@ -2867,6 +2915,7 @@ public final class BaijiuShellParts {
 		} catch(RuntimeException | LinkageError e) {
 			return false;
 		}
+		separateChromatogramHost(application, modelService);
 		MUIElement stackElement = modelService == null ? null : modelService.find(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, application);
 		if(!(stackElement instanceof MPartStack plantStack)) {
 			return false;
@@ -2942,9 +2991,13 @@ public final class BaijiuShellParts {
 			return;
 		}
 		parkChromatogramEditorArea(application, modelService);
+		separateChromatogramHost(application, modelService);
+		showElementAndAncestors(modelService.find(BaijiuShellChrome.PLANT_LEFT_SASH_ID, application));
+		showElementAndAncestors(modelService.find(BaijiuShellChrome.PAGES_STACK_ID, application));
 		showElementAndAncestors(modelService.find(BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID, application));
 		showElementAndAncestors(modelService.find(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, application));
 		showElementAndAncestors(modelService.find(BaijiuShellChrome.WORKFLOW_STACK_ID, application));
+		revealStackChildren(application, modelService, BaijiuShellChrome.PAGES_STACK_ID);
 		revealStackChildren(application, modelService, BaijiuShellChrome.CHROMATOGRAM_STACK_ID);
 		revealStackChildren(application, modelService, BaijiuShellChrome.WORKFLOW_STACK_ID);
 	}
@@ -2984,13 +3037,55 @@ public final class BaijiuShellParts {
 		parkChromatogramEditorArea(application, modelService);
 	}
 
+	static void selectUpperWorkflowPage(MApplication application, EModelService modelService) {
+
+		if(application == null || modelService == null) {
+			return;
+		}
+		MUIElement found = modelService.find(BaijiuShellChrome.PAGES_STACK_ID, application);
+		if(!(found instanceof MPartStack pages)) {
+			return;
+		}
+		MUIElement selected = null;
+		try {
+			selected = pages.getSelectedElement();
+		} catch(RuntimeException | LinkageError e) {
+			selected = null;
+		}
+		if(selected instanceof MUIElement element && BaijiuShellChrome.LEFT_WORKFLOW_PART_IDS.contains(element.getElementId()) && element.isVisible() && element.isToBeRendered()) {
+			return;
+		}
+		MPart analysis = findPart(modelService, application, BaijiuShellChrome.ANALYSIS_HOME_PART_ID);
+		if(analysis != null) {
+			BaijiuShellSelection.selectInParent(analysis);
+			return;
+		}
+		List<?> children;
+		try {
+			children = pages.getChildren();
+		} catch(RuntimeException | LinkageError e) {
+			return;
+		}
+		if(children == null) {
+			return;
+		}
+		for(Object child : children) {
+			if(child instanceof MUIElement element && BaijiuShellChrome.LEFT_WORKFLOW_PART_IDS.contains(element.getElementId())) {
+				BaijiuShellSelection.selectInParent(element);
+				return;
+			}
+		}
+	}
+
 	static void restoreDefaultTabSelection(MApplication application, EModelService modelService) {
 
 		if(application == null || modelService == null) {
 			return;
 		}
 		revealStackChildren(application, modelService, BaijiuShellChrome.WORKFLOW_STACK_ID);
+		revealStackChildren(application, modelService, BaijiuShellChrome.PAGES_STACK_ID);
 		revealStackChildren(application, modelService, BaijiuShellChrome.CHROMATOGRAM_STACK_ID);
+		selectUpperWorkflowPage(application, modelService);
 		if(!hostOpenCsdEditors(application, modelService, partService(application))) {
 			MPart chromatogramHome = findPart(modelService, application, BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID);
 			if(chromatogramHome != null) {

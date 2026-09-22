@@ -38,9 +38,11 @@ import java.util.Set;
  * The CSD chart popup is ChemClipse {@code ProcessorSupplierMenuEntry}
  * copied onto SWTChart independently of E4 — plant allowlist only
  * (重置图表 / 设置图表范围 / 撤销选择 / 用户限制 / 范围选择).
- * Perspective switcher stays hidden. Plant home sash: left workflow tabs
- * (谱图/采集 + analysis pages) | right fixed 白酒操作 sidebar. GC console is
- * a true top-level SWT Shell (600×1024), toggled from 反控 — never a
+ * Perspective switcher stays hidden. Plant home sash: left column |
+ * right fixed 白酒操作 sidebar. The left column is a vertical sash —
+ * upper workflow pages (白酒分析 / 推荐积分 / …) and a lower 谱图/采集
+ * host that is the only place CSD editors and live acquisition open.
+ * GC console is a true top-level SWT Shell (600×1024), toggled from 反控 — never a
  * Part/sash child of plant home. Cold start leaves that Shell hidden
  * (toolbar 反控 unchecked) until the operator clicks 反控. Escape hatch
  * (documented, not in the UI):
@@ -88,6 +90,15 @@ public final class BaijiuShellChrome {
 	public static final String CHROMATOGRAM_HOME_CONTRIBUTION_URI = "bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuChromatogramHomePart";
 	public static final String PLANT_SASH_ID = "net.openchrom.rcp.compilation.baijiu.ui.partsash.plantHome";
 	/**
+	 * Left column of {@link #PLANT_SASH_ID}. {@code horizontal=false} so
+	 * children stack top (workflow pages) to bottom (chromatogram host).
+	 */
+	public static final String PLANT_LEFT_SASH_ID = "net.openchrom.rcp.compilation.baijiu.ui.partsash.plantLeft";
+	public static final String PLANT_LEFT_WEIGHT = "7400";
+	public static final String PLANT_RIGHT_WEIGHT = "2600";
+	public static final String PLANT_PAGES_WEIGHT = "5200";
+	public static final String PLANT_CHROMATOGRAM_WEIGHT = "4800";
+	/**
 	 * Dead #41–#44 right-hand vertical sash (GC stacked above ops tabs).
 	 * Epoch 16 drops it; leftover xmi is hidden like {@link #PLANT_EDITOR_PLACEHOLDER_ID}.
 	 */
@@ -103,14 +114,22 @@ public final class BaijiuShellChrome {
 	public static final int GC_WINDOW_HEIGHT = 1024;
 	public static final String SEQUENCE_HOME_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.sequenceHome";
 	/**
-	 * Right-hand fixed 白酒操作 sidebar. Sequence / analysis live on
+	 * Right-hand fixed 白酒操作 sidebar. Workflow pages live on
+	 * {@link #PAGES_STACK_ID}; chromatograms live on
 	 * {@link #CHROMATOGRAM_STACK_ID}.
 	 */
 	public static final String WORKFLOW_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.plantWorkflow";
 	/**
-	 * Left-hand workflow/display tabs (谱图/采集 + 推荐积分 / 白酒分析 / …).
-	 * Opening a CSD embeds the editor into {@link #CHROMATOGRAM_HOME_PART_ID}
-	 * so the chart is the 谱图/采集 page, not a sibling tab.
+	 * Upper-left workflow pages (推荐积分 / 白酒分析 / 三步向导 / 进样序列 /
+	 * …). Not a host for CSD editors.
+	 */
+	public static final String PAGES_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.plantPages";
+	/**
+	 * Lower-left 谱图/采集 host. The only stack that may contain
+	 * {@link #CHROMATOGRAM_HOME_PART_ID} and ChromatogramEditorCSD tabs
+	 * (opened files and live acquisition). Multiple chromatograms are tabs
+	 * in this stack, under the workflow page, not mixed into
+	 * {@link #PAGES_STACK_ID}.
 	 */
 	public static final String CHROMATOGRAM_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.plantChromatogram";
 	public static final String INTEGRATION_HOME_PART_ID = "net.openchrom.rcp.compilation.baijiu.ui.part.integrationHome";
@@ -377,8 +396,13 @@ public final class BaijiuShellChrome {
 	 * OpenChrom red peak) via {@code Shell.setImages} + TrimmedWindow
 	 * {@code iconURI}. Rebuild workbench.xmi so a persisted ChemClipse
 	 * window iconURI cannot stick.
+	 * Epoch 34: left column is a vertical sash. Upper
+	 * {@link #PAGES_STACK_ID} keeps workflow pages; lower
+	 * {@link #CHROMATOGRAM_STACK_ID} is the only CSD / live-acquisition
+	 * host. Rebuild workbench.xmi so a persisted single left stack cannot
+	 * put mix/sample editors back beside 白酒分析.
 	 */
-	public static final int CHROME_EPOCH = 33;
+	public static final int CHROME_EPOCH = 34;
 	/**
 	 * Ids that must exist on the live model after plant-home reveal. Missing
 	 * any of these is the empty-left / community-button-column failure mode.
@@ -386,6 +410,8 @@ public final class BaijiuShellChrome {
 	public static final List<String> PLANT_HOME_REQUIRED_ELEMENT_IDS = List.of( //
 			PERSPECTIVE_ID, //
 			PLANT_SASH_ID, //
+			PLANT_LEFT_SASH_ID, //
+			PAGES_STACK_ID, //
 			CHROMATOGRAM_STACK_ID, //
 			CHROMATOGRAM_HOME_PART_ID, //
 			CHROMATOGRAM_PLACEHOLDER_ID, //
@@ -403,10 +429,10 @@ public final class BaijiuShellChrome {
 			GC_HOME_STACK_ID, //
 			GC_HOME_PART_ID);
 	/**
-	 * Left PartStack workflow pages (excluding the editor Area placeholder).
+	 * Upper-left workflow pages. The 谱图/采集 empty state and CSD editors
+	 * stay on {@link #CHROMATOGRAM_STACK_ID}, not in this list.
 	 */
 	public static final List<String> LEFT_WORKFLOW_PART_IDS = List.of( //
-			CHROMATOGRAM_HOME_PART_ID, //
 			INTEGRATION_HOME_PART_ID, //
 			ANALYSIS_HOME_PART_ID, //
 			WIZARD_HOME_PART_ID, //
@@ -722,11 +748,13 @@ public final class BaijiuShellChrome {
 			PARALLEL_HOME_PART_ID, //
 			REPORT_HOME_PART_ID, //
 			PLANT_SASH_ID, //
+			PLANT_LEFT_SASH_ID, //
 			GC_WINDOW_ID, //
 			GC_WINDOW_SASH_ID, //
 			GC_HOME_STACK_ID, //
 			SEQUENCE_HOME_STACK_ID, //
 			WORKFLOW_STACK_ID, //
+			PAGES_STACK_ID, //
 			CHROMATOGRAM_STACK_ID, //
 			PERSPECTIVE_STACK_ID, //
 			PRIMARY_PERSPECTIVE_STACK_ID, //
@@ -1545,10 +1573,32 @@ public final class BaijiuShellChrome {
 		if(!remove) {
 			return false;
 		}
-		if(CHROMATOGRAM_STACK_ID.equals(containerId) || CHROMATOGRAM_STACK_ID.equals(elementId)) {
+		if(CHROMATOGRAM_STACK_ID.equals(containerId) || CHROMATOGRAM_STACK_ID.equals(elementId) || PAGES_STACK_ID.equals(containerId)) {
 			return true;
 		}
 		return CSD_EDITOR_PART_ID.equals(elementId);
+	}
+
+	/**
+	 * A CSD editor added or removed anywhere must be pulled into
+	 * {@link #CHROMATOGRAM_STACK_ID} (or the empty 谱图/采集 part restored
+	 * when the last editor closes).
+	 */
+	public static boolean shouldRehostChromatogramEditor(String containerId, String elementId, String changeType) {
+
+		if(researchMenusVisible() || changeType == null || changeType.isBlank()) {
+			return false;
+		}
+		String type = changeType.trim();
+		boolean structural = "ADD".equalsIgnoreCase(type) || "REMOVE".equalsIgnoreCase(type) || "REMOVE_MANY".equalsIgnoreCase(type);
+		if(!structural) {
+			return false;
+		}
+		if(CSD_EDITOR_PART_ID.equals(elementId) || isGeneratedCloneOf(CSD_EDITOR_PART_ID, elementId)) {
+			return true;
+		}
+		boolean hostContainer = CHROMATOGRAM_STACK_ID.equals(containerId) || PAGES_STACK_ID.equals(containerId) || WORKFLOW_STACK_ID.equals(containerId);
+		return hostContainer && ("REMOVE".equalsIgnoreCase(type) || "REMOVE_MANY".equalsIgnoreCase(type)) && elementId != null && elementId.contains("chromatogramEditorCSD");
 	}
 
 	/**
