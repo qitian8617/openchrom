@@ -626,6 +626,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertFalse(partsSrc.contains("parent == plantStack"), "Java 21: use plantStack.getChildren().contains(part) (#49/#56)");
 		assertFalse(partsSrc.contains("parent != plantStack"), "Java 21: do not compare getParent() to MPartStack");
 		assertFalse(partsSrc.contains("getParent() instanceof MToolBar"), "MElementContainer<MUIElement> vs MToolBar is incomparable on Java 21");
+		assertFalse(partsSrc.contains("getParent() instanceof MPartStack"), "MElementContainer<MUIElement> vs MPartStack is incomparable on Java 21");
 		assertTrue(partsSrc.contains("toolbarContains"), partsSrc);
 		int recreateAt = partsSrc.indexOf("static void recreatePlantChromeWidgets");
 		assertTrue(recreateAt > 0, partsSrc);
