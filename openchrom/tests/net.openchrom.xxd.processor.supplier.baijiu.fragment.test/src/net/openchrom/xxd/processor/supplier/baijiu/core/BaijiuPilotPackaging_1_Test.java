@@ -198,6 +198,12 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(shellFrag.contains("net.openchrom.rcp.compilation.baijiu.ui.partstack.plantPages"), shellFrag);
 		assertTrue(shellFrag.contains("net.openchrom.rcp.compilation.baijiu.ui.partstack.plantChromatogram"), shellFrag);
 		assertTrue(shellFrag.contains("horizontal=\"false\" containerData=\"7400\""), shellFrag);
+		int plantSashAt = shellFrag.indexOf("net.openchrom.rcp.compilation.baijiu.ui.partsash.plantHome");
+		int leftSashAt = shellFrag.indexOf("net.openchrom.rcp.compilation.baijiu.ui.partsash.plantLeft");
+		int pagesAt = shellFrag.indexOf("net.openchrom.rcp.compilation.baijiu.ui.partstack.plantPages");
+		assertTrue(plantSashAt > 0 && leftSashAt > plantSashAt && pagesAt > leftSashAt, shellFrag);
+		assertFalse(shellFrag.substring(plantSashAt, leftSashAt).contains("<tags>NoMove</tags>"), "NoMove on the outer sash locks the vertical divider in SashLayout");
+		assertFalse(shellFrag.substring(leftSashAt, pagesAt).contains("<tags>NoMove</tags>"), "NoMove on the left sash locks the horizontal divider in SashLayout");
 		assertFalse(shellFrag.contains("net.openchrom.rcp.compilation.baijiu.ui.partsash.plantTop"), shellFrag);
 		assertTrue(shellFrag.contains("net.openchrom.rcp.compilation.baijiu.ui.window.gcConsole"), shellFrag);
 		assertTrue(shellFrag.contains("xsi:type=\"basic:TrimmedWindow\""), shellFrag);
@@ -247,7 +253,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertNotNull(chrome);
 		String chromeSrc = Files.readString(chrome, StandardCharsets.UTF_8);
 		assertTrue(chromeSrc.contains("CSD_EDITOR_PART_ID"), chromeSrc);
-		assertTrue(chromeSrc.contains("CHROME_EPOCH = 34"), chromeSrc);
+		assertTrue(chromeSrc.contains("CHROME_EPOCH = 35"), chromeSrc);
 		assertTrue(chromeSrc.contains("WINDOW_ICON_URI"), chromeSrc);
 		assertTrue(chromeSrc.contains("WINDOW_ICON_FILES"), chromeSrc);
 		assertTrue(chromeSrc.contains("isPlantWindowIconUri"), chromeSrc);

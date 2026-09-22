@@ -662,6 +662,13 @@ public final class BaijiuShellModel {
 	 * Left column top = workflow pages, bottom = chromatogram host, right =
 	 * 白酒操作. Safe to call again after a stale {@code workbench.xmi}
 	 * left the CSD editors in the upper stack.
+	 * <p>
+	 * Eclipse {@code SashLayout} will not drag a divider whose
+	 * {@code MPartSashContainer} is tagged {@code NoMove}. Both plant sashes
+	 * are unlocked here. A positive {@code containerData} is a user or
+	 * restored weight and is kept; only a missing or non-positive weight is
+	 * replaced with the plant default, so a later chrome pass does not snap
+	 * a drag back to 52/48 or 74/26.
 	 */
 	static void arrangePlantHome(MPartSashContainer plantSash, MPartSashContainer leftSash, MPartStack pages, MPartStack chromatogram, MPartStack workflow) {
 
@@ -669,25 +676,27 @@ public final class BaijiuShellModel {
 			plantSash.setHorizontal(true);
 			plantSash.setVisible(true);
 			plantSash.setToBeRendered(true);
+			releaseSashDrag(plantSash);
 		}
 		if(leftSash != null) {
 			leftSash.setHorizontal(false);
-			leftSash.setContainerData(BaijiuShellChrome.PLANT_LEFT_WEIGHT);
+			ensureSashWeight(leftSash, BaijiuShellChrome.PLANT_LEFT_WEIGHT);
 			leftSash.setVisible(true);
 			leftSash.setToBeRendered(true);
+			releaseSashDrag(leftSash);
 		}
+		ensureSashWeight(pages, BaijiuShellChrome.PLANT_PAGES_WEIGHT);
 		if(pages != null) {
-			pages.setContainerData(BaijiuShellChrome.PLANT_PAGES_WEIGHT);
 			pages.setVisible(true);
 			pages.setToBeRendered(true);
 		}
+		ensureSashWeight(chromatogram, BaijiuShellChrome.PLANT_CHROMATOGRAM_WEIGHT);
 		if(chromatogram != null) {
-			chromatogram.setContainerData(BaijiuShellChrome.PLANT_CHROMATOGRAM_WEIGHT);
 			chromatogram.setVisible(true);
 			chromatogram.setToBeRendered(true);
 		}
+		ensureSashWeight(workflow, BaijiuShellChrome.PLANT_RIGHT_WEIGHT);
 		if(workflow != null) {
-			workflow.setContainerData(BaijiuShellChrome.PLANT_RIGHT_WEIGHT);
 			workflow.setVisible(true);
 			workflow.setToBeRendered(true);
 		}
@@ -1236,14 +1245,84 @@ public final class BaijiuShellModel {
 		}
 	}
 
-	private static void tagNoDetach(MUIElement element) {
+	/**
+	 * Pin a part or stack so the operator cannot drag that tab out.
+	 * {@code NoMove} on an {@code MPartSashContainer} is different: Eclipse
+	 * {@code SashLayout.getSashRects} skips any divider whose container
+	 * carries that tag, so the mouse never starts a resize. Sash containers
+	 * keep {@code NoDetach} / {@code NoClose} and lose {@code NoMove}.
+	 */
+	static void tagNoDetach(MUIElement element) {
 
 		if(element == null) {
+			return;
+		}
+		if(element instanceof MPartSashContainer) {
+			releaseSashDrag(element);
+			addTag(element, BaijiuShellChrome.NO_DETACH_TAG);
+			addTag(element, BaijiuShellChrome.NO_CLOSE_TAG);
 			return;
 		}
 		addTag(element, BaijiuShellChrome.NO_MOVE_TAG);
 		addTag(element, BaijiuShellChrome.NO_DETACH_TAG);
 		addTag(element, BaijiuShellChrome.NO_CLOSE_TAG);
+	}
+
+	/**
+	 * True when Eclipse {@code SashLayout} will hit-test this container's
+	 * divider. Parts, stacks, and a sash still tagged {@code NoMove} are
+	 * not draggable.
+	 */
+	static boolean sashDividerDraggable(MUIElement element) {
+
+		if(!(element instanceof MPartSashContainer sash)) {
+			return false;
+		}
+		try {
+			List<String> tags = sash.getTags();
+			return tags == null || !tags.contains(BaijiuShellChrome.NO_MOVE_TAG);
+		} catch(RuntimeException | LinkageError e) {
+			return false;
+		}
+	}
+
+	static void releaseSashDrag(MUIElement element) {
+
+		if(!(element instanceof MPartSashContainer sash)) {
+			return;
+		}
+		try {
+			List<String> tags = sash.getTags();
+			if(tags != null) {
+				tags.remove(BaijiuShellChrome.NO_MOVE_TAG);
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// immutable tag list
+		}
+	}
+
+	static void ensureSashWeight(MUIElement element, String fallback) {
+
+		if(element == null || fallback == null || positiveSashWeight(element.getContainerData())) {
+			return;
+		}
+		element.setContainerData(fallback);
+	}
+
+	static boolean positiveSashWeight(String containerData) {
+
+		if(containerData == null) {
+			return false;
+		}
+		String text = containerData.trim();
+		if(text.isEmpty()) {
+			return false;
+		}
+		try {
+			return Integer.parseInt(text) > 0;
+		} catch(NumberFormatException e) {
+			return false;
+		}
 	}
 
 	private static void addTag(MUIElement element, String tag) {

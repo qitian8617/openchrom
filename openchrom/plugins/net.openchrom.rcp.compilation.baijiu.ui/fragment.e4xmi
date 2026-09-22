@@ -68,7 +68,6 @@
       <children xsi:type="basic:PartSashContainer" xmi:id="_baijiuPlantSash" elementId="net.openchrom.rcp.compilation.baijiu.ui.partsash.plantHome" horizontal="true">
         <tags>NoDetach</tags>
         <children xsi:type="basic:PartSashContainer" xmi:id="_baijiuPlantLeftSash" elementId="net.openchrom.rcp.compilation.baijiu.ui.partsash.plantLeft" horizontal="false" containerData="7400">
-          <tags>NoMove</tags>
           <tags>NoDetach</tags>
           <tags>NoClose</tags>
           <children xsi:type="basic:PartStack" xmi:id="_baijiuPlantPagesStack" elementId="net.openchrom.rcp.compilation.baijiu.ui.partstack.plantPages" containerData="5200">

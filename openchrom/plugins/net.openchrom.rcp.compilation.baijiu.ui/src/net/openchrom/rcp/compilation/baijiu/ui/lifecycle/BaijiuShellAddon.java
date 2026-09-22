@@ -483,12 +483,7 @@ public class BaijiuShellAddon {
 
 	private static void tagNoDetach(MUIElement element) {
 
-		if(element == null) {
-			return;
-		}
-		addTag(element, BaijiuShellChrome.NO_MOVE_TAG);
-		addTag(element, BaijiuShellChrome.NO_DETACH_TAG);
-		addTag(element, BaijiuShellChrome.NO_CLOSE_TAG);
+		BaijiuShellModel.tagNoDetach(element);
 	}
 
 	private static void addTag(MUIElement element, String tag) {
