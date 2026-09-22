@@ -50,5 +50,6 @@ public class BaijiuShellMenus_1_Test {
 		assertFalse(BaijiuShellMenus.looksLikePlantHelpMenu(java.util.List.of("Save", "Save As")));
 		assertTrue(BaijiuShellChrome.shouldHidePlantChartMenuItem("峰检测器"));
 		assertFalse(BaijiuShellChrome.shouldHidePlantChartMenuItem("重置图表"));
+		BaijiuShellMenus.hideChromatogramTargetLabelControls();
 	}
 }
