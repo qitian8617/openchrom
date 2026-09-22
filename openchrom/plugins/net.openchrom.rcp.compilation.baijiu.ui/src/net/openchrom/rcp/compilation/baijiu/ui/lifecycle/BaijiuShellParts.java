@@ -149,8 +149,15 @@ public final class BaijiuShellParts {
 		forceCreateGui(application, modelService, BaijiuShellChrome.WORKBENCH_HOME_PART_ID);
 		restoreDefaultTabSelection(application, modelService);
 		MPart analysis = findPart(modelService, application, BaijiuShellChrome.ANALYSIS_HOME_PART_ID);
-		if(analysis != null && analysis.getParent() instanceof MPartStack pages && pages.getSelectedElement() == analysis) {
-			forceCreateGui(application, modelService, BaijiuShellChrome.ANALYSIS_HOME_PART_ID);
+		if(analysis != null) {
+			/*
+			 * Java 21 / ECJ: getParent() is MElementContainer<MUIElement>,
+			 * incomparable with MPartStack (#49). Widen to MUIElement first.
+			 */
+			MUIElement parent = analysis.getParent();
+			if(parent instanceof MPartStack pages && pages.getSelectedElement() == analysis) {
+				forceCreateGui(application, modelService, BaijiuShellChrome.ANALYSIS_HOME_PART_ID);
+			}
 		}
 	}
 
