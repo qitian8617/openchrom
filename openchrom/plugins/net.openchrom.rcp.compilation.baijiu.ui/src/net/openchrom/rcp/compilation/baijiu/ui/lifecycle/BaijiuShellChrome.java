@@ -41,7 +41,10 @@ import java.util.Set;
  * The chromatogram toolbar serif T (Target Label Settings) is an SWT
  * button in {@code ExtendedChromatogramUI}, not an E4 tool item, so
  * {@code workbench.xmi} cannot bring it back; the SWT sanitizer
- * removes it on every editor create.
+ * removes it on every editor create. The same path drops the unused
+ * separation-column polarity group (info toggle, semi-polar combo,
+ * adjacent + / references button) and locks the series-legend color
+ * column so {@code ColorCellEditor} never allocates a swatch image.
  * Perspective switcher stays hidden. Plant home sash: left column |
  * right fixed 白酒操作 sidebar. The left column is a vertical sash —
  * upper workflow pages (白酒分析 / 推荐积分 / …) and a lower 谱图/采集
@@ -1097,6 +1100,65 @@ public final class BaijiuShellChrome {
 	 * {@code SinglePageWizard}. Opening it is the only job of the T button.
 	 */
 	public static final String TARGET_LABEL_SETTINGS_TITLE = "Target Label Settings";
+	/**
+	 * {@code SeparationColumnUI} combo tooltip. Item labels come from
+	 * {@code SeparationColumnType} ({@code polar} / {@code semi-polar} /
+	 * {@code non-polar (apolar)}). Not an E4 id.
+	 */
+	public static final String SEPARATION_COLUMN_TOOLTIP = "Select a separation column.";
+	/**
+	 * {@code ExtensionMessages.selectChromatogramColumn}, English and German.
+	 */
+	public static final String CHROMATOGRAM_COLUMN_TOOLTIP = "Select a chromatogram column.";
+	/**
+	 * {@code messages_de.properties} for the chromatogram-column tooltip.
+	 */
+	public static final String CHROMATOGRAM_COLUMN_TOOLTIP_DE = "Chromatogrammsäule auswählen.";
+	/**
+	 * {@code IExtendedPartUI.TOOLTIP_INFO}. The chromatogram toolbar i
+	 * button reads {@code Show additional information.} /
+	 * {@code Hide additional information.}
+	 */
+	public static final String CHROMATOGRAM_INFO_TOOLTIP = "additional information.";
+	/**
+	 * Button immediately after {@code SeparationColumnUI} in
+	 * {@code ExtendedChromatogramUI.createToolbarMain}:
+	 * {@code IMAGE_EXPAND_ALL}, tooltip {@code Show/Hide the references toolbar.}
+	 * That is the circled +. An in-widget add control uses {@code Edit Columns}.
+	 */
+	public static final String CHROMATOGRAM_REFERENCES_TOOLTIP = "the references toolbar.";
+	/**
+	 * SWTChart {@code SeriesLabelProvider} color column
+	 * ({@code Messages.COLOR} / German {@code Farbe}). Clicking it installs
+	 * JFace {@code ColorCellEditor}, whose swatch {@code Image} is reported
+	 * by SWT non-dispose tracking.
+	 */
+	public static final String SERIES_LEGEND_COLOR_COLUMN = "Color";
+	/**
+	 * SWTChart {@code SeriesLabelProvider} description column. Together with
+	 * the color column this identifies the chromatogram layer table
+	 * (Chromatogram / Selected Scan / Baseline).
+	 */
+	public static final String SERIES_LEGEND_DESCRIPTION_COLUMN = "Description";
+
+	private static final Set<String> SEPARATION_COLUMN_POLARITY_LABELS = Set.of( //
+			"polar", //
+			"semi-polar", //
+			"semipolar", //
+			"semi polar", //
+			"non-polar", //
+			"non-polar (apolar)", //
+			"nonpolar", //
+			"non polar", //
+			"apolar", //
+			"mittelpolar", //
+			"unpolar", //
+			"极性", //
+			"半极性", //
+			"中等极性", //
+			"非极性", //
+			"弱极性", //
+			"强极性");
 
 	public static final List<String> PART_STACK_HIDE_LABELS = List.of( //
 			"detach", "分离", //
@@ -2606,6 +2668,147 @@ public final class BaijiuShellChrome {
 		return normalized.contains("labels to display in the chromatogram") //
 				|| normalized.contains("beschriftungen, die im chromatogramm angezeigt werden sollen") //
 				|| normalized.contains("target label settings");
+	}
+
+	/**
+	 * Exact {@code SeparationColumnType} label, including the 10-character
+	 * truncation {@code non-polar...} → {@code non-polar}. {@code Default}
+	 * is not a polarity label; the combo tooltip still identifies that row.
+	 */
+	public static boolean isSeparationColumnPolarityLabel(String value) {
+
+		if(value == null || value.isBlank()) {
+			return false;
+		}
+		return SEPARATION_COLUMN_POLARITY_LABELS.contains(normalizeMenuLabel(value));
+	}
+
+	/**
+	 * Chromatogram toolbar polarity combo ({@code SeparationColumnUI}).
+	 * Match the tooltip, the visible item ({@code semi-polar} and the other
+	 * polarity labels), or a list that already contains two polarity types.
+	 */
+	public static boolean isSeparationColumnCombo(String text, String toolTip, String[] items) {
+
+		if(matchesSeparationColumnTooltip(toolTip) || isSeparationColumnPolarityLabel(text)) {
+			return true;
+		}
+		if(items == null) {
+			return false;
+		}
+		int hits = 0;
+		for(int i = 0; i < items.length; i++) {
+			if(isSeparationColumnPolarityLabel(items[i])) {
+				hits++;
+				if(hits >= 2) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Info toggle and the adjacent + on the same toolbar as the polarity
+	 * combo. The serif T is not a companion; {@link #isChromatogramTargetLabelControl}
+	 * owns it. Reset, retention-index, chart grid, and legend tooltips do
+	 * not match.
+	 */
+	public static boolean isChromatogramPolarityCompanionButton(String text, String toolTip) {
+
+		if(isChromatogramTargetLabelControl(text, toolTip)) {
+			return false;
+		}
+		String normalizedText = text == null || text.isBlank() ? "" : normalizeMenuLabel(text);
+		if("+".equals(normalizedText) || "＋".equals(normalizedText) || "add".equals(normalizedText)) {
+			return true;
+		}
+		if(toolTip == null || toolTip.isBlank()) {
+			return false;
+		}
+		String normalized = normalizeMenuLabel(toolTip);
+		return normalized.contains(normalizeMenuLabel(CHROMATOGRAM_INFO_TOOLTIP)) //
+				|| normalized.contains(normalizeMenuLabel(CHROMATOGRAM_REFERENCES_TOOLTIP)) //
+				|| normalized.contains("edit columns") //
+				|| normalized.contains("add column") //
+				|| normalized.contains("add a separation column") //
+				|| normalized.contains("附加信息") //
+				|| normalized.contains("添加色谱柱") //
+				|| normalized.contains("添加分离柱");
+	}
+
+	/**
+	 * Color column of the SWTChart series legend (the layer table beside
+	 * the plot). Title match only; a bare {@code C} clipped by column width
+	 * is still the full title {@code Color}.
+	 */
+	public static boolean isSeriesLegendColorColumn(String title) {
+
+		if(title == null || title.isBlank()) {
+			return false;
+		}
+		String normalized = normalizeMenuLabel(title);
+		return normalizeMenuLabel(SERIES_LEGEND_COLOR_COLUMN).equals(normalized) || "farbe".equals(normalized) || "颜色".equals(normalized) || "色彩".equals(normalized);
+	}
+
+	/**
+	 * SWTChart {@code SeriesListUI} / {@code ExtendedLegendUI}: color column
+	 * plus description plus an identity column (ID or Visible). Other plant
+	 * tables do not carry this set, so their color cells stay untouched.
+	 */
+	public static boolean looksLikeChromatogramSeriesLegend(List<String> titles) {
+
+		if(titles == null || titles.isEmpty()) {
+			return false;
+		}
+		boolean color = false;
+		boolean description = false;
+		boolean identity = false;
+		for(int i = 0; i < titles.size(); i++) {
+			String title = titles.get(i);
+			if(isSeriesLegendColorColumn(title)) {
+				color = true;
+			}
+			if(isSeriesLegendDescriptionColumn(title)) {
+				description = true;
+			}
+			String normalized = title == null || title.isBlank() ? "" : normalizeMenuLabel(title);
+			if("id".equals(normalized) || "visible".equals(normalized) || "sichtbar".equals(normalized) || "visible in legend".equals(normalized) || "mapping status".equals(normalized)) {
+				identity = true;
+			}
+		}
+		return color && description && identity;
+	}
+
+	private static boolean isSeriesLegendDescriptionColumn(String title) {
+
+		if(title == null || title.isBlank()) {
+			return false;
+		}
+		String normalized = normalizeMenuLabel(title);
+		return normalizeMenuLabel(SERIES_LEGEND_DESCRIPTION_COLUMN).equals(normalized) || "beschreibung".equals(normalized) || "描述".equals(normalized) || "说明".equals(normalized);
+	}
+
+	private static boolean matchesSeparationColumnTooltip(String value) {
+
+		if(value == null || value.isBlank()) {
+			return false;
+		}
+		String normalized = normalizeMenuLabel(value);
+		if(normalized.equals(normalizeMenuLabel(SEPARATION_COLUMN_TOOLTIP))) {
+			return true;
+		}
+		if(normalized.equals(normalizeMenuLabel(CHROMATOGRAM_COLUMN_TOOLTIP))) {
+			return true;
+		}
+		if(normalized.equals(normalizeMenuLabel(CHROMATOGRAM_COLUMN_TOOLTIP_DE))) {
+			return true;
+		}
+		return normalized.contains("select a separation column") //
+				|| normalized.contains("select a chromatogram column") //
+				|| normalized.contains("chromatogrammsäule") //
+				|| normalized.contains("选择分离柱") //
+				|| normalized.contains("选择色谱柱");
 	}
 
 	public static boolean shouldHideChartMenuItem(String label) {

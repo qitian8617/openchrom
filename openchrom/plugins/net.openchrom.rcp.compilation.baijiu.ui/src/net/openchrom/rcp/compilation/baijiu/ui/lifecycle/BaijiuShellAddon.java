@@ -701,6 +701,8 @@ public class BaijiuShellAddon {
 		Runnable sanitize = () -> {
 			BaijiuShellParts.sanitizePlantMenuContributions(application, modelService);
 			BaijiuShellMenus.hideChromatogramTargetLabelControls();
+			BaijiuShellMenus.hideChromatogramPolarityControls();
+			BaijiuShellMenus.lockChromatogramSeriesColorColumns();
 		};
 		try {
 			Display display = Display.getCurrent();
