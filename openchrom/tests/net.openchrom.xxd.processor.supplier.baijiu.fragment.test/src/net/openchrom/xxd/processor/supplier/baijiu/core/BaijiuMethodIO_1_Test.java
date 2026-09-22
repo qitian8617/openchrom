@@ -228,28 +228,28 @@ public class BaijiuMethodIO_1_Test {
 		assertEquals(2.0d, settings.getGb2757OtherLimit100VolGL(), 1.0e-9d);
 		assertEquals("GB 2757", settings.getGb2757Standard());
 		assertEquals(BaijiuAromaType.NONG, settings.getAromaTemplate());
-		assertEquals(16, BaijiuCatalog.compounds().size());
+		assertEquals(15, BaijiuCatalog.compounds().size());
 		int mixAnalytes = 0;
 		for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
 			assertEquals(compound.getName(), settings.displayName(compound));
 			assertEquals(compound.getVendorRtMin() + BaijiuCatalog.DEFAULT_INSTRUMENT_RT_OFFSET_MIN, settings.expectedRtMin(compound), 1.0e-9d);
 			assertEquals(0.15d, settings.windowMin(compound), 1.0e-9d);
+			assertEquals(compound.getDefaultMixGramsPerLiter(), settings.mixGramsPerLiter(compound), 1.0e-9d);
 			if(compound.isInternalStandard()) {
-				assertEquals(0.0d, settings.mixGramsPerLiter(compound), 1.0e-9d);
+				assertEquals(0.3632d, settings.mixGramsPerLiter(compound), 1.0e-9d);
 				assertFalse(settings.isQuantified(compound));
 				assertFalse(settings.isGb2757Target(compound));
 			} else {
-				assertEquals(compound.getDefaultMixGramsPerLiter(), settings.mixGramsPerLiter(compound), 1.0e-9d);
 				assertTrue(settings.isQuantified(compound));
 				mixAnalytes++;
 			}
 			assertEquals(compound.isMethanol(), settings.isGb2757Target(compound), compound.getId());
 			assertFalse(settings.hasResponseFactor(compound.getId()));
 		}
-		assertEquals(15, mixAnalytes);
+		assertEquals(14, mixAnalytes);
 		assertEquals(2.316d, settings.expectedRtMin(BaijiuCatalog.byId("acetaldehyde")), 1.0e-6d);
 		assertEquals(2.718d, settings.expectedRtMin(BaijiuCatalog.byId("methanol")), 1.0e-6d);
-		assertEquals(10.382d, settings.expectedRtMin(BaijiuCatalog.istd()), 1.0e-6d);
+		assertEquals(10.582d, settings.expectedRtMin(BaijiuCatalog.istd()), 1.0e-6d);
 		assertEquals(16.934d, settings.expectedRtMin(BaijiuCatalog.byId("ethyl_hexanoate")), 1.0e-6d);
 		assertTrue(settings.getCalibrationPoints().isEmpty());
 		assertTrue(settings.getCalibrationFits().isEmpty());
@@ -350,7 +350,7 @@ public class BaijiuMethodIO_1_Test {
 		}
 		chromatogram.getPeaks().add(peak(chromatogram, 2.718d, 800.0d));
 		chromatogram.getPeaks().add(peak(chromatogram, 3.746d, 900.0d));
-		chromatogram.getPeaks().add(peak(chromatogram, 10.382d, 1000.0d));
+		chromatogram.getPeaks().add(peak(chromatogram, 10.582d, 1000.0d));
 		chromatogram.getPeaks().add(peak(chromatogram, 15.201d, 1100.0d));
 		chromatogram.getPeaks().add(peak(chromatogram, 16.934d, 1200.0d));
 		return chromatogram;
@@ -370,7 +370,7 @@ public class BaijiuMethodIO_1_Test {
 			chromatogram.addScan(scan);
 		}
 		chromatogram.getPeaks().add(peak(chromatogram, 2.718d, methanolArea));
-		chromatogram.getPeaks().add(peak(chromatogram, 10.382d, istdArea));
+		chromatogram.getPeaks().add(peak(chromatogram, 10.582d, istdArea));
 		return chromatogram;
 	}
 

@@ -1010,7 +1010,7 @@ public final class BaijiuAnalysisShell {
 			item.setText(3, format(settings.windowMin(compound), 3));
 			item.setText(4, BaijiuTerms.yesNo(settings.isQuantified(compound)));
 			item.setText(5, BaijiuTerms.yesNo(settings.isGb2757Target(compound)));
-			item.setText(6, compound.isInternalStandard() ? "-" : format(settings.mixGramsPerLiter(compound), 4));
+			item.setText(6, format(settings.mixGramsPerLiter(compound), 4));
 			Double rf = settings.responseFactor(compound.getId());
 			item.setText(7, rf == null ? "-" : format(rf, 4));
 			item.setText(8, compound.getNote());
@@ -1073,7 +1073,7 @@ public final class BaijiuAnalysisShell {
 		editName.setText(settings.displayName(selectedCompound));
 		editRt.setText(format(settings.expectedRtMin(selectedCompound), 3));
 		editWindow.setText(format(settings.windowMin(selectedCompound), 3));
-		editMix.setText(selectedCompound.isInternalStandard() ? "" : format(settings.mixGramsPerLiter(selectedCompound), 4));
+		editMix.setText(format(settings.mixGramsPerLiter(selectedCompound), 4));
 		Double rf = settings.responseFactor(selectedCompound.getId());
 		editRf.setText(rf == null ? "" : format(rf, 4));
 		boolean analyte = !selectedCompound.isInternalStandard();

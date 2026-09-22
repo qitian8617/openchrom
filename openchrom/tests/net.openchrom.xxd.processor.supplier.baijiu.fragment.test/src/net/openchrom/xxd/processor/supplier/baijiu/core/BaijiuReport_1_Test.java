@@ -148,7 +148,7 @@ public class BaijiuReport_1_Test {
 	@Test
 	public void chromatogramSectionStaysVisibleWithoutScans() {
 
-		BaijiuQuantRow row = new BaijiuQuantRow(BaijiuCatalog.byId(BaijiuCatalog.METHANOL_ID), null, 2.718d, 2.718d, 180.0d, 0.4758d, 1.0d, 0.18d, "");
+		BaijiuQuantRow row = new BaijiuQuantRow(BaijiuCatalog.byId(BaijiuCatalog.METHANOL_ID), null, 2.718d, 2.718d, 180.0d, 0.4718d, 1.0d, 0.18d, "");
 		Gb2757Result gb = Gb2757Judge.judge(0.18d, 52.0d, BaijiuRawMaterial.GRAIN, BaijiuMethodSettings.defaultNongxiangFid());
 		BaijiuAnalysisResult result = new BaijiuAnalysisResult(true, "ok", List.of(row), gb, null, 1.6d, List.of());
 		String html = BaijiuReportHtml.render(demoSample(), BaijiuMethodSettings.defaultNongxiangFid(), result);
@@ -236,7 +236,7 @@ public class BaijiuReport_1_Test {
 			chromatogram.addScan(scan);
 		}
 		chromatogram.getPeaks().add(peak(chromatogram, 2.718d, 180.0d));
-		chromatogram.getPeaks().add(peak(chromatogram, 10.382d, 1600.0d));
+		chromatogram.getPeaks().add(peak(chromatogram, 10.582d, 1600.0d));
 		return chromatogram;
 	}
 

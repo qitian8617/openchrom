@@ -38,7 +38,7 @@ public class BaijiuRegressionChecklist_1_Test {
 			scan.setRetentionTime(i * 1000);
 			chromatogram.addScan(scan);
 		}
-		double[] rts = {2.316, 2.718, 3.746, 4.664, 4.851, 5.129, 6.137, 7.887, 9.250, 10.382, 11.423, 13.945, 15.201, 16.179, 16.555, 16.934};
+		double[] rts = {2.316, 2.718, 3.746, 4.664, 4.851, 5.129, 6.137, 7.887, 9.250, 10.582, 11.423, 13.945, 15.201, 16.179, 16.934};
 		for(double rt : rts) {
 			chromatogram.getPeaks().add(peak(chromatogram, rt, rt == 2.718d ? 180.0d : 1600.0d));
 		}

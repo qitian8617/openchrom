@@ -142,7 +142,7 @@ public class BaijiuMultipointCalibration_1_Test {
 		}
 		chromatogram.getPeaks().add(peak(chromatogram, 2.718d, methanolArea));
 		chromatogram.getPeaks().add(peak(chromatogram, 3.746d, ethylAcetateArea));
-		chromatogram.getPeaks().add(peak(chromatogram, 10.382d, istdArea));
+		chromatogram.getPeaks().add(peak(chromatogram, 10.582d, istdArea));
 		chromatogram.getPeaks().add(peak(chromatogram, 15.201d, ethylLactateArea));
 		chromatogram.getPeaks().add(peak(chromatogram, 16.934d, ethylHexanoateArea));
 		return chromatogram;
