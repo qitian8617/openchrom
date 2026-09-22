@@ -698,7 +698,10 @@ public class BaijiuShellAddon {
 
 	private static void scheduleSanitizePlantMenus(MApplication application, EModelService modelService) {
 
-		Runnable sanitize = () -> BaijiuShellParts.sanitizePlantMenuContributions(application, modelService);
+		Runnable sanitize = () -> {
+			BaijiuShellParts.sanitizePlantMenuContributions(application, modelService);
+			BaijiuShellMenus.hideChromatogramTargetLabelControls();
+		};
 		try {
 			Display display = Display.getCurrent();
 			if(display == null || display.isDisposed()) {

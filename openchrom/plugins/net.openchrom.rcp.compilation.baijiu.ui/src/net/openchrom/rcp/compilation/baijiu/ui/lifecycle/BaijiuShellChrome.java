@@ -38,6 +38,10 @@ import java.util.Set;
  * The CSD chart popup is ChemClipse {@code ProcessorSupplierMenuEntry}
  * copied onto SWTChart independently of E4 — plant allowlist only
  * (重置图表 / 设置图表范围 / 撤销选择 / 用户限制 / 范围选择).
+ * The chromatogram toolbar serif T (Target Label Settings) is an SWT
+ * button in {@code ExtendedChromatogramUI}, not an E4 tool item, so
+ * {@code workbench.xmi} cannot bring it back; the SWT sanitizer
+ * removes it on every editor create.
  * Perspective switcher stays hidden. Plant home sash: left column |
  * right fixed 白酒操作 sidebar. The left column is a vertical sash —
  * upper workflow pages (白酒分析 / 推荐积分 / …) and a lower 谱图/采集
@@ -1075,6 +1079,24 @@ public final class BaijiuShellChrome {
 			"mass spectrum filter", "mass spectrum identifier", //
 			"peak mass spectrum filter", "scan mass spectrum filter", //
 			"procedures");
+
+	/**
+	 * Tooltip on the chromatogram toolbar serif-T button
+	 * ({@code ExtendedChromatogramUI.createButtonTargetLabels} /
+	 * {@code ExtensionMessages.manageLabelsChromatogram}). English is the
+	 * ChemClipse default; German is the only other bundle translation.
+	 * The button has no contribution id.
+	 */
+	public static final String CHROMATOGRAM_TARGET_LABEL_TOOLTIP = "Manage the labels to display in the chromatogram.";
+	/**
+	 * {@code messages_de.properties} for the same key.
+	 */
+	public static final String CHROMATOGRAM_TARGET_LABEL_TOOLTIP_DE = "Verwalten Sie die Beschriftungen, die im Chromatogramm angezeigt werden sollen.";
+	/**
+	 * Window title of {@code TargetDisplaySettingsWizard} /
+	 * {@code SinglePageWizard}. Opening it is the only job of the T button.
+	 */
+	public static final String TARGET_LABEL_SETTINGS_TITLE = "Target Label Settings";
 
 	public static final List<String> PART_STACK_HIDE_LABELS = List.of( //
 			"detach", "分离", //
@@ -2533,6 +2555,57 @@ public final class BaijiuShellChrome {
 			return false;
 		}
 		return tags.contains(GC_CONSOLE_HIDDEN_TAG);
+	}
+
+	/**
+	 * Plant chromatogram surface must not open Target Label Settings.
+	 * Match the toolbar button tooltip, a menu item with that tooltip or
+	 * the wizard title, or the dialog title itself. Peak integration,
+	 * the peak table, and reports do not use this control.
+	 * <p>
+	 * Not an E4 id, so this does not bump {@link #CHROME_EPOCH}: a bump
+	 * rebuilds {@code workbench.xmi} and would reset the plant sash for a
+	 * widget the model cannot store. The SWT sanitizer re-applies on
+	 * Show / Paint and on every plant-menu sanitize, including the
+	 * second launch.
+	 */
+	public static boolean isChromatogramTargetLabelControl(String text, String toolTip) {
+
+		return matchesTargetLabelSettings(text) || matchesTargetLabelSettings(toolTip);
+	}
+
+	/**
+	 * {@code WizardDialog} shell whose title is Target Label Settings.
+	 * Prefix match covers a trailing qualifier; other shells stay open.
+	 */
+	public static boolean shouldCloseTargetLabelSettingsShell(String title) {
+
+		if(title == null || title.isBlank()) {
+			return false;
+		}
+		String normalized = normalizeMenuLabel(title);
+		String expected = normalizeMenuLabel(TARGET_LABEL_SETTINGS_TITLE);
+		return normalized.equals(expected) || normalized.startsWith(expected + " ");
+	}
+
+	private static boolean matchesTargetLabelSettings(String value) {
+
+		if(value == null || value.isBlank()) {
+			return false;
+		}
+		String normalized = normalizeMenuLabel(value);
+		if(normalized.equals(normalizeMenuLabel(CHROMATOGRAM_TARGET_LABEL_TOOLTIP))) {
+			return true;
+		}
+		if(normalized.equals(normalizeMenuLabel(CHROMATOGRAM_TARGET_LABEL_TOOLTIP_DE))) {
+			return true;
+		}
+		if(normalized.equals(normalizeMenuLabel(TARGET_LABEL_SETTINGS_TITLE))) {
+			return true;
+		}
+		return normalized.contains("labels to display in the chromatogram") //
+				|| normalized.contains("beschriftungen, die im chromatogramm angezeigt werden sollen") //
+				|| normalized.contains("target label settings");
 	}
 
 	public static boolean shouldHideChartMenuItem(String label) {

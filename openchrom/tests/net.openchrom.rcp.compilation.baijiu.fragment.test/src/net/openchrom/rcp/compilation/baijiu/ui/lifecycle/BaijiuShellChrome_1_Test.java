@@ -866,6 +866,16 @@ public class BaijiuShellChrome_1_Test {
 		assertTrue(BaijiuShellChrome.looksLikePartStackMenu(java.util.List.of("Restore", "Detach", "Close All")));
 		assertTrue(BaijiuShellChrome.looksLikeChartMenu(java.util.List.of("Reset Chart", "User Restriction")));
 		assertTrue(BaijiuShellChrome.looksLikeChartMenu(java.util.List.of("1:1 重置图表", "用户限制", "峰检测器")));
+		assertTrue(BaijiuShellChrome.isChromatogramTargetLabelControl(null, BaijiuShellChrome.CHROMATOGRAM_TARGET_LABEL_TOOLTIP));
+		assertTrue(BaijiuShellChrome.isChromatogramTargetLabelControl(null, BaijiuShellChrome.CHROMATOGRAM_TARGET_LABEL_TOOLTIP_DE));
+		assertTrue(BaijiuShellChrome.isChromatogramTargetLabelControl(BaijiuShellChrome.TARGET_LABEL_SETTINGS_TITLE, null));
+		assertTrue(BaijiuShellChrome.isChromatogramTargetLabelControl("&Target Label Settings", null));
+		assertFalse(BaijiuShellChrome.isChromatogramTargetLabelControl("Reset Chart", "Reset the chart"));
+		assertFalse(BaijiuShellChrome.isChromatogramTargetLabelControl(null, "Toggle Visibility"));
+		assertTrue(BaijiuShellChrome.shouldCloseTargetLabelSettingsShell(BaijiuShellChrome.TARGET_LABEL_SETTINGS_TITLE));
+		assertTrue(BaijiuShellChrome.shouldCloseTargetLabelSettingsShell("Target Label Settings - Peak"));
+		assertFalse(BaijiuShellChrome.shouldCloseTargetLabelSettingsShell("白酒 FID 工作站"));
+		assertFalse(BaijiuShellChrome.shouldCloseTargetLabelSettingsShell(null));
 		assertEquals("NoDetach", BaijiuShellChrome.NO_DETACH_TAG);
 		assertEquals("NoMove", BaijiuShellChrome.NO_MOVE_TAG);
 		assertEquals("NoClose", BaijiuShellChrome.NO_CLOSE_TAG);

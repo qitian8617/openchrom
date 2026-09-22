@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -27,6 +28,8 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.ToolBar;
+import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
 
@@ -43,10 +46,17 @@ import net.openchrom.rcp.compilation.baijiu.ui.handlers.BaijiuOpenSelectViewHand
  * OpenChrom is unchanged. Chart popups are an allowlist (重置图表 /
  * 设置图表范围 / 撤销选择 / 用户限制 / 范围选择) so processor cascades
  * cannot return after reopen or {@code applySettings}.
+ * <p>
+ * The chromatogram toolbar serif T (Target Label Settings) is created
+ * in ChemClipse {@code ExtendedChromatogramUI.createButtonTargetLabels}
+ * with no E4 id. Dispose that button, any menu item that carries the
+ * same tooltip or wizard title, and a shell titled Target Label Settings,
+ * on Show / Paint and on every plant-menu sanitize.
  */
 public final class BaijiuShellMenus {
 
 	private static final Object LOCK = new Object();
+	private static final String TARGET_LABEL_HIDDEN = "net.openchrom.baijiu.targetLabelHidden";
 	private static final String SELECT_VIEW_FALLBACK = "net.openchrom.baijiu.selectViewFallback";
 	private static final String ABOUT_FALLBACK = "net.openchrom.baijiu.aboutFallback";
 	private static final String CHART_SANITIZE_RETRY = "net.openchrom.baijiu.chartSanitizeRetry";
@@ -71,6 +81,12 @@ public final class BaijiuShellMenus {
 					return;
 				}
 				Listener listener = event -> {
+					if(event.type == SWT.Paint) {
+						if(event.widget instanceof Button button && !button.isDisposed()) {
+							concealTargetLabelButton(button);
+						}
+						return;
+					}
 					if(event.widget instanceof Menu menu && !menu.isDisposed()) {
 						sanitize(menu);
 					} else if(event.widget instanceof MenuItem item && !item.isDisposed()) {
@@ -83,11 +99,18 @@ public final class BaijiuShellMenus {
 							sanitize(cascade);
 						}
 					} else if(event.widget instanceof Shell shell && !shell.isDisposed()) {
+						closeTargetLabelSettingsShell(shell);
 						sanitizeSelectView(shell);
 						Menu bar = shell.getMenuBar();
 						if(bar != null && !bar.isDisposed()) {
 							sanitizeMainMenuBar(bar);
 						}
+					} else if(event.widget instanceof Button button && !button.isDisposed()) {
+						concealTargetLabelButton(button);
+					} else if(event.widget instanceof ToolBar toolBar && !toolBar.isDisposed()) {
+						concealTargetLabelToolBar(toolBar);
+					} else if(event.type == SWT.Show && event.widget instanceof Composite composite && !composite.isDisposed()) {
+						hideTargetLabelButtonsIn(composite);
 					} else if(event.widget instanceof Table table && !table.isDisposed()) {
 						sanitizeSelectViewTable(table);
 					} else if(event.widget instanceof Tree tree && !tree.isDisposed()) {
@@ -103,6 +126,7 @@ public final class BaijiuShellMenus {
 				display.addFilter(SWT.Arm, listener);
 				display.addFilter(SWT.Activate, listener);
 				display.addFilter(SWT.MenuDetect, listener);
+				display.addFilter(SWT.Paint, listener);
 				installed = listener;
 			}
 		} catch(RuntimeException | LinkageError e) {
@@ -177,6 +201,9 @@ public final class BaijiuShellMenus {
 				continue;
 			}
 			String text = item.getText();
+			if(disposeIfTargetLabelSettings(item)) {
+				continue;
+			}
 			boolean hide = false;
 			if(chart && !BaijiuShellChrome.researchMenusVisible()) {
 				if(keepRangeChildren) {
@@ -240,6 +267,9 @@ public final class BaijiuShellMenus {
 			}
 			String text = item.getText();
 			if(text == null || text.isBlank()) {
+				continue;
+			}
+			if(disposeIfTargetLabelSettings(item)) {
 				continue;
 			}
 			boolean already = false;
@@ -308,6 +338,9 @@ public final class BaijiuShellMenus {
 				continue;
 			}
 			String text = item.getText();
+			if(disposeIfTargetLabelSettings(item)) {
+				continue;
+			}
 			if(BaijiuShellChrome.shouldHideViewMenuChild(null, text)) {
 				try {
 					item.dispose();
@@ -415,6 +448,9 @@ public final class BaijiuShellMenus {
 				continue;
 			}
 			String text = item.getText();
+			if(disposeIfTargetLabelSettings(item)) {
+				continue;
+			}
 			String normalized = BaijiuShellChrome.normalizeMenuLabel(text == null ? "" : text);
 			boolean save = "save".equals(normalized) || "保存".equals(normalized);
 			if(save) {
@@ -458,6 +494,9 @@ public final class BaijiuShellMenus {
 			if((item.getStyle() & SWT.SEPARATOR) != 0) {
 				continue;
 			}
+			if(disposeIfTargetLabelSettings(item)) {
+				continue;
+			}
 			if(BaijiuShellChrome.shouldHideBaijiuCascadeChild(null, item.getText())) {
 				try {
 					item.dispose();
@@ -487,6 +526,9 @@ public final class BaijiuShellMenus {
 				} catch(RuntimeException e) {
 					return;
 				}
+				continue;
+			}
+			if(disposeIfTargetLabelSettings(item)) {
 				continue;
 			}
 			if(BaijiuShellChrome.shouldHideHelpMenuChild(null, item.getText())) {
@@ -765,6 +807,251 @@ public final class BaijiuShellMenus {
 
 		String normalized = BaijiuShellChrome.normalizeMenuLabel(label == null ? "" : label);
 		return "detach".equals(normalized) || "close others".equals(normalized) || "close all".equals(normalized) || "分离".equals(normalized) || "关闭其他".equals(normalized) || "关闭全部".equals(normalized);
+	}
+
+	/**
+	 * Drop the chromatogram Target Label Settings toolbar button and dialog
+	 * from every live shell. Safe to call on each plant-menu sanitize;
+	 * headless fragment tests have no current display and return.
+	 */
+	public static void hideChromatogramTargetLabelControls() {
+
+		try {
+			Display display = Display.getCurrent();
+			if(display == null || display.isDisposed()) {
+				return;
+			}
+			Shell[] shells = display.getShells();
+			for(int i = 0; i < shells.length; i++) {
+				Shell shell = shells[i];
+				if(shell == null || shell.isDisposed()) {
+					continue;
+				}
+				closeTargetLabelSettingsShell(shell);
+				walkTargetLabelControls(shell, 0);
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// headless fragment tests / Display not ready
+		}
+	}
+
+	private static boolean disposeIfTargetLabelSettings(MenuItem item) {
+
+		if(item == null || item.isDisposed() || (item.getStyle() & SWT.SEPARATOR) != 0) {
+			return false;
+		}
+		String tip = null;
+		try {
+			tip = item.getToolTipText();
+		} catch(RuntimeException | LinkageError e) {
+			tip = null;
+		}
+		if(!BaijiuShellChrome.isChromatogramTargetLabelControl(item.getText(), tip)) {
+			return false;
+		}
+		hideMenuItem(item);
+		return true;
+	}
+
+	private static void hideTargetLabelButtonsIn(Composite composite) {
+
+		if(composite == null || composite.isDisposed()) {
+			return;
+		}
+		Control[] children;
+		try {
+			children = composite.getChildren();
+		} catch(RuntimeException e) {
+			return;
+		}
+		for(int i = 0; i < children.length; i++) {
+			Control child = children[i];
+			if(child instanceof Button button) {
+				concealTargetLabelButton(button);
+			} else if(child instanceof ToolBar toolBar) {
+				concealTargetLabelToolBar(toolBar);
+			}
+		}
+	}
+
+	private static void walkTargetLabelControls(Control control, int depth) {
+
+		if(control == null || control.isDisposed() || depth > 24) {
+			return;
+		}
+		if(control instanceof Button button) {
+			concealTargetLabelButton(button);
+		}
+		if(control instanceof ToolBar toolBar) {
+			concealTargetLabelToolBar(toolBar);
+		}
+		if(control instanceof Composite composite) {
+			Control[] children;
+			try {
+				children = composite.getChildren();
+			} catch(RuntimeException e) {
+				return;
+			}
+			for(int i = 0; i < children.length; i++) {
+				walkTargetLabelControls(children[i], depth + 1);
+			}
+		}
+	}
+
+	/**
+	 * {@code new Button} sends Show before ChemClipse sets the tooltip, so
+	 * Paint (after {@code setToolTipText}) is the reliable hook. Disable
+	 * and drop selection listeners immediately, then dispose off the paint
+	 * stack so the serif T cannot open the wizard.
+	 */
+	private static void concealTargetLabelButton(Button button) {
+
+		if(button == null || button.isDisposed() || Boolean.TRUE.equals(button.getData(TARGET_LABEL_HIDDEN))) {
+			return;
+		}
+		String text;
+		String tip;
+		try {
+			text = button.getText();
+			tip = button.getToolTipText();
+		} catch(RuntimeException e) {
+			return;
+		}
+		if(!BaijiuShellChrome.isChromatogramTargetLabelControl(text, tip)) {
+			return;
+		}
+		button.setData(TARGET_LABEL_HIDDEN, Boolean.TRUE);
+		try {
+			Listener[] selection = button.getListeners(SWT.Selection);
+			if(selection != null) {
+				for(int i = 0; i < selection.length; i++) {
+					button.removeListener(SWT.Selection, selection[i]);
+				}
+			}
+			button.setEnabled(false);
+			button.setVisible(false);
+			Object layoutData = button.getLayoutData();
+			if(layoutData instanceof GridData grid) {
+				grid.exclude = true;
+			} else {
+				GridData grid = new GridData();
+				grid.exclude = true;
+				button.setLayoutData(grid);
+			}
+		} catch(RuntimeException e) {
+			// widget mid-create; async dispose still runs
+		}
+		Composite parent;
+		try {
+			parent = button.getParent();
+		} catch(RuntimeException e) {
+			parent = null;
+		}
+		Display display;
+		try {
+			display = button.getDisplay();
+		} catch(RuntimeException e) {
+			return;
+		}
+		if(display == null || display.isDisposed()) {
+			return;
+		}
+		final Composite toolbar = parent;
+		display.asyncExec(() -> {
+			if(button.isDisposed()) {
+				return;
+			}
+			try {
+				button.dispose();
+			} catch(RuntimeException e) {
+				return;
+			}
+			if(toolbar != null && !toolbar.isDisposed()) {
+				try {
+					toolbar.layout(true, true);
+				} catch(RuntimeException e) {
+					// toolbar already closing
+				}
+			}
+		});
+	}
+
+	private static void concealTargetLabelToolBar(ToolBar toolBar) {
+
+		if(toolBar == null || toolBar.isDisposed()) {
+			return;
+		}
+		ToolItem[] items;
+		try {
+			items = toolBar.getItems();
+		} catch(RuntimeException e) {
+			return;
+		}
+		for(int i = 0; i < items.length; i++) {
+			ToolItem item = items[i];
+			if(item == null || item.isDisposed() || Boolean.TRUE.equals(item.getData(TARGET_LABEL_HIDDEN))) {
+				continue;
+			}
+			String text;
+			String tip;
+			try {
+				text = item.getText();
+				tip = item.getToolTipText();
+			} catch(RuntimeException e) {
+				continue;
+			}
+			if(!BaijiuShellChrome.isChromatogramTargetLabelControl(text, tip)) {
+				continue;
+			}
+			item.setData(TARGET_LABEL_HIDDEN, Boolean.TRUE);
+			try {
+				item.dispose();
+			} catch(RuntimeException e) {
+				// toolbar already closing
+			}
+		}
+	}
+
+	private static void closeTargetLabelSettingsShell(Shell shell) {
+
+		if(shell == null || shell.isDisposed() || Boolean.TRUE.equals(shell.getData(TARGET_LABEL_HIDDEN))) {
+			return;
+		}
+		String title;
+		try {
+			title = shell.getText();
+		} catch(RuntimeException e) {
+			return;
+		}
+		if(!BaijiuShellChrome.shouldCloseTargetLabelSettingsShell(title)) {
+			return;
+		}
+		shell.setData(TARGET_LABEL_HIDDEN, Boolean.TRUE);
+		try {
+			shell.setAlpha(0);
+			shell.setVisible(false);
+		} catch(RuntimeException e) {
+			// alpha unsupported; close still runs
+		}
+		Display display;
+		try {
+			display = shell.getDisplay();
+		} catch(RuntimeException e) {
+			return;
+		}
+		if(display == null || display.isDisposed()) {
+			return;
+		}
+		display.asyncExec(() -> {
+			if(shell.isDisposed()) {
+				return;
+			}
+			try {
+				shell.close();
+			} catch(RuntimeException e) {
+				// dialog already gone
+			}
+		});
 	}
 
 	private static void hideMenuItem(MenuItem item) {

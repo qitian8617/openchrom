@@ -274,6 +274,10 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(chromeSrc.contains("BAIJIU_MENU_KEEP_ID_PREFIXES"), chromeSrc);
 		assertTrue(chromeSrc.contains("HELP_MENU_KEEP_ELEMENT_IDS"), chromeSrc);
 		assertTrue(chromeSrc.contains("isHelpMenuId"), chromeSrc);
+		assertTrue(chromeSrc.contains("TARGET_LABEL_SETTINGS_TITLE"), chromeSrc);
+		assertTrue(chromeSrc.contains("CHROMATOGRAM_TARGET_LABEL_TOOLTIP"), chromeSrc);
+		assertTrue(chromeSrc.contains("isChromatogramTargetLabelControl"), chromeSrc);
+		assertTrue(chromeSrc.contains("shouldCloseTargetLabelSettingsShell"), chromeSrc);
 		assertTrue(chromeSrc.contains("PLANT_ABOUT_MENU_ID"), chromeSrc);
 		assertTrue(chromeSrc.contains("ABOUT_DIRECT_HANDLER_URI"), chromeSrc);
 		assertTrue(chromeSrc.contains("ABOUT_LOGO_PATH"), chromeSrc);
@@ -431,6 +435,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(addonSrc.contains("shouldHideMenuContribution"), addonSrc);
 		assertTrue(addonSrc.contains("shouldSanitizePlantMenuChildrenAfterChange"), addonSrc);
 		assertTrue(addonSrc.contains("scheduleSanitizePlantMenus"), addonSrc);
+		assertTrue(addonSrc.contains("hideChromatogramTargetLabelControls"), addonSrc);
 		assertTrue(addonSrc.contains("sanitizeGeneration"), addonSrc);
 		assertTrue(addonSrc.contains("shouldSanitizeAfterPartActivation"), addonSrc);
 		assertTrue(addonSrc.contains("shouldSanitizeAfterVisibilityChange"), addonSrc);
@@ -980,6 +985,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(shellMenusSrc.contains("SWT.Arm"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("SWT.Activate"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("SWT.MenuDetect"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("SWT.Paint"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("shouldHidePlantChartMenuItem"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("hideMenuItem"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("item.dispose()"), shellMenusSrc);
@@ -1013,6 +1019,11 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(shellMenusSrc.contains("BaijiuAboutHandler"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("ensureAboutOpensOnClick"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("shouldHideFileMenuChild"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("hideChromatogramTargetLabelControls"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("concealTargetLabelButton"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("closeTargetLabelSettingsShell"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("isChromatogramTargetLabelControl"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("disposeIfTargetLabelSettings"), shellMenusSrc);
 
 		Path seqPart = locate("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/parts/BaijiuSequencePart.java", "plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/parts/BaijiuSequencePart.java");
 		assertNotNull(seqPart);
