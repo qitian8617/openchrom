@@ -104,9 +104,9 @@ public final class BaijiuWorkbenchParts {
 	}
 
 	/**
-	 * ChemClipse {@code org.eclipse.e4.primaryDataStack} when present; otherwise
-	 * the left 谱图/采集 workflow {@code partstack.plantChromatogram}. Open CSD
-	 * editors are hosted as children of {@link #findPlantChromatogramStack}.
+	 * Lower-left 谱图/采集 stack when the plant shell is present; otherwise
+	 * ChemClipse {@code org.eclipse.e4.primaryDataStack}. Open CSD editors
+	 * are hosted as children of {@link #findPlantChromatogramStack}.
 	 */
 	public static MPartStack findPlantEditorStack(MApplication application, EModelService modelService) {
 
@@ -142,7 +142,7 @@ public final class BaijiuWorkbenchParts {
 	}
 
 	/**
-	 * Dock a created CSD editor into the left 谱图/采集 PartStack and select
+	 * Dock a created CSD editor into the lower-left 谱图/采集 PartStack and select
 	 * it. Does not {@code setParent} the editor widget into the empty-state
 	 * home Composite (e4 selection/layout steals that widget back).
 	 */
@@ -172,11 +172,12 @@ public final class BaijiuWorkbenchParts {
 		if(plantStack == null) {
 			return false;
 		}
+		MPart home = findPart(modelService, application, BaijiuPerspectiveIds.CHROMATOGRAM_HOME_PART_ID);
 		List<MPart> editors = modelService.findElements(application, BaijiuPerspectiveIds.CSD_EDITOR_PART_ID, MPart.class, null);
 		if(editors == null || editors.isEmpty()) {
+			hideEmptyChromatogramHome(home, false);
 			return false;
 		}
-		MPart home = findPart(modelService, application, BaijiuPerspectiveIds.CHROMATOGRAM_HOME_PART_ID);
 		boolean hosted = false;
 		MPart last = null;
 		for(MPart part : editors) {

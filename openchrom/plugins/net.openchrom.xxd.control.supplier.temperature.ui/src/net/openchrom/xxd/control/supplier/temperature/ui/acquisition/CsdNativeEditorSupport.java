@@ -314,12 +314,17 @@ public final class CsdNativeEditorSupport {
 
 	private static MPartStack resolveEditorStack(EModelService modelService, MApplication application) {
 
-		MUIElement primary = modelService.find(IPerspectiveAndViewIds.EDITOR_PART_STACK_ID, application);
-		if(primary instanceof MPartStack stack) {
-			return stack;
-		}
+		/*
+		 * Plant home: open live and saved chromatograms straight into the
+		 * lower-left 谱图/采集 stack. The ChemClipse primary editor stack is
+		 * only the community fallback.
+		 */
 		MUIElement plant = modelService.find(TemperatureControlIds.PLANT_CHROMATOGRAM_STACK_ID, application);
 		if(plant instanceof MPartStack stack) {
+			return stack;
+		}
+		MUIElement primary = modelService.find(IPerspectiveAndViewIds.EDITOR_PART_STACK_ID, application);
+		if(primary instanceof MPartStack stack) {
 			return stack;
 		}
 		return null;

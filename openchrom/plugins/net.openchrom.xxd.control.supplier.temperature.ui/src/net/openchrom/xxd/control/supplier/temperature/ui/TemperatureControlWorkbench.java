@@ -81,8 +81,8 @@ public final class TemperatureControlWorkbench {
 
 	/**
 	 * After Start Analysis / open CSD: stay on plant home and show the
-	 * left-hand 谱图/采集 Area (ChemClipse editor) so live acquisition has
-	 * a large chart surface. Does not steal the right sidebar tab.
+	 * lower-left 谱图/采集 stack so live acquisition draws there. Does not
+	 * steal the right sidebar tab or the upper workflow page.
 	 * No-op on the community product.
 	 */
 	public static boolean showAcquisitionSurface() {
@@ -150,11 +150,12 @@ public final class TemperatureControlWorkbench {
 		if(!(stackElement instanceof MPartStack plantStack)) {
 			return false;
 		}
+		MPart home = findPart(modelService, application, TemperatureControlIds.CHROMATOGRAM_HOME_PART_ID);
 		List<MPart> editors = modelService.findElements(application, TemperatureControlIds.CSD_EDITOR_PART_ID, MPart.class, null);
 		if(editors == null || editors.isEmpty()) {
+			hideEmptyChromatogramHome(home, false);
 			return false;
 		}
-		MPart home = findPart(modelService, application, TemperatureControlIds.CHROMATOGRAM_HOME_PART_ID);
 		boolean hosted = false;
 		MPart last = null;
 		for(MPart part : editors) {

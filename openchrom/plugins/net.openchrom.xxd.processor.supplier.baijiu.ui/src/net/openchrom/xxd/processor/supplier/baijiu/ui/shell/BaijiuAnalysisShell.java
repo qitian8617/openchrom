@@ -16,7 +16,14 @@ import java.util.Locale;
 import org.eclipse.chemclipse.model.core.IChromatogram;
 import org.eclipse.chemclipse.model.core.IPeak;
 import org.eclipse.chemclipse.model.selection.IChromatogramSelection;
+import org.eclipse.e4.core.contexts.IEclipseContext;
+import org.eclipse.e4.core.services.events.IEventBroker;
+import org.eclipse.e4.ui.model.application.ui.MUIElement;
+import org.eclipse.e4.ui.model.application.ui.basic.MPart;
+import org.eclipse.e4.ui.workbench.UIEvents;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
+import org.osgi.service.event.Event;
+import org.osgi.service.event.EventHandler;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.layout.GridData;
@@ -60,6 +67,7 @@ import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuTerms;
 import net.openchrom.xxd.processor.supplier.baijiu.core.Gb2757Result;
 import net.openchrom.xxd.processor.supplier.baijiu.core.PeakMatchResult;
 import net.openchrom.xxd.processor.supplier.baijiu.core.PeakMatcher;
+import net.openchrom.xxd.processor.supplier.baijiu.ui.BaijiuPerspectiveIds;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.ChromatogramBridge;
 
 public final class BaijiuAnalysisShell {
@@ -97,6 +105,7 @@ public final class BaijiuAnalysisShell {
 	private Text otherLimit;
 	private Label injectedIstd;
 	private Label chromatogramLabel;
+	private Label headerChromatogram;
 	private Label status;
 	private Label gbVerdict;
 	private Label gbMeasured;
@@ -216,6 +225,7 @@ public final class BaijiuAnalysisShell {
 
 		loadFields();
 		refreshChromatogramLabel();
+		installChromatogramWatch(parent);
 		fillMethodTable();
 		fillMatchTables();
 		fillMultipointTables();
@@ -228,6 +238,8 @@ public final class BaijiuAnalysisShell {
 		Composite row = BaijiuPlantLayout.buttonRow(parent);
 		Label title = new Label(row, SWT.NONE);
 		title.setText("\u767d\u9152\u5206\u6790");
+		headerChromatogram = new Label(row, SWT.NONE);
+		headerChromatogram.setText("\u5f53\u524d\u8c31\u56fe\uff1a\u672a\u6253\u5f00");
 		stepButton(row, "\u6837\u54c1", 0);
 		arrow(row);
 		stepButton(row, "\u6821\u6b63", 2);
@@ -518,10 +530,7 @@ public final class BaijiuAnalysisShell {
 
 	private void reloadChromatogram() {
 
-		IChromatogramSelection selection = ChromatogramBridge.resolve(partService);
-		if(selection != null) {
-			chromatogramSelection = selection;
-		}
+		syncHostChromatogram();
 		refreshChromatogramLabel();
 		if(chromatogram() != null) {
 			BaijiuSampleInfo fromChrom = BaijiuSampleInfo.from(chromatogram());
@@ -1228,21 +1237,88 @@ public final class BaijiuAnalysisShell {
 		injectedIstd.setText("\u8fdb\u6837\u5185\u6807\u6d53\u5ea6 = " + format(injected, 4) + " g/L    \u5185\u6807\uff1a" + name + "    \u9ed8\u8ba4\u52a0\u6807 1.00 mL + 0.10 mL");
 	}
 
+	private void syncHostChromatogram() {
+
+		chromatogramSelection = ChromatogramBridge.resolve(partService);
+	}
+
+	private void installChromatogramWatch(Composite parent) {
+
+		if(parent == null || parent.isDisposed() || partService == null) {
+			return;
+		}
+		try {
+			MPart active = partService.getActivePart();
+			IEclipseContext context = active == null ? null : active.getContext();
+			IEventBroker broker = context == null ? null : context.get(IEventBroker.class);
+			if(broker == null) {
+				return;
+			}
+			EventHandler handler = this::onChromatogramStackSelected;
+			broker.subscribe(UIEvents.ElementContainer.TOPIC_SELECTEDELEMENT, handler);
+			parent.addDisposeListener(e -> {
+				try {
+					broker.unsubscribe(handler);
+				} catch(RuntimeException | LinkageError ex) {
+					// part already gone
+				}
+			});
+		} catch(RuntimeException | LinkageError e) {
+			// community dialog has no plant event broker
+		}
+	}
+
+	private void onChromatogramStackSelected(Event event) {
+
+		if(event == null) {
+			return;
+		}
+		Object container = event.getProperty(UIEvents.EventTags.ELEMENT);
+		if(!(container instanceof MUIElement element) || !BaijiuPerspectiveIds.CHROMATOGRAM_STACK_ID.equals(element.getElementId())) {
+			return;
+		}
+		Composite host = headerChromatogram == null ? null : headerChromatogram.getParent();
+		if(host == null || host.isDisposed()) {
+			return;
+		}
+		host.getDisplay().asyncExec(() -> {
+			if(headerChromatogram == null || headerChromatogram.isDisposed()) {
+				return;
+			}
+			syncHostChromatogram();
+			refreshChromatogramLabel();
+		});
+	}
+
 	private void refreshChromatogramLabel() {
 
-		IChromatogram chromatogram = chromatogram();
-		if(chromatogram == null) {
-			chromatogramLabel.setText("\u5f53\u524d\u8c31\u56fe\uff1a\u672a\u6253\u5f00");
-		} else {
-			String name = chromatogram.getName();
-			if(name == null || name.isEmpty()) {
-				name = chromatogram.getSampleName();
-			}
-			if(name == null) {
-				name = "";
-			}
-			chromatogramLabel.setText("\u5f53\u524d\u8c31\u56fe\uff1a" + name + "    \u5cf0\u6570\uff1a" + chromatogram.getPeaks().size());
+		String text = currentChromatogramText();
+		if(chromatogramLabel != null && !chromatogramLabel.isDisposed()) {
+			chromatogramLabel.setText(text);
 		}
+		if(headerChromatogram != null && !headerChromatogram.isDisposed()) {
+			headerChromatogram.setText(text);
+		}
+	}
+
+	private String currentChromatogramText() {
+
+		String file = ChromatogramBridge.activeFileLabel(partService);
+		IChromatogram chromatogram = chromatogram();
+		if((file == null || file.isEmpty()) && chromatogram == null) {
+			return "\u5f53\u524d\u8c31\u56fe\uff1a\u672a\u6253\u5f00";
+		}
+		if(file == null || file.isEmpty()) {
+			file = chromatogram.getName();
+			if(file == null || file.isEmpty()) {
+				file = chromatogram.getSampleName();
+			}
+			if(file == null) {
+				file = "";
+			}
+		}
+		String peaks = chromatogram == null ? "" : "    \u5cf0\u6570\uff1a" + chromatogram.getPeaks().size();
+		return "\u5f53\u524d\u8c31\u56fe\uff1a" + file + peaks;
 	}
 
 	private IChromatogram chromatogram() {

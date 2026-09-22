@@ -67,59 +67,69 @@
     <elements xsi:type="advanced:Perspective" xmi:id="_baijiuPlantHome" elementId="net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome" label="%perspective.plantHome" iconURI="platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/ops.png">
       <children xsi:type="basic:PartSashContainer" xmi:id="_baijiuPlantSash" elementId="net.openchrom.rcp.compilation.baijiu.ui.partsash.plantHome" horizontal="true">
         <tags>NoDetach</tags>
-        <children xsi:type="basic:PartStack" xmi:id="_baijiuPlantChromStack" elementId="net.openchrom.rcp.compilation.baijiu.ui.partstack.plantChromatogram" containerData="7400">
+        <children xsi:type="basic:PartSashContainer" xmi:id="_baijiuPlantLeftSash" elementId="net.openchrom.rcp.compilation.baijiu.ui.partsash.plantLeft" horizontal="false" containerData="7400">
           <tags>NoMove</tags>
           <tags>NoDetach</tags>
           <tags>NoClose</tags>
-          <children xsi:type="basic:Part" xmi:id="_baijiuChromHomePart" elementId="net.openchrom.rcp.compilation.baijiu.ui.part.chromatogramHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuChromatogramHomePart" label="%part.chromatogramHome" iconURI="platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/chrom.png" closeable="false">
+          <children xsi:type="basic:PartStack" xmi:id="_baijiuPlantPagesStack" elementId="net.openchrom.rcp.compilation.baijiu.ui.partstack.plantPages" containerData="5200">
             <tags>NoMove</tags>
             <tags>NoDetach</tags>
             <tags>NoClose</tags>
+            <children xsi:type="basic:Part" xmi:id="_baijiuIntHomePart" elementId="net.openchrom.rcp.compilation.baijiu.ui.part.integrationHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuIntegrationHomePart" label="%part.integrationHome" iconURI="platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/integrate.png" closeable="false">
+              <tags>NoMove</tags>
+              <tags>NoDetach</tags>
+              <tags>NoClose</tags>
+            </children>
+            <children xsi:type="basic:Part" xmi:id="_baijiuAnaHomePart" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.part.analysis.plantHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuAnalysisHomePart" label="%part.analysisHome" iconURI="platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/analysis.png" closeable="false">
+              <tags>NoMove</tags>
+              <tags>NoDetach</tags>
+              <tags>NoClose</tags>
+            </children>
+            <children xsi:type="basic:Part" xmi:id="_baijiuWizardHomePart" elementId="net.openchrom.rcp.compilation.baijiu.ui.part.wizardHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuWizardHomePart" label="%part.wizardHome" iconURI="platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/wizard.png" closeable="false">
+              <tags>NoMove</tags>
+              <tags>NoDetach</tags>
+              <tags>NoClose</tags>
+            </children>
+            <children xsi:type="basic:Part" xmi:id="_baijiuSeqHomePart" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.part.sequence.plantHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuSequenceHomePart" label="%part.sequenceHome" iconURI="platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/sequence.png" closeable="false">
+              <tags>NoMove</tags>
+              <tags>NoDetach</tags>
+              <tags>NoClose</tags>
+            </children>
+            <children xsi:type="basic:Part" xmi:id="_baijiuBatchResultsHomePart" elementId="net.openchrom.rcp.compilation.baijiu.ui.part.batchResultsHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuBatchResultsHomePart" label="%part.batchResultsHome" iconURI="platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/batch_results.png" closeable="false">
+              <tags>NoMove</tags>
+              <tags>NoDetach</tags>
+              <tags>NoClose</tags>
+            </children>
+            <children xsi:type="basic:Part" xmi:id="_baijiuSimpleBatchHomePart" elementId="net.openchrom.rcp.compilation.baijiu.ui.part.simpleBatchHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuSimpleBatchHomePart" label="%part.simpleBatchHome" iconURI="platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/simple_batch.png" closeable="false">
+              <tags>NoMove</tags>
+              <tags>NoDetach</tags>
+              <tags>NoClose</tags>
+            </children>
+            <children xsi:type="basic:Part" xmi:id="_baijiuParallelHomePart" elementId="net.openchrom.rcp.compilation.baijiu.ui.part.parallelHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuParallelHomePart" label="%part.parallelHome" iconURI="platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/parallel.png" closeable="false">
+              <tags>NoMove</tags>
+              <tags>NoDetach</tags>
+              <tags>NoClose</tags>
+            </children>
+            <children xsi:type="basic:Part" xmi:id="_baijiuReportHomePart" elementId="net.openchrom.rcp.compilation.baijiu.ui.part.reportHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuReportHomePart" label="%part.reportHome" iconURI="platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/report.png" closeable="false">
+              <tags>NoMove</tags>
+              <tags>NoDetach</tags>
+              <tags>NoClose</tags>
+            </children>
           </children>
-          <children xsi:type="advanced:Placeholder" xmi:id="_baijiuPlantChromPh" elementId="net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantChromatogram" ref="_impEditor" visible="false" toBeRendered="false">
+          <children xsi:type="basic:PartStack" xmi:id="_baijiuPlantChromStack" elementId="net.openchrom.rcp.compilation.baijiu.ui.partstack.plantChromatogram" containerData="4800">
             <tags>NoMove</tags>
             <tags>NoDetach</tags>
             <tags>NoClose</tags>
-          </children>
-          <children xsi:type="basic:Part" xmi:id="_baijiuIntHomePart" elementId="net.openchrom.rcp.compilation.baijiu.ui.part.integrationHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuIntegrationHomePart" label="%part.integrationHome" iconURI="platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/integrate.png" closeable="false">
-            <tags>NoMove</tags>
-            <tags>NoDetach</tags>
-            <tags>NoClose</tags>
-          </children>
-          <children xsi:type="basic:Part" xmi:id="_baijiuAnaHomePart" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.part.analysis.plantHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuAnalysisHomePart" label="%part.analysisHome" iconURI="platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/analysis.png" closeable="false">
-            <tags>NoMove</tags>
-            <tags>NoDetach</tags>
-            <tags>NoClose</tags>
-          </children>
-          <children xsi:type="basic:Part" xmi:id="_baijiuWizardHomePart" elementId="net.openchrom.rcp.compilation.baijiu.ui.part.wizardHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuWizardHomePart" label="%part.wizardHome" iconURI="platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/wizard.png" closeable="false">
-            <tags>NoMove</tags>
-            <tags>NoDetach</tags>
-            <tags>NoClose</tags>
-          </children>
-          <children xsi:type="basic:Part" xmi:id="_baijiuSeqHomePart" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.part.sequence.plantHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuSequenceHomePart" label="%part.sequenceHome" iconURI="platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/sequence.png" closeable="false">
-            <tags>NoMove</tags>
-            <tags>NoDetach</tags>
-            <tags>NoClose</tags>
-          </children>
-          <children xsi:type="basic:Part" xmi:id="_baijiuBatchResultsHomePart" elementId="net.openchrom.rcp.compilation.baijiu.ui.part.batchResultsHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuBatchResultsHomePart" label="%part.batchResultsHome" iconURI="platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/batch_results.png" closeable="false">
-            <tags>NoMove</tags>
-            <tags>NoDetach</tags>
-            <tags>NoClose</tags>
-          </children>
-          <children xsi:type="basic:Part" xmi:id="_baijiuSimpleBatchHomePart" elementId="net.openchrom.rcp.compilation.baijiu.ui.part.simpleBatchHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuSimpleBatchHomePart" label="%part.simpleBatchHome" iconURI="platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/simple_batch.png" closeable="false">
-            <tags>NoMove</tags>
-            <tags>NoDetach</tags>
-            <tags>NoClose</tags>
-          </children>
-          <children xsi:type="basic:Part" xmi:id="_baijiuParallelHomePart" elementId="net.openchrom.rcp.compilation.baijiu.ui.part.parallelHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuParallelHomePart" label="%part.parallelHome" iconURI="platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/parallel.png" closeable="false">
-            <tags>NoMove</tags>
-            <tags>NoDetach</tags>
-            <tags>NoClose</tags>
-          </children>
-          <children xsi:type="basic:Part" xmi:id="_baijiuReportHomePart" elementId="net.openchrom.rcp.compilation.baijiu.ui.part.reportHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuReportHomePart" label="%part.reportHome" iconURI="platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/report.png" closeable="false">
-            <tags>NoMove</tags>
-            <tags>NoDetach</tags>
-            <tags>NoClose</tags>
+            <children xsi:type="basic:Part" xmi:id="_baijiuChromHomePart" elementId="net.openchrom.rcp.compilation.baijiu.ui.part.chromatogramHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuChromatogramHomePart" label="%part.chromatogramHome" iconURI="platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/chrom.png" closeable="false">
+              <tags>NoMove</tags>
+              <tags>NoDetach</tags>
+              <tags>NoClose</tags>
+            </children>
+            <children xsi:type="advanced:Placeholder" xmi:id="_baijiuPlantChromPh" elementId="net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantChromatogram" ref="_impEditor" visible="false" toBeRendered="false">
+              <tags>NoMove</tags>
+              <tags>NoDetach</tags>
+              <tags>NoClose</tags>
+            </children>
           </children>
         </children>
         <children xsi:type="basic:PartStack" xmi:id="_baijiuPlantWorkflowStack" elementId="net.openchrom.rcp.compilation.baijiu.ui.partstack.plantWorkflow" containerData="2600">

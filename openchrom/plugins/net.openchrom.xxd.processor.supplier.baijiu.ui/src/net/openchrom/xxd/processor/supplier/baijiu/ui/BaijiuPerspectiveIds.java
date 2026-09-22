@@ -26,13 +26,20 @@ public final class BaijiuPerspectiveIds {
 	public static final String ANALYSIS_HOME_PART_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.part.analysis.plantHome";
 	public static final String WORKBENCH_HOME_PART_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui.part.workbench.plantHome";
 	public static final String CHROMATOGRAM_PLACEHOLDER_ID = "net.openchrom.rcp.compilation.baijiu.ui.placeholder.plantChromatogram";
+	/**
+	 * Lower-left 谱图/采集 host. The only stack that should contain CSD
+	 * editor tabs. Upper workflow pages use {@link #PAGES_STACK_ID}.
+	 */
 	public static final String CHROMATOGRAM_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.plantChromatogram";
+	public static final String PAGES_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.plantPages";
+	public static final String PLANT_LEFT_SASH_ID = "net.openchrom.rcp.compilation.baijiu.ui.partsash.plantLeft";
 	public static final String CHROMATOGRAM_HOME_PART_ID = "net.openchrom.rcp.compilation.baijiu.ui.part.chromatogramHome";
 	public static final String EDITOR_AREA_ID = "org.eclipse.chemclipse.rcp.app.ui.editor";
 	/**
 	 * ChemClipse CSD editor part id. Opened chromatograms are children of
-	 * {@link #CHROMATOGRAM_STACK_ID} (谱图/采集), not stolen widgets inside
-	 * {@link #CHROMATOGRAM_HOME_PART_ID}.
+	 * {@link #CHROMATOGRAM_STACK_ID} (lower-left 谱图/采集), not stolen
+	 * widgets inside {@link #CHROMATOGRAM_HOME_PART_ID} and not tabs on
+	 * the upper workflow stack.
 	 */
 	public static final String CSD_EDITOR_PART_ID = "org.eclipse.chemclipse.ux.extension.xxd.ui.part.chromatogramEditorCSD";
 	public static final String PRIMARY_EDITOR_STACK_ID = "org.eclipse.e4.primaryDataStack";
