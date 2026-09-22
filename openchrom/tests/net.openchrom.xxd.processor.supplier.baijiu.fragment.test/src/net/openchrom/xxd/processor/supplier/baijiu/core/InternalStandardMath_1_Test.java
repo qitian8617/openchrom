@@ -26,9 +26,9 @@ public class InternalStandardMath_1_Test {
 	@Test
 	public void responseFactorAndConcentrationRoundTrip() {
 
-		double rf = InternalStandardMath.responseFactor(0.4758d, 1.6d, 1000.0d, 800.0d);
+		double rf = InternalStandardMath.responseFactor(0.4718d, 1.6d, 1000.0d, 800.0d);
 		double concentration = InternalStandardMath.concentrationGramsPerLiter(rf, 1.6d, 800.0d, 1000.0d);
-		assertEquals(0.4758d, concentration, 1.0e-9d);
+		assertEquals(0.4718d, concentration, 1.0e-9d);
 		assertTrue(rf > 0.0d);
 	}
 }

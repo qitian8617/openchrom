@@ -140,7 +140,7 @@ public class BaijiuParallelEngine_1_Test {
 			chromatogram.addScan(scan);
 		}
 		chromatogram.getPeaks().add(peak(chromatogram, 2.718d, methanolArea));
-		chromatogram.getPeaks().add(peak(chromatogram, 10.382d, 1600.0d));
+		chromatogram.getPeaks().add(peak(chromatogram, 10.582d, 1600.0d));
 		return chromatogram;
 	}
 

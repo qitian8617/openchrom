@@ -118,10 +118,10 @@ public class BaijiuCompoundLibrary_1_Test {
 		BaijiuMethodSettings settings = BaijiuMethodSettings.defaultNongxiangFid();
 		settings.getWindowMin().put("methanol", 0.02d);
 		assertEquals(0.02d, settings.windowMin(BaijiuCatalog.byId("methanol")), 1.0e-9d);
-		PeakMatchResult tight = PeakMatcher.matchDetailed(List.of(PeakMatcher_1_Test.peak(2.80d, 100.0d), PeakMatcher_1_Test.peak(10.382d, 100.0d)), settings);
+		PeakMatchResult tight = PeakMatcher.matchDetailed(List.of(PeakMatcher_1_Test.peak(2.80d, 100.0d), PeakMatcher_1_Test.peak(10.582d, 100.0d)), settings);
 		assertNull(tight.get("methanol"));
 		settings.getWindowMin().put("methanol", 0.15d);
-		PeakMatchResult wide = PeakMatcher.matchDetailed(List.of(PeakMatcher_1_Test.peak(2.80d, 100.0d), PeakMatcher_1_Test.peak(10.382d, 100.0d)), settings);
+		PeakMatchResult wide = PeakMatcher.matchDetailed(List.of(PeakMatcher_1_Test.peak(2.80d, 100.0d), PeakMatcher_1_Test.peak(10.582d, 100.0d)), settings);
 		assertNotNull(wide.get("methanol"));
 	}
 
@@ -160,7 +160,7 @@ public class BaijiuCompoundLibrary_1_Test {
 			chromatogram.addScan(scan);
 		}
 		chromatogram.getPeaks().add(peak(chromatogram, analyteRtMin, analyteArea));
-		chromatogram.getPeaks().add(peak(chromatogram, 10.382d, istdArea));
+		chromatogram.getPeaks().add(peak(chromatogram, 10.582d, istdArea));
 		return chromatogram;
 	}
 

@@ -1,6 +1,6 @@
 # Plant compound library flags (item 10)
 
-Pilot P1: operators can edit **RT**, **窗宽**, **是否定量**, and **是否甲醇判定** on the frozen 15-mix + ISTD catalog (item 9). This is a plant-method overlay, not a free-form LIMS compound designer.
+Pilot P1: operators can edit **RT**, **窗宽**, **是否定量**, and **是否甲醇判定** on the frozen 15-mix catalog (14 analytes + ISTD; the mix includes 乙酸正丁酯). This is a plant-method overlay, not a free-form LIMS compound designer.
 
 Acceptance: **RT、窗宽、是否定量、是否甲醇判定**.
 
@@ -12,7 +12,7 @@ On **白酒分析 → 组分方法**, select a row and **应用选中行**:
 |-------|---------|
 | 本机 RT | Instrument retention time used for peak matching |
 | 窗口 / 窗宽 | Per-compound RT window (falls back to the method default ±0.15 min) |
-| 是否定量 | Write a concentration. Default **是** for the 15 analytes, **否** for 乙酸正丁酯 (ISTD). Peak match still runs when off |
+| 是否定量 | Write a concentration. Default **是** for the 14 analytes, **否** for 乙酸正丁酯 (ISTD). Peak match still runs when off. The ISTD mix concentration (0.3632 g/L) is stored for the calibration bottle; sample spiking still uses the 17.6 g/L stock |
 | 是否甲醇判定 | Which compound feeds GB 2757. At most one. Default **甲醇**. Unchecking all, or turning 是否定量 off for the marked compound, **skips** GB 2757 (does not treat missing methanol as 未检出/合格) |
 
 Adding or deleting chemical identities is out of scope. Restore catalog defaults with **加载默认浓香方法包** (item 9): quantify / GB flags return to catalog (analytes quantified, ISTD not, methanol drives GB 2757). RF is still cleared.

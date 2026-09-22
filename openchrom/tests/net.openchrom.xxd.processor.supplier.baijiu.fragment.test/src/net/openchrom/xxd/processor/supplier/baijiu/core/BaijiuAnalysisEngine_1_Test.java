@@ -37,7 +37,7 @@ public class BaijiuAnalysisEngine_1_Test {
 		ChromatogramCSD chromatogram = new ChromatogramCSD();
 		addScans(chromatogram);
 		chromatogram.getPeaks().add(peak(chromatogram, 2.718d, 180.0d));
-		chromatogram.getPeaks().add(peak(chromatogram, 10.382d, 1600.0d));
+		chromatogram.getPeaks().add(peak(chromatogram, 10.582d, 1600.0d));
 		BaijiuSampleInfo sample = new BaijiuSampleInfo();
 		sample.setSampleNo("LD-BJ-001");
 		sample.setAbvPercent(52.0d);
@@ -127,7 +127,7 @@ public class BaijiuAnalysisEngine_1_Test {
 		ChromatogramCSD chromatogram = new ChromatogramCSD();
 		addScans(chromatogram);
 		chromatogram.getPeaks().add(peak(chromatogram, 2.718d, methanolArea));
-		chromatogram.getPeaks().add(peak(chromatogram, 10.382d, istdArea));
+		chromatogram.getPeaks().add(peak(chromatogram, 10.582d, istdArea));
 		return chromatogram;
 	}
 

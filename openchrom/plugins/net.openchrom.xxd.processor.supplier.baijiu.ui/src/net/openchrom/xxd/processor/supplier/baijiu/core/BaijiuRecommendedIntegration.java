@@ -29,6 +29,11 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 
 public final class BaijiuRecommendedIntegration {
 
+	/**
+	 * Peak count on the shipped demo chromatograms. Those {@code .ocb} files were
+	 * not regenerated for the 15-identity vendor library (14 analytes + ISTD);
+	 * they still integrate to about 16 peaks, including one near 16.555 min.
+	 */
 	public static final int EXPECTED_DEMO_PEAKS = 16;
 
 	private BaijiuRecommendedIntegration() {
