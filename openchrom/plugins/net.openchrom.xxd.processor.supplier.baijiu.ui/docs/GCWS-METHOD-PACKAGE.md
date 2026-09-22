@@ -13,8 +13,8 @@ Multi-point calibration / R² is item 11 (`GCWS-MULTIPOINT.md`). Per-compound RT
 | Method name | 浓香 FID 默认方法 |
 | Column | XP-白酒 C2, 30 m × 0.32 mm ID × 1.00 µm, MAX 250 °C, S/N 24090305 |
 | ISTD | 乙酸正丁酯. In the 15-mix at **0.3632 g/L** (calibration). Sample spiking uses the separate **17.6 g/L** stock ampoule, 1.00 mL sample + 0.10 mL ISTD |
-| Library | 14 quantify analytes + ISTD (15 identities). No isoamyl acetate. Shipped demo chromatograms still show about 16 peaks from the previous library and need a re-check after reload |
-| Instrument RT | vendor RT + **0.055 min**. ISTD vendor 10.527 → instrument **10.582** (demo `.ocb` files were not regenerated; their ISTD peak is still near 10.382) |
+| Library | 14 quantify analytes + ISTD (15 identities). No isoamyl acetate. Shipped demo chromatograms use the same 15-identity grid |
+| Instrument RT | vendor RT + **0.055 min**. ISTD vendor 10.527 → instrument **10.582** (demo `.ocb` ISTD apex is 10.582; no peak near 16.555) |
 | RT window | ±0.15 min default (per-compound window / quantify / GB 2757 flags: item 10) |
 | GB 2757 limits | grain 0.6 g/L and other 2.0 g/L **in the package / preferences**, not hardcoded in the judge |
 
