@@ -30,11 +30,11 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 public final class BaijiuRecommendedIntegration {
 
 	/**
-	 * Peak count on the shipped demo chromatograms. Those {@code .ocb} files were
-	 * not regenerated for the 15-identity vendor library (14 analytes + ISTD);
-	 * they still integrate to about 16 peaks, including one near 16.555 min.
+	 * Peak count on the shipped demo chromatograms: 14 analytes + ISTD.
+	 * Apexes follow the default instrument grid (vendor RT + 0.055 min), so the
+	 * ISTD sits at 10.582 min. There is no isoamyl acetate peak near 16.555 min.
 	 */
-	public static final int EXPECTED_DEMO_PEAKS = 16;
+	public static final int EXPECTED_DEMO_PEAKS = 15;
 
 	private BaijiuRecommendedIntegration() {
 	}
