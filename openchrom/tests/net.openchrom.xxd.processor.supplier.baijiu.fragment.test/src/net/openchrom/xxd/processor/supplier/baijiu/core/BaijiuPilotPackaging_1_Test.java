@@ -284,6 +284,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertFalse(chromeSrc.contains("CHROME_EPOCH = 36"), "polarity widgets are SWT-only; do not bump chrome epoch");
 		assertTrue(chromeSrc.contains("shouldCloseTargetLabelSettingsShell"), chromeSrc);
 		assertTrue(chromeSrc.contains("isChromatogramChartToolbarKeep"), chromeSrc);
+		assertTrue(chromeSrc.contains("chromatogramChartToolbarSlot"), chromeSrc);
 		assertTrue(chromeSrc.contains("isExtendedChromatogramUiClass"), chromeSrc);
 		assertTrue(chromeSrc.contains("isChromatogramPlotClass"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldCloseChromatogramToolbarDialog"), chromeSrc);
@@ -1059,6 +1060,9 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(shellMenusSrc.contains("lockChromatogramSeriesColorColumns"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("hideChromatogramChartToolbar"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("isChromatogramChartToolbarKeep"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("consolidateChartToolbar"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("setRedraw(false)"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("CHART_TOOLBAR_ROW"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("cancelChartToolbarActivation"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("SWT.Selection"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("isExtendedChromatogramUiClass"), shellMenusSrc);
