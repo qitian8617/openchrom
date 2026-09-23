@@ -87,8 +87,9 @@ Dedicated Baijiu FID plant shell on the OpenChrom / ChemClipse kernel.
       <property name="sun.awt.xembedserver" value="true" />
    </configurations>
 
+   <!-- path must stay set. Overview → Synchronize deletes preferenceCustomization from plugin.xml when it is empty. -->
    <preferencesInfo>
-      <targetfile overwrite="false"/>
+      <targetfile overwrite="false" path="plugin_customization.ini"/>
    </preferencesInfo>
 
    <cssInfo>

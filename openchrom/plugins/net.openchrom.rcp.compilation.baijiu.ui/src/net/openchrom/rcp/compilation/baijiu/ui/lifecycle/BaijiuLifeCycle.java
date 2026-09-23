@@ -26,7 +26,9 @@ import org.eclipse.e4.ui.workbench.modeling.EModelService;
  * so ChemClipse {@code PerspectiveApplicationAddon} does not NPE on a null
  * stack. Chromatogram peak/axis fonts are
  * planted via {@link BaijiuChromatogramReadability} so CSD labels are
- * readable without a manual preference click.
+ * readable without a manual preference click. The light CSS theme is
+ * forced here, before the theme engine restores a workspace or OS dark
+ * theme ({@link BaijiuPlantTheme}).
  */
 public class BaijiuLifeCycle {
 
@@ -34,6 +36,7 @@ public class BaijiuLifeCycle {
 	public void postContextCreate() {
 
 		System.setProperty(BaijiuShellChrome.PERSPECTIVE_PROPERTY, BaijiuShellChrome.PERSPECTIVE_ID);
+		BaijiuPlantTheme.forceLightTheme(null);
 		BaijiuShellLayout.prepareWorkspace();
 		BaijiuChromatogramReadability.applyInstanceScope();
 	}
@@ -41,6 +44,7 @@ public class BaijiuLifeCycle {
 	@ProcessAdditions
 	public void processAdditions(MApplication application, EModelService modelService) {
 
+		BaijiuPlantTheme.forceLightTheme(application == null ? null : application.getContext());
 		if(application == null || modelService == null) {
 			return;
 		}
