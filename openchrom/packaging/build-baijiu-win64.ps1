@@ -14,7 +14,10 @@
 
 .PARAMETER Stage
   After a successful build, mirror the win64 folder to -Destination
-  (default E:\OpenChrom\baijiu-fid-workstation, the Inno Setup SourceDir).
+  (default E:\OpenChrom\baijiu-fid-workstation, the Inno Setup SourceDir)
+  and copy packaging\BaijiuFID.ico into that folder. The installer also
+  pulls that .ico from the script directory, and shortcuts use it instead
+  of the Eclipse icon baked into an unbranded launcher exe.
 
 .PARAMETER Destination
   Staging directory used only with -Stage.
@@ -125,7 +128,13 @@ if ($Stage) {
     if ($LASTEXITCODE -ge 8) {
         throw "robocopy failed with exit code $LASTEXITCODE"
     }
+    $brandIcon = Join-Path $PSScriptRoot "BaijiuFID.ico"
+    if (-not (Test-Path -LiteralPath $brandIcon)) {
+        throw "Missing $brandIcon. Desktop and Start Menu shortcuts need the company-logo ICO."
+    }
+    Copy-Item -LiteralPath $brandIcon -Destination (Join-Path $Destination "BaijiuFID.ico") -Force
     Write-Host "Staged to $Destination"
+    Write-Host "Copied BaijiuFID.ico (company logo for shortcuts and Add/Remove Programs)."
     Write-Host "Next: compile packaging\BaijiuFID-Setup.iss with Inno Setup (ISCC)."
 }
 else {
