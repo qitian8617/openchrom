@@ -9,6 +9,7 @@
  *******************************************************************************/
 package net.openchrom.xxd.processor.supplier.baijiu.core;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -292,6 +293,16 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(chromeSrc.contains("Enable/Disable the chart grid"), chromeSrc);
 		assertTrue(chromeSrc.contains("Reset the chromatogram"), chromeSrc);
 		assertTrue(chromeSrc.contains("恢复谱图"), chromeSrc);
+		assertTrue(chromeSrc.contains("显示表格网格"), chromeSrc);
+		assertTrue(chromeSrc.contains("关闭表格网格"), chromeSrc);
+		assertTrue(chromeSrc.contains("图例标记"), chromeSrc);
+		assertTrue(chromeSrc.contains("显示/隐藏表格范围"), chromeSrc);
+		assertTrue(chromeSrc.contains("icons/plant/chart-grid.png"), chromeSrc);
+		assertTrue(chromeSrc.contains("icons/plant/chart-marker.png"), chromeSrc);
+		assertTrue(chromeSrc.contains("icons/plant/chart-range.png"), chromeSrc);
+		assertTrue(chromeSrc.contains("icons/plant/chart-reset.png"), chromeSrc);
+		assertTrue(chromeSrc.contains("chartToolbarIconFile"), chromeSrc);
+		assertTrue(chromeSrc.contains("chromatogramChartToolbarTip"), chromeSrc);
 		assertTrue(chromeSrc.contains("createButtonReset"), chromeSrc);
 		assertTrue(chromeSrc.contains("PLANT_ABOUT_MENU_ID"), chromeSrc);
 		assertTrue(chromeSrc.contains("ABOUT_DIRECT_HANDLER_URI"), chromeSrc);
@@ -908,6 +919,14 @@ public class BaijiuPilotPackaging_1_Test {
 			assertNotNull(icon, plantIcon);
 			assertTrue(Files.size(icon) > 0, plantIcon);
 		}
+		assertPlantPng("icons/plant/chart-grid.png", 16);
+		assertPlantPng("icons/plant/chart-marker.png", 16);
+		assertPlantPng("icons/plant/chart-range.png", 16);
+		assertPlantPng("icons/plant/chart-reset.png", 16);
+		assertPlantPng("icons/plant/chart-grid_32.png", 32);
+		assertPlantPng("icons/plant/chart-marker_32.png", 32);
+		assertPlantPng("icons/plant/chart-range_32.png", 32);
+		assertPlantPng("icons/plant/chart-reset_32.png", 32);
 
 		Path uiClasspath = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/.classpath", "plugins/net.openchrom.rcp.compilation.baijiu.ui/.classpath");
 		assertNotNull(uiClasspath);
@@ -1067,7 +1086,20 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(shellMenusSrc.contains("setRedraw(false)"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("CHART_TOOLBAR_ROW"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("CHART_TOOLBAR_SLOTS = 4"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("BaijiuChartToolbarIcons.apply"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("applyPlantChartButtonChrome"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("rememberChartToolbarSlot"), shellMenusSrc);
+		assertFalse(shellMenusSrc.contains("org.eclipse.chemclipse.rcp.ui.icons"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("cancelChartToolbarActivation"), shellMenusSrc);
+		Path chartIcons = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuChartToolbarIcons.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuChartToolbarIcons.java");
+		assertNotNull(chartIcons, "plant chart toolbar icons");
+		String chartIconsSrc = Files.readString(chartIcons, StandardCharsets.UTF_8);
+		assertTrue(chartIconsSrc.contains("setToolTipText"), chartIconsSrc);
+		assertTrue(chartIconsSrc.contains("setImage"), chartIconsSrc);
+		assertTrue(chartIconsSrc.contains("image.dispose()"), chartIconsSrc);
+		assertTrue(chartIconsSrc.contains("chartToolbarIconFile"), chartIconsSrc);
+		assertFalse(chartIconsSrc.contains("org.eclipse.chemclipse.rcp.ui.icons"), chartIconsSrc);
+		assertFalse(chartIconsSrc.contains("ImageDescriptor"), "plant icons are loaded from this plug-in, not a shared descriptor");
 		assertTrue(shellMenusSrc.contains("SWT.Selection"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("isExtendedChromatogramUiClass"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("closeChromatogramToolbarDialog"), shellMenusSrc);
@@ -1454,6 +1486,23 @@ public class BaijiuPilotPackaging_1_Test {
 			return true;
 		}
 		return false;
+	}
+
+	private static void assertPlantPng(String relative, int size) throws Exception {
+
+		Path icon = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/" + relative, "plugins/net.openchrom.rcp.compilation.baijiu.ui/" + relative);
+		assertNotNull(icon, relative);
+		byte[] bytes = Files.readAllBytes(icon);
+		assertTrue(bytes.length > 32, relative);
+		assertEquals((byte)0x89, bytes[0], relative);
+		assertEquals((byte)0x50, bytes[1], relative);
+		assertEquals((byte)0x4E, bytes[2], relative);
+		assertEquals((byte)0x47, bytes[3], relative);
+		int width = ((bytes[16] & 0xFF) << 24) | ((bytes[17] & 0xFF) << 16) | ((bytes[18] & 0xFF) << 8) | (bytes[19] & 0xFF);
+		int height = ((bytes[20] & 0xFF) << 24) | ((bytes[21] & 0xFF) << 16) | ((bytes[22] & 0xFF) << 8) | (bytes[23] & 0xFF);
+		assertEquals(size, width, relative);
+		assertEquals(size, height, relative);
+		assertEquals(6, bytes[25] & 0xFF, relative + " must be RGBA so the toolbar background shows through");
 	}
 
 	private static Path locate(String... relative) {
