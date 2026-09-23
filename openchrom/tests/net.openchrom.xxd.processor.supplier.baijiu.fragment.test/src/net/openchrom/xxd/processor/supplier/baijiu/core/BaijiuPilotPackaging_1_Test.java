@@ -288,6 +288,9 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(chromeSrc.contains("chromatogramChartToolbarSlot"), chromeSrc);
 		assertTrue(chromeSrc.contains("isExtendedChromatogramUiClass"), chromeSrc);
 		assertTrue(chromeSrc.contains("isChromatogramPlotClass"), chromeSrc);
+		assertTrue(chromeSrc.contains("isChartRangeSelectorClass"), chromeSrc);
+		assertTrue(chromeSrc.contains("isChartRangeSelectorAction"), chromeSrc);
+		assertTrue(chromeSrc.contains("reset the range"), chromeSrc);
 		assertTrue(chromeSrc.contains("shouldCloseChromatogramToolbarDialog"), chromeSrc);
 		assertTrue(chromeSrc.contains("EXTENDED_CHROMATOGRAM_UI_CLASS"), chromeSrc);
 		assertTrue(chromeSrc.contains("Enable/Disable the chart grid"), chromeSrc);
@@ -1093,6 +1096,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(shellMenusSrc.contains("cancelChartToolbarActivation"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("cancelsChartToolbarSelection"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("isInChromatogramPlot(button)"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("isChartRangeSelectorControl"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("sparesChartButton"), shellMenusSrc);
 		Path chartIcons = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuChartToolbarIcons.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuChartToolbarIcons.java");
 		assertNotNull(chartIcons, "plant chart toolbar icons");
 		String chartIconsSrc = Files.readString(chartIcons, StandardCharsets.UTF_8);

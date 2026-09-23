@@ -63,6 +63,11 @@ public class BaijiuShellMenus_1_Test {
 		assertFalse(BaijiuShellMenus.cancelsChartToolbarSelection(true, true, -1, "", "Reset the range."));
 		assertFalse(BaijiuShellMenus.cancelsChartToolbarSelection(true, true, -1, "", "Hide the range selector UI."));
 		assertFalse(BaijiuShellMenus.cancelsChartToolbarSelection(true, true, 2, "", "显示/隐藏表格范围"));
+		assertFalse(BaijiuShellMenus.cancelsChartToolbarSelection(true, false, -1, "", "Set the current selection."));
+		assertFalse(BaijiuShellMenus.cancelsChartToolbarSelection(true, false, -1, "", "Reset the range."));
+		assertFalse(BaijiuShellMenus.cancelsChartToolbarSelection(true, false, -1, "", "Hide the range selector UI."));
+		assertFalse(BaijiuShellMenus.cancelsChartToolbarSelection(true, false, 3, "", "Reset the chromatogram"));
+		assertFalse(BaijiuShellMenus.cancelsChartToolbarSelection(true, false, 3, "", "恢复谱图"));
 	}
 
 	@Test
