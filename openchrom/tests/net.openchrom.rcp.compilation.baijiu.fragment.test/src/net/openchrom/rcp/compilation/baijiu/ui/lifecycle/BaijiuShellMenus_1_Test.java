@@ -55,4 +55,25 @@ public class BaijiuShellMenus_1_Test {
 		BaijiuShellMenus.hideChromatogramChartToolbar();
 		BaijiuShellMenus.lockChromatogramSeriesColorColumns();
 	}
+
+	@Test
+	public void rangeSelectorButtonsInsideThePlotAreNotCancelled() {
+
+		assertFalse(BaijiuShellMenus.cancelsChartToolbarSelection(true, true, -1, "", "Set the current selection."));
+		assertFalse(BaijiuShellMenus.cancelsChartToolbarSelection(true, true, -1, "", "Reset the range."));
+		assertFalse(BaijiuShellMenus.cancelsChartToolbarSelection(true, true, -1, "", "Hide the range selector UI."));
+		assertFalse(BaijiuShellMenus.cancelsChartToolbarSelection(true, true, 2, "", "显示/隐藏表格范围"));
+	}
+
+	@Test
+	public void strayToolbarButtonsAreStillCancelled() {
+
+		assertTrue(BaijiuShellMenus.cancelsChartToolbarSelection(true, false, -1, "", "Show/Hide the references toolbar."));
+		assertTrue(BaijiuShellMenus.cancelsChartToolbarSelection(true, false, -1, "Settings", null));
+		assertFalse(BaijiuShellMenus.cancelsChartToolbarSelection(true, false, 2, "", "Toggle the chart range selector."));
+		assertFalse(BaijiuShellMenus.cancelsChartToolbarSelection(true, false, 0, "", "显示表格网格"));
+		assertFalse(BaijiuShellMenus.cancelsChartToolbarSelection(true, false, -1, "", ""));
+		assertFalse(BaijiuShellMenus.cancelsChartToolbarSelection(true, false, -1, null, "  "));
+		assertFalse(BaijiuShellMenus.cancelsChartToolbarSelection(false, false, -1, "", "Settings"));
+	}
 }

@@ -74,12 +74,16 @@ import net.openchrom.rcp.compilation.baijiu.ui.handlers.BaijiuOpenSelectViewHand
  * is known, each keeper gets a Chinese tooltip and a plant icon
  * ({@link BaijiuChartToolbarIcons}). Matching still accepts the English
  * ChemClipse tooltip, so a later Show / Paint finds the same button and
- * writes the Chinese tooltip again. Every other button (processor icons,
- * T, polarity, help, settings, series legend) is disposed and its
+ * writes the Chinese tooltip again. Every other toolbar button (processor
+ * icons, T, polarity, help, settings, series legend) is disposed and its
  * {@code SWT.Selection} listeners are removed so those dialogs cannot open.
- * Referenced composites (processor toolbar, column combo, baselines,
- * references / alignment / method) are hidden, not disposed — ChemClipse
- * still calls {@code update()} on them when a chromatogram loads.
+ * That selection stop is toolbar chrome only. SWTChart {@code RangeSelector}
+ * (Set the current selection, Reset the range, Hide the range selector UI)
+ * is parented under the plot; those three buttons apply, clear, and close
+ * the range bar and keep their listeners. Referenced composites (processor
+ * toolbar, column combo, baselines, references / alignment / method) are
+ * hidden, not disposed — ChemClipse still calls {@code update()} on them
+ * when a chromatogram loads.
  * <p>
  * {@code new Button} sends {@code SWT.Show} before the tooltip is set, and
  * {@code setVisible(false)} inside that Show is undone by the outer show.
@@ -1645,7 +1649,7 @@ public final class BaijiuShellMenus {
 
 	private static void applyPlantChartButtonChrome(Button button) {
 
-		if(button == null || button.isDisposed()) {
+		if(button == null || button.isDisposed() || isInChromatogramPlot(button)) {
 			return;
 		}
 		Composite editor = chromatogramEditorOf(button);
@@ -1967,6 +1971,15 @@ public final class BaijiuShellMenus {
 			return;
 		}
 		if(event.widget instanceof Button button && !button.isDisposed()) {
+			/*
+			 * RangeSelector Set / Reset / Hide live under the plot. Leave
+			 * the event alone so the chart applies, clears, or closes the
+			 * range. Cancelling here disables the button and drops the
+			 * listener, which is why those three go grey and do nothing.
+			 */
+			if(isInChromatogramPlot(button)) {
+				return;
+			}
 			if(shouldCancelChartButton(button)) {
 				event.type = SWT.None;
 				event.doit = false;
@@ -1991,6 +2004,9 @@ public final class BaijiuShellMenus {
 				text = item.getText();
 				tip = item.getToolTipText();
 			} catch(RuntimeException e) {
+				return;
+			}
+			if(bar != null && isInChromatogramPlot(bar)) {
 				return;
 			}
 			int slot = rememberChartToolbarSlot(item, text, tip);
@@ -2021,6 +2037,9 @@ public final class BaijiuShellMenus {
 
 	private static void schedulePlantChartButtonChrome(Button button) {
 
+		if(button == null || button.isDisposed() || isInChromatogramPlot(button)) {
+			return;
+		}
 		Composite editor = chromatogramEditorOf(button);
 		if(editor == null || editor.isDisposed()) {
 			return;
@@ -2064,10 +2083,7 @@ public final class BaijiuShellMenus {
 
 	private static boolean shouldCancelChartButton(Button button) {
 
-		if(chromatogramEditorOf(button) == null) {
-			return false;
-		}
-		if(chartToolbarButtonSlot(button) >= 0) {
+		if(button == null || button.isDisposed()) {
 			return false;
 		}
 		String text;
@@ -2076,6 +2092,27 @@ public final class BaijiuShellMenus {
 			text = button.getText();
 			tip = button.getToolTipText();
 		} catch(RuntimeException e) {
+			return false;
+		}
+		return cancelsChartToolbarSelection( //
+				chromatogramEditorOf(button) != null, //
+				isInChromatogramPlot(button), //
+				chartToolbarButtonSlot(button), //
+				text, tip);
+	}
+
+	/**
+	 * Toolbar buttons inside the chromatogram editor that are not the four
+	 * keepers are cancelled once they have a label or tooltip, so a click
+	 * cannot open a dialog before dispose. Buttons inside the plot are not
+	 * cancelled: SWTChart {@code RangeSelector} Set / Reset / Hide apply,
+	 * clear, and close the range bar. A still-blank tooltip is left alone
+	 * because {@code new Button} fires Show before the tooltip is set.
+	 * Keepers ({@code slot >= 0}) stay live.
+	 */
+	static boolean cancelsChartToolbarSelection(boolean inEditor, boolean inPlot, int slot, String text, String tip) {
+
+		if(!inEditor || inPlot || slot >= 0) {
 			return false;
 		}
 		return !isBlankChromeText(text) || !isBlankChromeText(tip);

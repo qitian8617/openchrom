@@ -1091,6 +1091,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(shellMenusSrc.contains("rememberChartToolbarSlot"), shellMenusSrc);
 		assertFalse(shellMenusSrc.contains("org.eclipse.chemclipse.rcp.ui.icons"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("cancelChartToolbarActivation"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("cancelsChartToolbarSelection"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("isInChromatogramPlot(button)"), shellMenusSrc);
 		Path chartIcons = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuChartToolbarIcons.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuChartToolbarIcons.java");
 		assertNotNull(chartIcons, "plant chart toolbar icons");
 		String chartIconsSrc = Files.readString(chartIcons, StandardCharsets.UTF_8);
