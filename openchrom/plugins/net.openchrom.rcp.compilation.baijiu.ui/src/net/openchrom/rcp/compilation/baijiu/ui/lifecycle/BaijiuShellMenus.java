@@ -37,6 +37,7 @@ import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
+import org.eclipse.swt.widgets.Widget;
 
 import net.openchrom.rcp.compilation.baijiu.ui.handlers.BaijiuAboutHandler;
 import net.openchrom.rcp.compilation.baijiu.ui.handlers.BaijiuOpenSelectViewHandler;
@@ -69,10 +70,14 @@ import net.openchrom.rcp.compilation.baijiu.ui.handlers.BaijiuOpenSelectViewHand
  * chromatogram (恢复谱图), left to right in one row. ChemClipse puts the
  * grid button and {@code createButtonReset} on {@code createToolbarMain}
  * and the marker and range selector on the hidden {@code createToolbarEdit}
- * row; this pass reparents the four onto a single top row. Every other
- * button (processor icons, T, polarity, help, settings, series legend) is
- * disposed and its {@code SWT.Selection} listeners are removed so those
- * dialogs cannot open. Referenced composites (processor toolbar, column combo, baselines,
+ * row; this pass reparents the four onto a single top row. After the slot
+ * is known, each keeper gets a Chinese tooltip and a plant icon
+ * ({@link BaijiuChartToolbarIcons}). Matching still accepts the English
+ * ChemClipse tooltip, so a later Show / Paint finds the same button and
+ * writes the Chinese tooltip again. Every other button (processor icons,
+ * T, polarity, help, settings, series legend) is disposed and its
+ * {@code SWT.Selection} listeners are removed so those dialogs cannot open.
+ * Referenced composites (processor toolbar, column combo, baselines,
  * references / alignment / method) are hidden, not disposed — ChemClipse
  * still calls {@code update()} on them when a chromatogram loads.
  * <p>
@@ -99,6 +104,11 @@ public final class BaijiuShellMenus {
 	private static final String CHART_TOOLBAR_ROW = "net.openchrom.baijiu.chartToolbarRow";
 	private static final String CHART_TOOLBAR_READY = "net.openchrom.baijiu.chartToolbarReady";
 	private static final String CHART_TOOLBAR_RETRIES = "net.openchrom.baijiu.chartToolbarRetries";
+	/**
+	 * Slot remembered on a keeper after the first English or Chinese match.
+	 * A later tooltip rewrite still resolves to the same button.
+	 */
+	private static final String CHART_TOOLBAR_SLOT = "net.openchrom.baijiu.chartToolbarSlot";
 	private static final String CHART_REDRAW_HELD = "net.openchrom.baijiu.chartRedrawHeld";
 	private static final int CHART_TOOLBAR_SLOTS = 4;
 	private static final int CHART_TOOLBAR_RETRY_LIMIT = 8;
@@ -138,6 +148,7 @@ public final class BaijiuShellMenus {
 					if(event.type == SWT.Paint) {
 						if(event.widget instanceof Button button && !button.isDisposed()) {
 							concealTargetLabelButton(button);
+							applyPlantChartButtonChrome(button);
 							scheduleChartToolbarSanitize(button);
 						} else if(event.widget instanceof Combo combo && !combo.isDisposed()) {
 							concealSeparationColumnCombo(combo);
@@ -168,6 +179,7 @@ public final class BaijiuShellMenus {
 						}
 					} else if(event.widget instanceof Button button && !button.isDisposed()) {
 						concealTargetLabelButton(button);
+						applyPlantChartButtonChrome(button);
 						scheduleChartToolbarSanitize(button);
 					} else if(event.widget instanceof Combo combo && !combo.isDisposed()) {
 						concealSeparationColumnCombo(combo);
@@ -961,9 +973,12 @@ public final class BaijiuShellMenus {
 
 	/**
 	 * Collapse the CSD chart toolbar onto one horizontal row of the four
-	 * allowlisted buttons. Headless fragment tests have no current display
-	 * and return. Does not dispose Images. Does not dispose the composites
-	 * ChemClipse still calls {@code update()} on when a chromatogram loads.
+	 * allowlisted buttons, then give each keeper a Chinese tooltip and a
+	 * plant icon. Headless fragment tests have no current display and
+	 * return. This class does not dispose images. Plant images are created
+	 * and released by {@link BaijiuChartToolbarIcons}; the ChemClipse image
+	 * stays in its registry. Does not dispose the composites ChemClipse
+	 * still calls {@code update()} on when a chromatogram loads.
 	 */
 	public static void hideChromatogramChartToolbar() {
 
@@ -1021,6 +1036,7 @@ public final class BaijiuShellMenus {
 			return;
 		}
 		if(Boolean.TRUE.equals(editor.getData(CHART_TOOLBAR_READY)) && !chartToolbarNeedsWork(editor)) {
+			applyChartToolbarChrome(editor);
 			return;
 		}
 		/*
@@ -1504,7 +1520,36 @@ public final class BaijiuShellMenus {
 		} catch(RuntimeException e) {
 			return -1;
 		}
-		return BaijiuShellChrome.chromatogramChartToolbarSlot(text, tip);
+		return rememberChartToolbarSlot(button, text, tip);
+	}
+
+	/**
+	 * Live English or Chinese tooltip wins. A slot stored on the first
+	 * match covers a later tooltip this allowlist does not spell out, so
+	 * the keeper is not disposed after the plant rewrite.
+	 */
+	private static int rememberChartToolbarSlot(Widget widget, String text, String tip) {
+
+		int slot = BaijiuShellChrome.chromatogramChartToolbarSlot(text, tip);
+		if(widget == null) {
+			return slot;
+		}
+		try {
+			if(slot >= 0) {
+				widget.setData(CHART_TOOLBAR_SLOT, Integer.valueOf(slot));
+				return slot;
+			}
+			Object stored = widget.getData(CHART_TOOLBAR_SLOT);
+			if(stored instanceof Integer remembered) {
+				int value = remembered.intValue();
+				if(value >= 0 && value < CHART_TOOLBAR_SLOTS) {
+					return value;
+				}
+			}
+		} catch(RuntimeException e) {
+			return slot;
+		}
+		return slot;
 	}
 
 	private static void disposeChartButton(Button button) {
@@ -1531,6 +1576,7 @@ public final class BaijiuShellMenus {
 		if(children.length > 0 && !(children[0] instanceof Button) && !children[0].isDisposed()) {
 			previous = children[0];
 		}
+		Composite editor = chromatogramEditorOf(row);
 		for(int slot = 0; slot < ordered.length; slot++) {
 			Button button = ordered[slot];
 			if(button == null || button.isDisposed()) {
@@ -1555,10 +1601,62 @@ public final class BaijiuShellMenus {
 					button.moveBelow(previous);
 				}
 				previous = button;
+				BaijiuChartToolbarIcons.apply(editor, button, slot);
 			} catch(RuntimeException e) {
 				// widget closing
 			}
 		}
+	}
+
+	/**
+	 * Rewrite keeper tooltips and icons on the plant row. Safe to call on
+	 * every Show / Paint after the row exists; a keeper that already shows
+	 * the plant chrome is left untouched.
+	 */
+	private static void applyChartToolbarChrome(Composite editor) {
+
+		if(editor == null || editor.isDisposed()) {
+			return;
+		}
+		Composite section = chartToolbarSection(editor);
+		if(section == null || section.isDisposed()) {
+			return;
+		}
+		Composite row = findPlantChartToolbarRow(section);
+		if(row == null || row.isDisposed()) {
+			return;
+		}
+		Control[] children;
+		try {
+			children = row.getChildren();
+		} catch(RuntimeException e) {
+			return;
+		}
+		for(int i = 0; i < children.length; i++) {
+			if(!(children[i] instanceof Button button) || button.isDisposed()) {
+				continue;
+			}
+			int slot = chartToolbarButtonSlot(button);
+			if(slot >= 0) {
+				BaijiuChartToolbarIcons.apply(editor, button, slot);
+			}
+		}
+	}
+
+	private static void applyPlantChartButtonChrome(Button button) {
+
+		if(button == null || button.isDisposed()) {
+			return;
+		}
+		Composite editor = chromatogramEditorOf(button);
+		if(editor == null || editor.isDisposed()) {
+			return;
+		}
+		int slot = chartToolbarButtonSlot(button);
+		if(slot < 0) {
+			return;
+		}
+		BaijiuChartToolbarIcons.apply(editor, button, slot);
 	}
 
 	private static void hideChartToolbarSiblings(Composite section, Composite row) {
@@ -1654,7 +1752,9 @@ public final class BaijiuShellMenus {
 			} catch(RuntimeException e) {
 				continue;
 			}
-			if(BaijiuShellChrome.isChromatogramChartToolbarKeep(text, tip)) {
+			int slot = rememberChartToolbarSlot(item, text, tip);
+			if(slot >= 0) {
+				BaijiuChartToolbarIcons.apply(chromatogramEditorOf(toolBar), item, slot);
 				continue;
 			}
 			try {
@@ -1686,7 +1786,7 @@ public final class BaijiuShellMenus {
 			} catch(RuntimeException e) {
 				continue;
 			}
-			if(!BaijiuShellChrome.isChromatogramChartToolbarKeep(text, tip)) {
+			if(rememberChartToolbarSlot(item, text, tip) < 0) {
 				return true;
 			}
 		}
@@ -1867,13 +1967,19 @@ public final class BaijiuShellMenus {
 			return;
 		}
 		if(event.widget instanceof Button button && !button.isDisposed()) {
-			if(!shouldCancelChartButton(button)) {
+			if(shouldCancelChartButton(button)) {
+				event.type = SWT.None;
+				event.doit = false;
+				stripButtonActivation(button);
+				scheduleChartToolbarSanitize(button);
 				return;
 			}
-			event.type = SWT.None;
-			event.doit = false;
-			stripButtonActivation(button);
-			scheduleChartToolbarSanitize(button);
+			/*
+			 * Display filters run before the button listener. ChemClipse
+			 * updates Enable/Disable after this returns, so the Chinese
+			 * tooltip is written on the next turn.
+			 */
+			schedulePlantChartButtonChrome(button);
 			return;
 		}
 		if(event.widget instanceof ToolItem item && !item.isDisposed()) {
@@ -1887,7 +1993,17 @@ public final class BaijiuShellMenus {
 			} catch(RuntimeException e) {
 				return;
 			}
-			if(bar == null || chromatogramEditorOf(bar) == null || BaijiuShellChrome.isChromatogramChartToolbarKeep(text, tip)) {
+			int slot = rememberChartToolbarSlot(item, text, tip);
+			Composite editor = bar == null ? null : chromatogramEditorOf(bar);
+			if(slot >= 0 && editor != null) {
+				schedulePlantChartChrome(editor, () -> {
+					if(!item.isDisposed()) {
+						BaijiuChartToolbarIcons.apply(editor, item, slot);
+					}
+				});
+				return;
+			}
+			if(bar == null || editor == null) {
 				return;
 			}
 			if(isBlankChromeText(text) && isBlankChromeText(tip)) {
@@ -1903,9 +2019,55 @@ public final class BaijiuShellMenus {
 		}
 	}
 
+	private static void schedulePlantChartButtonChrome(Button button) {
+
+		Composite editor = chromatogramEditorOf(button);
+		if(editor == null || editor.isDisposed()) {
+			return;
+		}
+		int slot = chartToolbarButtonSlot(button);
+		if(slot < 0) {
+			return;
+		}
+		schedulePlantChartChrome(editor, () -> {
+			if(!button.isDisposed()) {
+				BaijiuChartToolbarIcons.apply(editor, button, slot);
+			}
+		});
+	}
+
+	private static void schedulePlantChartChrome(Composite editor, Runnable apply) {
+
+		if(editor == null || editor.isDisposed() || apply == null) {
+			return;
+		}
+		Display display;
+		try {
+			display = editor.getDisplay();
+		} catch(RuntimeException e) {
+			return;
+		}
+		if(display == null || display.isDisposed()) {
+			return;
+		}
+		display.asyncExec(() -> {
+			if(editor.isDisposed()) {
+				return;
+			}
+			try {
+				apply.run();
+			} catch(RuntimeException e) {
+				// widget closing
+			}
+		});
+	}
+
 	private static boolean shouldCancelChartButton(Button button) {
 
 		if(chromatogramEditorOf(button) == null) {
+			return false;
+		}
+		if(chartToolbarButtonSlot(button) >= 0) {
 			return false;
 		}
 		String text;
@@ -1914,9 +2076,6 @@ public final class BaijiuShellMenus {
 			text = button.getText();
 			tip = button.getToolTipText();
 		} catch(RuntimeException e) {
-			return false;
-		}
-		if(BaijiuShellChrome.isChromatogramChartToolbarKeep(text, tip)) {
 			return false;
 		}
 		return !isBlankChromeText(text) || !isBlankChromeText(tip);

@@ -53,7 +53,11 @@ import java.util.Set;
  * {@code createButtonReset} in {@code createToolbarMain}; the legend
  * marker and range selector are in the hidden {@code createToolbarEdit}
  * row. The plant pass reparents the four onto one row and disposes the
- * rest before the first paint.
+ * rest before the first paint. It then rewrites each keeper tooltip to
+ * Chinese (显示表格网格 / 关闭表格网格, 图例标记, 显示/隐藏表格范围,
+ * 恢复谱图) and replaces the stock image with {@code icons/plant/chart-*.png}.
+ * English ChemClipse tooltips stay on the allowlist so a later repaint
+ * still finds the button.
  * Every other button, combo, and secondary row in that chrome is removed
  * and its selection listeners are stripped so the dialogs cannot open.
  * Perspective switcher stays hidden. Plant home sash: left column |
@@ -219,6 +223,27 @@ public final class BaijiuShellChrome {
 	public static final String PLANT_ICON_OPEN_CHROM = PLANT_ICON_PLUGIN_PREFIX + "open_chrom.png";
 	public static final String PLANT_ICON_GC = PLANT_ICON_PLUGIN_PREFIX + "gc_console.png";
 	public static final String PLANT_ICON_START = PLANT_ICON_PLUGIN_PREFIX + "start.png";
+	/**
+	 * Plant glyphs for the four CSD chart-toolbar keepers. Not ChemClipse
+	 * image descriptors. 16×16 plus a 32×32 sibling for HiDPI.
+	 */
+	public static final String PLANT_ICON_CHART_GRID = PLANT_ICON_PLUGIN_PREFIX + "chart-grid.png";
+	public static final String PLANT_ICON_CHART_MARKER = PLANT_ICON_PLUGIN_PREFIX + "chart-marker.png";
+	public static final String PLANT_ICON_CHART_RANGE = PLANT_ICON_PLUGIN_PREFIX + "chart-range.png";
+	public static final String PLANT_ICON_CHART_RESET = PLANT_ICON_PLUGIN_PREFIX + "chart-reset.png";
+	/**
+	 * Tooltip written onto the grid keeper. 使能表格 remains the allowlist
+	 * phrase. The toggle itself uses {@link #CHART_TOOLBAR_TIP_GRID_SHOW}
+	 * and {@link #CHART_TOOLBAR_TIP_GRID_HIDE}.
+	 */
+	public static final String CHART_TOOLBAR_TIP_GRID = "使能表格";
+	/** Action tooltip when the grid is off ({@code Enable the chart grid.}). */
+	public static final String CHART_TOOLBAR_TIP_GRID_SHOW = "显示表格网格";
+	/** Action tooltip when the grid is on ({@code Disable the chart grid.}). */
+	public static final String CHART_TOOLBAR_TIP_GRID_HIDE = "关闭表格网格";
+	public static final String CHART_TOOLBAR_TIP_MARKER = "图例标记";
+	public static final String CHART_TOOLBAR_TIP_RANGE = "显示/隐藏表格范围";
+	public static final String CHART_TOOLBAR_TIP_RESET = "恢复谱图";
 	public static final List<String> PLANT_TOOLBAR_ITEM_IDS = List.of( //
 			OPEN_CHROMATOGRAM_TOOLITEM_ID, //
 			TOGGLE_GC_TOOLITEM_ID, //
@@ -440,7 +465,9 @@ public final class BaijiuShellChrome {
 	 * {@code workbench.xmi} cannot resurrect them or their layout. Bumping
 	 * the epoch would rebuild the plant sash for a widget the model does
 	 * not store. The SWT sanitizer re-applies on Show, Paint, Selection,
-	 * and every plant-menu pass, including the second launch.
+	 * and every plant-menu pass, including the second launch. Chinese
+	 * tooltips and the plant chart icons are the same kind of SWT-only
+	 * state, so the epoch stays 35.
 	 */
 	public static final int CHROME_EPOCH = 35;
 	/**
@@ -2686,13 +2713,18 @@ public final class BaijiuShellChrome {
 	 * {@code createToolbarEdit} (a second row ChemClipse keeps hidden until
 	 * the edit toggle). Keep only these four, left to right:
 	 * <ul>
-	 * <li>slot 0 — {@code Enable/Disable the chart grid.} — 使能表格</li>
-	 * <li>slot 1 — {@code Toggle the chart legend marker.}</li>
-	 * <li>slot 2 — {@code Toggle the chart range selector.} — 显示/隐藏表格范围</li>
+	 * <li>slot 0 — {@code Enable/Disable the chart grid.} — 使能表格.
+	 * Shown as {@code 显示表格网格} or {@code 关闭表格网格}. Plant icon
+	 * {@code icons/plant/chart-grid.png}.</li>
+	 * <li>slot 1 — {@code Toggle the chart legend marker.} — 图例标记.
+	 * Plant icon {@code icons/plant/chart-marker.png}.</li>
+	 * <li>slot 2 — {@code Toggle the chart range selector.} — 显示/隐藏表格范围.
+	 * Plant icon {@code icons/plant/chart-range.png}.</li>
 	 * <li>slot 3 — {@code Reset the chromatogram} — 恢复谱图. Tooltip on
 	 * {@code createButtonReset}; the listener calls {@code reset(true)},
 	 * which restores the selection range (chart zoom/view). This is not
-	 * the chart context menu {@code Reset Chart} / 重置图表.</li>
+	 * the chart context menu {@code Reset Chart} / 重置图表. Plant icon
+	 * {@code icons/plant/chart-reset.png}.</li>
 	 * </ul>
 	 * {@code Toggle the chart series legend.} is a different button and is
 	 * not kept. Blank text is not a match, so a button that has not received
@@ -2723,6 +2755,70 @@ public final class BaijiuShellChrome {
 			return textSlot;
 		}
 		return Math.min(textSlot, tipSlot);
+	}
+
+	/**
+	 * Chinese tooltip for a keeper slot. Grid follows the current English
+	 * or Chinese tooltip so a toggle still says whether the click shows
+	 * or hides the grid. Other slots are one phrase. {@code null} when
+	 * {@code slot} is not a keeper. English ChemClipse text is not
+	 * returned; callers write this string onto the widget after matching.
+	 */
+	public static String chromatogramChartToolbarTip(int slot, String currentTip) {
+
+		if(slot == 0) {
+			return chartGridTip(currentTip);
+		}
+		if(slot == 1) {
+			return CHART_TOOLBAR_TIP_MARKER;
+		}
+		if(slot == 2) {
+			return CHART_TOOLBAR_TIP_RANGE;
+		}
+		if(slot == 3) {
+			return CHART_TOOLBAR_TIP_RESET;
+		}
+		return null;
+	}
+
+	/**
+	 * Bundle-relative 16×16 PNG for a keeper slot, or {@code null}.
+	 */
+	public static String chartToolbarIconFile(int slot) {
+
+		if(slot == 0) {
+			return "icons/plant/chart-grid.png";
+		}
+		if(slot == 1) {
+			return "icons/plant/chart-marker.png";
+		}
+		if(slot == 2) {
+			return "icons/plant/chart-range.png";
+		}
+		if(slot == 3) {
+			return "icons/plant/chart-reset.png";
+		}
+		return null;
+	}
+
+	/**
+	 * Bundle-relative 32×32 PNG for the same slot, used at 150% and above.
+	 */
+	public static String chartToolbarIconFileHiDpi(int slot) {
+
+		if(slot == 0) {
+			return "icons/plant/chart-grid_32.png";
+		}
+		if(slot == 1) {
+			return "icons/plant/chart-marker_32.png";
+		}
+		if(slot == 2) {
+			return "icons/plant/chart-range_32.png";
+		}
+		if(slot == 3) {
+			return "icons/plant/chart-reset_32.png";
+		}
+		return null;
 	}
 
 	/**
@@ -2770,11 +2866,13 @@ public final class BaijiuShellChrome {
 	 *         selector, {@code 3} restore, or {@code -1}. Marker is matched
 	 *         before any looser "legend" phrase. "Enable the table content
 	 *         edit modus." is the JFace table editor, not the chart grid —
-	 *         only {@code chart grid} and 使能表格 count as the grid slot.
-	 *         Restore is {@code ExtendedChromatogramUI.createButtonReset}
+	 *         only {@code chart grid}, 使能表格, and 表格网格 (显示表格网格 /
+	 *         关闭表格网格) count as the grid slot. Restore is
+	 *         {@code ExtendedChromatogramUI.createButtonReset}
 	 *         ({@code Reset the chromatogram} / 恢复谱图). {@code Reset Chart}
 	 *         / {@code Reset the chart} / 重置图表 is the context-menu handler
-	 *         and stays off this allowlist.
+	 *         and stays off this allowlist. English and Chinese both match
+	 *         so a tooltip rewrite does not drop the keeper.
 	 */
 	private static int chartToolbarSlot(String value) {
 
@@ -2782,19 +2880,38 @@ public final class BaijiuShellChrome {
 			return -1;
 		}
 		String normalized = normalizeMenuLabel(value);
-		if(normalized.contains("chart legend marker") || normalized.contains("图例标记")) {
+		if(normalized.contains("chart legend marker") || normalized.contains(normalizeMenuLabel(CHART_TOOLBAR_TIP_MARKER))) {
 			return 1;
 		}
 		if(normalized.contains("chart range selector") || normalized.contains("表格范围") || normalized.contains("table range") || normalized.contains("图表范围")) {
 			return 2;
 		}
-		if(normalized.contains("chart grid") || normalized.contains("使能表格")) {
+		if(normalized.contains("chart grid") || normalized.contains(normalizeMenuLabel(CHART_TOOLBAR_TIP_GRID)) || normalized.contains("表格网格")) {
 			return 0;
 		}
-		if(normalized.contains("reset the chromatogram") || normalized.contains("恢复谱图")) {
+		if(normalized.contains("reset the chromatogram") || normalized.contains(normalizeMenuLabel(CHART_TOOLBAR_TIP_RESET))) {
 			return 3;
 		}
 		return -1;
+	}
+
+	/**
+	 * {@code disable} is tested before {@code enable} because the English
+	 * word "disable" contains "enable".
+	 */
+	private static String chartGridTip(String currentTip) {
+
+		if(currentTip == null || currentTip.isBlank()) {
+			return CHART_TOOLBAR_TIP_GRID_SHOW;
+		}
+		String normalized = normalizeMenuLabel(currentTip);
+		if(normalized.contains("disable") || normalized.contains("关闭")) {
+			return CHART_TOOLBAR_TIP_GRID_HIDE;
+		}
+		if(normalized.contains("enable") || normalized.contains("显示") || normalized.contains("使能")) {
+			return CHART_TOOLBAR_TIP_GRID_SHOW;
+		}
+		return CHART_TOOLBAR_TIP_GRID;
 	}
 
 	private static boolean matchesTargetLabelSettings(String value) {
