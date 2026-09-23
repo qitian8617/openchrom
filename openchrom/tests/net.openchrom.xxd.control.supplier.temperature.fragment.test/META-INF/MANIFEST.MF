@@ -3,9 +3,9 @@ Automatic-Module-Name: net.openchrom.xxd.control.supplier.temperature.fragment.t
 Bundle-ManifestVersion: 2
 Bundle-Name: Temperature Control Panel Test
 Bundle-SymbolicName: net.openchrom.xxd.control.supplier.temperature.fragment.test
-Bundle-Version: 1.6.20.qualifier
+Bundle-Version: 1.6.32.qualifier
 Bundle-Vendor: OpenChrom
-Fragment-Host: net.openchrom.xxd.control.supplier.temperature.ui;bundle-version="1.6.20"
+Fragment-Host: net.openchrom.xxd.control.supplier.temperature.ui;bundle-version="1.6.32"
 Import-Package: org.junit.jupiter.api;version="[6.0.0,7.0.0)",
  org.junit.jupiter.api.io;version="[6.0.0,7.0.0)"
 Bundle-RequiredExecutionEnvironment: JavaSE-21
