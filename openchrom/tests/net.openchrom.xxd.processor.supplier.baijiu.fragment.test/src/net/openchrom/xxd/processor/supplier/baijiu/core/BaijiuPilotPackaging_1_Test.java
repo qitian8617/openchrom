@@ -283,6 +283,12 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(chromeSrc.contains("SEPARATION_COLUMN_TOOLTIP"), chromeSrc);
 		assertFalse(chromeSrc.contains("CHROME_EPOCH = 36"), "polarity widgets are SWT-only; do not bump chrome epoch");
 		assertTrue(chromeSrc.contains("shouldCloseTargetLabelSettingsShell"), chromeSrc);
+		assertTrue(chromeSrc.contains("isChromatogramChartToolbarKeep"), chromeSrc);
+		assertTrue(chromeSrc.contains("isExtendedChromatogramUiClass"), chromeSrc);
+		assertTrue(chromeSrc.contains("isChromatogramPlotClass"), chromeSrc);
+		assertTrue(chromeSrc.contains("shouldCloseChromatogramToolbarDialog"), chromeSrc);
+		assertTrue(chromeSrc.contains("EXTENDED_CHROMATOGRAM_UI_CLASS"), chromeSrc);
+		assertTrue(chromeSrc.contains("Enable/Disable the chart grid"), chromeSrc);
 		assertTrue(chromeSrc.contains("PLANT_ABOUT_MENU_ID"), chromeSrc);
 		assertTrue(chromeSrc.contains("ABOUT_DIRECT_HANDLER_URI"), chromeSrc);
 		assertTrue(chromeSrc.contains("ABOUT_LOGO_PATH"), chromeSrc);
@@ -442,6 +448,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(addonSrc.contains("scheduleSanitizePlantMenus"), addonSrc);
 		assertTrue(addonSrc.contains("hideChromatogramTargetLabelControls"), addonSrc);
 		assertTrue(addonSrc.contains("hideChromatogramPolarityControls"), addonSrc);
+		assertTrue(addonSrc.contains("hideChromatogramChartToolbar"), addonSrc);
 		assertTrue(addonSrc.contains("lockChromatogramSeriesColorColumns"), addonSrc);
 		assertTrue(addonSrc.contains("sanitizeGeneration"), addonSrc);
 		assertTrue(addonSrc.contains("shouldSanitizeAfterPartActivation"), addonSrc);
@@ -1036,6 +1043,12 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(shellMenusSrc.contains("isSeparationColumnCombo"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("isChromatogramPolarityCompanionButton"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("lockChromatogramSeriesColorColumns"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("hideChromatogramChartToolbar"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("isChromatogramChartToolbarKeep"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("cancelChartToolbarActivation"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("SWT.Selection"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("isExtendedChromatogramUiClass"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("closeChromatogramToolbarDialog"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("lockSeriesLegendColorColumn"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("setEditingSupport"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("org.eclipse.jface.columnViewer"), shellMenusSrc);

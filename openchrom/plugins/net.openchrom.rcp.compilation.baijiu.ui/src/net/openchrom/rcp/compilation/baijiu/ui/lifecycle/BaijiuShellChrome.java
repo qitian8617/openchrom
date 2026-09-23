@@ -45,6 +45,11 @@ import java.util.Set;
  * separation-column polarity group (info toggle, semi-polar combo,
  * adjacent + / references button) and locks the series-legend color
  * column so {@code ColorCellEditor} never allocates a swatch image.
+ * The CSD chart toolbar itself is an allowlist on that same SWT widget:
+ * only Enable/Disable the chart grid (使能表格), Toggle the chart legend
+ * marker, and Toggle the chart range selector (显示/隐藏表格范围) stay.
+ * Every other button, combo, and secondary row in that chrome is hidden
+ * and its selection listeners are stripped so the dialogs cannot open.
  * Perspective switcher stays hidden. Plant home sash: left column |
  * right fixed 白酒操作 sidebar. The left column is a vertical sash —
  * upper workflow pages (白酒分析 / 推荐积分 / …) and a lower 谱图/采集
@@ -423,6 +428,12 @@ public final class BaijiuShellChrome {
 	 * sash cannot stick. Runtime still strips that tag from sash
 	 * containers; parts and stacks keep it. Positive {@code containerData}
 	 * is left alone so a completed drag is not reset on the next chrome pass.
+	 * Epoch stays 35 for the CSD chart-toolbar allowlist. Those buttons are
+	 * SWT children of {@code ExtendedChromatogramUI}, not E4 model elements,
+	 * so {@code workbench.xmi} cannot resurrect them. Bumping the epoch would
+	 * rebuild the plant sash for a widget the model does not store. The SWT
+	 * sanitizer re-applies on Show, Paint, Selection, and every plant-menu
+	 * pass, including the second launch.
 	 */
 	public static final int CHROME_EPOCH = 35;
 	/**
@@ -1127,6 +1138,16 @@ public final class BaijiuShellChrome {
 	 * That is the circled +. An in-widget add control uses {@code Edit Columns}.
 	 */
 	public static final String CHROMATOGRAM_REFERENCES_TOOLTIP = "the references toolbar.";
+	/**
+	 * ChemClipse {@code ExtendedChromatogramUI} (the CSD editor surface).
+	 * The chart-toolbar allowlist runs only inside this widget so the plant
+	 * ribbon and the 白酒操作 sidebar are untouched.
+	 */
+	public static final String EXTENDED_CHROMATOGRAM_UI_CLASS = "org.eclipse.chemclipse.ux.extension.xxd.ui.swt.editors.ExtendedChromatogramUI";
+	/**
+	 * Plot under the chart toolbar. The sanitizer must not walk into it.
+	 */
+	public static final String CHROMATOGRAM_CHART_CLASS = "org.eclipse.chemclipse.ux.extension.xxd.ui.charts.ChromatogramChart";
 	/**
 	 * SWTChart {@code SeriesLabelProvider} color column
 	 * ({@code Messages.COLOR} / German {@code Farbe}). Clicking it installs
@@ -2648,6 +2669,84 @@ public final class BaijiuShellChrome {
 		String normalized = normalizeMenuLabel(title);
 		String expected = normalizeMenuLabel(TARGET_LABEL_SETTINGS_TITLE);
 		return normalized.equals(expected) || normalized.startsWith(expected + " ");
+	}
+
+	/**
+	 * Plant CSD chart toolbar allowlist. ChemClipse builds these as SWT
+	 * buttons with no E4 id ({@code ExtendedChromatogramUI.createToolbarMain}
+	 * and {@code createToolbarEdit}). Keep only:
+	 * <ul>
+	 * <li>{@code Enable/Disable the chart grid.} — 使能表格, grid icon</li>
+	 * <li>{@code Toggle the chart legend marker.}</li>
+	 * <li>{@code Toggle the chart range selector.} — 显示/隐藏表格范围</li>
+	 * </ul>
+	 * {@code Toggle the chart series legend.} is a different button and is
+	 * not kept. Blank text is not a match, so a button that has not received
+	 * its tooltip yet is left for the next pass.
+	 */
+	public static boolean isChromatogramChartToolbarKeep(String text, String toolTip) {
+
+		return matchesChartToolbarKeep(text) || matchesChartToolbarKeep(toolTip);
+	}
+
+	/**
+	 * {@code ExtendedChromatogramUI} only. Subclasses and the plot widget
+	 * do not match, so the plant ribbon is never treated as this editor.
+	 */
+	public static boolean isExtendedChromatogramUiClass(String className) {
+
+		if(className == null || className.isBlank()) {
+			return false;
+		}
+		return EXTENDED_CHROMATOGRAM_UI_CLASS.equals(className) || className.endsWith(".ExtendedChromatogramUI");
+	}
+
+	/**
+	 * The chromatogram plot under the toolbar rows. Walking into it would
+	 * hide the trace.
+	 */
+	public static boolean isChromatogramPlotClass(String className) {
+
+		if(className == null || className.isBlank()) {
+			return false;
+		}
+		return CHROMATOGRAM_CHART_CLASS.equals(className) || className.endsWith(".ChromatogramChart") || className.endsWith(".ScrollableChart") || className.endsWith(".BaseChart") || className.contains(".swtchart.");
+	}
+
+	/**
+	 * Dialogs opened by chart-toolbar buttons that the allowlist removes.
+	 * Baseline add/delete are the named shells. Target Label Settings is
+	 * {@link #shouldCloseTargetLabelSettingsShell}. The Settings preference
+	 * dialog is not closed here — its button listener is stripped instead,
+	 * so a plant Preferences shell opened from elsewhere stays up.
+	 */
+	public static boolean shouldCloseChromatogramToolbarDialog(String title) {
+
+		if(title == null || title.isBlank()) {
+			return false;
+		}
+		String normalized = normalizeMenuLabel(title);
+		return "new baseline".equals(normalized) || normalized.startsWith("new baseline ") || "delete baseline".equals(normalized) || normalized.startsWith("delete baseline ");
+	}
+
+	private static boolean matchesChartToolbarKeep(String value) {
+
+		if(value == null || value.isBlank()) {
+			return false;
+		}
+		String normalized = normalizeMenuLabel(value);
+		if(normalized.contains("chart legend marker") || normalized.contains("图例标记")) {
+			return true;
+		}
+		if(normalized.contains("chart range selector") || normalized.contains("表格范围") || normalized.contains("table range") || normalized.contains("图表范围")) {
+			return true;
+		}
+		/*
+		 * "Enable the table content edit modus." contains "the table" but
+		 * is the JFace table editor, not the chart grid. Match the grid
+		 * phrase and the factory name 使能表格 only.
+		 */
+		return normalized.contains("chart grid") || normalized.contains("使能表格");
 	}
 
 	private static boolean matchesTargetLabelSettings(String value) {

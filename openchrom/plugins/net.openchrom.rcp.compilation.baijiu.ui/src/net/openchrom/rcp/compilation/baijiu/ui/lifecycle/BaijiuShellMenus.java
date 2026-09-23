@@ -17,11 +17,13 @@ import java.util.Set;
 import org.eclipse.jface.viewers.ViewerColumn;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
@@ -60,6 +62,15 @@ import net.openchrom.rcp.compilation.baijiu.ui.handlers.BaijiuOpenSelectViewHand
  * {@code ColorCellEditor} never runs. Widget dispose does not dispose
  * Images: button icons are shared, and a live cell-editor swatch stays
  * owned by JFace until the editor itself is disposed.
+ * <p>
+ * Inside {@code ExtendedChromatogramUI} the chart toolbar is an allowlist:
+ * Enable/Disable the chart grid (使能表格), Toggle the chart legend marker,
+ * and Toggle the chart range selector (显示/隐藏表格范围). Every other
+ * button, combo, and secondary row (processor icons, T, polarity, help,
+ * settings, baselines, references / alignment / method toolbars) is hidden
+ * and its {@code SWT.Selection} listeners are removed so those dialogs
+ * cannot open. Referenced composites are not disposed — ChemClipse still
+ * calls {@code update()} on them when a chromatogram loads.
  */
 public final class BaijiuShellMenus {
 
@@ -69,6 +80,9 @@ public final class BaijiuShellMenus {
 	private static final String POLARITY_HIDDEN = "net.openchrom.baijiu.polarityHidden";
 	private static final String POLARITY_DISPOSE_QUEUED = "net.openchrom.baijiu.polarityDisposeQueued";
 	private static final String SERIES_COLOR_LOCKED = "net.openchrom.baijiu.seriesColorLocked";
+	private static final String CHART_TOOLBAR_BUSY = "net.openchrom.baijiu.chartToolbarBusy";
+	private static final String CHART_TOOLBAR_QUEUED = "net.openchrom.baijiu.chartToolbarQueued";
+	private static final String CHART_TOOLBAR_DIALOG = "net.openchrom.baijiu.chartToolbarDialog";
 	/**
 	 * {@code ViewerColumn.COLUMN_VIEWER_KEY} ({@code Policy.JFACE + ".columnViewer"}).
 	 * Package-private in JFace; the string is the public widget data key.
@@ -98,11 +112,17 @@ public final class BaijiuShellMenus {
 					return;
 				}
 				Listener listener = event -> {
+					if(event.type == SWT.Selection) {
+						cancelChartToolbarActivation(event);
+						return;
+					}
 					if(event.type == SWT.Paint) {
 						if(event.widget instanceof Button button && !button.isDisposed()) {
 							concealTargetLabelButton(button);
+							scheduleChartToolbarSanitize(button);
 						} else if(event.widget instanceof Combo combo && !combo.isDisposed()) {
 							concealSeparationColumnCombo(combo);
+							scheduleChartToolbarSanitize(combo);
 						} else if(event.widget instanceof Table table && !table.isDisposed()) {
 							lockSeriesLegendColorColumn(table);
 						}
@@ -121,6 +141,7 @@ public final class BaijiuShellMenus {
 						}
 					} else if(event.widget instanceof Shell shell && !shell.isDisposed()) {
 						closeTargetLabelSettingsShell(shell);
+						closeChromatogramToolbarDialog(shell);
 						sanitizeSelectView(shell);
 						Menu bar = shell.getMenuBar();
 						if(bar != null && !bar.isDisposed()) {
@@ -128,13 +149,17 @@ public final class BaijiuShellMenus {
 						}
 					} else if(event.widget instanceof Button button && !button.isDisposed()) {
 						concealTargetLabelButton(button);
+						scheduleChartToolbarSanitize(button);
 					} else if(event.widget instanceof Combo combo && !combo.isDisposed()) {
 						concealSeparationColumnCombo(combo);
+						scheduleChartToolbarSanitize(combo);
 					} else if(event.widget instanceof ToolBar toolBar && !toolBar.isDisposed()) {
 						concealTargetLabelToolBar(toolBar);
+						scheduleChartToolbarSanitize(toolBar);
 					} else if(event.type == SWT.Show && event.widget instanceof Composite composite && !composite.isDisposed()) {
 						hideTargetLabelButtonsIn(composite);
 						hidePolarityControlsIn(composite, 0);
+						scheduleChartToolbarSanitize(composite);
 					} else if(event.widget instanceof Table table && !table.isDisposed()) {
 						sanitizeSelectViewTable(table);
 						lockSeriesLegendColorColumn(table);
@@ -152,6 +177,7 @@ public final class BaijiuShellMenus {
 				display.addFilter(SWT.Activate, listener);
 				display.addFilter(SWT.MenuDetect, listener);
 				display.addFilter(SWT.Paint, listener);
+				display.addFilter(SWT.Selection, listener);
 				installed = listener;
 			}
 		} catch(RuntimeException | LinkageError e) {
@@ -912,6 +938,571 @@ public final class BaijiuShellMenus {
 		} catch(RuntimeException | LinkageError e) {
 			// headless fragment tests / Display not ready
 		}
+	}
+
+	/**
+	 * Hide every control in the CSD chart toolbar except the three
+	 * allowlisted buttons. Headless fragment tests have no current display
+	 * and return. Does not dispose Images. Does not dispose the composites
+	 * ChemClipse still calls {@code update()} on when a chromatogram loads.
+	 */
+	public static void hideChromatogramChartToolbar() {
+
+		try {
+			Display display = Display.getCurrent();
+			if(display == null || display.isDisposed()) {
+				return;
+			}
+			Shell[] shells = display.getShells();
+			for(int i = 0; i < shells.length; i++) {
+				Shell shell = shells[i];
+				if(shell == null || shell.isDisposed()) {
+					continue;
+				}
+				closeChromatogramToolbarDialog(shell);
+				walkChartToolbars(shell, 0);
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// headless fragment tests / Display not ready
+		}
+	}
+
+	private static void walkChartToolbars(Control control, int depth) {
+
+		if(control == null || control.isDisposed() || depth > 24) {
+			return;
+		}
+		if(control instanceof Composite composite && BaijiuShellChrome.isExtendedChromatogramUiClass(composite.getClass().getName())) {
+			sanitizeChartToolbar(composite);
+			return;
+		}
+		if(control instanceof Composite composite) {
+			Control[] children;
+			try {
+				children = composite.getChildren();
+			} catch(RuntimeException e) {
+				return;
+			}
+			for(int i = 0; i < children.length; i++) {
+				walkChartToolbars(children[i], depth + 1);
+			}
+		}
+	}
+
+	private static void scheduleChartToolbarSanitize(Control start) {
+
+		Composite editor = chromatogramEditorOf(start);
+		if(editor == null || editor.isDisposed() || Boolean.TRUE.equals(editor.getData(CHART_TOOLBAR_QUEUED))) {
+			return;
+		}
+		Display display;
+		try {
+			display = editor.getDisplay();
+		} catch(RuntimeException e) {
+			return;
+		}
+		if(display == null || display.isDisposed()) {
+			return;
+		}
+		editor.setData(CHART_TOOLBAR_QUEUED, Boolean.TRUE);
+		display.asyncExec(() -> {
+			if(editor.isDisposed()) {
+				return;
+			}
+			try {
+				editor.setData(CHART_TOOLBAR_QUEUED, null);
+			} catch(RuntimeException e) {
+				// editor closing
+			}
+			sanitizeChartToolbar(editor);
+		});
+	}
+
+	private static Composite chromatogramEditorOf(Control start) {
+
+		Control node = start;
+		for(int depth = 0; node != null && !node.isDisposed() && depth < 24; depth++) {
+			if(node instanceof Composite composite && BaijiuShellChrome.isExtendedChromatogramUiClass(composite.getClass().getName())) {
+				return composite;
+			}
+			try {
+				node = node.getParent();
+			} catch(RuntimeException e) {
+				return null;
+			}
+		}
+		return null;
+	}
+
+	private static void sanitizeChartToolbar(Composite editor) {
+
+		if(editor == null || editor.isDisposed() || Boolean.TRUE.equals(editor.getData(CHART_TOOLBAR_BUSY))) {
+			return;
+		}
+		editor.setData(CHART_TOOLBAR_BUSY, Boolean.TRUE);
+		boolean[] changed = new boolean[1];
+		try {
+			sanitizeChartBranch(editor, changed, true);
+			if(changed[0] && !editor.isDisposed()) {
+				editor.layout(true, true);
+			}
+		} catch(RuntimeException e) {
+			// editor closing
+		} finally {
+			if(!editor.isDisposed()) {
+				editor.setData(CHART_TOOLBAR_BUSY, Boolean.FALSE);
+			}
+		}
+	}
+
+	/**
+	 * @return {@code true} when this branch still shows an allowlisted button
+	 */
+	private static boolean sanitizeChartBranch(Control control, boolean[] changed, boolean isRoot) {
+
+		if(control == null || control.isDisposed() || BaijiuShellChrome.isChromatogramPlotClass(control.getClass().getName())) {
+			return false;
+		}
+		if(control instanceof Button button) {
+			return sanitizeChartButton(button, changed);
+		}
+		if(control instanceof ToolBar toolBar) {
+			return sanitizeChartToolBar(toolBar, changed);
+		}
+		if(control instanceof Combo || control instanceof Label || control instanceof Text) {
+			concealChartControl(control, changed);
+			return false;
+		}
+		if(control instanceof Composite composite) {
+			return sanitizeChartComposite(composite, changed, isRoot);
+		}
+		return false;
+	}
+
+	private static boolean sanitizeChartButton(Button button, boolean[] changed) {
+
+		String text;
+		String tip;
+		try {
+			text = button.getText();
+			tip = button.getToolTipText();
+		} catch(RuntimeException e) {
+			return false;
+		}
+		if(BaijiuShellChrome.isChromatogramChartToolbarKeep(text, tip)) {
+			revealChartKeep(button, changed);
+			return true;
+		}
+		if(isBlankChromeText(text) && isBlankChromeText(tip)) {
+			return false;
+		}
+		stripButtonActivation(button);
+		concealChartControl(button, changed);
+		return false;
+	}
+
+	private static boolean sanitizeChartComposite(Composite composite, boolean[] changed, boolean isRoot) {
+
+		Control[] children;
+		try {
+			children = composite.getChildren();
+		} catch(RuntimeException e) {
+			return false;
+		}
+		boolean keep = false;
+		boolean pendingBlank = false;
+		boolean containsPlot = false;
+		for(int i = 0; i < children.length; i++) {
+			Control child = children[i];
+			if(child == null || child.isDisposed()) {
+				continue;
+			}
+			if(BaijiuShellChrome.isChromatogramPlotClass(child.getClass().getName())) {
+				containsPlot = true;
+				continue;
+			}
+			if(child instanceof Button button && isBlankChartButton(button)) {
+				pendingBlank = true;
+				continue;
+			}
+			if(sanitizeChartBranch(child, changed, false)) {
+				keep = true;
+			}
+		}
+		if(keep) {
+			hideBlankChartButtons(composite, changed);
+			revealChartRow(composite, changed);
+			if(!containsPlot && !isRoot) {
+				packChartKeepToEnd(composite, changed);
+			}
+			return true;
+		}
+		/*
+		 * Never collapse the editor or the plot host. A pass that runs
+		 * before tooltips are set must not hide the chromatogram trace.
+		 */
+		if(pendingBlank || containsPlot || isRoot) {
+			return false;
+		}
+		stripCompositeActivation(composite);
+		concealChartControl(composite, changed);
+		return false;
+	}
+
+	private static void hideBlankChartButtons(Composite composite, boolean[] changed) {
+
+		Control[] children;
+		try {
+			children = composite.getChildren();
+		} catch(RuntimeException e) {
+			return;
+		}
+		for(int i = 0; i < children.length; i++) {
+			if(children[i] instanceof Button button && !button.isDisposed() && isBlankChartButton(button)) {
+				stripButtonActivation(button);
+				concealChartControl(button, changed);
+			}
+		}
+	}
+
+	private static boolean isBlankChartButton(Button button) {
+
+		try {
+			return isBlankChromeText(button.getText()) && isBlankChromeText(button.getToolTipText());
+		} catch(RuntimeException e) {
+			return true;
+		}
+	}
+
+	private static boolean sanitizeChartToolBar(ToolBar toolBar, boolean[] changed) {
+
+		ToolItem[] items;
+		try {
+			items = toolBar.getItems();
+		} catch(RuntimeException e) {
+			return false;
+		}
+		boolean keep = false;
+		for(int i = 0; i < items.length; i++) {
+			ToolItem item = items[i];
+			if(item == null || item.isDisposed()) {
+				continue;
+			}
+			String text;
+			String tip;
+			try {
+				text = item.getText();
+				tip = item.getToolTipText();
+			} catch(RuntimeException e) {
+				continue;
+			}
+			if(BaijiuShellChrome.isChromatogramChartToolbarKeep(text, tip)) {
+				keep = true;
+				continue;
+			}
+			if(isBlankChromeText(text) && isBlankChromeText(tip)) {
+				continue;
+			}
+			try {
+				item.dispose();
+				changed[0] = true;
+			} catch(RuntimeException e) {
+				// toolbar already closing
+			}
+		}
+		if(!keep) {
+			concealChartControl(toolBar, changed);
+		}
+		return keep;
+	}
+
+	private static void revealChartKeep(Button button, boolean[] changed) {
+
+		try {
+			if(!button.getVisible()) {
+				button.setVisible(true);
+				changed[0] = true;
+			}
+			if(!button.getEnabled()) {
+				button.setEnabled(true);
+				changed[0] = true;
+			}
+			Object layoutData = button.getLayoutData();
+			if(layoutData instanceof GridData grid && grid.exclude) {
+				grid.exclude = false;
+				changed[0] = true;
+			}
+		} catch(RuntimeException e) {
+			// widget mid-create
+		}
+	}
+
+	private static void revealChartRow(Composite row, boolean[] changed) {
+
+		try {
+			if(!row.getVisible()) {
+				row.setVisible(true);
+				changed[0] = true;
+			}
+			if(!row.getEnabled()) {
+				row.setEnabled(true);
+				changed[0] = true;
+			}
+			Object layoutData = row.getLayoutData();
+			if(layoutData instanceof GridData grid && grid.exclude) {
+				grid.exclude = false;
+				changed[0] = true;
+			}
+		} catch(RuntimeException e) {
+			// widget mid-create
+		}
+	}
+
+	private static void packChartKeepToEnd(Composite row, boolean[] changed) {
+
+		if(!(row.getLayout() instanceof GridLayout)) {
+			return;
+		}
+		Control[] children;
+		try {
+			children = row.getChildren();
+		} catch(RuntimeException e) {
+			return;
+		}
+		Control anchor = null;
+		for(int i = 0; i < children.length; i++) {
+			Control child = children[i];
+			if(child == null || child.isDisposed() || !child.getVisible() || isGridExcluded(child)) {
+				continue;
+			}
+			if(anchor == null) {
+				anchor = child;
+			} else {
+				clearChartGrab(child, changed);
+			}
+		}
+		if(anchor == null) {
+			return;
+		}
+		GridData grid = gridDataOf(anchor);
+		if(grid.exclude || !grid.grabExcessHorizontalSpace || grid.grabExcessVerticalSpace || grid.horizontalAlignment != SWT.END) {
+			grid.exclude = false;
+			grid.grabExcessHorizontalSpace = true;
+			grid.grabExcessVerticalSpace = false;
+			grid.horizontalAlignment = SWT.END;
+			changed[0] = true;
+		}
+	}
+
+	private static void clearChartGrab(Control control, boolean[] changed) {
+
+		Object layoutData = control.getLayoutData();
+		if(!(layoutData instanceof GridData grid)) {
+			return;
+		}
+		if(grid.grabExcessHorizontalSpace || grid.horizontalAlignment != SWT.BEGINNING) {
+			grid.grabExcessHorizontalSpace = false;
+			grid.horizontalAlignment = SWT.BEGINNING;
+			changed[0] = true;
+		}
+	}
+
+	private static boolean isGridExcluded(Control control) {
+
+		Object layoutData = control.getLayoutData();
+		return layoutData instanceof GridData grid && grid.exclude;
+	}
+
+	private static GridData gridDataOf(Control control) {
+
+		Object layoutData = control.getLayoutData();
+		if(layoutData instanceof GridData grid) {
+			return grid;
+		}
+		GridData grid = new GridData();
+		control.setLayoutData(grid);
+		return grid;
+	}
+
+	private static void concealChartControl(Control control, boolean[] changed) {
+
+		if(control == null || control.isDisposed()) {
+			return;
+		}
+		try {
+			if(control.getVisible()) {
+				control.setVisible(false);
+				changed[0] = true;
+			}
+			if(control.getEnabled()) {
+				control.setEnabled(false);
+			}
+			Object layoutData = control.getLayoutData();
+			if(layoutData instanceof GridData grid) {
+				if(!grid.exclude) {
+					grid.exclude = true;
+					changed[0] = true;
+				}
+			} else {
+				GridData grid = new GridData();
+				grid.exclude = true;
+				control.setLayoutData(grid);
+				changed[0] = true;
+			}
+		} catch(RuntimeException e) {
+			// widget mid-create
+		}
+	}
+
+	private static void stripCompositeActivation(Composite composite) {
+
+		Control[] children;
+		try {
+			children = composite.getChildren();
+		} catch(RuntimeException e) {
+			return;
+		}
+		for(int i = 0; i < children.length; i++) {
+			Control child = children[i];
+			if(child instanceof Button button) {
+				stripButtonActivation(button);
+			} else if(child instanceof Composite nested) {
+				stripCompositeActivation(nested);
+			}
+		}
+	}
+
+	private static void stripButtonActivation(Button button) {
+
+		if(button == null || button.isDisposed()) {
+			return;
+		}
+		try {
+			button.setEnabled(false);
+			stripListeners(button, SWT.Selection);
+			stripListeners(button, SWT.DefaultSelection);
+		} catch(RuntimeException e) {
+			// widget mid-create
+		}
+	}
+
+	private static void stripListeners(Button button, int type) {
+
+		Listener[] listeners = button.getListeners(type);
+		if(listeners == null) {
+			return;
+		}
+		for(int i = 0; i < listeners.length; i++) {
+			button.removeListener(type, listeners[i]);
+		}
+	}
+
+	private static void cancelChartToolbarActivation(Event event) {
+
+		if(event == null) {
+			return;
+		}
+		if(event.widget instanceof Button button && !button.isDisposed()) {
+			if(!shouldCancelChartButton(button)) {
+				return;
+			}
+			event.type = SWT.None;
+			event.doit = false;
+			stripButtonActivation(button);
+			scheduleChartToolbarSanitize(button);
+			return;
+		}
+		if(event.widget instanceof ToolItem item && !item.isDisposed()) {
+			ToolBar bar;
+			String text;
+			String tip;
+			try {
+				bar = item.getParent();
+				text = item.getText();
+				tip = item.getToolTipText();
+			} catch(RuntimeException e) {
+				return;
+			}
+			if(bar == null || chromatogramEditorOf(bar) == null || BaijiuShellChrome.isChromatogramChartToolbarKeep(text, tip)) {
+				return;
+			}
+			if(isBlankChromeText(text) && isBlankChromeText(tip)) {
+				return;
+			}
+			event.type = SWT.None;
+			event.doit = false;
+			try {
+				item.dispose();
+			} catch(RuntimeException e) {
+				// toolbar already closing
+			}
+		}
+	}
+
+	private static boolean shouldCancelChartButton(Button button) {
+
+		if(chromatogramEditorOf(button) == null) {
+			return false;
+		}
+		String text;
+		String tip;
+		try {
+			text = button.getText();
+			tip = button.getToolTipText();
+		} catch(RuntimeException e) {
+			return false;
+		}
+		if(BaijiuShellChrome.isChromatogramChartToolbarKeep(text, tip)) {
+			return false;
+		}
+		return !isBlankChromeText(text) || !isBlankChromeText(tip);
+	}
+
+	private static boolean isBlankChromeText(String value) {
+
+		return value == null || value.isBlank();
+	}
+
+	private static void closeChromatogramToolbarDialog(Shell shell) {
+
+		if(shell == null || shell.isDisposed() || Boolean.TRUE.equals(shell.getData(CHART_TOOLBAR_DIALOG))) {
+			return;
+		}
+		String title;
+		try {
+			title = shell.getText();
+		} catch(RuntimeException e) {
+			return;
+		}
+		if(!BaijiuShellChrome.shouldCloseChromatogramToolbarDialog(title)) {
+			return;
+		}
+		shell.setData(CHART_TOOLBAR_DIALOG, Boolean.TRUE);
+		try {
+			shell.setAlpha(0);
+			shell.setVisible(false);
+		} catch(RuntimeException e) {
+			// alpha unsupported; close still runs
+		}
+		Display display;
+		try {
+			display = shell.getDisplay();
+		} catch(RuntimeException e) {
+			return;
+		}
+		if(display == null || display.isDisposed()) {
+			return;
+		}
+		display.asyncExec(() -> {
+			if(shell.isDisposed()) {
+				return;
+			}
+			try {
+				shell.close();
+			} catch(RuntimeException e) {
+				// dialog already gone
+			}
+		});
 	}
 
 	private static void hidePolarityControlsIn(Composite composite, int depth) {

@@ -52,6 +52,7 @@ public class BaijiuShellMenus_1_Test {
 		assertFalse(BaijiuShellChrome.shouldHidePlantChartMenuItem("重置图表"));
 		BaijiuShellMenus.hideChromatogramTargetLabelControls();
 		BaijiuShellMenus.hideChromatogramPolarityControls();
+		BaijiuShellMenus.hideChromatogramChartToolbar();
 		BaijiuShellMenus.lockChromatogramSeriesColorColumns();
 	}
 }
