@@ -290,6 +290,9 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(chromeSrc.contains("shouldCloseChromatogramToolbarDialog"), chromeSrc);
 		assertTrue(chromeSrc.contains("EXTENDED_CHROMATOGRAM_UI_CLASS"), chromeSrc);
 		assertTrue(chromeSrc.contains("Enable/Disable the chart grid"), chromeSrc);
+		assertTrue(chromeSrc.contains("Reset the chromatogram"), chromeSrc);
+		assertTrue(chromeSrc.contains("恢复谱图"), chromeSrc);
+		assertTrue(chromeSrc.contains("createButtonReset"), chromeSrc);
 		assertTrue(chromeSrc.contains("PLANT_ABOUT_MENU_ID"), chromeSrc);
 		assertTrue(chromeSrc.contains("ABOUT_DIRECT_HANDLER_URI"), chromeSrc);
 		assertTrue(chromeSrc.contains("ABOUT_LOGO_PATH"), chromeSrc);
@@ -1063,6 +1066,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(shellMenusSrc.contains("consolidateChartToolbar"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("setRedraw(false)"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("CHART_TOOLBAR_ROW"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("CHART_TOOLBAR_SLOTS = 4"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("cancelChartToolbarActivation"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("SWT.Selection"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("isExtendedChromatogramUiClass"), shellMenusSrc);

@@ -47,11 +47,13 @@ import java.util.Set;
  * column so {@code ColorCellEditor} never allocates a swatch image.
  * The CSD chart toolbar itself is an allowlist on that same SWT widget:
  * only Enable/Disable the chart grid (使能表格), Toggle the chart legend
- * marker, and Toggle the chart range selector (显示/隐藏表格范围) stay,
- * in that left-to-right order, in one horizontal row. ChemClipse builds
- * the grid button in {@code createToolbarMain} and the other two in the
- * hidden {@code createToolbarEdit} row; the plant pass reparents the
- * three onto one row and disposes the rest before the first paint.
+ * marker, Toggle the chart range selector (显示/隐藏表格范围), and
+ * Reset the chromatogram (恢复谱图) stay, in that left-to-right order,
+ * in one horizontal row. ChemClipse builds the grid button and
+ * {@code createButtonReset} in {@code createToolbarMain}; the legend
+ * marker and range selector are in the hidden {@code createToolbarEdit}
+ * row. The plant pass reparents the four onto one row and disposes the
+ * rest before the first paint.
  * Every other button, combo, and secondary row in that chrome is removed
  * and its selection listeners are stripped so the dialogs cannot open.
  * Perspective switcher stays hidden. Plant home sash: left column |
@@ -433,7 +435,7 @@ public final class BaijiuShellChrome {
 	 * containers; parts and stacks keep it. Positive {@code containerData}
 	 * is left alone so a completed drag is not reset on the next chrome pass.
 	 * Epoch stays 35 for the CSD chart-toolbar allowlist and for the
-	 * single-row reparent of those three buttons. They are SWT children of
+	 * single-row reparent of those four buttons. They are SWT children of
 	 * {@code ExtendedChromatogramUI}, not E4 model elements, so
 	 * {@code workbench.xmi} cannot resurrect them or their layout. Bumping
 	 * the epoch would rebuild the plant sash for a widget the model does
@@ -2678,15 +2680,19 @@ public final class BaijiuShellChrome {
 
 	/**
 	 * Plant CSD chart toolbar allowlist. ChemClipse builds these as SWT
-	 * buttons with no E4 id. The grid toggle is created in
-	 * {@code ExtendedChromatogramUI.createToolbarMain}; the legend marker
-	 * and range selector are created later in {@code createToolbarEdit}
-	 * (a second row ChemClipse keeps hidden until the edit toggle). Keep
-	 * only these three, left to right:
+	 * buttons with no E4 id. The grid toggle and {@code createButtonReset}
+	 * are created in {@code ExtendedChromatogramUI.createToolbarMain}; the
+	 * legend marker and range selector are created later in
+	 * {@code createToolbarEdit} (a second row ChemClipse keeps hidden until
+	 * the edit toggle). Keep only these four, left to right:
 	 * <ul>
 	 * <li>slot 0 — {@code Enable/Disable the chart grid.} — 使能表格</li>
 	 * <li>slot 1 — {@code Toggle the chart legend marker.}</li>
 	 * <li>slot 2 — {@code Toggle the chart range selector.} — 显示/隐藏表格范围</li>
+	 * <li>slot 3 — {@code Reset the chromatogram} — 恢复谱图. Tooltip on
+	 * {@code createButtonReset}; the listener calls {@code reset(true)},
+	 * which restores the selection range (chart zoom/view). This is not
+	 * the chart context menu {@code Reset Chart} / 重置图表.</li>
 	 * </ul>
 	 * {@code Toggle the chart series legend.} is a different button and is
 	 * not kept. Blank text is not a match, so a button that has not received
@@ -2702,6 +2708,7 @@ public final class BaijiuShellChrome {
 	/**
 	 * Left-to-right index of a plant chart-toolbar keeper.
 	 * {@code 0} grid, {@code 1} legend marker, {@code 2} range selector,
+	 * {@code 3} restore ({@code Reset the chromatogram} / 恢复谱图),
 	 * {@code -1} when the control is not on the allowlist. Text and tooltip
 	 * are both checked; a keeper phrase wins over a blank side.
 	 */
@@ -2760,10 +2767,14 @@ public final class BaijiuShellChrome {
 
 	/**
 	 * @return {@code 0} grid, {@code 1} legend marker, {@code 2} range
-	 *         selector, or {@code -1}. Marker is matched before any looser
-	 *         "legend" phrase. "Enable the table content edit modus." is the
-	 *         JFace table editor, not the chart grid — only {@code chart grid}
-	 *         and 使能表格 count as the grid slot.
+	 *         selector, {@code 3} restore, or {@code -1}. Marker is matched
+	 *         before any looser "legend" phrase. "Enable the table content
+	 *         edit modus." is the JFace table editor, not the chart grid —
+	 *         only {@code chart grid} and 使能表格 count as the grid slot.
+	 *         Restore is {@code ExtendedChromatogramUI.createButtonReset}
+	 *         ({@code Reset the chromatogram} / 恢复谱图). {@code Reset Chart}
+	 *         / {@code Reset the chart} / 重置图表 is the context-menu handler
+	 *         and stays off this allowlist.
 	 */
 	private static int chartToolbarSlot(String value) {
 
@@ -2779,6 +2790,9 @@ public final class BaijiuShellChrome {
 		}
 		if(normalized.contains("chart grid") || normalized.contains("使能表格")) {
 			return 0;
+		}
+		if(normalized.contains("reset the chromatogram") || normalized.contains("恢复谱图")) {
+			return 3;
 		}
 		return -1;
 	}
