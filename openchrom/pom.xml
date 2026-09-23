@@ -257,6 +257,47 @@
 				</plugins>
 			</build>
 		</profile>
+		<!--
+			Windows plant build. A profile plugin configuration replaces the
+			matching build plugin configuration, so this block repeats the
+			target artifact and JustJ build-time property from the main build
+			and keeps only win32/win32/x86_64. Do not activate it on CI.
+			The baijiu product pom sets the same single environment on its own,
+			so its director goal stays win64 even if this profile is omitted.
+		-->
+		<profile>
+			<id>win32-x86_64</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>${tycho.groupid}</groupId>
+						<artifactId>target-platform-configuration</artifactId>
+						<version>${tycho.version}</version>
+						<configuration>
+							<target>
+								<artifact>
+									<groupId>${tycho.target.groupId}</groupId>
+									<artifactId>${tycho.target.artifactId}</artifactId>
+									<version>${tycho.target.version}</version>
+								</artifact>
+							</target>
+							<environments>
+								<environment>
+									<os>win32</os>
+									<ws>win32</ws>
+									<arch>x86_64</arch>
+								</environment>
+							</environments>
+							<dependency-resolution>
+								<profileProperties>
+									<org.eclipse.justj.buildtime>true</org.eclipse.justj.buildtime>
+								</profileProperties>
+							</dependency-resolution>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
 		<profile>
 			<id>codesign</id>
 			<build>

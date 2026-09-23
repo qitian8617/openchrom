@@ -33,6 +33,8 @@
 -Djdk.xml.maxParameterEntitySizeLimit=0
 -XX:+UseG1GC
 -XX:+UseStringDeduplication
+-Xms512m
+-Xmx4096m
 --enable-native-access=ALL-UNNAMED
       </vmArgs>
       <vmArgsMac>-XstartOnFirstThread

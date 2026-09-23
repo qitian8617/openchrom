@@ -36,10 +36,13 @@ Run As → Eclipse Application (Windows engineer)
 5. Default program args do **not** include -clearPersistedState (layout is
    remembered under ~/BaijiuFID). VM args set
    -Dapplication.perspective=...baijiu.ui.perspective.plantHome,
-   -Dosgi.nl=zh_CN, and -Dapplication.name=白酒FID工作站 (**no spaces** —
+   -Dosgi.nl=zh_CN, -Dapplication.name=白酒FID工作站 (**no spaces** —
    do not write 白酒 FID 工作站 here or PDE/Windows treats FID as the
-   main class: ClassNotFoundException: FID). Window title stays
-   「白酒 FID 工作站」 via product name / shell chrome.
+   main class: ClassNotFoundException: FID), and
+   **-Xms512m -Xmx4096m**. Window title stays 「白酒 FID 工作站」 via
+   product name / shell chrome. An old launch config keeps the previous
+   VM args (IDE heap stuck near the JVM default, ~94M on a small machine)
+   until you Synchronize this .product or create a new launch.
 6. Expect window title 白酒 FID 工作站, start on **厂工作台**:
    plant toolbar always visible (打开谱图, 反控 check item, 开始分析, …);
    **left** workflow tabs (谱图/采集 empty-state Part; opening a CSD embeds the
@@ -96,25 +99,61 @@ Research-menu escape hatch (engineers only, not in the UI)
 reveals 处理器 / 插件 / 色谱 / 窗口. Welcome / MALDI / NMR stay hidden.
 Do not use on plant desktops.
 
-Export Product (Windows)
-------------------------
-1. Same PDE workspace that compiles baijiu.ui on JavaSE-21.
-2. Open the .product file → Export Eclipse Product
-   or File → Export → Plug-in Development → Eclipse Product.
-3. Destination e.g. D:\baijiu-fid-workstation
-4. Root JRE: the product includes
-   org.eclipse.justj.openjdk.hotspot.jre.full.stripped (Java 25), same pattern
-   as community. Do not export against a Java 21 JRE only — ChemClipse will not
-   start.
-5. Result: baijiu-fid.exe (launcher name). License drop-in is still
-   %USERPROFILE%\OpenChrom\licenses\baijiu-fid.bjlic
+Windows product folder (Tycho materialize — not PDE Export)
+-------------------------------------------------------------
+Do not use Export Eclipse Product / Synchronize to produce the plant
+build. PDE looks up a workspace bundle with an exact qualifier and fails
+when that timestamp is not installed locally, for example:
 
-Tycho (optional, full product — heavy)
---------------------------------------
-  mvn -f releng/net.openchrom.aggregator/pom.xml \
-    -pl products/net.openchrom.rcp.compilation.baijiu.product -am package -Pci
+  Unable to find plug-in org.eclipse.chemclipse.rcp.app_0.9.0.202609170830
 
-Community product is unchanged:
+Tycho resolves ChemClipse from the target platform and
+tycho-p2-director-plugin:materialize-products writes the win64 tree.
+Details and the Inno Setup script: packaging/README.txt
+(BaijiuFID-Setup.iss expects SourceDir E:\OpenChrom\baijiu-fid-workstation).
+
+Maven uses JAVA_HOME. `java -version` showing 21 while `mvn -version`
+shows 1.8 means the build is still on Java 8. This tree needs JDK 25
+(CI: Temurin 25). Java 8 and 21 cannot compile the JavaSE-25 plug-ins.
+
+From the openchrom/ directory (the folder that contains releng/):
+
+  mvn -f releng/net.openchrom.aggregator/pom.xml -pl net.openchrom:net.openchrom.targetplatform,net.openchrom:openchrom.compilation.baijiu -am install -Pwin32-x86_64 -DskipTests
+
+Or: powershell -File packaging\build-baijiu-win64.ps1
+    powershell -File packaging\build-baijiu-win64.ps1 -Stage
+
+- `install`, not `package`. materialize-products is bound to install
+  in the parent pom (pluginManagement id materialize-products).
+- Do **not** pass `-Pci`. That profile sets materialize-products and
+  archive-products to phase none. CI stays on verify -Pci and does not
+  assemble this product.
+- `-Pwin32-x86_64` is win32/win32/x86_64 only. The product pom sets the
+  same single environment, so the director does not also build the other
+  five platforms from the parent pom.
+- `-pl` is Maven coordinates. `products/...` is not a path relative to
+  releng/net.openchrom.aggregator. `-am` builds the closure Tycho wires
+  onto this product. The target-platform module is listed so a clean
+  machine builds it before resolution.
+
+Win64 folder, relative to this module:
+
+  target/products/net.openchrom.rcp.compilation.baijiu.product.id/win32/win32/x86_64/
+
+From the openchrom/ tree:
+
+  products/net.openchrom.rcp.compilation.baijiu.product/target/products/net.openchrom.rcp.compilation.baijiu.product.id/win32/win32/x86_64/
+
+Contents: baijiu-fid.exe, baijiu-fid.ini (-Xms512m -Xmx4096m), plugins/,
+features/, and the JustJ 25 JRE (feature
+org.eclipse.justj.openjdk.hotspot.jre.full.stripped, installMode root;
+jre/ beside the exe). Copy that whole directory to
+E:\OpenChrom\baijiu-fid-workstation (-Stage does this), then compile
+packaging/BaijiuFID-Setup.iss. License drop-in is still
+%USERPROFILE%\OpenChrom\licenses\baijiu-fid.bjlic.
+
+Community product is unchanged (still multi-platform unless you pass
+-Pwin32-x86_64 to a full reactor build):
   products/net.openchrom.rcp.compilation.community.product
 Community reverse-control / sequence / 白酒分析 stay dialogs (no dedicated-shell
 placeholder).
