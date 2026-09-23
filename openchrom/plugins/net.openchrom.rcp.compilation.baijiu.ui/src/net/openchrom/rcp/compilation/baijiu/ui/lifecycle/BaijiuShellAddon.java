@@ -702,6 +702,7 @@ public class BaijiuShellAddon {
 			BaijiuShellParts.sanitizePlantMenuContributions(application, modelService);
 			BaijiuShellMenus.hideChromatogramTargetLabelControls();
 			BaijiuShellMenus.hideChromatogramPolarityControls();
+			BaijiuShellMenus.hideChromatogramChartToolbar();
 			BaijiuShellMenus.lockChromatogramSeriesColorColumns();
 		};
 		try {
