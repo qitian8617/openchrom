@@ -39,8 +39,10 @@ public class BaijiuLicenseGate_1_Test {
 		assertNotNull(message);
 		assertTrue(message.contains("尚未授权") || message.contains("未授权"), message);
 		assertTrue(message.contains("unlicensed"), message);
-		assertTrue(message.contains("OpenChrom"), message);
 		assertTrue(message.contains("定量"), message);
+		assertTrue(message.contains("打开色谱图"), message);
+		assertOperatorCopyOmitsFoundation(message);
+		assertOperatorCopyOmitsFoundation(BaijiuLicenseGate.OPERATOR_HINT);
 	}
 
 	@Test
@@ -61,6 +63,7 @@ public class BaijiuLicenseGate_1_Test {
 		assertTrue(message.contains("已过期"), message);
 		assertTrue(message.contains("expired"), message);
 		assertTrue(message.contains("定量"), message);
+		assertOperatorCopyOmitsFoundation(message);
 	}
 
 	@Test
@@ -79,6 +82,13 @@ public class BaijiuLicenseGate_1_Test {
 		System.setProperty(BaijiuLicenseGate.SKIP_PROPERTY, "true");
 		assertTrue(BaijiuLicenseGate.allowsQuantifyAndReport("", ON_PILOT_DAY));
 		assertNull(BaijiuLicenseGate.blockingMessage("", ON_PILOT_DAY));
+	}
+
+	private static void assertOperatorCopyOmitsFoundation(String message) {
+
+		String folded = message.toLowerCase();
+		assertFalse(folded.contains("openchrom"), message);
+		assertFalse(folded.contains("chemclipse"), message);
 	}
 
 	@Test

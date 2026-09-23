@@ -802,6 +802,9 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(wbPartSrc.contains("executeRegisteredCommand"), wbPartSrc);
 		assertTrue(wbPartSrc.contains("catch(Throwable"), wbPartSrc);
 		assertFalse(wbPartSrc.contains("new OpenBaijiuChromatogramHandler().execute(shell, context)"), "must not capture create-time null context for 打开色谱图");
+		assertTrue(wbPartSrc.contains("\\u65e5\\u5e38\\u8def\\u5f84"), "daily-path hint stays on 白酒工作台");
+		assertFalse(wbPartSrc.contains("\\u4e0d\\u5220\\u9664 OpenChrom"), "plant home must not say the workbench keeps OpenChrom core");
+		assertFalse(wbPartSrc.contains("OpenChrom \\u6838\\u5fc3\\u529f\\u80fd"), wbPartSrc);
 
 		Path gcOsShell = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuGcConsoleShell.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuGcConsoleShell.java");
 		assertNotNull(gcOsShell, "independent GC OS window");
@@ -848,6 +851,17 @@ public class BaijiuPilotPackaging_1_Test {
 		assertFalse(aboutDialogSrc.contains("readAndDispatch"), aboutDialogSrc);
 		assertFalse(aboutDialogSrc.contains("About OpenChrom"), aboutDialogSrc);
 		assertFalse(aboutDialogSrc.contains("setText(\"OpenChrom\")"), aboutDialogSrc);
+
+		Path aboutBundle = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/OSGI-INF/l10n/bundle.properties", "plugins/net.openchrom.rcp.compilation.baijiu.ui/OSGI-INF/l10n/bundle.properties");
+		Path aboutBundleZh = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/OSGI-INF/l10n/bundle_zh_CN.properties", "plugins/net.openchrom.rcp.compilation.baijiu.ui/OSGI-INF/l10n/bundle_zh_CN.properties");
+		assertNotNull(aboutBundle);
+		assertNotNull(aboutBundleZh);
+		String aboutEn = Files.readString(aboutBundle, StandardCharsets.UTF_8);
+		String aboutZh = Files.readString(aboutBundleZh, StandardCharsets.UTF_8);
+		assertFalse(aboutEn.contains("OpenChrom"), aboutEn);
+		assertFalse(aboutEn.contains("ChemClipse"), aboutEn);
+		assertFalse(aboutZh.contains("OpenChrom"), aboutZh);
+		assertFalse(aboutZh.contains("ChemClipse"), aboutZh);
 
 		Path aboutLogo = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/icons/about_logo.png", "plugins/net.openchrom.rcp.compilation.baijiu.ui/icons/about_logo.png");
 		assertNotNull(aboutLogo, "plant About logo must ship in baijiu.ui");
@@ -1134,6 +1148,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertFalse(handlerSrc.contains("InputEntriesWizard"), handlerSrc);
 		assertFalse(handlerSrc.contains("InputWizardSettings"), handlerSrc);
 		assertTrue(handlerSrc.contains("FileDialog"), handlerSrc);
+		assertFalse(handlerSrc.contains("\"OpenChrom CSD"), "open-chromatogram filter must not name OpenChrom");
 		assertTrue(handlerSrc.contains("openViaChemClipseSupport"), handlerSrc);
 		assertTrue(handlerSrc.contains("EditorSupportFactory"), handlerSrc);
 		assertTrue(handlerSrc.contains("ISupplierEditorSupport"), handlerSrc);

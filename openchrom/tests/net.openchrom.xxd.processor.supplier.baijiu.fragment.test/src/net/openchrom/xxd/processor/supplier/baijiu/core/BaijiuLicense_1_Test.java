@@ -34,7 +34,10 @@ public class BaijiuLicense_1_Test {
 		assertEquals("BAIJIU-E6C1231A-C0B5BE3E", license.getKey());
 		assertEquals(BaijiuLicense.Status.VALID, license.status(ON_PILOT_DAY));
 
-		BaijiuLicense fromProps = BaijiuLicense.parse(license.toPropertiesText());
+		String propertiesText = license.toPropertiesText();
+		assertFalse(propertiesText.toLowerCase().contains("openchrom"), propertiesText);
+		assertFalse(propertiesText.toLowerCase().contains("chemclipse"), propertiesText);
+		BaijiuLicense fromProps = BaijiuLicense.parse(propertiesText);
 		assertNotNull(fromProps);
 		assertEquals(license.getSite(), fromProps.getSite());
 		assertEquals(license.getCustomer(), fromProps.getCustomer());
@@ -53,6 +56,8 @@ public class BaijiuLicense_1_Test {
 		Path demo = locateDemoFile("sample-pilot.bjlic");
 		assertNotNull(demo, "demo/sample-pilot.bjlic should be shipped");
 		String text = Files.readString(demo, StandardCharsets.UTF_8);
+		assertFalse(text.toLowerCase().contains("openchrom"), text);
+		assertFalse(text.toLowerCase().contains("chemclipse"), text);
 		BaijiuLicense license = BaijiuLicense.parse(text);
 		assertNotNull(license);
 		assertEquals("示例酒厂", license.getSite());

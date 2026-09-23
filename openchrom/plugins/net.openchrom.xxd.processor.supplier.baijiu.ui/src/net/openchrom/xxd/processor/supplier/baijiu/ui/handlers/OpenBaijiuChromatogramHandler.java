@@ -506,7 +506,7 @@ public class OpenBaijiuChromatogramHandler {
 		dialog.setFilterExtensions(new String[] {"*.ocb;*.cdf;*.CSD;*.csd", "*.ocb", "*.*"});
 		dialog.setFilterNames(new String[] { //
 			"\u767d\u9152 FID \u8272\u8c31\u56fe (*.ocb, *.cdf)", //
-			"OpenChrom CSD (*.ocb)", //
+			"\u8272\u8c31\u56fe (*.ocb)", //
 			"\u6240\u6709\u6587\u4ef6 (*.*)" //
 		});
 		dialog.setText("\u6253\u5f00\u767d\u9152 FID \u8272\u8c31\u56fe");

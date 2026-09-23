@@ -31,7 +31,7 @@ public class BaijiuLicensePreferencePage extends PreferencePage implements IWork
 	public BaijiuLicensePreferencePage() {
 
 		setTitle("\u767d\u9152 FID \u8bb8\u53ef");
-		setDescription("Offline Baijiu FID pilot license. OpenChrom core is never blocked.");
+		setDescription("\u79bb\u7ebf\u767d\u9152 FID \u8bb8\u53ef\u3002\u672a\u6388\u6743\u65f6\u4ecd\u53ef\u6253\u5f00\u8272\u8c31\u56fe\u3001\u63a8\u8350\u79ef\u5206\u4e0e\u6df7\u6807\u6821\u6b63\u3002");
 		noDefaultAndApplyButton();
 	}
 

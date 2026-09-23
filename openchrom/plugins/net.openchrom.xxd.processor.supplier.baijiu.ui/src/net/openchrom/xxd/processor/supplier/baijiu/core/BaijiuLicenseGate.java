@@ -28,7 +28,7 @@ public final class BaijiuLicenseGate {
 	 */
 	public static final String SKIP_PROPERTY = "net.openchrom.baijiu.skipLicenseGate";
 
-	public static final String OPERATOR_HINT = "\u767d\u9152\u5b9a\u91cf\u4e0e\u62a5\u544a\u9700\u8981\u6709\u6548\u79bb\u7ebf\u8bb8\u53ef\u3002\u672a\u6388\u6743\u6216\u5df2\u8fc7\u671f\u65f6\u4ecd\u53ef\u6253\u5f00\u8272\u8c31\u56fe\u3001\u63a8\u8350\u79ef\u5206\u4e0e\u6df7\u6807\u6821\u6b63\uff0c\u4e0d\u4f1a\u5f71\u54cd OpenChrom \u6838\u5fc3\u3002";
+	public static final String OPERATOR_HINT = "\u767d\u9152\u5b9a\u91cf\u4e0e\u62a5\u544a\u9700\u8981\u6709\u6548\u79bb\u7ebf\u8bb8\u53ef\u3002\u672a\u6388\u6743\u6216\u5df2\u8fc7\u671f\u65f6\u4ecd\u53ef\u6253\u5f00\u8272\u8c31\u56fe\u3001\u63a8\u8350\u79ef\u5206\u4e0e\u6df7\u6807\u6821\u6b63\u3002";
 
 	private BaijiuLicenseGate() {
 
@@ -125,8 +125,8 @@ public final class BaijiuLicenseGate {
 		switch(status) {
 			case EXPIRED:
 				return bilingual( //
-						"\u767d\u9152 FID \u8bd5\u70b9\u8bb8\u53ef\u5df2\u8fc7\u671f" + site + "\u3002\u4ecd\u53ef\u6253\u5f00\u8272\u8c31\u56fe\u4e0e\u63a8\u8350\u79ef\u5206\uff0c\u4f46\u5b9a\u91cf\u4e0e\u62a5\u544a\u5df2\u505c\u7528\u3002\u8bf7\u5728\u767d\u9152\u5de5\u4f5c\u53f0\u5bfc\u5165\u65b0\u7684 *.bjlic \u6216\u8054\u7cfb\u4f9b\u5e94\u5546\u3002OpenChrom \u6838\u5fc3\u4e0d\u53d7\u5f71\u54cd\u3002", //
-						"Baijiu FID pilot license has expired" + site + ". Chromatograms and recommended integration still work; quantify and report are blocked. Import a new *.bjlic on the Baijiu workbench. OpenChrom core is not affected.");
+						"\u767d\u9152 FID \u8bd5\u70b9\u8bb8\u53ef\u5df2\u8fc7\u671f" + site + "\u3002\u4ecd\u53ef\u6253\u5f00\u8272\u8c31\u56fe\u4e0e\u63a8\u8350\u79ef\u5206\uff0c\u4f46\u5b9a\u91cf\u4e0e\u62a5\u544a\u5df2\u505c\u7528\u3002\u8bf7\u5728\u767d\u9152\u5de5\u4f5c\u53f0\u5bfc\u5165\u65b0\u7684 *.bjlic \u6216\u8054\u7cfb\u4f9b\u5e94\u5546\u3002", //
+						"Baijiu FID pilot license has expired" + site + ". Chromatograms and recommended integration still work; quantify and report are blocked. Import a new *.bjlic on the Baijiu workbench.");
 			case INVALID_KEY:
 				return bilingual( //
 						"\u767d\u9152 FID \u8bb8\u53ef\u5bc6\u94a5\u65e0\u6548" + site + "\u3002\u8bf7\u91cd\u65b0\u5bfc\u5165\u5382\u65b9\u63d0\u4f9b\u7684 *.bjlic \u6216\u4e00\u884c\u5bc6\u94a5\u3002\u4ecd\u53ef\u6253\u5f00\u8272\u8c31\u56fe\uff1b\u5b9a\u91cf\u4e0e\u62a5\u544a\u5df2\u505c\u7528\u3002", //
@@ -142,8 +142,8 @@ public final class BaijiuLicenseGate {
 			case MISSING:
 			default:
 				return bilingual( //
-						"\u767d\u9152 FID \u8bd5\u70b9\u5c1a\u672a\u6388\u6743\u3002\u4ecd\u53ef\u6253\u5f00\u8272\u8c31\u56fe\u3001\u63a8\u8350\u79ef\u5206\u4e0e\u6df7\u6807\u6821\u6b63\uff1b\u5b9a\u91cf\u3001\u62a5\u544a\u3001\u7b80\u5355\u6279\u91cf\u4e0e\u6279\u5904\u7406\u7ed3\u679c\u5df2\u505c\u7528\u3002\u8bf7\u5728\u767d\u9152\u5de5\u4f5c\u53f0\u70b9\u300c\u8bb8\u53ef\u300d\u5bfc\u5165 *.bjlic \u6216\u7c98\u8d34\u5bc6\u94a5\u3002OpenChrom \u6838\u5fc3\u4e0d\u53d7\u5f71\u54cd\u3002", //
-						"Baijiu FID pilot is unlicensed. Chromatograms, recommended integration, and mix calibration still work; quantify, report, simple batch, and batch results are blocked. Open Baijiu workbench \u2192 License and import a *.bjlic or paste a key. OpenChrom core is not affected.");
+						"\u767d\u9152 FID \u8bd5\u70b9\u5c1a\u672a\u6388\u6743\u3002\u4ecd\u53ef\u6253\u5f00\u8272\u8c31\u56fe\u3001\u63a8\u8350\u79ef\u5206\u4e0e\u6df7\u6807\u6821\u6b63\uff1b\u5b9a\u91cf\u3001\u62a5\u544a\u3001\u7b80\u5355\u6279\u91cf\u4e0e\u6279\u5904\u7406\u7ed3\u679c\u5df2\u505c\u7528\u3002\u8bf7\u5728\u767d\u9152\u5de5\u4f5c\u53f0\u70b9\u300c\u8bb8\u53ef\u300d\u5bfc\u5165 *.bjlic \u6216\u7c98\u8d34\u5bc6\u94a5\u3002", //
+						"Baijiu FID pilot is unlicensed. Chromatograms, recommended integration, and mix calibration still work; quantify, report, simple batch, and batch results are blocked. Open Baijiu workbench \u2192 License and import a *.bjlic or paste a key.");
 		}
 	}
 
