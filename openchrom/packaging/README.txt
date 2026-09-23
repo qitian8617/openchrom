@@ -60,10 +60,18 @@ Stage and installer
 powershell -File packaging\build-baijiu-win64.ps1
 powershell -File packaging\build-baijiu-win64.ps1 -Stage
 
--Stage mirrors the win64 folder to E:\OpenChrom\baijiu-fid-workstation.
-Then compile packaging\BaijiuFID-Setup.iss (Inno Setup). License files
-stay a per-user drop-in (%USERPROFILE%\OpenChrom\licenses\baijiu-fid.bjlic)
-and are not part of the installer tree.
+-Stage mirrors the win64 folder to E:\OpenChrom\baijiu-fid-workstation, then
+copies packaging\BaijiuFID.ico into that folder. Then compile
+packaging\BaijiuFID-Setup.iss (Inno Setup). The script also installs
+compiler:BaijiuFID.ico (next to the .iss) into {app}, so a raw Tycho
+folder still ships the logo. Desktop and Start Menu shortcuts set
+IconFilename to {app}\BaijiuFID.ico. They must not inherit baijiu-fid.exe:
+Eclipse's launcher brander only replaces icons from an uncompressed BMP
+ICO, and a missed brand leaves the Eclipse icon on the shortcut.
+DefaultDirName is {sd}\BaijiuFID (C:\BaijiuFID), not {autopf}\BaijiuFID,
+so the plugin tree stays under MAX_PATH. License files stay a per-user
+drop-in (%USERPROFILE%\OpenChrom\licenses\baijiu-fid.bjlic) and are not
+part of the installer tree.
 
 Heap
 ----

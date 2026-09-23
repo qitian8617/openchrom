@@ -148,8 +148,11 @@ Contents: baijiu-fid.exe, baijiu-fid.ini (-Xms512m -Xmx4096m), plugins/,
 features/, and the JustJ 25 JRE (feature
 org.eclipse.justj.openjdk.hotspot.jre.full.stripped, installMode root;
 jre/ beside the exe). Copy that whole directory to
-E:\OpenChrom\baijiu-fid-workstation (-Stage does this), then compile
-packaging/BaijiuFID-Setup.iss. License drop-in is still
+E:\OpenChrom\baijiu-fid-workstation (-Stage does this and also copies
+packaging/BaijiuFID.ico), then compile packaging/BaijiuFID-Setup.iss.
+The installer puts the workstation in {sd}\BaijiuFID and points desktop
+and Start Menu shortcuts at {app}\BaijiuFID.ico (the plant logo, same
+artwork as icons/windows/Icon.ico). License drop-in is still
 %USERPROFILE%\OpenChrom\licenses\baijiu-fid.bjlic.
 
 Community product is unchanged (still multi-platform unless you pass

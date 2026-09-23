@@ -14,9 +14,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -1283,7 +1287,10 @@ public class BaijiuPilotPackaging_1_Test {
 		assertNotNull(communityIco);
 		assertTrue(Files.mismatch(ico, communityIco) != -1L, "Icon.ico must not ship the community OpenChrom red peak");
 		byte[] icoBytes = Files.readAllBytes(ico);
-		assertTrue(containsBytes(icoBytes, new byte[] {(byte)0x89, 0x50, 0x4E, 0x47}), "Leyend ICO stores PNG images");
+		assertLauncherIcoIsUncompressedBmp(icoBytes);
+		Path shippedIcon = locate("openchrom/packaging/BaijiuFID.ico", "packaging/BaijiuFID.ico");
+		assertNotNull(shippedIcon, "packaging/BaijiuFID.ico");
+		assertTrue(Files.mismatch(ico, shippedIcon) == -1L, "installer BaijiuFID.ico must be the same company-logo ICO as the launcher");
 
 		Path linuxXpm = locate("openchrom/products/net.openchrom.rcp.compilation.baijiu.product/icons/linux/Icon.xpm", "products/net.openchrom.rcp.compilation.baijiu.product/icons/linux/Icon.xpm");
 		assertNotNull(linuxXpm);
@@ -1361,6 +1368,27 @@ public class BaijiuPilotPackaging_1_Test {
 		Path communityIcns = locate("openchrom/products/net.openchrom.rcp.compilation.community.product/icons/mac/Icon.icns", "products/net.openchrom.rcp.compilation.community.product/icons/mac/Icon.icns");
 		assertNotNull(macIcns);
 		assertTrue(Files.mismatch(macIcns, communityIcns) != -1L, "mac Icon.icns must not ship OpenChrom peak");
+	}
+
+	@Test
+	public void desktopShortcutUsesCompanyLogo() throws Exception {
+
+		Path iss = locate("openchrom/packaging/BaijiuFID-Setup.iss", "packaging/BaijiuFID-Setup.iss");
+		assertNotNull(iss, "BaijiuFID-Setup.iss");
+		String script = Files.readString(iss, StandardCharsets.UTF_8);
+		assertTrue(script.contains("DefaultDirName={sd}\\BaijiuFID"), script);
+		assertFalse(script.contains("DefaultDirName={autopf}\\BaijiuFID"), "install dir must stay on {sd} so the plugin tree fits in MAX_PATH");
+		assertTrue(script.contains("UninstallDisplayIcon={app}\\BaijiuFID.ico"), script);
+		assertTrue(script.contains("IconFilename: \"{app}\\BaijiuFID.ico\""), script);
+		assertEquals(2, countOf(script, "IconFilename: \"{app}\\BaijiuFID.ico\""), "group and desktop shortcuts both set the company logo");
+		assertTrue(script.contains("Source: \"compiler:BaijiuFID.ico\""), script);
+		assertFalse(script.contains("UninstallDisplayIcon={app}\\{#MyAppExeName}"), "Add/Remove Programs must not use the exe icon");
+
+		Path stage = locate("openchrom/packaging/build-baijiu-win64.ps1", "packaging/build-baijiu-win64.ps1");
+		assertNotNull(stage);
+		String stageSrc = Files.readString(stage, StandardCharsets.UTF_8);
+		assertTrue(stageSrc.contains("BaijiuFID.ico"), stageSrc);
+		assertTrue(stageSrc.contains("Copy-Item -LiteralPath $brandIcon"), stageSrc);
 	}
 
 	@Test
@@ -1491,6 +1519,74 @@ public class BaijiuPilotPackaging_1_Test {
 			}
 			assertTrue(!token.contains(" ") && !token.contains("\t"), "unquoted space in <" + tag + ">: " + token);
 		}
+	}
+
+	/**
+	 * Eclipse IconExe replaces launcher icons only when the ICO holds uncompressed
+	 * BMP images at the exe's sizes and depths. A PNG-compressed ICO is rejected
+	 * and baijiu-fid.exe keeps the Eclipse icon.
+	 */
+	private static void assertLauncherIcoIsUncompressedBmp(byte[] ico) {
+
+		assertTrue(ico.length > 22, "ICO too small");
+		assertEquals(0, u16(ico, 0), "ICONDIR reserved");
+		assertEquals(1, u16(ico, 2), "ICONDIR type");
+		int count = u16(ico, 4);
+		assertTrue(count >= 7, "IconExe needs 7 BMP images, found " + count);
+		Set<String> found = new HashSet<>();
+		for(int i = 0; i < count; i++) {
+			int base = 6 + (i * 16);
+			int widthByte = ico[base] & 0xFF;
+			int heightByte = ico[base + 1] & 0xFF;
+			int bpp = u16(ico, base + 6);
+			int bytes = u32(ico, base + 8);
+			int offset = u32(ico, base + 12);
+			assertTrue(offset >= 0 && bytes >= 40 && offset + 40 <= ico.length, "ICO image directory entry " + i);
+			assertFalse(ico[offset] == (byte)0x89 && ico[offset + 1] == 0x50 && ico[offset + 2] == 0x4E && ico[offset + 3] == 0x47, "PNG image in launcher ICO; IconExe leaves the Eclipse icon in the exe");
+			assertEquals(40, u32(ico, offset), "BITMAPINFOHEADER size");
+			int infoWidth = s32(ico, offset + 4);
+			int infoHeight = s32(ico, offset + 8);
+			assertEquals(1, u16(ico, offset + 12), "BMP planes");
+			assertEquals(bpp, u16(ico, offset + 14), "BMP bit count");
+			assertEquals(0, u32(ico, offset + 16), "ICO BMP must be BI_RGB so IconExe can read it");
+			int width = widthByte == 0 ? infoWidth : widthByte;
+			int height = heightByte == 0 ? infoHeight / 2 : heightByte;
+			assertEquals(infoWidth, width, "ICO width");
+			assertEquals(height * 2, infoHeight, "ICO BMP height must include the AND mask");
+			found.add(width + "x" + height + "x" + bpp);
+		}
+		for(String need : new String[] {"16x16x32", "32x32x32", "48x48x32", "64x64x32", "128x128x32", "256x256x32", "16x16x8", "32x32x8", "48x48x8"}) {
+			assertTrue(found.contains(need), "missing " + need + " in " + found);
+		}
+	}
+
+	private static int countOf(String text, String needle) {
+
+		int count = 0;
+		int from = 0;
+		while(true) {
+			int at = text.indexOf(needle, from);
+			if(at < 0) {
+				return count;
+			}
+			count++;
+			from = at + needle.length();
+		}
+	}
+
+	private static int u16(byte[] data, int offset) {
+
+		return ByteBuffer.wrap(data, offset, 2).order(ByteOrder.LITTLE_ENDIAN).getShort() & 0xFFFF;
+	}
+
+	private static int u32(byte[] data, int offset) {
+
+		return ByteBuffer.wrap(data, offset, 4).order(ByteOrder.LITTLE_ENDIAN).getInt();
+	}
+
+	private static int s32(byte[] data, int offset) {
+
+		return ByteBuffer.wrap(data, offset, 4).order(ByteOrder.LITTLE_ENDIAN).getInt();
 	}
 
 	private static boolean containsBytes(byte[] haystack, byte[] needle) {
