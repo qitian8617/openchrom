@@ -3,7 +3,7 @@ Automatic-Module-Name: net.openchrom.xxd.control.supplier.temperature.ui
 Bundle-ManifestVersion: 2
 Bundle-Name: Temperature Control Panel (UI)
 Bundle-SymbolicName: net.openchrom.xxd.control.supplier.temperature.ui;singleton:=true
-Bundle-Version: 1.6.20.qualifier
+Bundle-Version: 1.6.32.qualifier
 Bundle-Vendor: OpenChrom
 Export-Package: net.openchrom.xxd.control.supplier.temperature.ui.communication,
  net.openchrom.xxd.control.supplier.temperature.ui.sequence

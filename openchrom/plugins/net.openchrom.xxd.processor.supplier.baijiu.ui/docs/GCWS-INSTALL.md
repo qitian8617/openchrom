@@ -123,7 +123,7 @@ After a feature export (or from the workspace `plugins/` + `features/` jars):
 ```
 dropins/
   net.openchrom.xxd.processor.supplier.baijiu.ui_1.6.32.*.jar
-  net.openchrom.xxd.control.supplier.temperature.ui_1.6.20.*.jar
+  net.openchrom.xxd.control.supplier.temperature.ui_1.6.32.*.jar
   (optional) corresponding feature jars
 ```
 

@@ -37,6 +37,7 @@ import org.osgi.service.prefs.Preferences;
  * a bump rebuilds {@code workbench.xmi} and would reset the plant sash for
  * a preference the model does not store.
  */
+@SuppressWarnings("restriction")
 public final class BaijiuPlantTheme {
 
 	public static final String PLANT_LIGHT_THEME_ID = "org.eclipse.e4.ui.css.theme.e4_default";

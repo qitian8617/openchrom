@@ -10,7 +10,7 @@
    <feature id="net.openchrom.xxd.processor.supplier.baijiu.feature" version="1.6.32.qualifier">
       <category name="net.openchrom.baijiu.fid.pilot"/>
    </feature>
-   <feature id="net.openchrom.xxd.control.supplier.temperature.feature" version="1.6.20.qualifier">
+   <feature id="net.openchrom.xxd.control.supplier.temperature.feature" version="1.6.32.qualifier">
       <category name="net.openchrom.baijiu.fid.pilot"/>
    </feature>
    <category-def name="net.openchrom.baijiu.fid.pilot" label="白酒 FID 试点 / Baijiu FID Pilot">
