@@ -74,12 +74,17 @@ import net.openchrom.rcp.compilation.baijiu.ui.handlers.BaijiuOpenSelectViewHand
  * is known, each keeper gets a Chinese tooltip and a plant icon
  * ({@link BaijiuChartToolbarIcons}). Matching still accepts the English
  * ChemClipse tooltip, so a later Show / Paint finds the same button and
- * writes the Chinese tooltip again. Every other button (processor icons,
- * T, polarity, help, settings, series legend) is disposed and its
+ * writes the Chinese tooltip again. Every other toolbar button (processor
+ * icons, T, polarity, help, settings, series legend) is disposed and its
  * {@code SWT.Selection} listeners are removed so those dialogs cannot open.
- * Referenced composites (processor toolbar, column combo, baselines,
- * references / alignment / method) are hidden, not disposed — ChemClipse
- * still calls {@code update()} on them when a chromatogram loads.
+ * That selection stop is toolbar chrome only. The SWTChart range bar
+ * ({@code RangeSelector}: time and intensity fields, axis combos, Set /
+ * Reset / Hide) is spared whole — listeners stay, buttons stay enabled,
+ * nothing in that composite is disposed. {@code Reset the range.} is not
+ * the toolbar {@code Reset the chromatogram} / 恢复谱图. Referenced composites (processor
+ * toolbar, column combo, baselines, references / alignment / method) are
+ * hidden, not disposed — ChemClipse still calls {@code update()} on them
+ * when a chromatogram loads.
  * <p>
  * {@code new Button} sends {@code SWT.Show} before the tooltip is set, and
  * {@code setVisible(false)} inside that Show is undone by the outer show.
@@ -1025,7 +1030,7 @@ public final class BaijiuShellMenus {
 
 	private static void scheduleChartToolbarSanitize(Control start) {
 
-		if(start == null || start.isDisposed() || isInChromatogramPlot(start)) {
+		if(start == null || start.isDisposed() || sparesChartControl(start)) {
 			return;
 		}
 		Composite editor = chromatogramEditorOf(start);
@@ -1242,7 +1247,7 @@ public final class BaijiuShellMenus {
 		}
 		for(int i = 0; i < children.length; i++) {
 			Control child = children[i];
-			if(child == null || child.isDisposed() || child == row || isChromatogramPlotControl(child)) {
+			if(child == null || child.isDisposed() || child == row || isChromatogramPlotControl(child) || isChartRangeSelectorControl(child)) {
 				continue;
 			}
 			try {
@@ -1258,7 +1263,7 @@ public final class BaijiuShellMenus {
 
 	private static boolean hasVisibleStrayButton(Control control, Composite row, int depth) {
 
-		if(control == null || control.isDisposed() || depth > 24 || control == row || isPlantChartToolbarRow(control) || isChromatogramPlotControl(control)) {
+		if(control == null || control.isDisposed() || depth > 24 || control == row || isPlantChartToolbarRow(control) || isChromatogramPlotControl(control) || isChartRangeSelectorControl(control)) {
 			return false;
 		}
 		if(control instanceof Button button) {
@@ -1407,7 +1412,7 @@ public final class BaijiuShellMenus {
 	 */
 	private static void collectChartToolbarButtons(Control control, Composite section, Composite row, Button[] ordered, int depth) {
 
-		if(control == null || control.isDisposed() || depth > 24 || control == row || isPlantChartToolbarRow(control) || isChromatogramPlotControl(control)) {
+		if(control == null || control.isDisposed() || depth > 24 || control == row || isPlantChartToolbarRow(control) || isChromatogramPlotControl(control) || isChartRangeSelectorControl(control)) {
 			return;
 		}
 		if(control instanceof Button button) {
@@ -1530,6 +1535,14 @@ public final class BaijiuShellMenus {
 	 */
 	private static int rememberChartToolbarSlot(Widget widget, String text, String tip) {
 
+		/*
+		 * Range-bar Set / Reset / Hide must not inherit a keeper slot.
+		 * A stored slot would reparent Hide onto 显示/隐藏表格范围 or treat
+		 * Reset the range as 恢复谱图.
+		 */
+		if(BaijiuShellChrome.isChartRangeSelectorAction(text, tip)) {
+			return -1;
+		}
 		int slot = BaijiuShellChrome.chromatogramChartToolbarSlot(text, tip);
 		if(widget == null) {
 			return slot;
@@ -1554,7 +1567,7 @@ public final class BaijiuShellMenus {
 
 	private static void disposeChartButton(Button button) {
 
-		if(button == null || button.isDisposed()) {
+		if(button == null || button.isDisposed() || sparesChartButton(button)) {
 			return;
 		}
 		try {
@@ -1645,7 +1658,7 @@ public final class BaijiuShellMenus {
 
 	private static void applyPlantChartButtonChrome(Button button) {
 
-		if(button == null || button.isDisposed()) {
+		if(button == null || button.isDisposed() || sparesChartButton(button)) {
 			return;
 		}
 		Composite editor = chromatogramEditorOf(button);
@@ -1669,7 +1682,7 @@ public final class BaijiuShellMenus {
 		}
 		for(int i = 0; i < children.length; i++) {
 			Control child = children[i];
-			if(child == null || child.isDisposed() || child == row || isChromatogramPlotControl(child)) {
+			if(child == null || child.isDisposed() || child == row || isChromatogramPlotControl(child) || isChartRangeSelectorControl(child)) {
 				continue;
 			}
 			if(containsChartKeeper(child, 0)) {
@@ -1681,7 +1694,7 @@ public final class BaijiuShellMenus {
 
 	private static boolean containsChartKeeper(Control control, int depth) {
 
-		if(control == null || control.isDisposed() || depth > 24 || isChromatogramPlotControl(control) || isPlantChartToolbarRow(control)) {
+		if(control == null || control.isDisposed() || depth > 24 || isChromatogramPlotControl(control) || isChartRangeSelectorControl(control) || isPlantChartToolbarRow(control)) {
 			return false;
 		}
 		if(control instanceof Button button) {
@@ -1831,13 +1844,73 @@ public final class BaijiuShellMenus {
 		return false;
 	}
 
+	private static boolean isChartRangeSelectorControl(Control control) {
+
+		if(control == null || control.isDisposed()) {
+			return false;
+		}
+		try {
+			return BaijiuShellChrome.isChartRangeSelectorClass(control.getClass().getName());
+		} catch(RuntimeException e) {
+			return false;
+		}
+	}
+
+	/**
+	 * The control is the range bar or sits inside it (fields, axis combos,
+	 * Set / Reset / Hide).
+	 */
+	private static boolean isInChartRangeSelector(Control control) {
+
+		Control node = control;
+		for(int depth = 0; node != null && !node.isDisposed() && depth < 24; depth++) {
+			if(isChartRangeSelectorControl(node)) {
+				return true;
+			}
+			try {
+				node = node.getParent();
+			} catch(RuntimeException e) {
+				return false;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Plot and range-bar controls are not toolbar chrome. The sanitizer
+	 * must not disable, unhook, or dispose them.
+	 */
+	private static boolean sparesChartControl(Control control) {
+
+		return isInChromatogramPlot(control) || isInChartRangeSelector(control);
+	}
+
+	private static boolean sparesChartButton(Button button) {
+
+		if(button == null || button.isDisposed()) {
+			return false;
+		}
+		if(sparesChartControl(button)) {
+			return true;
+		}
+		String text;
+		String tip;
+		try {
+			text = button.getText();
+			tip = button.getToolTipText();
+		} catch(RuntimeException e) {
+			return false;
+		}
+		return BaijiuShellChrome.isChartRangeSelectorAction(text, tip);
+	}
+
 	/**
 	 * A toolbar button that does not have a tooltip yet. Keepers receive
 	 * theirs in the create method, after {@code SWT.Show}.
 	 */
 	private static boolean chartToolbarTooltipPending(Control control, int depth) {
 
-		if(control == null || control.isDisposed() || depth > 24 || isChromatogramPlotControl(control)) {
+		if(control == null || control.isDisposed() || depth > 24 || isChromatogramPlotControl(control) || isChartRangeSelectorControl(control)) {
 			return false;
 		}
 		if(control instanceof Button button) {
@@ -1938,7 +2011,7 @@ public final class BaijiuShellMenus {
 
 	private static void stripButtonActivation(Button button) {
 
-		if(button == null || button.isDisposed()) {
+		if(button == null || button.isDisposed() || sparesChartButton(button)) {
 			return;
 		}
 		try {
@@ -1967,6 +2040,15 @@ public final class BaijiuShellMenus {
 			return;
 		}
 		if(event.widget instanceof Button button && !button.isDisposed()) {
+			/*
+			 * The range bar (fields, combos, Set / Reset / Hide) is not
+			 * toolbar chrome. Leave the selection in place. Cancelling it
+			 * disables the button and drops the listener, so Run, Clear,
+			 * and Close stay grey and do nothing.
+			 */
+			if(sparesChartButton(button)) {
+				return;
+			}
 			if(shouldCancelChartButton(button)) {
 				event.type = SWT.None;
 				event.doit = false;
@@ -1991,6 +2073,9 @@ public final class BaijiuShellMenus {
 				text = item.getText();
 				tip = item.getToolTipText();
 			} catch(RuntimeException e) {
+				return;
+			}
+			if(BaijiuShellChrome.isChartRangeSelectorAction(text, tip) || (bar != null && sparesChartControl(bar))) {
 				return;
 			}
 			int slot = rememberChartToolbarSlot(item, text, tip);
@@ -2021,6 +2106,9 @@ public final class BaijiuShellMenus {
 
 	private static void schedulePlantChartButtonChrome(Button button) {
 
+		if(button == null || button.isDisposed() || sparesChartButton(button)) {
+			return;
+		}
 		Composite editor = chromatogramEditorOf(button);
 		if(editor == null || editor.isDisposed()) {
 			return;
@@ -2064,10 +2152,7 @@ public final class BaijiuShellMenus {
 
 	private static boolean shouldCancelChartButton(Button button) {
 
-		if(chromatogramEditorOf(button) == null) {
-			return false;
-		}
-		if(chartToolbarButtonSlot(button) >= 0) {
+		if(button == null || button.isDisposed()) {
 			return false;
 		}
 		String text;
@@ -2076,6 +2161,28 @@ public final class BaijiuShellMenus {
 			text = button.getText();
 			tip = button.getToolTipText();
 		} catch(RuntimeException e) {
+			return false;
+		}
+		return cancelsChartToolbarSelection( //
+				chromatogramEditorOf(button) != null, //
+				isInChromatogramPlot(button), //
+				chartToolbarButtonSlot(button), //
+				text, tip);
+	}
+
+	/**
+	 * Toolbar buttons inside the chromatogram editor that are not the four
+	 * keepers are cancelled once they have a label or tooltip, so a click
+	 * cannot open a dialog before dispose. The range bar is not cancelled:
+	 * Set / Reset / Hide apply, clear, and close it, whether or not the
+	 * button is classified as inside the plot. A still-blank tooltip is
+	 * left alone because {@code new Button} fires Show before the tooltip
+	 * is set. Keepers ({@code slot >= 0}) stay live. {@code Reset the range.}
+	 * is not the toolbar restore slot.
+	 */
+	static boolean cancelsChartToolbarSelection(boolean inEditor, boolean inPlot, int slot, String text, String tip) {
+
+		if(!inEditor || inPlot || slot >= 0 || BaijiuShellChrome.isChartRangeSelectorAction(text, tip)) {
 			return false;
 		}
 		return !isBlankChromeText(text) || !isBlankChromeText(tip);
@@ -2130,7 +2237,7 @@ public final class BaijiuShellMenus {
 
 	private static void hidePolarityControlsIn(Composite composite, int depth) {
 
-		if(composite == null || composite.isDisposed() || depth > 24) {
+		if(composite == null || composite.isDisposed() || depth > 24 || sparesChartControl(composite)) {
 			return;
 		}
 		Control[] children;
@@ -2178,7 +2285,7 @@ public final class BaijiuShellMenus {
 	 */
 	private static void concealSeparationColumnCombo(Combo combo) {
 
-		if(combo == null || combo.isDisposed()) {
+		if(combo == null || combo.isDisposed() || sparesChartControl(combo)) {
 			return;
 		}
 		if(Boolean.TRUE.equals(combo.getData(POLARITY_HIDDEN))) {
@@ -2243,7 +2350,7 @@ public final class BaijiuShellMenus {
 
 	private static void concealPolarityCompanion(Button button) {
 
-		if(button == null || button.isDisposed()) {
+		if(button == null || button.isDisposed() || sparesChartButton(button)) {
 			return;
 		}
 		if(Boolean.TRUE.equals(button.getData(POLARITY_HIDDEN))) {
@@ -2493,7 +2600,7 @@ public final class BaijiuShellMenus {
 
 	private static void hideTargetLabelButtonsIn(Composite composite) {
 
-		if(composite == null || composite.isDisposed()) {
+		if(composite == null || composite.isDisposed() || sparesChartControl(composite)) {
 			return;
 		}
 		Control[] children;
@@ -2514,7 +2621,7 @@ public final class BaijiuShellMenus {
 
 	private static void walkTargetLabelControls(Control control, int depth) {
 
-		if(control == null || control.isDisposed() || depth > 24) {
+		if(control == null || control.isDisposed() || depth > 24 || sparesChartControl(control)) {
 			return;
 		}
 		if(control instanceof Button button) {
@@ -2544,7 +2651,7 @@ public final class BaijiuShellMenus {
 	 */
 	private static void concealTargetLabelButton(Button button) {
 
-		if(button == null || button.isDisposed()) {
+		if(button == null || button.isDisposed() || sparesChartButton(button)) {
 			return;
 		}
 		if(Boolean.TRUE.equals(button.getData(TARGET_LABEL_HIDDEN))) {
@@ -2583,7 +2690,7 @@ public final class BaijiuShellMenus {
 	 */
 	private static void reinforceHiddenTargetLabel(Button button) {
 
-		if(button == null || button.isDisposed()) {
+		if(button == null || button.isDisposed() || sparesChartButton(button)) {
 			return;
 		}
 		try {

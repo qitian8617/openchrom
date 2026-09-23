@@ -2846,6 +2846,31 @@ public final class BaijiuShellChrome {
 	}
 
 	/**
+	 * SWTChart range bar ({@code RangeSelector}, older {@code RangeInfoUI}).
+	 * Shown when the toolbar toggle {@code Toggle the chart range selector.}
+	 * is on. The composite holds the time and intensity fields, the axis
+	 * combos, and Set / Reset / Hide. None of those are toolbar chrome.
+	 */
+	public static boolean isChartRangeSelectorClass(String className) {
+
+		if(className == null || className.isBlank()) {
+			return false;
+		}
+		return className.endsWith(".RangeSelector") || className.endsWith(".RangeInfoUI");
+	}
+
+	/**
+	 * Set / Reset / Hide on the range bar. {@code Toggle the chart range
+	 * selector.} / 显示/隐藏表格范围 stays the toolbar keeper.
+	 * {@code Reset the range.} is not {@code Reset the chromatogram} /
+	 * 恢复谱图. {@code Hide the range selector UI.} is not that toggle.
+	 */
+	public static boolean isChartRangeSelectorAction(String text, String toolTip) {
+
+		return isRangeSelectorActionPhrase(text) || isRangeSelectorActionPhrase(toolTip);
+	}
+
+	/**
 	 * Dialogs opened by chart-toolbar buttons that the allowlist removes.
 	 * Baseline add/delete are the named shells. Target Label Settings is
 	 * {@link #shouldCloseTargetLabelSettingsShell}. The Settings preference
@@ -2871,12 +2896,15 @@ public final class BaijiuShellChrome {
 	 *         {@code ExtendedChromatogramUI.createButtonReset}
 	 *         ({@code Reset the chromatogram} / 恢复谱图). {@code Reset Chart}
 	 *         / {@code Reset the chart} / 重置图表 is the context-menu handler
-	 *         and stays off this allowlist. English and Chinese both match
-	 *         so a tooltip rewrite does not drop the keeper.
+	 *         and stays off this allowlist. Range-bar Set / Reset / Hide are
+	 *         not keepers: {@code Reset the range.} is not this restore slot,
+	 *         and {@code Hide the range selector UI.} is not the toggle.
+	 *         English and Chinese both match so a tooltip rewrite does not
+	 *         drop the keeper.
 	 */
 	private static int chartToolbarSlot(String value) {
 
-		if(value == null || value.isBlank()) {
+		if(value == null || value.isBlank() || isRangeSelectorActionPhrase(value)) {
 			return -1;
 		}
 		String normalized = normalizeMenuLabel(value);
@@ -2893,6 +2921,27 @@ public final class BaijiuShellChrome {
 			return 3;
 		}
 		return -1;
+	}
+
+	/**
+	 * Range-bar button phrases. The toolbar toggle contains
+	 * {@code chart range selector} or 表格范围 and is not an action.
+	 */
+	private static boolean isRangeSelectorActionPhrase(String value) {
+
+		if(value == null || value.isBlank()) {
+			return false;
+		}
+		String normalized = normalizeMenuLabel(value);
+		if(normalized.contains("chart range selector") || normalized.contains("表格范围") || normalized.contains("table range") || normalized.contains("图表范围")) {
+			return false;
+		}
+		return normalized.contains("set the current selection") //
+				|| normalized.contains("reset the range") //
+				|| normalized.contains("hide the range selector") //
+				|| normalized.contains("设置当前选择") //
+				|| normalized.contains("重置范围") //
+				|| normalized.contains("隐藏范围");
 	}
 
 	/**
