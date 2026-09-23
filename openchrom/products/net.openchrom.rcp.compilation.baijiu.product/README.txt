@@ -147,12 +147,18 @@ From the openchrom/ tree:
 Contents: baijiu-fid.exe, baijiu-fid.ini (-Xms512m -Xmx4096m), plugins/,
 features/, and the JustJ 25 JRE (feature
 org.eclipse.justj.openjdk.hotspot.jre.full.stripped, installMode root;
-jre/ beside the exe). Copy that whole directory to
-E:\OpenChrom\baijiu-fid-workstation (-Stage does this and also copies
-packaging/BaijiuFID.ico), then compile packaging/BaijiuFID-Setup.iss.
+jre/ beside the exe). packaging\build-baijiu-win64.ps1 re-jars ordinary
+directory plug-ins (MAX_PATH) before -Stage copies the folder to
+E:\OpenChrom\baijiu-fid-workstation and also copies packaging/BaijiuFID.ico.
+If you ran mvn only, run packaging\rejar-directory-plugins.ps1 on that
+win64 folder before the copy. Then compile packaging/BaijiuFID-Setup.iss.
 The installer puts the workstation in {sd}\BaijiuFID and points desktop
 and Start Menu shortcuts at {app}\BaijiuFID.ico (the plant logo, same
-artwork as icons/windows/Icon.ico). License drop-in is still
+artwork as icons/windows/Icon.ico). If ISCC reports a path over 260
+characters, stage to a short root instead:
+powershell -File packaging\build-baijiu-win64.ps1 -Stage -Destination E:\bjw
+then ISCC /DSourceRoot=E:\bjw packaging\BaijiuFID-Setup.iss.
+See packaging/README.txt. License drop-in is still
 %USERPROFILE%\OpenChrom\licenses\baijiu-fid.bjlic.
 
 Community product is unchanged (still multi-platform unless you pass
