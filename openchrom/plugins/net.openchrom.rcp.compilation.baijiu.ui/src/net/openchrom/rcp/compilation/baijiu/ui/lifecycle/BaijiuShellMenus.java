@@ -2047,6 +2047,14 @@ public final class BaijiuShellMenus {
 			 * and Close stay grey and do nothing.
 			 */
 			if(sparesChartButton(button)) {
+				/*
+				 * Run reads the intensity fields and then
+				 * setRange(..., adjustMinMax=true) adds the chromatogram
+				 * Y headroom back (default 50%, so 100% of the tallest
+				 * peak is drawn at 150% on 强度 [%]). Hold that headroom
+				 * off until the click's listeners finish.
+				 */
+				BaijiuChartRangeCommit.suspendExtendForSet(button);
 				return;
 			}
 			if(shouldCancelChartButton(button)) {
