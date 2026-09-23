@@ -41,6 +41,8 @@ public final class BaijiuChartToolbarIcons {
 	 */
 	private static final String APPLYING = "net.openchrom.baijiu.chartToolbarApplying";
 	private static final int SLOTS = 4;
+	/** Logical toolbar glyph. The {@code _32} PNG is the same slot at 2×. */
+	private static final int TOOLBAR_ICON = 16;
 	private static final Map<Display, List<Image>> LIVE = new IdentityHashMap<>();
 
 	private BaijiuChartToolbarIcons() {
@@ -236,29 +238,43 @@ public final class BaijiuChartToolbarIcons {
 
 	private static Image load(Display display, int slot) {
 
-		ImageData small = read(BaijiuShellChrome.chartToolbarIconFile(slot));
-		ImageData large = read(BaijiuShellChrome.chartToolbarIconFileHiDpi(slot));
-		if(small == null) {
-			small = large;
+		/*
+		 * Stream → ImageData → Image(Device, ImageData). A zoom lambda is
+		 * ambiguous on ECJ between ImageFileNameProvider (a filename
+		 * String) and ImageDataProvider, so the 16×16 glyph is the 100%
+		 * image and SWT scales it. The 32×32 file is only the fallback
+		 * when that read fails, folded back to one toolbar slot.
+		 */
+		ImageData data = read(BaijiuShellChrome.chartToolbarIconFile(slot));
+		if(data == null) {
+			data = toolbarSlot(read(BaijiuShellChrome.chartToolbarIconFileHiDpi(slot)));
 		}
-		if(large == null) {
-			large = small;
-		}
-		if(small == null) {
+		if(data == null) {
 			BaijiuShellLog.warn("Plant chart toolbar icon missing for slot " + slot);
 			return null;
 		}
-		ImageData low = small;
-		ImageData high = large;
 		try {
-			return new Image(display, zoom -> zoom >= 150 ? high : low);
+			return new Image(display, data);
 		} catch(RuntimeException | LinkageError e) {
-			try {
-				return new Image(display, low);
-			} catch(RuntimeException | LinkageError inner) {
-				BaijiuShellLog.warn("Plant chart toolbar icon could not load for slot " + slot, inner);
-				return null;
-			}
+			BaijiuShellLog.warn("Plant chart toolbar icon could not load for slot " + slot, e);
+			return null;
+		}
+	}
+
+	/**
+	 * {@code Image(Device, ImageData)} treats the pixels as the 100%
+	 * size. The 32×32 file is the same slot, so fold it to
+	 * {@link #TOOLBAR_ICON} before that constructor.
+	 */
+	private static ImageData toolbarSlot(ImageData data) {
+
+		if(data == null || (data.width == TOOLBAR_ICON && data.height == TOOLBAR_ICON)) {
+			return data;
+		}
+		try {
+			return data.scaledTo(TOOLBAR_ICON, TOOLBAR_ICON);
+		} catch(RuntimeException | LinkageError e) {
+			return data;
 		}
 	}
 
