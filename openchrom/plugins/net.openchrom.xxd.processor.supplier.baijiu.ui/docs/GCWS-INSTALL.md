@@ -57,7 +57,17 @@ Need the OpenChrom PDE workspace that already compiles `baijiu.ui` (**JavaSE-21*
 1. Import `openchrom/` plug-ins, features, products. Set the OpenChrom target platform.
 2. Open `products/net.openchrom.rcp.compilation.baijiu.product/openchrom.compilation.baijiu.product`.
 3. **Run As → Eclipse Application** from that `.product` (do not reuse the community launch config). Reload the target platform after pull (`sequenceNumber` 45). The Baijiu feature pins `jakarta.annotation-api` **2.1.1** (Orbit) because ChemClipse PCR/xxd.ui Import-Package `[2.1.0,3.0.0)` rejects SimRel **3.0.0**. If an old launch still fails with that BundleException: Plug-ins tab → enable 2.1.1 → Add Required / Validate Plug-ins.
-4. **Export Eclipse Product** to e.g. `D:\baijiu-fid-workstation`. Launcher `baijiu-fid.exe`. Bundled JRE is Java 25.
+4. **Windows plant folder is a Tycho materialize, not PDE Export.** PDE Export fails with `Unable to find plug-in org.eclipse.chemclipse.rcp.app_<qualifier>` when that timestamped bundle is not in the IDE. From the `openchrom/` directory, with `JAVA_HOME` on **JDK 25** (`mvn -version` must not say 1.8):
+
+```
+mvn -f releng/net.openchrom.aggregator/pom.xml -pl net.openchrom:net.openchrom.targetplatform,net.openchrom:openchrom.compilation.baijiu -am install -Pwin32-x86_64 -DskipTests
+```
+
+`install` runs `tycho-p2-director-plugin:materialize-products` (parent pom binds it to install). Do **not** pass `-Pci` (that profile disables the director goals). Output:
+
+`products/net.openchrom.rcp.compilation.baijiu.product/target/products/net.openchrom.rcp.compilation.baijiu.product.id/win32/win32/x86_64/`
+
+(`baijiu-fid.exe`, `baijiu-fid.ini` with `-Xmx4096m`, JustJ `jre/`). Copy that directory to `E:\OpenChrom\baijiu-fid-workstation` or run `powershell -File packaging\build-baijiu-win64.ps1 -Stage`, then compile `packaging/BaijiuFID-Setup.iss`. See `packaging/README.txt`.
 5. License drop-in is still `%USERPROFILE%\OpenChrom\licenses\baijiu-fid.bjlic`.
 
 Phase 3 plant UI (dedicated product only):
@@ -70,13 +80,13 @@ Phase 3 plant UI (dedicated product only):
 - `-Dapplication.name=白酒FID工作站` must stay **without unquoted spaces** (do not put `白酒 FID 工作站` on that VM arg — `ClassNotFoundException: FID`).
 - Research-menu escape hatch (not in the UI): `-Dnet.openchrom.baijiu.showResearchMenus=true`.
 
-Tycho (heavy):
+Tycho product materialize (the Windows path; not run in CI):
 
 ```
-mvn -f releng/net.openchrom.aggregator/pom.xml -pl products/net.openchrom.rcp.compilation.baijiu.product -am package -Pci
+mvn -f releng/net.openchrom.aggregator/pom.xml -pl net.openchrom:net.openchrom.targetplatform,net.openchrom:openchrom.compilation.baijiu -am install -Pwin32-x86_64 -DskipTests
 ```
 
-Do **not** delete or retarget `openchrom.compilation.community.product`.
+Do **not** delete or retarget `openchrom.compilation.community.product`. Do **not** pass `-Pci` for this command (`-Pci` skips `materialize-products`). The p2-site command further down still uses `package -Pci` because a repository publish does not materialize an exe.
 
 ## A. Export p2 site on the engineer Windows workstation (community install path)
 

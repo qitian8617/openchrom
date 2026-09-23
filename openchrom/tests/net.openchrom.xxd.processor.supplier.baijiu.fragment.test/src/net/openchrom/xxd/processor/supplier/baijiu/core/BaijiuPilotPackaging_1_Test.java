@@ -136,6 +136,8 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(xml.contains("net.openchrom.rcp.compilation.baijiu.feature"), xml);
 		assertTrue(xml.contains("application.perspective=net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome"), xml);
 		assertTrue(xml.contains("osgi.nl=zh_CN"), xml);
+		assertTrue(xml.contains("-Xms512m"), xml);
+		assertTrue(xml.contains("-Xmx4096m"), "plant product must not stay on the JVM default heap");
 		assertFalse(xml.contains("-clearPersistedState"), "Phase 3 default launch must remember layout");
 		assertTrue(xml.contains("org.eclipse.justj.openjdk.hotspot.jre.full.stripped"), xml);
 
