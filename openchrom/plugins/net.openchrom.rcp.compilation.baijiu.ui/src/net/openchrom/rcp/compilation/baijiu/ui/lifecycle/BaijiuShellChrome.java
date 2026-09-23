@@ -47,8 +47,12 @@ import java.util.Set;
  * column so {@code ColorCellEditor} never allocates a swatch image.
  * The CSD chart toolbar itself is an allowlist on that same SWT widget:
  * only Enable/Disable the chart grid (使能表格), Toggle the chart legend
- * marker, and Toggle the chart range selector (显示/隐藏表格范围) stay.
- * Every other button, combo, and secondary row in that chrome is hidden
+ * marker, and Toggle the chart range selector (显示/隐藏表格范围) stay,
+ * in that left-to-right order, in one horizontal row. ChemClipse builds
+ * the grid button in {@code createToolbarMain} and the other two in the
+ * hidden {@code createToolbarEdit} row; the plant pass reparents the
+ * three onto one row and disposes the rest before the first paint.
+ * Every other button, combo, and secondary row in that chrome is removed
  * and its selection listeners are stripped so the dialogs cannot open.
  * Perspective switcher stays hidden. Plant home sash: left column |
  * right fixed 白酒操作 sidebar. The left column is a vertical sash —
@@ -428,12 +432,13 @@ public final class BaijiuShellChrome {
 	 * sash cannot stick. Runtime still strips that tag from sash
 	 * containers; parts and stacks keep it. Positive {@code containerData}
 	 * is left alone so a completed drag is not reset on the next chrome pass.
-	 * Epoch stays 35 for the CSD chart-toolbar allowlist. Those buttons are
-	 * SWT children of {@code ExtendedChromatogramUI}, not E4 model elements,
-	 * so {@code workbench.xmi} cannot resurrect them. Bumping the epoch would
-	 * rebuild the plant sash for a widget the model does not store. The SWT
-	 * sanitizer re-applies on Show, Paint, Selection, and every plant-menu
-	 * pass, including the second launch.
+	 * Epoch stays 35 for the CSD chart-toolbar allowlist and for the
+	 * single-row reparent of those three buttons. They are SWT children of
+	 * {@code ExtendedChromatogramUI}, not E4 model elements, so
+	 * {@code workbench.xmi} cannot resurrect them or their layout. Bumping
+	 * the epoch would rebuild the plant sash for a widget the model does
+	 * not store. The SWT sanitizer re-applies on Show, Paint, Selection,
+	 * and every plant-menu pass, including the second launch.
 	 */
 	public static final int CHROME_EPOCH = 35;
 	/**
@@ -2673,20 +2678,44 @@ public final class BaijiuShellChrome {
 
 	/**
 	 * Plant CSD chart toolbar allowlist. ChemClipse builds these as SWT
-	 * buttons with no E4 id ({@code ExtendedChromatogramUI.createToolbarMain}
-	 * and {@code createToolbarEdit}). Keep only:
+	 * buttons with no E4 id. The grid toggle is created in
+	 * {@code ExtendedChromatogramUI.createToolbarMain}; the legend marker
+	 * and range selector are created later in {@code createToolbarEdit}
+	 * (a second row ChemClipse keeps hidden until the edit toggle). Keep
+	 * only these three, left to right:
 	 * <ul>
-	 * <li>{@code Enable/Disable the chart grid.} — 使能表格, grid icon</li>
-	 * <li>{@code Toggle the chart legend marker.}</li>
-	 * <li>{@code Toggle the chart range selector.} — 显示/隐藏表格范围</li>
+	 * <li>slot 0 — {@code Enable/Disable the chart grid.} — 使能表格</li>
+	 * <li>slot 1 — {@code Toggle the chart legend marker.}</li>
+	 * <li>slot 2 — {@code Toggle the chart range selector.} — 显示/隐藏表格范围</li>
 	 * </ul>
 	 * {@code Toggle the chart series legend.} is a different button and is
 	 * not kept. Blank text is not a match, so a button that has not received
 	 * its tooltip yet is left for the next pass.
+	 * <p>
+	 * Not an E4 id, so this does not bump {@link #CHROME_EPOCH}.
 	 */
 	public static boolean isChromatogramChartToolbarKeep(String text, String toolTip) {
 
-		return matchesChartToolbarKeep(text) || matchesChartToolbarKeep(toolTip);
+		return chromatogramChartToolbarSlot(text, toolTip) >= 0;
+	}
+
+	/**
+	 * Left-to-right index of a plant chart-toolbar keeper.
+	 * {@code 0} grid, {@code 1} legend marker, {@code 2} range selector,
+	 * {@code -1} when the control is not on the allowlist. Text and tooltip
+	 * are both checked; a keeper phrase wins over a blank side.
+	 */
+	public static int chromatogramChartToolbarSlot(String text, String toolTip) {
+
+		int textSlot = chartToolbarSlot(text);
+		int tipSlot = chartToolbarSlot(toolTip);
+		if(textSlot < 0) {
+			return tipSlot;
+		}
+		if(tipSlot < 0) {
+			return textSlot;
+		}
+		return Math.min(textSlot, tipSlot);
 	}
 
 	/**
@@ -2729,24 +2758,29 @@ public final class BaijiuShellChrome {
 		return "new baseline".equals(normalized) || normalized.startsWith("new baseline ") || "delete baseline".equals(normalized) || normalized.startsWith("delete baseline ");
 	}
 
-	private static boolean matchesChartToolbarKeep(String value) {
+	/**
+	 * @return {@code 0} grid, {@code 1} legend marker, {@code 2} range
+	 *         selector, or {@code -1}. Marker is matched before any looser
+	 *         "legend" phrase. "Enable the table content edit modus." is the
+	 *         JFace table editor, not the chart grid — only {@code chart grid}
+	 *         and 使能表格 count as the grid slot.
+	 */
+	private static int chartToolbarSlot(String value) {
 
 		if(value == null || value.isBlank()) {
-			return false;
+			return -1;
 		}
 		String normalized = normalizeMenuLabel(value);
 		if(normalized.contains("chart legend marker") || normalized.contains("图例标记")) {
-			return true;
+			return 1;
 		}
 		if(normalized.contains("chart range selector") || normalized.contains("表格范围") || normalized.contains("table range") || normalized.contains("图表范围")) {
-			return true;
+			return 2;
 		}
-		/*
-		 * "Enable the table content edit modus." contains "the table" but
-		 * is the JFace table editor, not the chart grid. Match the grid
-		 * phrase and the factory name 使能表格 only.
-		 */
-		return normalized.contains("chart grid") || normalized.contains("使能表格");
+		if(normalized.contains("chart grid") || normalized.contains("使能表格")) {
+			return 0;
+		}
+		return -1;
 	}
 
 	private static boolean matchesTargetLabelSettings(String value) {
