@@ -13,8 +13,9 @@
 ; Desktop and Start Menu shortcuts set IconFilename to {app}\BaijiuFID.ico.
 ; Do not let them inherit baijiu-fid.exe: if the launcher brand step misses
 ; an icon, Windows still shows the Eclipse icon from the exe template.
-; The .ico is taken from this script's directory (compiler:), so it ships
-; even when SourceRoot is a raw Tycho folder.
+; The .ico is taken from this script's directory ({#SourcePath}), so it ships
+; even when SourceRoot is a raw Tycho folder. compiler: is the Inno Setup
+; installation directory, not the script directory.
 ;
 ; Directory plug-ins are re-jarred by packaging\rejar-directory-plugins.ps1
 ; before this script runs, so class files are not loose paths over MAX_PATH.
@@ -59,7 +60,7 @@ UninstallDisplayIcon={app}\BaijiuFID.ico
 
 [Files]
 Source: "*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion; Excludes: "BaijiuFID.ico"
-Source: "compiler:BaijiuFID.ico"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#SourcePath}BaijiuFID.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\BaijiuFID.ico"
