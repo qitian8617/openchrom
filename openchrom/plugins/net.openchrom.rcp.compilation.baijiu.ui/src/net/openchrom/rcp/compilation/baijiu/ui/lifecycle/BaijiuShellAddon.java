@@ -65,6 +65,7 @@ public class BaijiuShellAddon {
 	public void start(IEventBroker eventBroker) {
 
 		try {
+			BaijiuPlantTheme.forceLightTheme(application == null ? null : application.getContext());
 			applyChrome(application, modelService);
 		} catch(RuntimeException | LinkageError e) {
 			BaijiuShellLog.warn("BaijiuShellAddon @PostConstruct chrome apply failed; plant home reveal will retry", e);
@@ -110,6 +111,7 @@ public class BaijiuShellAddon {
 
 				eventBroker.unsubscribe(this);
 				try {
+					BaijiuPlantTheme.forceLightTheme(application == null ? null : application.getContext());
 					BaijiuChromatogramReadability.apply();
 					BaijiuShellMenus.install();
 					applyChrome(application, modelService);

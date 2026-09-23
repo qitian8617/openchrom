@@ -438,11 +438,14 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(customizationText.contains("TargetReferenceLabelMarker.Peak.Font=Microsoft YaHei-bold-13"), customizationText);
 		assertTrue(customizationText.contains("ChromatogramChart.AxisMinutes.LineColor=17,17,17"), customizationText);
 		assertTrue(customizationText.contains("ChromatogramChart.AxisMinutes.Font=Microsoft YaHei-bold-13"), customizationText);
+		assertTrue(customizationText.contains("org.eclipse.e4.ui.css.swt.theme/themeid=org.eclipse.e4.ui.css.theme.e4_default"), customizationText);
+		assertFalse(customizationText.contains("org.eclipse.e4.ui.css.theme.e4_dark"), customizationText);
 
 		Path lifeCycle = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuLifeCycle.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuLifeCycle.java");
 		assertNotNull(lifeCycle);
 		String lifeCycleSrc = Files.readString(lifeCycle, StandardCharsets.UTF_8);
 		assertTrue(lifeCycleSrc.contains("BaijiuChromatogramReadability.apply"), lifeCycleSrc);
+		assertTrue(lifeCycleSrc.contains("BaijiuPlantTheme.forceLightTheme"), lifeCycleSrc);
 		assertTrue(lifeCycleSrc.contains("ensureChemclipsePerspectiveStack"), lifeCycleSrc);
 		assertTrue(lifeCycleSrc.contains("@PreSave") || lifeCycleSrc.contains("PreSave"), lifeCycleSrc);
 		assertTrue(lifeCycleSrc.contains("preSave"), lifeCycleSrc);
@@ -484,6 +487,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(addonSrc.contains("CHROMATOGRAM_STACK_ID"), addonSrc);
 		assertTrue(addonSrc.contains("dropDeadPlantEditorPlaceholder"), addonSrc);
 		assertTrue(addonSrc.contains("BaijiuChromatogramReadability.apply"), addonSrc);
+		assertTrue(addonSrc.contains("BaijiuPlantTheme.forceLightTheme"), addonSrc);
 		assertTrue(addonSrc.contains("BaijiuShellMenus.install"), addonSrc);
 		assertTrue(addonSrc.contains("tagPlantHomeSingletons"), addonSrc);
 		assertTrue(addonSrc.contains("revealPlantToolbar"), addonSrc);
@@ -1330,6 +1334,12 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(pluginXmlText.contains("name=\"windowImages\""), pluginXmlText);
 		assertTrue(pluginXmlText.contains("icons/logo_16x16.png,icons/logo_32x32.png,icons/logo_48x48.png,icons/logo_64x64.png,icons/logo_128x128.png"), pluginXmlText);
 		assertTrue(pluginXmlText.contains("icons/about_250x330.png"), pluginXmlText);
+		assertTrue(pluginXmlText.contains("name=\"%product.name\""), pluginXmlText);
+		assertTrue(pluginXmlText.contains("value=\"%product.appName\""), pluginXmlText);
+		assertTrue(pluginXmlText.contains("name=\"preferenceCustomization\""), pluginXmlText);
+		assertTrue(pluginXmlText.contains("value=\"plugin_customization.ini\""), pluginXmlText);
+		assertTrue(pluginXmlText.contains("do not remove; Product Synchronize in the IDE strips this and breaks plant defaults."), pluginXmlText);
+		assertFalse(pluginXmlText.contains("name=\"白酒 FID 工作站\""), "product name stays an i18n key; Synchronize must not hardcode it");
 
 		Path product = locate("openchrom/products/net.openchrom.rcp.compilation.baijiu.product/openchrom.compilation.baijiu.product", "products/net.openchrom.rcp.compilation.baijiu.product/openchrom.compilation.baijiu.product");
 		assertNotNull(product);
@@ -1337,6 +1347,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(productXml.contains("icons/windows/Icon.ico"), productXml);
 		assertTrue(productXml.contains("/net.openchrom.rcp.compilation.baijiu.ui/icons/logo_16x16.png"), productXml);
 		assertFalse(productXml.contains("community.ui/icons/logo_"), productXml);
+		assertTrue(productXml.contains("path=\"plugin_customization.ini\""), productXml);
 
 		Path macIcns = locate("openchrom/products/net.openchrom.rcp.compilation.baijiu.product/icons/mac/Icon.icns", "products/net.openchrom.rcp.compilation.baijiu.product/icons/mac/Icon.icns");
 		Path communityIcns = locate("openchrom/products/net.openchrom.rcp.compilation.community.product/icons/mac/Icon.icns", "products/net.openchrom.rcp.compilation.community.product/icons/mac/Icon.icns");

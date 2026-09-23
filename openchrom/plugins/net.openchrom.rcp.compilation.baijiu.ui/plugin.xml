@@ -3,6 +3,7 @@
    <extension
          id="product"
          point="org.eclipse.core.runtime.products">
+      <!-- Keep name="%product.name" and appName="%product.appName". Product Synchronize copies the .product name into both; do not hardcode them. -->
       <product
             application="org.eclipse.chemclipse.rcp.app.ui.org.eclipse.chemclipse.rcp.application"
             name="%product.name">
@@ -30,6 +31,7 @@
                name="lifeCycleURI"
                value="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuLifeCycle">
          </property>
+         <!-- do not remove; Product Synchronize in the IDE strips this and breaks plant defaults. -->
          <property
                name="preferenceCustomization"
                value="plugin_customization.ini">
