@@ -65,13 +65,14 @@ import net.openchrom.rcp.compilation.baijiu.ui.handlers.BaijiuOpenSelectViewHand
  * <p>
  * Inside {@code ExtendedChromatogramUI} the chart toolbar is an allowlist:
  * Enable/Disable the chart grid (使能表格), Toggle the chart legend marker,
- * and Toggle the chart range selector (显示/隐藏表格范围), left to right in
- * one row. ChemClipse puts the grid button on {@code createToolbarMain} and
- * the other two on the hidden {@code createToolbarEdit} row; this pass
- * reparents the three onto a single top row. Every other button (processor
- * icons, T, polarity, help, settings, series legend, reset) is disposed and
- * its {@code SWT.Selection} listeners are removed so those dialogs cannot
- * open. Referenced composites (processor toolbar, column combo, baselines,
+ * Toggle the chart range selector (显示/隐藏表格范围), and Reset the
+ * chromatogram (恢复谱图), left to right in one row. ChemClipse puts the
+ * grid button and {@code createButtonReset} on {@code createToolbarMain}
+ * and the marker and range selector on the hidden {@code createToolbarEdit}
+ * row; this pass reparents the four onto a single top row. Every other
+ * button (processor icons, T, polarity, help, settings, series legend) is
+ * disposed and its {@code SWT.Selection} listeners are removed so those
+ * dialogs cannot open. Referenced composites (processor toolbar, column combo, baselines,
  * references / alignment / method) are hidden, not disposed — ChemClipse
  * still calls {@code update()} on them when a chromatogram loads.
  * <p>
@@ -93,13 +94,13 @@ public final class BaijiuShellMenus {
 	private static final String CHART_TOOLBAR_QUEUED = "net.openchrom.baijiu.chartToolbarQueued";
 	private static final String CHART_TOOLBAR_DIALOG = "net.openchrom.baijiu.chartToolbarDialog";
 	/**
-	 * Single horizontal row that holds the three allowlisted chart buttons.
+	 * Single horizontal row that holds the four allowlisted chart buttons.
 	 */
 	private static final String CHART_TOOLBAR_ROW = "net.openchrom.baijiu.chartToolbarRow";
 	private static final String CHART_TOOLBAR_READY = "net.openchrom.baijiu.chartToolbarReady";
 	private static final String CHART_TOOLBAR_RETRIES = "net.openchrom.baijiu.chartToolbarRetries";
 	private static final String CHART_REDRAW_HELD = "net.openchrom.baijiu.chartRedrawHeld";
-	private static final int CHART_TOOLBAR_SLOTS = 3;
+	private static final int CHART_TOOLBAR_SLOTS = 4;
 	private static final int CHART_TOOLBAR_RETRY_LIMIT = 8;
 	/**
 	 * {@code ViewerColumn.COLUMN_VIEWER_KEY} ({@code Policy.JFACE + ".columnViewer"}).
@@ -959,7 +960,7 @@ public final class BaijiuShellMenus {
 	}
 
 	/**
-	 * Collapse the CSD chart toolbar onto one horizontal row of the three
+	 * Collapse the CSD chart toolbar onto one horizontal row of the four
 	 * allowlisted buttons. Headless fragment tests have no current display
 	 * and return. Does not dispose Images. Does not dispose the composites
 	 * ChemClipse still calls {@code update()} on when a chromatogram loads.
@@ -1102,7 +1103,7 @@ public final class BaijiuShellMenus {
 	}
 
 	/**
-	 * @return {@code true} when the three keepers are on one row, or when
+	 * @return {@code true} when the four keepers are on one row, or when
 	 *         there is nothing left to wait for
 	 */
 	private static boolean sanitizeChartToolbar(Composite editor) {
@@ -1137,8 +1138,8 @@ public final class BaijiuShellMenus {
 	}
 
 	/**
-	 * Move grid, legend marker, and range selector onto one top row and
-	 * dispose every other toolbar button. Composites ChemClipse still
+	 * Move grid, legend marker, range selector, and restore onto one top
+	 * row and dispose every other toolbar button. Composites ChemClipse still
 	 * {@code update()}s stay in the tree, hidden and excluded.
 	 *
 	 * @return {@code false} when the plot is not in the tree yet
@@ -1540,8 +1541,8 @@ public final class BaijiuShellMenus {
 					button.setParent(row);
 				}
 				/*
-				 * FILL matches the toggle (grid) and push (marker, range)
-				 * heights so the three sit on one bar instead of two rows.
+				 * FILL matches the toggle (grid) and push (marker, range,
+				 * restore) heights so the four sit on one bar instead of two rows.
 				 */
 				button.setLayoutData(new GridData(SWT.CENTER, SWT.FILL, false, false));
 				if(!button.getVisible()) {
