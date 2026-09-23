@@ -2871,6 +2871,16 @@ public final class BaijiuShellChrome {
 	}
 
 	/**
+	 * The range-bar Run button ({@code Set the current selection.}).
+	 * Reset and Hide are not this action. The toolbar toggle
+	 * {@code Toggle the chart range selector.} / 显示/隐藏表格范围 is not either.
+	 */
+	public static boolean isChartRangeSelectorSetAction(String text, String toolTip) {
+
+		return isRangeSelectorSetPhrase(text) || isRangeSelectorSetPhrase(toolTip);
+	}
+
+	/**
 	 * Dialogs opened by chart-toolbar buttons that the allowlist removes.
 	 * Baseline add/delete are the named shells. Target Label Settings is
 	 * {@link #shouldCloseTargetLabelSettingsShell}. The Settings preference
@@ -2936,12 +2946,27 @@ public final class BaijiuShellChrome {
 		if(normalized.contains("chart range selector") || normalized.contains("表格范围") || normalized.contains("table range") || normalized.contains("图表范围")) {
 			return false;
 		}
-		return normalized.contains("set the current selection") //
+		return isRangeSelectorSetPhrase(value) //
 				|| normalized.contains("reset the range") //
 				|| normalized.contains("hide the range selector") //
-				|| normalized.contains("设置当前选择") //
 				|| normalized.contains("重置范围") //
 				|| normalized.contains("隐藏范围");
+	}
+
+	/**
+	 * Run / Apply on the range bar. The toolbar toggle is excluded because
+	 * its label contains {@code chart range selector} or 表格范围.
+	 */
+	private static boolean isRangeSelectorSetPhrase(String value) {
+
+		if(value == null || value.isBlank()) {
+			return false;
+		}
+		String normalized = normalizeMenuLabel(value);
+		if(normalized.contains("chart range selector") || normalized.contains("表格范围") || normalized.contains("table range") || normalized.contains("图表范围")) {
+			return false;
+		}
+		return normalized.contains("set the current selection") || normalized.contains("设置当前选择");
 	}
 
 	/**

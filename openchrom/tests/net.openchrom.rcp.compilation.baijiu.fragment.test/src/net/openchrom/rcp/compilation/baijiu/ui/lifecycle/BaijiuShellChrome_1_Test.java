@@ -941,6 +941,13 @@ public class BaijiuShellChrome_1_Test {
 		assertTrue(BaijiuShellChrome.isChartRangeSelectorAction(null, "Set the current selection."));
 		assertTrue(BaijiuShellChrome.isChartRangeSelectorAction(null, "Reset the range."));
 		assertTrue(BaijiuShellChrome.isChartRangeSelectorAction(null, "Hide the range selector UI."));
+		assertTrue(BaijiuShellChrome.isChartRangeSelectorSetAction(null, "Set the current selection."));
+		assertTrue(BaijiuShellChrome.isChartRangeSelectorSetAction(null, "设置当前选择"));
+		assertFalse(BaijiuShellChrome.isChartRangeSelectorSetAction(null, "Reset the range."));
+		assertFalse(BaijiuShellChrome.isChartRangeSelectorSetAction(null, "Hide the range selector UI."));
+		assertFalse(BaijiuShellChrome.isChartRangeSelectorSetAction(null, "Toggle the chart range selector."));
+		assertFalse(BaijiuShellChrome.isChartRangeSelectorSetAction(null, "显示/隐藏表格范围"));
+		assertFalse(BaijiuShellChrome.isChartRangeSelectorSetAction(null, "Reset the chromatogram"));
 		assertTrue(BaijiuShellChrome.isChartRangeSelectorClass("org.eclipse.swtchart.extensions.core.RangeSelector"));
 		assertTrue(BaijiuShellChrome.isChartRangeSelectorClass("org.eclipse.swtchart.extensions.core.RangeInfoUI"));
 		assertFalse(BaijiuShellChrome.isChartRangeSelectorClass(BaijiuShellChrome.CHROMATOGRAM_CHART_CLASS));

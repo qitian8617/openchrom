@@ -1104,6 +1104,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(shellMenusSrc.contains("isInChromatogramPlot(button)"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("isChartRangeSelectorControl"), shellMenusSrc);
 		assertTrue(shellMenusSrc.contains("sparesChartButton"), shellMenusSrc);
+		assertTrue(shellMenusSrc.contains("BaijiuChartRangeCommit.suspendExtendForSet"), shellMenusSrc);
 		Path chartIcons = locate("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuChartToolbarIcons.java", "plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuChartToolbarIcons.java");
 		assertNotNull(chartIcons, "plant chart toolbar icons");
 		String chartIconsSrc = Files.readString(chartIcons, StandardCharsets.UTF_8);
