@@ -65,8 +65,8 @@ The script re-jars ordinary directory plug-ins in the product folder
 before that mirror (packaging\rejar-directory-plugins.ps1), then copies
 packaging\BaijiuFID.ico into the staged folder. Then compile
 packaging\BaijiuFID-Setup.iss (Inno Setup). The script also installs
-compiler:BaijiuFID.ico (next to the .iss) into {app}, so a raw Tycho
-folder still ships the logo. Desktop and Start Menu shortcuts set
+{#SourcePath}BaijiuFID.ico (the icon next to the .iss) into {app}, so a
+raw Tycho folder still ships the logo. Desktop and Start Menu shortcuts set
 IconFilename to {app}\BaijiuFID.ico. They must not inherit baijiu-fid.exe:
 Eclipse's launcher brander only replaces icons from an uncompressed BMP
 ICO, and a missed brand leaves the Eclipse icon on the shortcut.
