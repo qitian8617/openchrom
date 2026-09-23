@@ -60,18 +60,67 @@ Stage and installer
 powershell -File packaging\build-baijiu-win64.ps1
 powershell -File packaging\build-baijiu-win64.ps1 -Stage
 
--Stage mirrors the win64 folder to E:\OpenChrom\baijiu-fid-workstation, then
-copies packaging\BaijiuFID.ico into that folder. Then compile
+-Stage mirrors the win64 folder to E:\OpenChrom\baijiu-fid-workstation.
+The script re-jars ordinary directory plug-ins in the product folder
+before that mirror (packaging\rejar-directory-plugins.ps1), then copies
+packaging\BaijiuFID.ico into the staged folder. Then compile
 packaging\BaijiuFID-Setup.iss (Inno Setup). The script also installs
 compiler:BaijiuFID.ico (next to the .iss) into {app}, so a raw Tycho
 folder still ships the logo. Desktop and Start Menu shortcuts set
 IconFilename to {app}\BaijiuFID.ico. They must not inherit baijiu-fid.exe:
 Eclipse's launcher brander only replaces icons from an uncompressed BMP
 ICO, and a missed brand leaves the Eclipse icon on the shortcut.
-DefaultDirName is {sd}\BaijiuFID (C:\BaijiuFID), not {autopf}\BaijiuFID,
-so the plugin tree stays under MAX_PATH. License files stay a per-user
-drop-in (%USERPROFILE%\OpenChrom\licenses\baijiu-fid.bjlic) and are not
-part of the installer tree.
+License files stay a per-user drop-in
+(%USERPROFILE%\OpenChrom\licenses\baijiu-fid.bjlic) and are not part of
+the installer tree.
+
+MAX_PATH (260)
+--------------
+Windows Inno Setup (ISCC, and MoveFile during install) still fails when
+a path is longer than 260 characters. Tycho leaves some plug-ins as
+directories. A class such as
+ChromatogramRetentionIndexRecalculator$ProcessSupplier.class under
+plugins\org.eclipse.chemclipse.chromatogram.xxd.calculator.supplier.amdiscalri_*
+is over that limit both in a long stage directory and under
+Program Files\BaijiuFID.
+
+rejar-directory-plugins.ps1 packs those directories into
+plugins\Name_ver.jar and rewrites
+configuration\org.eclipse.equinox.simpleconfigurator\bundles.info
+from plugins/Name_ver/ to plugins/Name_ver.jar. Equinox reads that file
+at startup. The product sets org.eclipse.update.reconcile=false, so the
+p2 reconciler does not rebuild the list from the profile.
+
+Left as directories (the launcher, JNA, and JustJ need real files):
+  org.eclipse.justj.*
+  org.eclipse.equinox.launcher.win32.win32.x86_64_*
+  com.sun.jna_*   (com.sun.jna.platform_* is Java and is jarred)
+  any other directory plug-in that contains .dll .exe .so .dylib .jnilib .node
+Always jarred when present as directories: amdiscalri, molpeak,
+rcp.app.ui, rcp.ui.icons, feature.branding, ui.themes, and every other
+directory bundle that is a normal OSGi plug-in without those natives.
+
+BaijiuFID-Setup.iss installs to {sd}\BaijiuFID (C:\BaijiuFID when
+Windows is on C:, D:\BaijiuFID when Windows is on D:) instead of
+Program Files, so the JustJ directory stays under MAX_PATH.
+UsePreviousAppDir=no so a failed Program Files attempt is not reused.
+AppPublisher stays OpenChrom. Shortcuts and Add/Remove Programs use
+BaijiuFID.ico, not the launcher exe.
+
+If you ran mvn yourself, re-jar before copying the tree for ISCC:
+
+  powershell -File packaging\rejar-directory-plugins.ps1 -ProductRoot products\net.openchrom.rcp.compilation.baijiu.product\target\products\net.openchrom.rcp.compilation.baijiu.product.id\win32\win32\x86_64
+
+ISCC must not be pointed at the long Maven target\products\... folder.
+-Stage is the copy. If ISCC still reports MAX_PATH, stage to a short
+directory and pass that same path:
+
+  powershell -File packaging\build-baijiu-win64.ps1 -Stage -Destination E:\bjw
+  ISCC /DSourceRoot=E:\bjw packaging\BaijiuFID-Setup.iss
+
+To re-jar a tree that is already staged, without another Maven build:
+
+  powershell -File packaging\rejar-directory-plugins.ps1 -ProductRoot E:\bjw
 
 Heap
 ----

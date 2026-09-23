@@ -18,9 +18,12 @@
   and copy packaging\BaijiuFID.ico into that folder. The installer also
   pulls that .ico from the script directory, and shortcuts use it instead
   of the Eclipse icon baked into an unbranded launcher exe.
+  Directory plug-ins are re-jarred in the product folder before the mirror,
+  so the staged tree does not contain the long exploded class paths.
 
 .PARAMETER Destination
-  Staging directory used only with -Stage.
+  Staging directory used only with -Stage. Use a short path such as E:\bjw
+  when ISCC still reports MAX_PATH, and pass the same path as /DSourceRoot.
 #>
 [CmdletBinding()]
 param(
@@ -117,6 +120,15 @@ if ($ini -notmatch [regex]::Escape("-Xmx4096m")) {
     Write-Warning "baijiu-fid.ini does not contain -Xmx4096m. The product vmArgs should have been copied into the launcher ini."
 }
 
+$rejarScript = Join-Path $PSScriptRoot "rejar-directory-plugins.ps1"
+$jarExe = Join-Path $env:JAVA_HOME "bin\jar.exe"
+Write-Host ""
+Write-Host "Re-jarring ordinary directory plug-ins so installer paths stay under MAX_PATH..."
+& $rejarScript -ProductRoot $ProductDir -JarExe $jarExe
+if (-not $?) {
+    throw "rejar-directory-plugins.ps1 failed"
+}
+
 Write-Host ""
 Write-Host "Win64 product folder:"
 Write-Host "  $ProductDir"
@@ -124,6 +136,7 @@ Write-Host "Launcher: baijiu-fid.exe  (JustJ 25 is the jre\ directory beside it,
 
 if ($Stage) {
     New-Item -ItemType Directory -Force -Path $Destination | Out-Null
+    # Re-jar runs on ProductDir first. /MIR then publishes jars, not the exploded trees.
     & robocopy $ProductDir $Destination /MIR /NFL /NDL /NJH /NJS /nc /ns /np
     if ($LASTEXITCODE -ge 8) {
         throw "robocopy failed with exit code $LASTEXITCODE"
@@ -135,9 +148,17 @@ if ($Stage) {
     Copy-Item -LiteralPath $brandIcon -Destination (Join-Path $Destination "BaijiuFID.ico") -Force
     Write-Host "Staged to $Destination"
     Write-Host "Copied BaijiuFID.ico (company logo for shortcuts and Add/Remove Programs)."
-    Write-Host "Next: compile packaging\BaijiuFID-Setup.iss with Inno Setup (ISCC)."
+    Write-Host "Next: ISCC /DSourceRoot=$Destination packaging\BaijiuFID-Setup.iss"
+    Write-Host "Default install directory is {sd}\BaijiuFID (C:\BaijiuFID when Windows is on C:)."
+    Write-Host "Shortcuts use {app}\BaijiuFID.ico, not the launcher exe icon."
+    Write-Host "If ISCC still reports a path longer than 260 characters, stage to a short directory:"
+    Write-Host "  powershell -File packaging\build-baijiu-win64.ps1 -Stage -Destination E:\bjw"
+    Write-Host "  ISCC /DSourceRoot=E:\bjw packaging\BaijiuFID-Setup.iss"
 }
 else {
-    Write-Host "Copy that folder onto E:\OpenChrom\baijiu-fid-workstation before compiling packaging\BaijiuFID-Setup.iss,"
-    Write-Host "or re-run with -Stage."
+    Write-Host "Directory plug-ins in that folder were re-jarred."
+    Write-Host "Stage it before ISCC, or copy it yourself and pass the copy as /DSourceRoot."
+    Write-Host "If the copy is still over MAX_PATH, use a short directory such as E:\bjw:"
+    Write-Host "  powershell -File packaging\build-baijiu-win64.ps1 -Stage -Destination E:\bjw"
+    Write-Host "  ISCC /DSourceRoot=E:\bjw packaging\BaijiuFID-Setup.iss"
 }

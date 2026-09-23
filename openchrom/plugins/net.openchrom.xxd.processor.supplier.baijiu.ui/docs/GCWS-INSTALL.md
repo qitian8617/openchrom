@@ -67,7 +67,7 @@ mvn -f releng/net.openchrom.aggregator/pom.xml -pl net.openchrom:net.openchrom.t
 
 `products/net.openchrom.rcp.compilation.baijiu.product/target/products/net.openchrom.rcp.compilation.baijiu.product.id/win32/win32/x86_64/`
 
-(`baijiu-fid.exe`, `baijiu-fid.ini` with `-Xmx4096m`, JustJ `jre/`). Copy that directory to `E:\OpenChrom\baijiu-fid-workstation` or run `powershell -File packaging\build-baijiu-win64.ps1 -Stage`, then compile `packaging/BaijiuFID-Setup.iss`. See `packaging/README.txt`.
+(`baijiu-fid.exe`, `baijiu-fid.ini` with `-Xmx4096m`, JustJ `jre/`). `powershell -File packaging\build-baijiu-win64.ps1 -Stage` re-jars exploded plug-ins (Windows MAX_PATH), copies the folder to `E:\OpenChrom\baijiu-fid-workstation`, and copies `packaging\BaijiuFID.ico` for the desktop shortcut. A manual copy must run `packaging\rejar-directory-plugins.ps1` first. Then compile `packaging/BaijiuFID-Setup.iss` (default install directory `{sd}\BaijiuFID`; shortcuts use `{app}\BaijiuFID.ico`). If ISCC reports a path over 260 characters, use `-Destination E:\bjw` and `ISCC /DSourceRoot=E:\bjw`. See `packaging/README.txt`.
 5. License drop-in is still `%USERPROFILE%\OpenChrom\licenses\baijiu-fid.bjlic`.
 
 Phase 3 plant UI (dedicated product only):
