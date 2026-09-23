@@ -162,7 +162,7 @@ public final class BaijiuLicense {
 		properties.setProperty("key", key);
 		StringWriter writer = new StringWriter();
 		try {
-			properties.store(writer, "OpenChrom Baijiu FID pilot license (offline, not DRM)");
+			properties.store(writer, "Baijiu FID pilot license (offline, not DRM)");
 		} catch(IOException e) {
 			return toOneLiner();
 		}
