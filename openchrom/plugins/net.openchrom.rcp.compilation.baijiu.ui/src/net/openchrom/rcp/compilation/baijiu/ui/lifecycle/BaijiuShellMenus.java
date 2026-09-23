@@ -1068,6 +1068,26 @@ public final class BaijiuShellMenus {
 		});
 	}
 
+	/**
+	 * {@code ExtendedChromatogramUI} that contains this chart button or
+	 * toolbar, or {@code null} when the control sits outside that editor.
+	 */
+	private static Composite chromatogramEditorOf(Control start) {
+
+		Control node = start;
+		for(int depth = 0; node != null && !node.isDisposed() && depth < 24; depth++) {
+			if(node instanceof Composite composite && BaijiuShellChrome.isExtendedChromatogramUiClass(composite.getClass().getName())) {
+				return composite;
+			}
+			try {
+				node = node.getParent();
+			} catch(RuntimeException e) {
+				return null;
+			}
+		}
+		return null;
+	}
+
 	private static int chartToolbarRetries(Composite editor) {
 
 		try {
