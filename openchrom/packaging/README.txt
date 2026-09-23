@@ -34,7 +34,11 @@ mvn -f releng/net.openchrom.aggregator/pom.xml -pl net.openchrom:net.openchrom.t
   -am builds the OSGi/feature closure Tycho wires onto the product, not
   the whole OpenChrom reactor. The target-platform module is listed
   explicitly so a clean machine builds net.openchrom.targetplatform
-  before resolution.
+  before resolution. That module has its own pom.xml parented at the
+  current master (1.6.32 / Tycho 5.0.4). Do not delete it: without it,
+  pomless parents the target at releng/.polyglot.pom.tycho, and a
+  leftover from an OpenChrom 1.6.20 build pulls Tycho 5.0.3 into this
+  reactor ("Several versions of Tycho plugins are configured").
 - -DskipTests skips test execution. This repo does not run the product
   materialize in GitHub Actions.
 

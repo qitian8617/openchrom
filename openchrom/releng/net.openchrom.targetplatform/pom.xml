@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <!--
+    Pomless builds parent this module at releng/.polyglot.pom.tycho.
+    That generated file is not in git. A workstation that previously built
+    OpenChrom 1.6.20 keeps a copy whose parent is master 1.6.20-SNAPSHOT
+    (Tycho 5.0.3). Putting it in the same reactor as 1.6.32 modules (Tycho
+    5.0.4) fails with "Several versions of Tycho plugins are configured".
+    Parent the target definition at the current master pom instead.
+  -->
+  <parent>
+    <groupId>net.openchrom</groupId>
+    <artifactId>master</artifactId>
+    <version>1.6.32-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+  <artifactId>net.openchrom.targetplatform</artifactId>
+  <packaging>eclipse-target-definition</packaging>
+  <name>OpenChrom Target Platform</name>
+</project>
