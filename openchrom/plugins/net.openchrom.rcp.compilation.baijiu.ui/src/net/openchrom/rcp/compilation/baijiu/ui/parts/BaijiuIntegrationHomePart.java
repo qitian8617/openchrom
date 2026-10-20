@@ -11,11 +11,11 @@ package net.openchrom.rcp.compilation.baijiu.ui.parts;
 
 import org.eclipse.e4.core.di.annotations.Optional;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
-import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
+import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuPlantNav.Section;
 
 /**
  * Left-stack host for 推荐积分. Branding {@code @PostConstruct} OSGi-loads
@@ -47,8 +47,8 @@ public class BaijiuIntegrationHomePart {
 		}
 		created = true;
 		try {
-			parent.setLayout(new FillLayout());
-			BaijiuHomePanels.createIntegrationPanel(parent, partService);
+			Composite body = BaijiuPageChrome.embed(parent, Section.CALIBRATE);
+			BaijiuHomePanels.createIntegrationPanel(body, partService);
 			parent.layout(true, true);
 		} catch(Throwable t) {
 			BaijiuHomePanels.showError(parent, t);

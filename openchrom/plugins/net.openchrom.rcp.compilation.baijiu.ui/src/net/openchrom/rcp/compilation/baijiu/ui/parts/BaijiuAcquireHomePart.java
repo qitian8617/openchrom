@@ -17,7 +17,6 @@ import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 
@@ -26,6 +25,9 @@ import jakarta.inject.Inject;
 import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuPlantStatus;
 import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuPlantStatus.AcquisitionToggle;
 import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuShellParts;
+import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuWorkflowMetrics;
+import net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuActionBoard.Action;
+import net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuIconCard.BaijiuCardPalette;
 
 /**
  * 连接与采集. Instrument status, open an existing chromatogram, start or
@@ -50,7 +52,7 @@ public class BaijiuAcquireHomePart {
 	private IEclipseContext context;
 
 	private Label instrument;
-	private Button acquisition;
+	private BaijiuIconCard acquisition;
 
 	public BaijiuAcquireHomePart() {
 
@@ -63,24 +65,38 @@ public class BaijiuAcquireHomePart {
 			return;
 		}
 		created = true;
-		parent.setLayout(new GridLayout(1, false));
+		GridLayout layout = new GridLayout(1, false);
+		layout.marginWidth = 12;
+		layout.marginHeight = 12;
+		parent.setLayout(layout);
 		Label title = new Label(parent, SWT.NONE);
 		title.setText("连接与采集");
-		instrument = new Label(parent, SWT.WRAP);
-		instrument.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		title.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, true, false));
+		instrument = new Label(parent, SWT.WRAP | SWT.CENTER);
+		instrument.setLayoutData(centeredHint(parent));
 		refreshInstrument();
-		Label hint = new Label(parent, SWT.WRAP);
+		Label hint = new Label(parent, SWT.WRAP | SWT.CENTER);
 		hint.setText("谱图显示在下方，切换导航不会关闭已打开的谱图。温度反控从这里打开，不再单独占一项导航。");
-		hint.setLayoutData(fill());
-		button(parent, "打开已有谱图", () -> openChromatogram(parent));
-		acquisition = button(parent, acquisitionLabel(), () -> toggleAcquisition(parent));
-		button(parent, "温度反控", () -> {
-			boolean visible = BaijiuShellParts.toggleGcConsole(application, modelService, partService);
-			BaijiuShellParts.inform(parent.getShell(), visible ? "已打开温度反控窗口。" : "已隐藏温度反控窗口。");
-			refreshInstrument();
-		});
+		hint.setLayoutData(centeredHint(parent));
+		BaijiuCardPalette palette = new BaijiuCardPalette(parent.getDisplay());
+		parent.addDisposeListener(event -> palette.dispose());
+		java.util.List<Action> actions = java.util.List.of( //
+				new Action(BaijiuGlyphs.FOLDER, "打开已有谱图", "从文件载入", true, () -> openChromatogram(parent)), //
+				new Action(BaijiuGlyphs.PLAY, acquisitionLabel(), "开始或停止", true, () -> toggleAcquisition(parent)), //
+				new Action(BaijiuGlyphs.THERMO, "温度反控", "打开反控窗口", false, () -> {
+					boolean visible = BaijiuShellParts.toggleGcConsole(application, modelService, partService);
+					BaijiuShellParts.inform(parent.getShell(), visible ? "已打开温度反控窗口。" : "已隐藏温度反控窗口。");
+					refreshInstrument();
+				}));
+		org.eclipse.swt.widgets.Composite board = BaijiuActionBoard.install(parent, palette, actions);
+		for(org.eclipse.swt.widgets.Control child : board.getChildren()) {
+			if(child instanceof BaijiuIconCard card && (card.cardText().contains("采集"))) {
+				acquisition = card;
+			}
+		}
 		Label pack = new Label(parent, SWT.NONE);
 		pack.setText("当前方法包：" + BaijiuPlantStatus.WORKING_LABEL);
+		pack.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, true, false));
 	}
 
 	private void openChromatogram(Composite parent) {
@@ -101,7 +117,7 @@ public class BaijiuAcquireHomePart {
 
 		AcquisitionToggle outcome = BaijiuPlantStatus.toggleAcquisition();
 		if(acquisition != null && !acquisition.isDisposed()) {
-			acquisition.setText(outcome.acquiring() ? "停止采集" : "开始采集");
+			acquisition.setCardText(outcome.acquiring() ? "停止采集" : "开始采集");
 		}
 		if(!outcome.ok()) {
 			String message = outcome.message();
@@ -124,7 +140,7 @@ public class BaijiuAcquireHomePart {
 		instrument.setText("仪器：" + BaijiuPlantStatus.connectivityLabel(online) + "    " + run);
 		instrument.setForeground(instrument.getDisplay().getSystemColor(online ? SWT.COLOR_DARK_GREEN : SWT.COLOR_DARK_GRAY));
 		if(acquisition != null && !acquisition.isDisposed()) {
-			acquisition.setText(acquisitionLabel());
+			acquisition.setCardText(acquisitionLabel());
 		}
 	}
 
@@ -133,25 +149,10 @@ public class BaijiuAcquireHomePart {
 		return BaijiuPlantStatus.probeAcquiring() ? "停止采集" : "开始采集";
 	}
 
-	private static Button button(Composite parent, String text, Runnable action) {
+	private static GridData centeredHint(Composite parent) {
 
-		Button button = new Button(parent, SWT.PUSH);
-		button.setText(text);
-		button.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		button.addListener(SWT.Selection, event -> {
-			try {
-				action.run();
-			} catch(Throwable t) {
-				BaijiuShellParts.inform(parent.getShell(), t.getMessage() == null || t.getMessage().isBlank() ? "操作没有完成。" : t.getMessage());
-			}
-		});
-		return button;
-	}
-
-	private static GridData fill() {
-
-		GridData data = new GridData(SWT.FILL, SWT.CENTER, true, false);
-		data.widthHint = 480;
+		GridData data = new GridData(SWT.CENTER, SWT.CENTER, true, false);
+		data.widthHint = BaijiuWorkflowMetrics.px(parent.getDisplay(), 420);
 		return data;
 	}
 }

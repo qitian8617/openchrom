@@ -9,11 +9,11 @@
  *******************************************************************************/
 package net.openchrom.rcp.compilation.baijiu.ui.parts;
 
-import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
+import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuPlantNav.Section;
 
 /**
  * Left-stack host for 批处理结果. OSGi-loads {@code BaijiuSequenceResultsShell}.
@@ -40,8 +40,8 @@ public class BaijiuBatchResultsHomePart {
 		}
 		created = true;
 		try {
-			parent.setLayout(new FillLayout());
-			BaijiuHomePanels.createBatchResultsPanel(parent);
+			Composite body = BaijiuPageChrome.embed(parent, Section.SEQUENCE);
+			BaijiuHomePanels.createBatchResultsPanel(body);
 			parent.layout(true, true);
 		} catch(Throwable t) {
 			BaijiuHomePanels.showError(parent, t);
