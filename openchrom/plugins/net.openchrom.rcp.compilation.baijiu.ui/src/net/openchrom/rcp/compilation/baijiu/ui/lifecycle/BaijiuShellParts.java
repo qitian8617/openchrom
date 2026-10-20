@@ -35,9 +35,11 @@ import org.eclipse.e4.ui.model.application.ui.menu.MDirectMenuItem;
 import org.eclipse.e4.ui.model.application.ui.menu.MHandledMenuItem;
 import org.eclipse.e4.ui.model.application.ui.menu.MHandledToolItem;
 import org.eclipse.e4.ui.model.application.ui.menu.MMenu;
+import org.eclipse.e4.ui.model.application.ui.menu.MMenuContribution;
 import org.eclipse.e4.ui.model.application.ui.menu.MMenuElement;
 import org.eclipse.e4.ui.model.application.ui.menu.MMenuFactory;
 import org.eclipse.e4.ui.model.application.ui.menu.MToolBar;
+import org.eclipse.e4.ui.model.application.ui.menu.MToolBarContribution;
 import org.eclipse.e4.ui.model.application.ui.menu.MToolBarElement;
 import org.eclipse.e4.ui.workbench.IPresentationEngine;
 import org.eclipse.e4.ui.workbench.modeling.EModelService;
@@ -1218,6 +1220,7 @@ public final class BaijiuShellParts {
 			restorePlantToolItem(modelService, application, item);
 			attachToolItem(toolbar, item);
 		}
+		stripForeignToolbarChildren(toolbar);
 		restoreGcConsoleToolItemIcon(modelService, application);
 	}
 
@@ -1386,10 +1389,10 @@ public final class BaijiuShellParts {
 		String label = BaijiuShellChrome.plantToolbarItemLabel(id);
 		if(label != null && !label.isBlank()) {
 			try {
-				if(item.getLabel() == null || item.getLabel().isBlank()) {
+				if(item.getLabel() == null || item.getLabel().isBlank() || BaijiuPlantChromeWhitelist.operatorTextForbidden(item.getLabel())) {
 					item.setLabel(label);
 				}
-				if(item.getTooltip() == null || item.getTooltip().isBlank()) {
+				if(item.getTooltip() == null || item.getTooltip().isBlank() || BaijiuPlantChromeWhitelist.operatorTextForbidden(item.getTooltip())) {
 					item.setTooltip(label);
 				}
 			} catch(RuntimeException | LinkageError e) {
@@ -2157,8 +2160,8 @@ public final class BaijiuShellParts {
 	}
 
 	/**
-	 * Idempotent File menu: ensure ChemClipse Save exists, hide import /
-	 * export / save-all, translate keep items.
+	 * Idempotent File menu: 打开谱图… (plant open command), ChemClipse
+	 * Save, then drop every child the whitelist does not name.
 	 */
 	static void ensureFileMenuContents(EModelService modelService, MApplication application, MMenu fileMenu) {
 
@@ -2179,6 +2182,28 @@ public final class BaijiuShellParts {
 			forceShowChrome(save);
 			if(save instanceof MUILabel labeled) {
 				labeled.setLabel("保存");
+			}
+			attachMenuElement(fileMenu, item);
+		}
+		MUIElement open = mainMenuChild(fileMenu, BaijiuShellChrome.FILE_OPEN_CHROMATOGRAM_MENU_ID);
+		if(open == null && modelService != null && application != null) {
+			MUIElement found = modelService.find(BaijiuShellChrome.FILE_OPEN_CHROMATOGRAM_MENU_ID, application);
+			if(found instanceof MMenuElement) {
+				open = found;
+			}
+		}
+		if(open == null) {
+			open = createFileOpenMenuItem(modelService, application);
+		}
+		if(open instanceof MMenuElement item) {
+			forceShowChrome(open);
+			if(open instanceof MUILabel labeled) {
+				labeled.setLabel(BaijiuShellChrome.FILE_OPEN_CHROMATOGRAM_LABEL);
+				try {
+					labeled.setIconURI(BaijiuShellChrome.PLANT_ICON_OPEN_CHROM);
+				} catch(RuntimeException | LinkageError e) {
+					// icon not writable
+				}
 			}
 			attachMenuElement(fileMenu, item);
 		}
@@ -2333,25 +2358,39 @@ public final class BaijiuShellParts {
 			if(children == null) {
 				return;
 			}
+			List<Object> snapshot = new ArrayList<>(children);
 			boolean seenSave = false;
-			for(Object child : children) {
+			boolean seenOpen = false;
+			for(Object child : snapshot) {
 				if(!(child instanceof MUIElement element)) {
 					continue;
 				}
 				String id = element.getElementId();
 				String label = labelOf(element);
+				if(!BaijiuPlantChromeWhitelist.allows(BaijiuPlantChromeWhitelist.Surface.FILE, id, label)) {
+					removeMenuChild(fileMenu, element);
+					continue;
+				}
+				boolean openItem = BaijiuShellChrome.FILE_OPEN_CHROMATOGRAM_MENU_ID.equals(id) || "打开谱图".equals(BaijiuShellChrome.normalizeMenuLabel(label == null ? "" : label));
+				if(openItem) {
+					if(seenOpen) {
+						removeMenuChild(fileMenu, element);
+						continue;
+					}
+					seenOpen = true;
+					forceShowChrome(element);
+					if(element instanceof MUILabel labeled) {
+						labeled.setLabel(BaijiuShellChrome.FILE_OPEN_CHROMATOGRAM_LABEL);
+					}
+				}
 				boolean chemclipseSave = BaijiuShellChrome.SAVE_MENU_ID.equals(id);
 				boolean saveLabel = BaijiuShellChrome.isFileMenuKeepLabel(label) && "save".equals(BaijiuShellChrome.normalizeMenuLabel(label == null ? "" : label));
 				if(chemclipseSave || saveLabel) {
 					if(seenSave && !chemclipseSave) {
-						hideMenuChild(element);
+						removeMenuChild(fileMenu, element);
 						continue;
 					}
 					seenSave = true;
-				}
-				if(BaijiuShellChrome.shouldHideFileMenuChild(id, label)) {
-					hideMenuChild(element);
-					continue;
 				}
 				if(element instanceof MUILabel labeled) {
 					String translated = BaijiuShellChrome.translateFileMenuItem(label);
@@ -2381,6 +2420,7 @@ public final class BaijiuShellParts {
 		if(application == null) {
 			return;
 		}
+		stripForeignPlantChrome(application);
 		MMenu mainMenu = windowMainMenu(application);
 		if(mainMenu == null && modelService != null) {
 			mainMenu = findMenu(modelService, application, BaijiuShellChrome.MAIN_MENU_ID);
@@ -2434,12 +2474,21 @@ public final class BaijiuShellParts {
 			if(children == null) {
 				return;
 			}
-			for(Object child : children) {
+			List<Object> snapshot = new ArrayList<>(children);
+			for(Object child : snapshot) {
 				if(!(child instanceof MUIElement element)) {
 					continue;
 				}
-				if(BaijiuShellChrome.shouldHideBaijiuCascadeChild(element.getElementId(), labelOf(element))) {
-					hideMenuChild(element);
+				String label = labelOf(element);
+				if(!BaijiuPlantChromeWhitelist.allows(BaijiuPlantChromeWhitelist.Surface.BAIJIU, element.getElementId(), label)) {
+					removeMenuChild(baijiuMenu, element);
+					continue;
+				}
+				if(element instanceof MUILabel labeled) {
+					String translated = BaijiuShellChrome.translateBaijiuMenuItem(label);
+					if(translated != null && !translated.equals(label)) {
+						labeled.setLabel(translated);
+					}
 				}
 			}
 		} catch(RuntimeException | LinkageError e) {
@@ -2457,14 +2506,19 @@ public final class BaijiuShellParts {
 			if(children == null) {
 				return;
 			}
-			for(Object child : children) {
+			List<Object> snapshot = new ArrayList<>(children);
+			for(Object child : snapshot) {
 				if(!(child instanceof MUIElement element)) {
 					continue;
 				}
-				if(BaijiuShellChrome.shouldHideHelpMenuChild(element.getElementId(), labelOf(element))) {
-					hideMenuChild(element);
+				String label = labelOf(element);
+				if(!BaijiuPlantChromeWhitelist.allows(BaijiuPlantChromeWhitelist.Surface.HELP, element.getElementId(), label)) {
+					removeMenuChild(helpMenu, element);
 				} else {
 					forceShowChrome(element);
+					if(element instanceof MUILabel labeled && label != null && !BaijiuShellChrome.ABOUT_LABEL_ZH.equals(label)) {
+						labeled.setLabel(BaijiuShellChrome.ABOUT_LABEL_ZH);
+					}
 				}
 			}
 		} catch(RuntimeException | LinkageError e) {
@@ -2497,6 +2551,39 @@ public final class BaijiuShellParts {
 		if(command == null) {
 			command = findCommand(modelService, application, BaijiuShellChrome.ECLIPSE_SAVE_COMMAND_ID);
 		}
+		if(command != null) {
+			try {
+				item.setCommand(command);
+			} catch(RuntimeException | LinkageError e) {
+				// command not writable
+			}
+		}
+		return item;
+	}
+
+	private static MHandledMenuItem createFileOpenMenuItem(EModelService modelService, MApplication application) {
+
+		MHandledMenuItem item = null;
+		if(modelService != null) {
+			try {
+				item = modelService.createModelElement(MHandledMenuItem.class);
+			} catch(RuntimeException | LinkageError e) {
+				item = null;
+			}
+		}
+		if(item == null) {
+			try {
+				item = MMenuFactory.INSTANCE.createHandledMenuItem();
+			} catch(RuntimeException | LinkageError e) {
+				return null;
+			}
+		}
+		item.setElementId(BaijiuShellChrome.FILE_OPEN_CHROMATOGRAM_MENU_ID);
+		item.setLabel(BaijiuShellChrome.FILE_OPEN_CHROMATOGRAM_LABEL);
+		item.setIconURI(BaijiuShellChrome.PLANT_ICON_OPEN_CHROM);
+		item.setToBeRendered(true);
+		item.setVisible(true);
+		MCommand command = findCommand(modelService, application, BaijiuShellChrome.OPEN_CHROMATOGRAM_COMMAND_ID);
 		if(command != null) {
 			try {
 				item.setCommand(command);
@@ -2549,6 +2636,215 @@ public final class BaijiuShellParts {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * Drop a foreign plant-menu child. The element leaves its parent and
+	 * its SWT widget is disposed. Visibility flags are cleared only so a
+	 * renderer that still holds the detached object cannot paint it;
+	 * staying in the menu with {@code visible=false} is not the strategy.
+	 * Does not consult {@link BaijiuShellChrome#allowsWalkHide}: ChemClipse
+	 * open-chromatogram ids are on the global keep list and would otherwise
+	 * survive.
+	 */
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	static void removeMenuChild(MMenu parent, MUIElement element) {
+
+		if(element == null) {
+			return;
+		}
+		try {
+			element.setVisible(false);
+			element.setToBeRendered(false);
+		} catch(RuntimeException | LinkageError e) {
+			// already disposed
+		}
+		disposeElementWidget(element);
+		try {
+			if(parent != null) {
+				List children = parent.getChildren();
+				if(children != null) {
+					children.remove(element);
+				}
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// immutable children
+		}
+		try {
+			MElementContainer<?> current = element.getParent();
+			if(current != null && current != parent) {
+				List siblings = current.getChildren();
+				if(siblings != null) {
+					siblings.remove(element);
+				}
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// parent not writable
+		}
+	}
+
+	/**
+	 * Remove foreign {@code MMenuContribution} / {@code MToolBarContribution}
+	 * children before the renderer merges them. View research contributions
+	 * stay registered for GroupHandler.
+	 */
+	static void stripForeignPlantChrome(MApplication application) {
+
+		if(application == null || BaijiuShellChrome.researchMenusVisible()) {
+			return;
+		}
+		stripMenuContributions(application);
+		stripToolbarContributions(application);
+	}
+
+	private static void stripMenuContributions(MApplication application) {
+
+		List<MMenuContribution> contributions;
+		try {
+			contributions = application.getMenuContributions();
+		} catch(RuntimeException | LinkageError e) {
+			return;
+		}
+		if(contributions == null) {
+			return;
+		}
+		List<MMenuContribution> snapshot = new ArrayList<>(contributions);
+		for(MMenuContribution contribution : snapshot) {
+			if(contribution == null) {
+				continue;
+			}
+			String parentId;
+			try {
+				parentId = contribution.getParentId();
+			} catch(RuntimeException | LinkageError e) {
+				continue;
+			}
+			if(!BaijiuPlantChromeWhitelist.guardsMenuContribution(parentId)) {
+				continue;
+			}
+			List<MMenuElement> children;
+			try {
+				children = contribution.getChildren();
+			} catch(RuntimeException | LinkageError e) {
+				continue;
+			}
+			int removed = 0;
+			if(children != null) {
+				List<MMenuElement> childSnapshot = new ArrayList<>(children);
+				for(MMenuElement child : childSnapshot) {
+					if(child == null) {
+						continue;
+					}
+					if(!BaijiuPlantChromeWhitelist.contributionMayRender(parentId, child.getElementId(), labelOf(child))) {
+						disposeElementWidget(child);
+						try {
+							child.setVisible(false);
+							child.setToBeRendered(false);
+						} catch(RuntimeException | LinkageError e) {
+							// already disposed
+						}
+						children.remove(child);
+						removed++;
+					}
+				}
+			}
+			if(removed > 0 && (children == null || children.isEmpty())) {
+				contributions.remove(contribution);
+			}
+		}
+	}
+
+	private static void stripToolbarContributions(MApplication application) {
+
+		List<MToolBarContribution> contributions;
+		try {
+			contributions = application.getToolBarContributions();
+		} catch(RuntimeException | LinkageError e) {
+			return;
+		}
+		if(contributions == null) {
+			return;
+		}
+		List<MToolBarContribution> snapshot = new ArrayList<>(contributions);
+		for(MToolBarContribution contribution : snapshot) {
+			if(contribution == null) {
+				continue;
+			}
+			String parentId;
+			try {
+				parentId = contribution.getParentId();
+			} catch(RuntimeException | LinkageError e) {
+				continue;
+			}
+			if(!BaijiuPlantChromeWhitelist.guardsToolbarContribution(parentId)) {
+				continue;
+			}
+			List<MToolBarElement> children;
+			try {
+				children = contribution.getChildren();
+			} catch(RuntimeException | LinkageError e) {
+				continue;
+			}
+			int removed = 0;
+			if(children != null) {
+				List<MToolBarElement> childSnapshot = new ArrayList<>(children);
+				for(MToolBarElement child : childSnapshot) {
+					if(!(child instanceof MUIElement element)) {
+						continue;
+					}
+					if(!BaijiuPlantChromeWhitelist.contributionMayRender(parentId, element.getElementId(), labelOf(element))) {
+						disposeElementWidget(element);
+						children.remove(child);
+						removed++;
+					}
+				}
+			}
+			if(removed > 0 && (children == null || children.isEmpty())) {
+				contributions.remove(contribution);
+			}
+		}
+	}
+
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	private static void stripForeignToolbarChildren(MToolBar toolbar) {
+
+		if(toolbar == null || BaijiuShellChrome.researchMenusVisible()) {
+			return;
+		}
+		try {
+			List children = toolbar.getChildren();
+			if(children == null) {
+				return;
+			}
+			List<Object> snapshot = new ArrayList<>(children);
+			for(Object child : snapshot) {
+				if(!(child instanceof MUIElement element)) {
+					continue;
+				}
+				if(BaijiuPlantChromeWhitelist.allows(BaijiuPlantChromeWhitelist.Surface.TOOLBAR, element.getElementId(), labelOf(element))) {
+					continue;
+				}
+				disposeElementWidget(element);
+				children.remove(element);
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// toolbar children not writable
+		}
+	}
+
+	private static void disposeElementWidget(MUIElement element) {
+
+		if(element == null) {
+			return;
+		}
+		try {
+			Object widget = element.getWidget();
+			if(widget instanceof Widget swt && !swt.isDisposed()) {
+				swt.dispose();
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// widget already gone
+		}
 	}
 
 	private static void hideMenuChild(MUIElement element) {

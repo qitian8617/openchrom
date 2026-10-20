@@ -125,6 +125,8 @@ public final class BaijiuShellMenus {
 	private static final String SELECT_VIEW_FALLBACK = "net.openchrom.baijiu.selectViewFallback";
 	private static final String ABOUT_FALLBACK = "net.openchrom.baijiu.aboutFallback";
 	private static final String CHART_SANITIZE_RETRY = "net.openchrom.baijiu.chartSanitizeRetry";
+	private static final String PLANT_CASCADE_RESCAN = "net.openchrom.baijiu.plantCascadeRescan";
+	private static final String FILE_OPEN_FALLBACK = "net.openchrom.baijiu.fileOpenFallback";
 	private static Listener installed;
 
 	private BaijiuShellMenus() {
@@ -229,6 +231,7 @@ public final class BaijiuShellMenus {
 		if((menu.getStyle() & SWT.BAR) != 0) {
 			sanitizeMainMenuBar(menu);
 			sanitizePlantCascades(menu);
+			schedulePlantCascadeRescan(menu);
 			return;
 		}
 		MenuItem parentItem = null;
@@ -293,11 +296,8 @@ public final class BaijiuShellMenus {
 			}
 			boolean hide = false;
 			if(chart && !BaijiuShellChrome.researchMenusVisible()) {
-				if(keepRangeChildren) {
-					hide = false;
-				} else {
-					hide = BaijiuShellChrome.shouldHidePlantChartMenuItem(text);
-				}
+				BaijiuPlantChromeWhitelist.Surface surface = keepRangeChildren ? BaijiuPlantChromeWhitelist.Surface.CHART_RANGE : BaijiuPlantChromeWhitelist.Surface.CHART;
+				hide = !BaijiuPlantChromeWhitelist.allows(surface, null, text);
 			} else {
 				hide = BaijiuShellChrome.shouldHideChartMenuItem(text);
 			}
@@ -361,6 +361,15 @@ public final class BaijiuShellMenus {
 			}
 			boolean already = false;
 			if(BaijiuShellChrome.isPlantTopMenuLabel(text)) {
+				String painted = BaijiuPlantChromeWhitelist.shownLabel(BaijiuPlantChromeWhitelist.Surface.MAIN_BAR, null, text);
+				if(painted != null && !painted.equals(text)) {
+					try {
+						item.setText(painted);
+						text = painted;
+					} catch(RuntimeException e) {
+						// menu already closing
+					}
+				}
 				already = !seenPlant.add(BaijiuShellChrome.normalizeMenuLabel(text));
 			}
 			if(BaijiuShellChrome.shouldDisposeMainMenuBarItem(text, already)) {
@@ -445,6 +454,7 @@ public final class BaijiuShellMenus {
 			}
 		}
 		ensureLoneViewChildOpensSelectView(menu);
+		schedulePlantCascadeRescan(menu);
 	}
 
 	/**
@@ -551,7 +561,7 @@ public final class BaijiuShellMenus {
 				}
 				seenSave = true;
 			}
-			if(BaijiuShellChrome.shouldHideFileMenuChild(null, text)) {
+			if(!BaijiuPlantChromeWhitelist.allows(BaijiuPlantChromeWhitelist.Surface.FILE, null, text)) {
 				try {
 					item.dispose();
 				} catch(RuntimeException e) {
@@ -564,7 +574,83 @@ public final class BaijiuShellMenus {
 				item.setText(translated);
 			}
 		}
+		ensureFileOpenItem(menu);
 		disposeExtraSeparators(menu);
+		schedulePlantCascadeRescan(menu);
+	}
+
+	/**
+	 * File must offer 打开谱图… on the first open, before any lazy
+	 * contribution arrives. An E4 item that already has a Selection
+	 * listener keeps it. A bare SWT item calls the same open handler as
+	 * the toolbar.
+	 */
+	static void ensureFileOpenItem(Menu menu) {
+
+		if(menu == null || menu.isDisposed() || BaijiuShellChrome.researchMenusVisible()) {
+			return;
+		}
+		MenuItem keeper = null;
+		MenuItem[] items = menu.getItems();
+		for(int i = 0; i < items.length; i++) {
+			MenuItem item = items[i];
+			if(item == null || item.isDisposed() || (item.getStyle() & SWT.SEPARATOR) != 0) {
+				continue;
+			}
+			String normalized = BaijiuShellChrome.normalizeMenuLabel(item.getText() == null ? "" : item.getText());
+			if(!"打开谱图".equals(normalized)) {
+				continue;
+			}
+			if(keeper == null) {
+				keeper = item;
+				continue;
+			}
+			try {
+				item.dispose();
+			} catch(RuntimeException e) {
+				return;
+			}
+		}
+		if(keeper == null) {
+			try {
+				keeper = new MenuItem(menu, SWT.PUSH, 0);
+			} catch(RuntimeException e) {
+				return;
+			}
+		}
+		try {
+			if(!BaijiuShellChrome.FILE_OPEN_CHROMATOGRAM_LABEL.equals(keeper.getText())) {
+				keeper.setText(BaijiuShellChrome.FILE_OPEN_CHROMATOGRAM_LABEL);
+			}
+			if(keeper.getImage() != null) {
+				keeper.setImage(null);
+			}
+		} catch(RuntimeException e) {
+			return;
+		}
+		try {
+			Listener[] listeners = keeper.getListeners(SWT.Selection);
+			if(listeners != null && listeners.length > 0) {
+				return;
+			}
+			if(keeper.getData(FILE_OPEN_FALLBACK) != null) {
+				return;
+			}
+			MenuItem target = keeper;
+			Listener fallback = event -> {
+				Menu parent = target.getParent();
+				Shell shell = parent == null || parent.isDisposed() ? null : parent.getShell();
+				try {
+					BaijiuPlantStatus.openChromatogram(shell, null);
+				} catch(RuntimeException | ReflectiveOperationException e) {
+					BaijiuShellLog.warn("File menu open chromatogram failed", e);
+				}
+			};
+			keeper.addListener(SWT.Selection, fallback);
+			keeper.setData(FILE_OPEN_FALLBACK, fallback);
+		} catch(RuntimeException | LinkageError e) {
+			// widget already closing
+		}
 	}
 
 	static void sanitizeBaijiuMenu(Menu menu) {
@@ -584,15 +670,26 @@ public final class BaijiuShellMenus {
 			if(disposeIfTargetLabelSettings(item)) {
 				continue;
 			}
-			if(BaijiuShellChrome.shouldHideBaijiuCascadeChild(null, item.getText())) {
+			String text = item.getText();
+			if(!BaijiuPlantChromeWhitelist.allows(BaijiuPlantChromeWhitelist.Surface.BAIJIU, null, text)) {
 				try {
 					item.dispose();
+				} catch(RuntimeException e) {
+					// menu already closing
+				}
+				continue;
+			}
+			String translated = BaijiuShellChrome.translateBaijiuMenuItem(text);
+			if(translated != null && !translated.equals(text)) {
+				try {
+					item.setText(translated);
 				} catch(RuntimeException e) {
 					// menu already closing
 				}
 			}
 		}
 		disposeExtraSeparators(menu);
+		schedulePlantCascadeRescan(menu);
 	}
 
 	static void sanitizeHelpMenu(Menu menu) {
@@ -641,6 +738,7 @@ public final class BaijiuShellMenus {
 			ensureAboutOpensOnClick(item);
 		}
 		disposeExtraSeparators(menu);
+		schedulePlantCascadeRescan(menu);
 	}
 
 	static void ensureAboutOpensOnClick(MenuItem item) {
@@ -693,7 +791,7 @@ public final class BaijiuShellMenus {
 		}
 		for(String label : labels) {
 			String normalized = BaijiuShellChrome.normalizeMenuLabel(label == null ? "" : label);
-			if("保存".equals(normalized) || "save".equals(normalized) || "另存为".equals(normalized) || "save as".equals(normalized)) {
+			if("保存".equals(normalized) || "save".equals(normalized) || "另存为".equals(normalized) || "save as".equals(normalized) || "打开谱图".equals(normalized)) {
 				return true;
 			}
 		}
@@ -2798,6 +2896,49 @@ public final class BaijiuShellMenus {
 		} catch(RuntimeException e) {
 			// menu already closing
 		}
+	}
+
+	/**
+	 * {@code SWT.Show} filters run before MenuManager fills the menu, and
+	 * that fill may itself post {@code asyncExec}. Two hops run after both.
+	 */
+	private static void schedulePlantCascadeRescan(Menu menu) {
+
+		if(menu == null || menu.isDisposed() || BaijiuShellChrome.researchMenusVisible()) {
+			return;
+		}
+		if(Boolean.TRUE.equals(menu.getData(PLANT_CASCADE_RESCAN))) {
+			return;
+		}
+		Display display;
+		try {
+			display = menu.getDisplay();
+		} catch(RuntimeException e) {
+			return;
+		}
+		if(display == null || display.isDisposed()) {
+			return;
+		}
+		menu.setData(PLANT_CASCADE_RESCAN, Boolean.TRUE);
+		display.asyncExec(() -> {
+			if(display.isDisposed()) {
+				return;
+			}
+			display.asyncExec(() -> {
+				if(menu.isDisposed()) {
+					return;
+				}
+				try {
+					sanitize(menu);
+				} catch(RuntimeException e) {
+					// menu already closing
+				} finally {
+					if(!menu.isDisposed()) {
+						menu.setData(PLANT_CASCADE_RESCAN, Boolean.FALSE);
+					}
+				}
+			});
+		});
 	}
 
 	private static void sanitizeChartMenuLater(Menu menu) {

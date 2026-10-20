@@ -297,6 +297,12 @@ public final class BaijiuShellChrome {
 	public static final String CLOSE_MENU_ID = "org.eclipse.chemclipse.ux.extension.ui.handledmenuitem.close";
 	public static final String CLOSE_ALL_MENU_ID = "org.eclipse.chemclipse.ux.extension.ui.handledmenuitem.closeall";
 	public static final String QUIT_MENU_ID = "org.eclipse.chemclipse.rcp.app.ui.menu.item.quit";
+	/**
+	 * File → 打开谱图…. Same command as the toolbar and 白酒 menu. Not the
+	 * ChemClipse CSD “Open Chromatogram (CSD)” contribution.
+	 */
+	public static final String FILE_OPEN_CHROMATOGRAM_MENU_ID = "net.openchrom.rcp.compilation.baijiu.ui.menu.file.openChromatogram";
+	public static final String FILE_OPEN_CHROMATOGRAM_LABEL = "打开谱图…";
 	public static final String ECLIPSE_SAVE_COMMAND_ID = "org.eclipse.ui.file.save";
 	public static final String HELP_MENU_ID = "org.eclipse.chemclipse.rcp.app.ui.menu.help";
 	/**
@@ -973,6 +979,7 @@ public final class BaijiuShellChrome {
 	 * stay off. ChemClipse {@link #SAVE_MENU_ID} is the dirty-editor Save.
 	 */
 	public static final Set<String> FILE_MENU_KEEP_ELEMENT_IDS = Set.of( //
+			FILE_OPEN_CHROMATOGRAM_MENU_ID, //
 			SAVE_MENU_ID, //
 			SAVE_AS_MENU_ID, //
 			CLOSE_MENU_ID, //
@@ -984,6 +991,7 @@ public final class BaijiuShellChrome {
 			"org.eclipse.ui.file.exit");
 
 	public static final List<String> FILE_MENU_KEEP_LABELS = List.of( //
+			"打开谱图", //
 			"保存", "save", //
 			"另存为", "save as", //
 			"关闭", "close", //
@@ -999,12 +1007,36 @@ public final class BaijiuShellChrome {
 			"打开", "open", "open file");
 
 	public static final List<String[]> FILE_MENU_KEEP_TRANSLATIONS = List.of( //
+			new String[]{"打开谱图", FILE_OPEN_CHROMATOGRAM_LABEL}, //
 			new String[]{"Save", "保存"}, //
 			new String[]{"Save As", "另存为..."}, //
 			new String[]{"Close", "关闭"}, //
 			new String[]{"Close All", "全部关闭"}, //
 			new String[]{"Quit", "退出"}, //
 			new String[]{"Exit", "退出"});
+
+	/**
+	 * English 白酒 keep aliases painted as the Chinese phrase operators see.
+	 * “Open Chromatogram (CSD)” does not match “open chromatogram”.
+	 */
+	public static final List<String[]> BAIJIU_MENU_KEEP_TRANSLATIONS = List.of( //
+			new String[]{"Open Chromatogram", "打开谱图"}, //
+			new String[]{"Start Analysis", "开始分析"}, //
+			new String[]{"Recommended Integration", "推荐积分"}, //
+			new String[]{"Analysis", "定量/白酒分析"}, //
+			new String[]{"Preview Report", "报告"}, //
+			new String[]{"Report", "报告"}, //
+			new String[]{"Injection Sequence", "进样序列"}, //
+			new String[]{"Toggle GC Console", "显示/隐藏反控"}, //
+			new String[]{"Switch Baijiu Workbench", "切换厂工作台"}, //
+			new String[]{"License", "许可"}, //
+			new String[]{"Reset Layout", "重置窗口布局"}, //
+			new String[]{"3-Step Wizard", "三步向导"}, //
+			new String[]{"Simple Batch", "简单批量"}, //
+			new String[]{"Batch Results", "批处理结果"}, //
+			new String[]{"Parallel Injections", "平行样"}, //
+			new String[]{"Baijiu Actions", "白酒操作"}, //
+			new String[]{"Baijiu Workbench", "白酒工作台"});
 
 	/**
 	 * Redundant 白酒 entries that only open the independent GC console.
@@ -1376,6 +1408,11 @@ public final class BaijiuShellChrome {
 		return isChromatogramTopMenuLabel(label) || isResearchTopMenuLabel(label);
 	}
 
+	public static boolean isPlantTopMenuId(String elementId) {
+
+		return elementId != null && !elementId.isBlank() && PLANT_TOP_MENU_IDS.contains(elementId);
+	}
+
 	public static boolean isPlantTopMenuLabel(String label) {
 
 		if(label == null || label.isBlank()) {
@@ -1666,7 +1703,7 @@ public final class BaijiuShellChrome {
 		if(existingChildIds == null || existingChildIds.isEmpty()) {
 			return true;
 		}
-		if(PLANT_TOP_MENU_IDS.contains(newId) || isHelpMenuId(newId) || EDITOR_REQUIRED_MENU_IDS.contains(newId) || SELECT_VIEW_MENU_ID.equals(newId) || SAVE_MENU_ID.equals(newId) || PLANT_ABOUT_MENU_ID.equals(newId) || MAIN_MENU_ID.equals(newId) || ECLIPSE_MAIN_MENU_ID.equals(newId)) {
+		if(PLANT_TOP_MENU_IDS.contains(newId) || isHelpMenuId(newId) || EDITOR_REQUIRED_MENU_IDS.contains(newId) || SELECT_VIEW_MENU_ID.equals(newId) || SAVE_MENU_ID.equals(newId) || FILE_OPEN_CHROMATOGRAM_MENU_ID.equals(newId) || PLANT_ABOUT_MENU_ID.equals(newId) || MAIN_MENU_ID.equals(newId) || ECLIPSE_MAIN_MENU_ID.equals(newId)) {
 			return !existingChildIds.contains(newId);
 		}
 		return true;
@@ -2316,6 +2353,11 @@ public final class BaijiuShellChrome {
 		return translateKeepLabel(label, FILE_MENU_KEEP_TRANSLATIONS);
 	}
 
+	public static String translateBaijiuMenuItem(String label) {
+
+		return translateKeepLabel(label, BAIJIU_MENU_KEEP_TRANSLATIONS);
+	}
+
 	/**
 	 * E4 walk-hide may set {@code visible=false} even when the id is on
 	 * {@link #KEEP_ELEMENT_IDS} (temperature {@code menu.open} is KEEP so
@@ -2587,8 +2629,12 @@ public final class BaijiuShellChrome {
 			trimmed = trimmed.substring(1).trim();
 		}
 		trimmed = trimmed.replaceAll("(?i)[（(][a-z0-9][）)]$", "").trim();
-		if(trimmed.endsWith("...")) {
-			trimmed = trimmed.substring(0, trimmed.length() - 3).trim();
+		while(trimmed.endsWith("…") || trimmed.endsWith("...")) {
+			if(trimmed.endsWith("...")) {
+				trimmed = trimmed.substring(0, trimmed.length() - 3).trim();
+			} else {
+				trimmed = trimmed.substring(0, trimmed.length() - 1).trim();
+			}
 		}
 		return trimmed.toLowerCase(Locale.ROOT);
 	}
