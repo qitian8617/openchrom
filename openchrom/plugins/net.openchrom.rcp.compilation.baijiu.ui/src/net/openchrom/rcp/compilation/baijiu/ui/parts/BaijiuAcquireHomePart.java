@@ -19,6 +19,7 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Shell;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
@@ -84,8 +85,7 @@ public class BaijiuAcquireHomePart {
 				new Action(BaijiuGlyphs.FOLDER, "打开已有谱图", "从文件载入", true, () -> openChromatogram(parent)), //
 				new Action(BaijiuGlyphs.PLAY, acquisitionLabel(), "开始或停止", true, () -> toggleAcquisition(parent)), //
 				new Action(BaijiuGlyphs.THERMO, "温度反控", "打开反控窗口", false, () -> {
-					boolean visible = BaijiuShellParts.toggleGcConsole(application, modelService, partService);
-					BaijiuShellParts.inform(parent.getShell(), visible ? "已打开温度反控窗口。" : "已隐藏温度反控窗口。");
+					openTemperatureConsole(application, modelService, partService, parent.getShell());
 					refreshInstrument();
 				}));
 		org.eclipse.swt.widgets.Composite board = BaijiuActionBoard.install(parent, palette, actions);
@@ -97,6 +97,19 @@ public class BaijiuAcquireHomePart {
 		Label pack = new Label(parent, SWT.NONE);
 		pack.setText("当前方法包：" + BaijiuPlantStatus.WORKING_LABEL);
 		pack.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, true, false));
+	}
+
+	/**
+	 * Show the singleton temperature window and focus it. Success is silent.
+	 * A dialog is reserved for a real failure to open the window.
+	 */
+	static boolean openTemperatureConsole(MApplication application, EModelService modelService, EPartService partService, Shell parent) {
+
+		boolean shown = BaijiuShellParts.showGcConsole(application, modelService, partService);
+		if(!shown) {
+			BaijiuShellParts.inform(parent, "无法打开温度反控窗口。");
+		}
+		return shown;
 	}
 
 	private void openChromatogram(Composite parent) {
