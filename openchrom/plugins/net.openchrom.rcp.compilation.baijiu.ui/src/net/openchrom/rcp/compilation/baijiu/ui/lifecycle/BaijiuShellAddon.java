@@ -268,7 +268,7 @@ public class BaijiuShellAddon {
 
 		MUIElement window = modelService.find(BaijiuShellChrome.MAIN_WINDOW_ID, application);
 		if(window instanceof MWindow trimmed) {
-			trimmed.setLabel(BaijiuShellChrome.WINDOW_TITLE);
+			trimmed.setLabel(BaijiuPlantStatus.windowTitle(BaijiuShellChrome.WINDOW_TITLE));
 			BaijiuWindowIcons.applyIconUri(trimmed);
 		}
 		dropDeadPlantEditorPlaceholder(application, modelService);

@@ -67,13 +67,33 @@
     <elements xsi:type="advanced:Perspective" xmi:id="_baijiuPlantHome" elementId="net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome" label="%perspective.plantHome" iconURI="platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/ops.png">
       <children xsi:type="basic:PartSashContainer" xmi:id="_baijiuPlantSash" elementId="net.openchrom.rcp.compilation.baijiu.ui.partsash.plantHome" horizontal="true">
         <tags>NoDetach</tags>
-        <children xsi:type="basic:PartSashContainer" xmi:id="_baijiuPlantLeftSash" elementId="net.openchrom.rcp.compilation.baijiu.ui.partsash.plantLeft" horizontal="false" containerData="7400">
+        <children xsi:type="basic:PartStack" xmi:id="_baijiuPlantNavStack" elementId="net.openchrom.rcp.compilation.baijiu.ui.partstack.plantNav" containerData="1600">
+          <tags>NoMove</tags>
+          <tags>NoDetach</tags>
+          <tags>NoClose</tags>
+          <children xsi:type="basic:Part" xmi:id="_baijiuPlantNavPart" elementId="net.openchrom.rcp.compilation.baijiu.ui.part.plantNav" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuNavHomePart" label="%part.plantNav" iconURI="platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/ops.png" closeable="false">
+            <tags>NoMove</tags>
+            <tags>NoDetach</tags>
+            <tags>NoClose</tags>
+          </children>
+        </children>
+        <children xsi:type="basic:PartSashContainer" xmi:id="_baijiuPlantLeftSash" elementId="net.openchrom.rcp.compilation.baijiu.ui.partsash.plantLeft" horizontal="false" containerData="8400">
           <tags>NoDetach</tags>
           <tags>NoClose</tags>
           <children xsi:type="basic:PartStack" xmi:id="_baijiuPlantPagesStack" elementId="net.openchrom.rcp.compilation.baijiu.ui.partstack.plantPages" containerData="5200">
             <tags>NoMove</tags>
             <tags>NoDetach</tags>
             <tags>NoClose</tags>
+            <children xsi:type="basic:Part" xmi:id="_baijiuAcquireHomePart" elementId="net.openchrom.rcp.compilation.baijiu.ui.part.acquireHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuAcquireHomePart" label="%part.acquireHome" iconURI="platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/gc_console.png" closeable="false">
+              <tags>NoMove</tags>
+              <tags>NoDetach</tags>
+              <tags>NoClose</tags>
+            </children>
+            <children xsi:type="basic:Part" xmi:id="_baijiuMethodPackHomePart" elementId="net.openchrom.rcp.compilation.baijiu.ui.part.methodPackHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuMethodPackHomePart" label="%part.methodPackHome" iconURI="platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/wizard.png" closeable="false">
+              <tags>NoMove</tags>
+              <tags>NoDetach</tags>
+              <tags>NoClose</tags>
+            </children>
             <children xsi:type="basic:Part" xmi:id="_baijiuIntHomePart" elementId="net.openchrom.rcp.compilation.baijiu.ui.part.integrationHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuIntegrationHomePart" label="%part.integrationHome" iconURI="platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/integrate.png" closeable="false">
               <tags>NoMove</tags>
               <tags>NoDetach</tags>
@@ -114,6 +134,16 @@
               <tags>NoDetach</tags>
               <tags>NoClose</tags>
             </children>
+            <children xsi:type="basic:Part" xmi:id="_baijiuQcHomePart" elementId="net.openchrom.rcp.compilation.baijiu.ui.part.qcHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuQcHomePart" label="%part.qcHome" iconURI="platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/analysis.png" closeable="false">
+              <tags>NoMove</tags>
+              <tags>NoDetach</tags>
+              <tags>NoClose</tags>
+            </children>
+            <children xsi:type="basic:Part" xmi:id="_baijiuWbHomePart" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.part.workbench.plantHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuWorkbenchHomePart" label="%part.workbenchHome" iconURI="platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/ops.png" closeable="false">
+              <tags>NoMove</tags>
+              <tags>NoDetach</tags>
+              <tags>NoClose</tags>
+            </children>
           </children>
           <children xsi:type="basic:PartStack" xmi:id="_baijiuPlantChromStack" elementId="net.openchrom.rcp.compilation.baijiu.ui.partstack.plantChromatogram" containerData="4800">
             <tags>NoMove</tags>
@@ -129,16 +159,6 @@
               <tags>NoDetach</tags>
               <tags>NoClose</tags>
             </children>
-          </children>
-        </children>
-        <children xsi:type="basic:PartStack" xmi:id="_baijiuPlantWorkflowStack" elementId="net.openchrom.rcp.compilation.baijiu.ui.partstack.plantWorkflow" containerData="2600">
-          <tags>NoMove</tags>
-          <tags>NoDetach</tags>
-          <tags>NoClose</tags>
-          <children xsi:type="basic:Part" xmi:id="_baijiuWbHomePart" elementId="net.openchrom.xxd.processor.supplier.baijiu.ui.part.workbench.plantHome" contributionURI="bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuWorkbenchHomePart" label="%part.workbenchHome" iconURI="platform:/plugin/net.openchrom.rcp.compilation.baijiu.ui/icons/plant/ops.png" closeable="false">
-            <tags>NoMove</tags>
-            <tags>NoDetach</tags>
-            <tags>NoClose</tags>
           </children>
         </children>
       </children>

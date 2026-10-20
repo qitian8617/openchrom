@@ -121,7 +121,12 @@ public final class BaijiuShellChrome {
 	 * then refuses to drag this divider.
 	 */
 	public static final String PLANT_LEFT_SASH_ID = "net.openchrom.rcp.compilation.baijiu.ui.partsash.plantLeft";
-	public static final String PLANT_LEFT_WEIGHT = "7400";
+	/**
+	 * Content column (task area above the fixed chromatogram) beside the
+	 * navigation column. A positive restored weight is not overwritten.
+	 */
+	public static final String PLANT_LEFT_WEIGHT = "8400";
+	public static final String PLANT_NAV_WEIGHT = "1600";
 	public static final String PLANT_RIGHT_WEIGHT = "2600";
 	public static final String PLANT_PAGES_WEIGHT = "5200";
 	public static final String PLANT_CHROMATOGRAM_WEIGHT = "4800";
@@ -150,6 +155,19 @@ public final class BaijiuShellChrome {
 	 * Upper-left workflow pages (推荐积分 / 白酒分析 / 三步向导 / 进样序列 /
 	 * …). Not a host for CSD editors.
 	 */
+	/**
+	 * Left navigation column. Selects a task-area part and does not host
+	 * chromatograms.
+	 */
+	public static final String NAV_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.plantNav";
+	public static final String NAV_PART_ID = "net.openchrom.rcp.compilation.baijiu.ui.part.plantNav";
+	public static final String NAV_CONTRIBUTION_URI = "bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuNavHomePart";
+	public static final String ACQUIRE_HOME_PART_ID = "net.openchrom.rcp.compilation.baijiu.ui.part.acquireHome";
+	public static final String ACQUIRE_HOME_CONTRIBUTION_URI = "bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuAcquireHomePart";
+	public static final String METHOD_PACK_HOME_PART_ID = "net.openchrom.rcp.compilation.baijiu.ui.part.methodPackHome";
+	public static final String METHOD_PACK_HOME_CONTRIBUTION_URI = "bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuMethodPackHomePart";
+	public static final String QC_HOME_PART_ID = "net.openchrom.rcp.compilation.baijiu.ui.part.qcHome";
+	public static final String QC_HOME_CONTRIBUTION_URI = "bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuQcHomePart";
 	public static final String PAGES_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.plantPages";
 	/**
 	 * Lower-left 谱图/采集 host. The only stack that may contain
@@ -468,8 +486,13 @@ public final class BaijiuShellChrome {
 	 * and every plant-menu pass, including the second launch. Chinese
 	 * tooltips and the plant chart icons are the same kind of SWT-only
 	 * state, so the epoch stays 35.
+	 * Epoch 36: six primary navigation entries in a left column (连接与采集 /
+	 * 方法包 / 校正 / 序列与批跑 / 定量结果 / QC / 报告) plus a collapsed 维护
+	 * group. The task stack switches; the lower chromatogram host stays.
+	 * The old right 白酒操作 column is folded into 维护. Rebuild
+	 * workbench.xmi so a persisted right sidebar cannot cover the nav.
 	 */
-	public static final int CHROME_EPOCH = 35;
+	public static final int CHROME_EPOCH = 36;
 	/**
 	 * Ids that must exist on the live model after plant-home reveal. Missing
 	 * any of these is the empty-left / community-button-column failure mode.
@@ -478,11 +501,15 @@ public final class BaijiuShellChrome {
 			PERSPECTIVE_ID, //
 			PLANT_SASH_ID, //
 			PLANT_LEFT_SASH_ID, //
+			NAV_STACK_ID, //
+			NAV_PART_ID, //
 			PAGES_STACK_ID, //
 			CHROMATOGRAM_STACK_ID, //
 			CHROMATOGRAM_HOME_PART_ID, //
 			CHROMATOGRAM_PLACEHOLDER_ID, //
-			WORKFLOW_STACK_ID, //
+			ACQUIRE_HOME_PART_ID, //
+			METHOD_PACK_HOME_PART_ID, //
+			QC_HOME_PART_ID, //
 			WORKBENCH_HOME_PART_ID, //
 			SEQUENCE_HOME_PART_ID, //
 			ANALYSIS_HOME_PART_ID, //
@@ -500,6 +527,8 @@ public final class BaijiuShellChrome {
 	 * stay on {@link #CHROMATOGRAM_STACK_ID}, not in this list.
 	 */
 	public static final List<String> LEFT_WORKFLOW_PART_IDS = List.of( //
+			ACQUIRE_HOME_PART_ID, //
+			METHOD_PACK_HOME_PART_ID, //
 			INTEGRATION_HOME_PART_ID, //
 			ANALYSIS_HOME_PART_ID, //
 			WIZARD_HOME_PART_ID, //
@@ -507,6 +536,7 @@ public final class BaijiuShellChrome {
 			BATCH_RESULTS_HOME_PART_ID, //
 			SIMPLE_BATCH_HOME_PART_ID, //
 			PARALLEL_HOME_PART_ID, //
+			QC_HOME_PART_ID, //
 			REPORT_HOME_PART_ID);
 	/**
 	 * ChemClipse Application.e4xmi Save / Save All coolbar. Stays hidden
@@ -857,13 +887,18 @@ public final class BaijiuShellChrome {
 			CHROMATOGRAM_OVERLAY_PART_ID, //
 			"org.eclipse.chemclipse.ux.extension.xxd.ui.partdescriptor.chromatogramOverlay", //
 			SEQUENCE_HOME_PART_ID, //
-			CHROMATOGRAM_HOME_PART_ID);
+			CHROMATOGRAM_HOME_PART_ID, //
+			NAV_PART_ID, //
+			ACQUIRE_HOME_PART_ID, //
+			METHOD_PACK_HOME_PART_ID, //
+			QC_HOME_PART_ID);
 
 	public static final List<String> SELECT_VIEW_KEEP_LABELS = List.of( //
 			"白酒操作", "baijiu actions", //
 			"色谱图叠加", "chromatogram overlay", //
 			"进样序列", "injection sequence", //
-			"谱图/采集", "谱图 / 采集", "chromatogram / acquisition");
+			"谱图/采集", "谱图 / 采集", "chromatogram / acquisition", //
+			"连接与采集", "方法包", "校正", "序列与批跑", "定量结果 / QC", "报告", "导航", "QC 摘要");
 
 	public static final List<String> SELECT_VIEW_HIDE_LABELS = List.of( //
 			"气相色谱控制台", "气相色谱工作台", //
@@ -1065,7 +1100,11 @@ public final class BaijiuShellChrome {
 			BATCH_RESULTS_HOME_PART_ID, //
 			SIMPLE_BATCH_HOME_PART_ID, //
 			PARALLEL_HOME_PART_ID, //
-			REPORT_HOME_PART_ID);
+			REPORT_HOME_PART_ID, //
+			NAV_PART_ID, //
+			ACQUIRE_HOME_PART_ID, //
+			METHOD_PACK_HOME_PART_ID, //
+			QC_HOME_PART_ID);
 
 	/**
 	 * SWTChart {@code STANDARD_OPERATION} (empty category) items that FID
@@ -1486,8 +1525,17 @@ public final class BaijiuShellChrome {
 		if(REPORT_HOME_PART_ID.equals(elementId)) {
 			return PLANT_ICON_REPORT;
 		}
-		if(WORKBENCH_HOME_PART_ID.equals(elementId) || PERSPECTIVE_ID.equals(elementId)) {
+		if(WORKBENCH_HOME_PART_ID.equals(elementId) || PERSPECTIVE_ID.equals(elementId) || NAV_PART_ID.equals(elementId)) {
 			return PLANT_ICON_OPS;
+		}
+		if(ACQUIRE_HOME_PART_ID.equals(elementId)) {
+			return PLANT_ICON_GC;
+		}
+		if(METHOD_PACK_HOME_PART_ID.equals(elementId)) {
+			return PLANT_ICON_WIZARD;
+		}
+		if(QC_HOME_PART_ID.equals(elementId)) {
+			return PLANT_ICON_ANALYSIS;
 		}
 		if(GC_HOME_PART_ID.equals(elementId) || GC_WINDOW_ID.equals(elementId) || GC_PERSPECTIVE_ID.equals(elementId) || GC_CONTROL_PART_ID.equals(elementId) || TEMPERATURE_OPEN_MENU_ID.equals(elementId)) {
 			return PLANT_ICON_GC;

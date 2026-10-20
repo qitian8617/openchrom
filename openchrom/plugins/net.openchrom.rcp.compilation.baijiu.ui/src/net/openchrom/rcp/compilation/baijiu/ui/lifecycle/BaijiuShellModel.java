@@ -35,9 +35,10 @@ import org.eclipse.swt.widgets.Shell;
  * Ensures the plant-home perspective from {@code fragment.e4xmi} is in the
  * live application model. Stale {@code workbench.xmi} or a failed fragment
  * import (Welcome still selected, chrome abort) can leave the sash empty;
- * this rebuilds the left column (workflow pages above, 谱图/采集 below)
- * plus the right 白酒操作 sidebar and the independent GC console window
- * so gray void is not steady state.
+ * this rebuilds the left navigation column, the task area above the fixed
+ * 谱图/采集 host, and the independent GC console window so gray void is
+ * not steady state. A leftover right 白酒操作 column is folded into the
+ * task area.
  */
 public final class BaijiuShellModel {
 
@@ -62,7 +63,7 @@ public final class BaijiuShellModel {
 		boolean built = buildPlantHomeTree(application, modelService, perspective);
 		List<String> missing = missingPlantHomeIds(application, modelService);
 		if(!built || !missing.isEmpty()) {
-			BaijiuShellLog.warn("Plant home Parts missing after ensure: " + missing + ". Left workflow tabs, right 白酒操作, and GC console window must exist. Marking persisted state for reset.");
+			BaijiuShellLog.warn("Plant home Parts missing after ensure: " + missing + ". Navigation, task pages, the chromatogram host, and the GC console window must exist. Marking persisted state for reset.");
 			requestResetQuietly();
 			return false;
 		}
@@ -631,13 +632,18 @@ public final class BaijiuShellModel {
 		if(plantSash == null) {
 			return false;
 		}
+		MPartStack nav = stack(application, modelService, plantSash, BaijiuShellChrome.NAV_STACK_ID, BaijiuShellChrome.PLANT_NAV_WEIGHT);
 		MPartSashContainer leftSash = sash(application, modelService, plantSash, BaijiuShellChrome.PLANT_LEFT_SASH_ID, false, BaijiuShellChrome.PLANT_LEFT_WEIGHT);
 		MPartStack pages = stack(application, modelService, leftSash, BaijiuShellChrome.PAGES_STACK_ID, BaijiuShellChrome.PLANT_PAGES_WEIGHT);
 		MPartStack chromatogramStack = stack(application, modelService, leftSash, BaijiuShellChrome.CHROMATOGRAM_STACK_ID, BaijiuShellChrome.PLANT_CHROMATOGRAM_WEIGHT);
-		MPartStack workflow = stack(application, modelService, plantSash, BaijiuShellChrome.WORKFLOW_STACK_ID, BaijiuShellChrome.PLANT_RIGHT_WEIGHT);
-		if(leftSash == null || pages == null || chromatogramStack == null || workflow == null) {
+		MUIElement legacyWorkflow = safeFind(modelService, application, BaijiuShellChrome.WORKFLOW_STACK_ID);
+		MPartStack workflow = legacyWorkflow instanceof MPartStack legacy ? legacy : null;
+		if(nav == null || leftSash == null || pages == null || chromatogramStack == null) {
 			return false;
 		}
+		MPart navPart = part(application, modelService, nav, BaijiuShellChrome.NAV_PART_ID, BaijiuShellChrome.NAV_CONTRIBUTION_URI, "导航");
+		MPart acquire = part(application, modelService, pages, BaijiuShellChrome.ACQUIRE_HOME_PART_ID, BaijiuShellChrome.ACQUIRE_HOME_CONTRIBUTION_URI, "连接与采集");
+		MPart methodPack = part(application, modelService, pages, BaijiuShellChrome.METHOD_PACK_HOME_PART_ID, BaijiuShellChrome.METHOD_PACK_HOME_CONTRIBUTION_URI, "方法包");
 		MPart integration = part(application, modelService, pages, BaijiuShellChrome.INTEGRATION_HOME_PART_ID, BaijiuShellChrome.INTEGRATION_HOME_CONTRIBUTION_URI, "推荐积分");
 		MPart analysis = part(application, modelService, pages, BaijiuShellChrome.ANALYSIS_HOME_PART_ID, BaijiuShellChrome.ANALYSIS_HOME_CONTRIBUTION_URI, "白酒分析");
 		MPart wizard = part(application, modelService, pages, BaijiuShellChrome.WIZARD_HOME_PART_ID, BaijiuShellChrome.WIZARD_HOME_CONTRIBUTION_URI, "三步向导");
@@ -645,32 +651,33 @@ public final class BaijiuShellModel {
 		MPart batchResults = part(application, modelService, pages, BaijiuShellChrome.BATCH_RESULTS_HOME_PART_ID, BaijiuShellChrome.BATCH_RESULTS_HOME_CONTRIBUTION_URI, "批处理结果");
 		MPart simpleBatch = part(application, modelService, pages, BaijiuShellChrome.SIMPLE_BATCH_HOME_PART_ID, BaijiuShellChrome.SIMPLE_BATCH_HOME_CONTRIBUTION_URI, "简单批量");
 		MPart parallel = part(application, modelService, pages, BaijiuShellChrome.PARALLEL_HOME_PART_ID, BaijiuShellChrome.PARALLEL_HOME_CONTRIBUTION_URI, "平行样");
+		MPart qc = part(application, modelService, pages, BaijiuShellChrome.QC_HOME_PART_ID, BaijiuShellChrome.QC_HOME_CONTRIBUTION_URI, "QC 摘要");
 		MPart report = part(application, modelService, pages, BaijiuShellChrome.REPORT_HOME_PART_ID, BaijiuShellChrome.REPORT_HOME_CONTRIBUTION_URI, "预览报告");
 		MPart chromatogramHome = part(application, modelService, chromatogramStack, BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID, BaijiuShellChrome.CHROMATOGRAM_HOME_CONTRIBUTION_URI, "谱图 / 采集");
 		MPlaceholder editorPlaceholder = placeholder(application, modelService, chromatogramStack, BaijiuShellChrome.CHROMATOGRAM_PLACEHOLDER_ID, BaijiuShellChrome.EDITOR_AREA_ID);
-		MPart workbench = part(application, modelService, workflow, BaijiuShellChrome.WORKBENCH_HOME_PART_ID, BaijiuShellChrome.WORKBENCH_HOME_CONTRIBUTION_URI, "白酒操作");
-		arrangePlantHome(plantSash, leftSash, pages, chromatogramStack, workflow);
+		MPart workbench = part(application, modelService, pages, BaijiuShellChrome.WORKBENCH_HOME_PART_ID, BaijiuShellChrome.WORKBENCH_HOME_CONTRIBUTION_URI, "白酒操作");
+		arrangePlantHome(plantSash, nav, leftSash, pages, chromatogramStack, workflow);
 		if(editorPlaceholder != null) {
 			placeInParent(chromatogramStack, editorPlaceholder, false);
 		}
 		BaijiuShellParts.dedupePlantWorkflowStack(workflow, chromatogramStack);
 		MPart gc = ensureIndependentGcWindow(application, modelService);
-		return chromatogramHome != null && workbench != null && sequence != null && analysis != null && integration != null && wizard != null && batchResults != null && simpleBatch != null && parallel != null && report != null && gc != null;
+		return navPart != null && acquire != null && methodPack != null && chromatogramHome != null && workbench != null && sequence != null && analysis != null && integration != null && wizard != null && batchResults != null && simpleBatch != null && parallel != null && qc != null && report != null && gc != null;
 	}
 
 	/**
-	 * Left column top = workflow pages, bottom = chromatogram host, right =
-	 * 白酒操作. Safe to call again after a stale {@code workbench.xmi}
+	 * Navigation column on the left, task pages above the chromatogram host.
+	 * A stale right 白酒操作 stack is folded into the task area and removed
+	 * from the sash. Safe to call again after a stale {@code workbench.xmi}
 	 * left the CSD editors in the upper stack.
 	 * <p>
 	 * Eclipse {@code SashLayout} will not drag a divider whose
 	 * {@code MPartSashContainer} is tagged {@code NoMove}. Both plant sashes
 	 * are unlocked here. A positive {@code containerData} is a user or
 	 * restored weight and is kept; only a missing or non-positive weight is
-	 * replaced with the plant default, so a later chrome pass does not snap
-	 * a drag back to 52/48 or 74/26.
+	 * replaced with the plant default.
 	 */
-	static void arrangePlantHome(MPartSashContainer plantSash, MPartSashContainer leftSash, MPartStack pages, MPartStack chromatogram, MPartStack workflow) {
+	static void arrangePlantHome(MPartSashContainer plantSash, MPartStack nav, MPartSashContainer leftSash, MPartStack pages, MPartStack chromatogram, MPartStack workflow) {
 
 		if(plantSash != null) {
 			plantSash.setHorizontal(true);
@@ -685,6 +692,11 @@ public final class BaijiuShellModel {
 			leftSash.setToBeRendered(true);
 			releaseSashDrag(leftSash);
 		}
+		ensureSashWeight(nav, BaijiuShellChrome.PLANT_NAV_WEIGHT);
+		if(nav != null) {
+			nav.setVisible(true);
+			nav.setToBeRendered(true);
+		}
 		ensureSashWeight(pages, BaijiuShellChrome.PLANT_PAGES_WEIGHT);
 		if(pages != null) {
 			pages.setVisible(true);
@@ -695,16 +707,65 @@ public final class BaijiuShellModel {
 			chromatogram.setVisible(true);
 			chromatogram.setToBeRendered(true);
 		}
-		ensureSashWeight(workflow, BaijiuShellChrome.PLANT_RIGHT_WEIGHT);
-		if(workflow != null) {
-			workflow.setVisible(true);
-			workflow.setToBeRendered(true);
-		}
+		foldLegacySidebar(workflow, pages, chromatogram);
 		placeInParent(leftSash, pages, true);
 		placeInParent(leftSash, chromatogram, false);
-		placeInParent(plantSash, leftSash, true);
-		placeInParent(plantSash, workflow, false);
+		detachLegacySidebar(workflow);
+		placeInParent(plantSash, nav, true);
+		if(nav == null) {
+			placeInParent(plantSash, leftSash, true);
+		} else {
+			placeInParent(plantSash, leftSash, false);
+		}
 		separatePlantColumns(pages, chromatogram);
+	}
+
+	/**
+	 * Move a persisted right-hand 白酒操作 column into the task stack.
+	 * Chromatogram children that landed there go back to the lower host.
+	 */
+	static void foldLegacySidebar(MPartStack workflow, MPartStack pages, MPartStack chromatogram) {
+
+		if(workflow == null || workflow == pages) {
+			return;
+		}
+		List<?> snapshot;
+		try {
+			List<?> children = workflow.getChildren();
+			if(children == null || children.isEmpty()) {
+				return;
+			}
+			snapshot = new ArrayList<>(children);
+		} catch(RuntimeException | LinkageError e) {
+			return;
+		}
+		for(Object child : snapshot) {
+			if(!(child instanceof MUIElement element)) {
+				continue;
+			}
+			if(isChromatogramHostChild(element) && chromatogram != null) {
+				placeInParent(chromatogram, element, false);
+			} else if(pages != null) {
+				placeInParent(pages, element, false);
+			}
+		}
+	}
+
+	static void detachLegacySidebar(MPartStack workflow) {
+
+		if(workflow == null) {
+			return;
+		}
+		try {
+			MElementContainer<?> parent = workflow.getParent();
+			if(parent != null && parent.getChildren() != null) {
+				parent.getChildren().remove(workflow);
+			}
+			workflow.setVisible(false);
+			workflow.setToBeRendered(false);
+		} catch(RuntimeException | LinkageError e) {
+			// model already closing
+		}
 	}
 
 	/**
@@ -727,11 +788,11 @@ public final class BaijiuShellModel {
 			return false;
 		}
 		String id = element.getElementId();
-		if(BaijiuShellChrome.LEFT_WORKFLOW_PART_IDS.contains(id)) {
+		if(BaijiuShellChrome.LEFT_WORKFLOW_PART_IDS.contains(id) || BaijiuPlantNav.isTaskAreaPart(id)) {
 			return true;
 		}
 		String home = BaijiuShellChrome.plantHomePartIdFor(id);
-		return home != null && BaijiuShellChrome.LEFT_WORKFLOW_PART_IDS.contains(home);
+		return home != null && (BaijiuShellChrome.LEFT_WORKFLOW_PART_IDS.contains(home) || BaijiuPlantNav.isTaskAreaPart(home));
 	}
 
 	static boolean isChromatogramHostChild(MUIElement element) {
