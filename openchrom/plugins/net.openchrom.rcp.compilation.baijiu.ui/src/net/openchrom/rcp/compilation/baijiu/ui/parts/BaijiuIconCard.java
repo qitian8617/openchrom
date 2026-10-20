@@ -92,6 +92,11 @@ public final class BaijiuIconCard extends Canvas {
 		redraw();
 	}
 
+	public boolean isCardSelected() {
+
+		return selected;
+	}
+
 	public void setMuted(boolean muted) {
 
 		this.muted = muted;

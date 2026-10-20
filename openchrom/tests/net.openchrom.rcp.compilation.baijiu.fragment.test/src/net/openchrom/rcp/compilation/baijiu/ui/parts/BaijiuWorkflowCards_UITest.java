@@ -22,19 +22,23 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.ImageLoader;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.layout.RowData;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.junit.jupiter.api.Test;
 
 import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuPlantNav;
 import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuPlantNav.Section;
+import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuPlantNav.Target;
 import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuWorkflowMetrics;
+import net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuIconCard.BaijiuCardPalette;
 
 /**
  * Cards keep the design size when the parent grows, which is what a sash
@@ -68,6 +72,179 @@ public class BaijiuWorkflowCards_UITest {
 				display.dispose();
 			}
 		}
+	}
+
+	@Test
+	public void selectingANavCardKeepsCardsVisibleWithoutResize() {
+
+		Display display = null;
+		boolean created = false;
+		try {
+			display = Display.getCurrent();
+			if(display == null) {
+				display = new Display();
+				created = true;
+			}
+		} catch(Throwable headless) {
+			return;
+		}
+		Shell shell = null;
+		try {
+			BaijiuPlantNav.activate(Section.ACQUIRE);
+			shell = shell(display, "导航");
+			Composite left = column(shell, 360);
+			new BaijiuNavHomePart().create(left);
+			shell.setSize(480, 900);
+			shell.open();
+			pump(display, 200);
+			Point shellSize = shell.getSize();
+			int navWidth = BaijiuWorkflowMetrics.px(display, BaijiuWorkflowMetrics.NAV_CARD_WIDTH);
+			int navHeight = BaijiuWorkflowMetrics.px(display, BaijiuWorkflowMetrics.NAV_CARD_HEIGHT);
+			int childWidth = BaijiuWorkflowMetrics.px(display, BaijiuWorkflowMetrics.CHILD_CARD_WIDTH);
+			int childHeight = BaijiuWorkflowMetrics.px(display, BaijiuWorkflowMetrics.CHILD_CARD_HEIGHT);
+			List<BaijiuIconCard> navCards = cardsWithSize(left, navWidth, navHeight);
+			assertEquals(6, navCards.size());
+			for(BaijiuIconCard card : navCards) {
+				assertLaidOut(card);
+			}
+			BaijiuIconCard method = cardNamed(navCards, "方法包");
+			click(method);
+			pump(display, 40);
+			assertEquals(shellSize, shell.getSize());
+			for(BaijiuIconCard card : navCards) {
+				assertLaidOut(card);
+			}
+			assertTrue(method.isCardSelected());
+			assertFalse(cardNamed(navCards, "连接与采集").isCardSelected());
+			BaijiuIconCard calibrate = cardNamed(navCards, "校正");
+			click(calibrate);
+			pump(display, 40);
+			assertEquals(shellSize, shell.getSize());
+			for(BaijiuIconCard card : navCards) {
+				assertLaidOut(card);
+			}
+			assertTrue(calibrate.isCardSelected());
+			List<BaijiuIconCard> children = cardsWithSize(left, childWidth, childHeight);
+			assertEquals(3, children.size());
+			for(BaijiuIconCard child : children) {
+				assertLaidOut(child);
+			}
+			click(children.get(1));
+			pump(display, 40);
+			assertEquals(shellSize, shell.getSize());
+			assertFalse(children.get(1).isDisposed());
+			assertTrue(children.get(1).isCardSelected());
+			assertFalse(children.get(0).isCardSelected());
+			assertLaidOut(children.get(1));
+			for(BaijiuIconCard card : navCards) {
+				assertLaidOut(card);
+			}
+			click(method);
+			pump(display, 40);
+			assertEquals(shellSize, shell.getSize());
+			assertTrue(children.get(0).isDisposed());
+			for(BaijiuIconCard card : navCards) {
+				assertLaidOut(card);
+			}
+			assertTrue(method.isCardSelected());
+			assertEquals(0, cardsWithSize(left, childWidth, childHeight).size());
+			shell.dispose();
+			shell = null;
+			BaijiuPlantNav.setTaskOpener(null);
+			assertActionStripKeepsCards(display);
+		} finally {
+			if(shell != null && !shell.isDisposed()) {
+				shell.dispose();
+			}
+			BaijiuPlantNav.setTaskOpener(null);
+			BaijiuPlantNav.setSectionWatch(null);
+			BaijiuPlantNav.activate(Section.ACQUIRE);
+			if(created && display != null && !display.isDisposed()) {
+				display.dispose();
+			}
+		}
+	}
+
+	private static void assertActionStripKeepsCards(Display display) {
+
+		BaijiuPlantNav.activate(Section.CALIBRATE, BaijiuPlantNav.targets(Section.CALIBRATE).get(0));
+		Shell shell = shell(display, "步骤");
+		BaijiuCardPalette palette = new BaijiuCardPalette(display);
+		try {
+			Composite strip = new Composite(shell, SWT.NONE);
+			strip.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+			shell.setSize(900, 320);
+			shell.open();
+			BaijiuPageChrome.refreshStrip(strip, palette, Section.CALIBRATE);
+			pump(display, 200);
+			Point shellSize = shell.getSize();
+			int actionWidth = BaijiuWorkflowMetrics.px(display, BaijiuWorkflowMetrics.ACTION_CARD_WIDTH);
+			int actionHeight = BaijiuWorkflowMetrics.px(display, BaijiuWorkflowMetrics.ACTION_CARD_HEIGHT);
+			List<BaijiuIconCard> cards = cardsWithSize(strip, actionWidth, actionHeight);
+			assertEquals(3, cards.size());
+			Rectangle first = cards.get(0).getBounds();
+			assertTrue(first.width > 0 && first.height > 0);
+			BaijiuPageChrome.refreshStrip(strip, palette, Section.CALIBRATE);
+			pump(display, 80);
+			assertEquals(shellSize, shell.getSize());
+			for(BaijiuIconCard card : cards) {
+				assertLaidOut(card);
+			}
+			assertEquals(first, cards.get(0).getBounds());
+			Target integration = BaijiuPlantNav.targets(Section.CALIBRATE).get(1);
+			BaijiuPlantNav.activate(Section.CALIBRATE, integration);
+			BaijiuPageChrome.refreshStrip(strip, palette, Section.CALIBRATE);
+			pump(display, 80);
+			assertEquals(shellSize, shell.getSize());
+			assertFalse(cards.get(1).isDisposed());
+			assertTrue(cards.get(1).isCardSelected());
+			assertFalse(cards.get(0).isCardSelected());
+			assertLaidOut(cards.get(1));
+			BaijiuPlantNav.activate(Section.QUANT);
+			BaijiuPageChrome.refreshStrip(strip, palette, Section.QUANT);
+			pump(display, 80);
+			assertEquals(shellSize, shell.getSize());
+			List<BaijiuIconCard> quant = cardsWithSize(strip, actionWidth, actionHeight);
+			assertEquals(2, quant.size());
+			for(BaijiuIconCard card : quant) {
+				assertLaidOut(card);
+			}
+			assertTrue(quant.get(0).cardText().contains("样品结果"));
+		} finally {
+			shell.dispose();
+			palette.dispose();
+		}
+	}
+
+	private static void click(BaijiuIconCard card) {
+
+		Event event = new Event();
+		event.type = SWT.MouseUp;
+		event.widget = card;
+		event.button = 1;
+		card.notifyListeners(SWT.MouseUp, event);
+	}
+
+	private static BaijiuIconCard cardNamed(List<BaijiuIconCard> cards, String label) {
+
+		for(BaijiuIconCard card : cards) {
+			if(label.equals(card.cardText())) {
+				return card;
+			}
+		}
+		throw new AssertionError(label);
+	}
+
+	private static void assertLaidOut(BaijiuIconCard card) {
+
+		assertFalse(card.isDisposed(), card.cardText());
+		assertTrue(card.isVisible(), card.cardText());
+		Rectangle bounds = card.getBounds();
+		assertTrue(bounds.width > 0 && bounds.height > 0, card.cardText() + " " + bounds);
+		Rectangle client = card.getParent().getClientArea();
+		assertTrue(bounds.x >= 0 && bounds.y >= 0, card.cardText() + " " + bounds);
+		assertTrue(bounds.x + bounds.width <= client.width + 2, card.cardText() + " " + bounds + " in " + client);
+		assertTrue(bounds.y + bounds.height <= client.height + 2, card.cardText() + " " + bounds + " in " + client);
 	}
 
 	private static void assertAcquireLayout(Display display) {

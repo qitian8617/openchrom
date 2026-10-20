@@ -9,7 +9,10 @@
  *******************************************************************************/
 package net.openchrom.rcp.compilation.baijiu.ui.parts;
 
+import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.e4.core.contexts.IEclipseContext;
 import org.eclipse.e4.core.di.annotations.Optional;
@@ -26,7 +29,6 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
@@ -73,6 +75,11 @@ public class BaijiuNavHomePart {
 	private Label status;
 	private ScrolledComposite scroll;
 	private Composite column;
+	private final Map<Section, BaijiuIconCard> navCards = new EnumMap<>(Section.class);
+	private final List<BaijiuIconCard> childCards = new ArrayList<>();
+	private final List<Target> shownChildren = new ArrayList<>();
+	private Composite childBlock;
+	private Section expanded;
 	private Composite maintenanceDrawer;
 	private GridData maintenanceData;
 	private Canvas maintenance;
@@ -114,7 +121,8 @@ public class BaijiuNavHomePart {
 		column.setLayout(columnLayout);
 		scroll.setContent(column);
 		scroll.addListener(SWT.Resize, event -> fitScroll());
-		rebuildColumn();
+		buildNavCards();
+		applySelection();
 		maintenance = maintenanceControl(parent);
 		maintenanceDrawer = new Composite(parent, SWT.NONE);
 		maintenanceData = new GridData(SWT.CENTER, SWT.TOP, true, false);
@@ -137,34 +145,98 @@ public class BaijiuNavHomePart {
 		scheduleStatus(parent);
 	}
 
-	private void rebuildColumn() {
+	/**
+	 * The six workflow cards are created once. A click only changes the
+	 * highlight and, when the parent changes, the child block. Disposing
+	 * the cards and calling {@code setMinSize} with the same size does not
+	 * lay the replacements out: {@code ScrolledComposite} skips
+	 * {@code setBounds} while expand mode already stretches the content to
+	 * the client area, so the new cards stay 0×0 until the next resize.
+	 */
+	private void buildNavCards() {
 
-		if(column == null || column.isDisposed()) {
+		if(column == null || column.isDisposed() || !navCards.isEmpty()) {
 			return;
 		}
-		for(Control child : column.getChildren()) {
-			child.dispose();
-		}
 		List<Section> sections = BaijiuPlantNav.primarySections();
-		Section active = BaijiuPlantNav.active();
 		for(int i = 0; i < sections.size(); i++) {
 			Section section = sections.get(i);
 			BaijiuIconCard card = new BaijiuIconCard(column, palette, BaijiuGlyphs.forSection(section), Layout.NAV, section.label());
 			card.setStep(BaijiuPlantNav.stepOf(section));
-			card.setCardSelected(section == active);
 			card.setLayoutData(fixed(card));
 			card.setAction(() -> selectSection(section));
-			if(BaijiuPlantNav.expandsChildren(section)) {
-				addChildren(section);
-			}
+			navCards.put(section, card);
 			if(i < sections.size() - 1) {
 				addDownArrow();
 			}
 		}
+	}
+
+	private void applySelection() {
+
+		if(column == null || column.isDisposed()) {
+			return;
+		}
+		Section active = BaijiuPlantNav.active();
+		for(Map.Entry<Section, BaijiuIconCard> entry : navCards.entrySet()) {
+			BaijiuIconCard card = entry.getValue();
+			if(card != null && !card.isDisposed()) {
+				card.setCardSelected(entry.getKey() == active);
+			}
+		}
+		if(!BaijiuPlantNav.expandsChildren(active)) {
+			if(childBlock != null) {
+				removeChildren();
+				relayoutColumn();
+			}
+			return;
+		}
+		if(expanded == active && childBlock != null && !childBlock.isDisposed()) {
+			highlightChildren();
+			return;
+		}
+		removeChildren();
+		childBlock = addChildren(active);
+		BaijiuIconCard parentCard = navCards.get(active);
+		if(parentCard != null && !parentCard.isDisposed()) {
+			childBlock.moveBelow(parentCard);
+		}
+		expanded = active;
+		relayoutColumn();
+	}
+
+	private void highlightChildren() {
+
+		Target current = BaijiuPlantNav.activeTarget();
+		for(int i = 0; i < childCards.size() && i < shownChildren.size(); i++) {
+			BaijiuIconCard card = childCards.get(i);
+			if(card != null && !card.isDisposed()) {
+				card.setCardSelected(shownChildren.get(i).equals(current));
+			}
+		}
+	}
+
+	private void removeChildren() {
+
+		if(childBlock != null && !childBlock.isDisposed()) {
+			childBlock.dispose();
+		}
+		childBlock = null;
+		expanded = null;
+		childCards.clear();
+		shownChildren.clear();
+	}
+
+	private void relayoutColumn() {
+
+		if(column == null || column.isDisposed()) {
+			return;
+		}
+		column.layout(true, true);
 		fitScroll();
 	}
 
-	private void addChildren(Section section) {
+	private Composite addChildren(Section section) {
 
 		List<Target> children = BaijiuPlantNav.childTargets(section);
 		Composite block = new Composite(column, SWT.NONE);
@@ -190,7 +262,10 @@ public class BaijiuNavHomePart {
 			card.setCardSelected(target.equals(current));
 			card.setLayoutData(fixed(card));
 			card.setAction(() -> runTarget(column, section, target));
+			childCards.add(card);
+			shownChildren.add(target);
 		}
+		return block;
 	}
 
 	private void addDownArrow() {
@@ -210,7 +285,7 @@ public class BaijiuNavHomePart {
 		if(primary != null) {
 			runTarget(column, section, primary);
 		} else {
-			rebuildColumn();
+			applySelection();
 		}
 	}
 
@@ -273,19 +348,11 @@ public class BaijiuNavHomePart {
 		BaijiuPlantNav.activate(section, target);
 		if(target.opensPart()) {
 			BaijiuShellParts.showPlantTask(application, modelService, partService, target.partId());
-		} else {
+		} else if(parent != null && !parent.isDisposed()) {
 			runAction(parent.getShell(), target);
 		}
-		Display display = parent == null || parent.isDisposed() ? null : parent.getDisplay();
-		if(display == null || display.isDisposed()) {
-			return;
-		}
-		display.asyncExec(() -> {
-			if(column != null && !column.isDisposed()) {
-				rebuildColumn();
-			}
-			refreshStatus();
-		});
+		applySelection();
+		refreshStatus();
 	}
 
 	private void runAction(Shell shell, Target target) {
