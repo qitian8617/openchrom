@@ -9,6 +9,8 @@
  *******************************************************************************/
 package net.openchrom.rcp.compilation.baijiu.ui.parts;
 
+import java.util.List;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
@@ -16,7 +18,9 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 
+import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuPlantNav;
 import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuPlantNav.Section;
+import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuPlantNav.Target;
 import net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuIconCard.BaijiuCardPalette;
 
 /**
@@ -64,6 +68,13 @@ public final class BaijiuPageChrome {
 			if(strip.isDisposed()) {
 				return;
 			}
+			List<Target> targets = BaijiuPlantNav.childTargets(section);
+			if(targets.isEmpty() && BaijiuPlantNav.targets(section).size() == 1) {
+				targets = BaijiuPlantNav.targets(section);
+			}
+			if(BaijiuActionBoard.highlight(strip, targets, BaijiuPlantNav.activeTarget())) {
+				return;
+			}
 			for(Control child : strip.getChildren()) {
 				child.dispose();
 			}
@@ -74,6 +85,7 @@ public final class BaijiuPageChrome {
 				strip.setLayout(layout);
 			}
 			BaijiuActionBoard.installSection(strip, palette, section);
+			strip.layout(true, true);
 			Composite parent = strip.getParent();
 			if(parent != null && !parent.isDisposed()) {
 				parent.layout(true, true);

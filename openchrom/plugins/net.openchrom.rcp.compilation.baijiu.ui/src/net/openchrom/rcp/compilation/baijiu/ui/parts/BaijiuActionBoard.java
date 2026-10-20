@@ -117,6 +117,43 @@ public final class BaijiuActionBoard {
 		return host;
 	}
 
+	/**
+	 * Move the highlight without disposing cards. Returns false when the
+	 * row does not already show {@code targets}, so the caller can rebuild.
+	 */
+	public static boolean highlight(Composite host, List<Target> targets, Target current) {
+
+		if(host == null || host.isDisposed() || targets == null) {
+			return false;
+		}
+		List<BaijiuIconCard> cards = new ArrayList<>();
+		collectCards(host, cards);
+		if(cards.size() != targets.size()) {
+			return false;
+		}
+		for(int i = 0; i < cards.size(); i++) {
+			if(!targets.get(i).label().equals(cards.get(i).cardText())) {
+				return false;
+			}
+		}
+		for(int i = 0; i < cards.size(); i++) {
+			Target target = targets.get(i);
+			cards.get(i).setCardSelected(target.equals(current) || (current == null && i == 0));
+		}
+		return true;
+	}
+
+	private static void collectCards(Composite host, List<BaijiuIconCard> cards) {
+
+		for(org.eclipse.swt.widgets.Control child : host.getChildren()) {
+			if(child instanceof BaijiuIconCard card) {
+				cards.add(card);
+			} else if(child instanceof Composite composite) {
+				collectCards(composite, cards);
+			}
+		}
+	}
+
 	static final class FlowArrow extends Canvas {
 
 		private final BaijiuCardPalette palette;
