@@ -66,7 +66,7 @@ public class BaijiuShellChrome_1_Test {
 		assertEquals("白酒FID工作站", BaijiuShellChrome.APPLICATION_NAME_VM);
 		assertFalse(BaijiuShellChrome.APPLICATION_NAME_VM.contains(" "));
 		assertEquals("net.openchrom.rcp.compilation.baijiu.ui.perspective.plantHome", BaijiuShellChrome.PERSPECTIVE_ID);
-		assertEquals(35, BaijiuShellChrome.CHROME_EPOCH);
+		assertEquals(36, BaijiuShellChrome.CHROME_EPOCH);
 		assertEquals("org.eclipse.chemclipse.ux.extension.ui.perspective.welcome", BaijiuShellChrome.WELCOME_PERSPECTIVE_ID);
 		assertTrue(BaijiuShellChrome.isHiddenResearchPerspective(BaijiuShellChrome.WELCOME_PERSPECTIVE_ID));
 		assertTrue(BaijiuShellChrome.isHiddenResearchPerspective(BaijiuShellChrome.MALDI_PERSPECTIVE_ID));
@@ -1036,7 +1036,7 @@ public class BaijiuShellChrome_1_Test {
 		assertFalse(BaijiuShellChrome.shouldCloseChromatogramToolbarDialog("白酒 FID 工作站"));
 		assertFalse(BaijiuShellChrome.shouldCloseChromatogramToolbarDialog("Preferences"));
 		assertFalse(BaijiuShellChrome.shouldCloseChromatogramToolbarDialog(null));
-		assertEquals(35, BaijiuShellChrome.CHROME_EPOCH);
+		assertEquals(36, BaijiuShellChrome.CHROME_EPOCH);
 		assertEquals("NoDetach", BaijiuShellChrome.NO_DETACH_TAG);
 		assertEquals("NoMove", BaijiuShellChrome.NO_MOVE_TAG);
 		assertEquals("NoClose", BaijiuShellChrome.NO_CLOSE_TAG);

@@ -67,6 +67,6 @@ public class BaijiuPlantTheme_1_Test {
 		assertFalse(BaijiuPlantTheme.engineKnowsPlantTheme(List.of()));
 		assertTrue(BaijiuPlantTheme.engineKnowsPlantTheme(List.of(BaijiuPlantTheme.PLANT_LIGHT_THEME_ID)));
 		assertFalse(BaijiuPlantTheme.engineKnowsPlantTheme(List.of("org.eclipse.e4.ui.css.theme.e4_dark")));
-		assertEquals(35, BaijiuShellChrome.CHROME_EPOCH);
+		assertEquals(36, BaijiuShellChrome.CHROME_EPOCH);
 	}
 }

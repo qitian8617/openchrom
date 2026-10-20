@@ -60,7 +60,12 @@ public class BaijiuShellModel_1_Test {
 		assertTrue(BaijiuShellChrome.PLANT_HOME_REQUIRED_ELEMENT_IDS.contains(BaijiuShellChrome.PAGES_STACK_ID));
 		assertTrue(BaijiuShellChrome.PLANT_HOME_REQUIRED_ELEMENT_IDS.contains(BaijiuShellChrome.CHROMATOGRAM_STACK_ID));
 		assertTrue(BaijiuShellChrome.PLANT_HOME_REQUIRED_ELEMENT_IDS.contains(BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID));
-		assertTrue(BaijiuShellChrome.PLANT_HOME_REQUIRED_ELEMENT_IDS.contains(BaijiuShellChrome.WORKFLOW_STACK_ID));
+		assertTrue(BaijiuShellChrome.PLANT_HOME_REQUIRED_ELEMENT_IDS.contains(BaijiuShellChrome.NAV_STACK_ID));
+		assertTrue(BaijiuShellChrome.PLANT_HOME_REQUIRED_ELEMENT_IDS.contains(BaijiuShellChrome.NAV_PART_ID));
+		assertTrue(BaijiuShellChrome.PLANT_HOME_REQUIRED_ELEMENT_IDS.contains(BaijiuShellChrome.ACQUIRE_HOME_PART_ID));
+		assertTrue(BaijiuShellChrome.PLANT_HOME_REQUIRED_ELEMENT_IDS.contains(BaijiuShellChrome.METHOD_PACK_HOME_PART_ID));
+		assertTrue(BaijiuShellChrome.PLANT_HOME_REQUIRED_ELEMENT_IDS.contains(BaijiuShellChrome.QC_HOME_PART_ID));
+		assertFalse(BaijiuShellChrome.PLANT_HOME_REQUIRED_ELEMENT_IDS.contains(BaijiuShellChrome.WORKFLOW_STACK_ID));
 		assertTrue(BaijiuShellChrome.PLANT_HOME_REQUIRED_ELEMENT_IDS.contains(BaijiuShellChrome.WORKBENCH_HOME_PART_ID));
 		assertTrue(BaijiuShellChrome.PLANT_HOME_REQUIRED_ELEMENT_IDS.contains(BaijiuShellChrome.SEQUENCE_HOME_PART_ID));
 		assertTrue(BaijiuShellChrome.PLANT_HOME_REQUIRED_ELEMENT_IDS.contains(BaijiuShellChrome.ANALYSIS_HOME_PART_ID));
@@ -108,31 +113,38 @@ public class BaijiuShellModel_1_Test {
 		stray.setElementId(BaijiuShellChrome.CSD_EDITOR_PART_ID);
 		stray.setLabel("sample [CSD]");
 		pages.getChildren().add(stray);
+		MPartStack nav = MBasicFactory.INSTANCE.createPartStack();
+		nav.setElementId(BaijiuShellChrome.NAV_STACK_ID);
 
-		BaijiuShellModel.arrangePlantHome(plant, left, pages, chromatogram, workflow);
+		BaijiuShellModel.arrangePlantHome(plant, nav, left, pages, chromatogram, workflow);
 
 		assertTrue(plant.isHorizontal());
 		assertFalse(left.isHorizontal());
-		assertEquals(left, plant.getChildren().get(0));
-		assertEquals(workflow, plant.getChildren().get(1));
+		assertEquals(nav, plant.getChildren().get(0));
+		assertEquals(left, plant.getChildren().get(1));
+		assertFalse(plant.getChildren().contains(workflow));
+		assertFalse(workflow.isVisible());
+		assertFalse(workflow.isToBeRendered());
+		assertEquals(BaijiuShellChrome.PLANT_NAV_WEIGHT, nav.getContainerData());
 		assertEquals(BaijiuShellChrome.PLANT_LEFT_WEIGHT, left.getContainerData());
-		assertEquals(BaijiuShellChrome.PLANT_RIGHT_WEIGHT, workflow.getContainerData());
+		assertEquals("2600", workflow.getContainerData());
 		assertEquals(pages, left.getChildren().get(0));
 		assertEquals(chromatogram, left.getChildren().get(1));
 		assertEquals(BaijiuShellChrome.PLANT_PAGES_WEIGHT, pages.getContainerData());
 		assertEquals("7400", chromatogram.getContainerData(), "a positive restored weight is not snapped back to the default");
 		assertTrue(pages.getChildren().contains(analysis));
+		assertTrue(pages.getChildren().contains(ops));
 		assertFalse(chromatogram.getChildren().contains(analysis));
 		assertTrue(chromatogram.getChildren().contains(home));
 		assertTrue(chromatogram.getChildren().contains(csd));
 		assertTrue(chromatogram.getChildren().contains(stray));
 		assertFalse(pages.getChildren().contains(stray));
-		assertEquals(ops, workflow.getChildren().get(0));
+		assertTrue(workflow.getChildren().isEmpty());
 
-		BaijiuShellModel.arrangePlantHome(plant, left, pages, chromatogram, workflow);
+		BaijiuShellModel.arrangePlantHome(plant, nav, left, pages, chromatogram, workflow);
 		assertEquals(2, plant.getChildren().size());
 		assertEquals(2, left.getChildren().size());
-		assertEquals(1, pages.getChildren().size());
+		assertEquals(2, pages.getChildren().size());
 		assertEquals(3, chromatogram.getChildren().size());
 		assertEquals("7400", chromatogram.getContainerData());
 	}
@@ -161,29 +173,34 @@ public class BaijiuShellModel_1_Test {
 		workflow.setElementId(BaijiuShellChrome.WORKFLOW_STACK_ID);
 		workflow.setContainerData("1900");
 		workflow.getTags().add(BaijiuShellChrome.NO_MOVE_TAG);
+		MPartStack nav = MBasicFactory.INSTANCE.createPartStack();
+		nav.setElementId(BaijiuShellChrome.NAV_STACK_ID);
+		nav.setContainerData("900");
 
 		assertFalse(BaijiuShellModel.sashDividerDraggable(plant));
 		assertFalse(BaijiuShellModel.sashDividerDraggable(left));
 		assertFalse(BaijiuShellModel.sashDividerDraggable(pages));
 
-		BaijiuShellModel.arrangePlantHome(plant, left, pages, chromatogram, workflow);
+		BaijiuShellModel.arrangePlantHome(plant, nav, left, pages, chromatogram, workflow);
 
-		assertTrue(plant.isHorizontal(), "outer sash stays left | right");
+		assertTrue(plant.isHorizontal(), "outer sash stays nav | task column");
 		assertFalse(left.isHorizontal(), "left sash stays top | bottom");
-		assertTrue(BaijiuShellModel.sashDividerDraggable(plant), "vertical divider between the left column and 白酒操作");
-		assertTrue(BaijiuShellModel.sashDividerDraggable(left), "horizontal divider between workflow tabs and 谱图/采集");
+		assertTrue(BaijiuShellModel.sashDividerDraggable(plant), "vertical divider between nav and the task column");
+		assertTrue(BaijiuShellModel.sashDividerDraggable(left), "horizontal divider between the task area and 谱图/采集");
 		assertFalse(plant.getTags().contains(BaijiuShellChrome.NO_MOVE_TAG));
 		assertFalse(left.getTags().contains(BaijiuShellChrome.NO_MOVE_TAG));
 		assertTrue(pages.getTags().contains(BaijiuShellChrome.NO_MOVE_TAG), "tabs stay pinned");
-		assertTrue(workflow.getTags().contains(BaijiuShellChrome.NO_MOVE_TAG), "白酒操作 stays pinned");
+		assertTrue(workflow.getTags().contains(BaijiuShellChrome.NO_MOVE_TAG));
 		assertEquals("8100", left.getContainerData());
+		assertEquals("900", nav.getContainerData());
 		assertEquals("3000", pages.getContainerData());
 		assertEquals("7000", chromatogram.getContainerData());
 		assertEquals("1900", workflow.getContainerData());
 		assertEquals(pages, left.getChildren().get(0));
 		assertEquals(chromatogram, left.getChildren().get(1));
-		assertEquals(left, plant.getChildren().get(0));
-		assertEquals(workflow, plant.getChildren().get(1));
+		assertEquals(nav, plant.getChildren().get(0));
+		assertEquals(left, plant.getChildren().get(1));
+		assertFalse(plant.getChildren().contains(workflow));
 	}
 
 	@Test
@@ -197,11 +214,12 @@ public class BaijiuShellModel_1_Test {
 		MPartStack chromatogram = MBasicFactory.INSTANCE.createPartStack();
 		chromatogram.setContainerData("0");
 		MPartStack workflow = MBasicFactory.INSTANCE.createPartStack();
+		MPartStack nav = MBasicFactory.INSTANCE.createPartStack();
 
-		BaijiuShellModel.arrangePlantHome(plant, left, pages, chromatogram, workflow);
+		BaijiuShellModel.arrangePlantHome(plant, nav, left, pages, chromatogram, workflow);
 
 		assertEquals(BaijiuShellChrome.PLANT_LEFT_WEIGHT, left.getContainerData());
-		assertEquals(BaijiuShellChrome.PLANT_RIGHT_WEIGHT, workflow.getContainerData());
+		assertEquals(BaijiuShellChrome.PLANT_NAV_WEIGHT, nav.getContainerData());
 		assertEquals(BaijiuShellChrome.PLANT_PAGES_WEIGHT, pages.getContainerData());
 		assertEquals(BaijiuShellChrome.PLANT_CHROMATOGRAM_WEIGHT, chromatogram.getContainerData());
 		assertTrue(BaijiuShellModel.sashDividerDraggable(plant));

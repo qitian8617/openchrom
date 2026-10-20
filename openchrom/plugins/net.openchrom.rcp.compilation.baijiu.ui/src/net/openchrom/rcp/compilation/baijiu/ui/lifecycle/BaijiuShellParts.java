@@ -114,7 +114,8 @@ public final class BaijiuShellParts {
 		boolean sequence = findPart(modelService, application, BaijiuShellChrome.SEQUENCE_HOME_PART_ID) != null //
 				|| findPart(modelService, application, BaijiuShellChrome.SEQUENCE_PART_ID) != null;
 		boolean analysis = findPart(modelService, application, BaijiuShellChrome.ANALYSIS_HOME_PART_ID) != null;
-		boolean workbench = showPart(application, modelService, partService, BaijiuShellChrome.WORKBENCH_HOME_PART_ID, null);
+		boolean nav = showPart(application, modelService, partService, BaijiuShellChrome.NAV_PART_ID, null);
+		boolean workbench = findPart(modelService, application, BaijiuShellChrome.WORKBENCH_HOME_PART_ID) != null;
 		boolean chromatogram = revealChromatogramHost(application, modelService, partService);
 		forceCreatePlantHomeGuis(application, modelService);
 		dedupePlantWorkflowStack(application, modelService);
@@ -123,7 +124,8 @@ public final class BaijiuShellParts {
 		if(!BaijiuShellModel.plantHomeSurfacePresent(application, modelService)) {
 			return false;
 		}
-		return workbench || sequence || analysis || chromatogram || gc;
+		applyPlantWindowTitle(application, modelService);
+		return nav || workbench || sequence || analysis || chromatogram || gc;
 	}
 
 	/**
@@ -145,20 +147,119 @@ public final class BaijiuShellParts {
 		}
 		parkChromatogramEditorArea(application, modelService);
 		separateChromatogramHost(application, modelService);
+		forceCreateGui(application, modelService, BaijiuShellChrome.NAV_PART_ID);
 		forceCreateGui(application, modelService, BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID);
-		forceCreateGui(application, modelService, BaijiuShellChrome.WORKBENCH_HOME_PART_ID);
 		restoreDefaultTabSelection(application, modelService);
-		MPart analysis = findPart(modelService, application, BaijiuShellChrome.ANALYSIS_HOME_PART_ID);
-		if(analysis != null) {
-			/*
-			 * Java 21 / ECJ: getParent() is MElementContainer<MUIElement>,
-			 * incomparable with MPartStack (#49). Widen to MUIElement first.
-			 */
-			MUIElement parent = analysis.getParent();
-			if(parent instanceof MPartStack pages && pages.getSelectedElement() == analysis) {
-				forceCreateGui(application, modelService, BaijiuShellChrome.ANALYSIS_HOME_PART_ID);
+		MUIElement pagesElement = modelService.find(BaijiuShellChrome.PAGES_STACK_ID, application);
+		if(pagesElement instanceof MPartStack pages) {
+			concealTaskTabs(pages);
+			MUIElement selected = pages.getSelectedElement();
+			if(selected instanceof MPart part) {
+				forceCreateGui(application, modelService, part.getElementId());
 			}
 		}
+		applyPlantWindowTitle(application, modelService);
+	}
+
+	/**
+	 * Select a task-area part. The chromatogram stack stays visible and keeps
+	 * its current selection, so navigation does not unload an open chart.
+	 */
+	public static boolean showPlantTask(MApplication application, EModelService modelService, EPartService partService, String partId) {
+
+		if(!BaijiuPlantNav.switchesTaskOnly(partId)) {
+			return false;
+		}
+		MPartStack chromatogram = chromatogramStack(application, modelService);
+		MUIElement kept = chromatogram == null ? null : chromatogram.getSelectedElement();
+		boolean shown = showWorkflowTab(application, modelService, partService, partId);
+		if(chromatogram != null) {
+			chromatogram.setVisible(true);
+			chromatogram.setToBeRendered(true);
+			showElementAndAncestors(chromatogram);
+			if(kept != null && chromatogram.getSelectedElement() == null && chromatogram.getChildren().contains(kept)) {
+				BaijiuShellSelection.selectInParent(kept);
+			}
+		}
+		MUIElement pagesElement = modelService == null || application == null ? null : modelService.find(BaijiuShellChrome.PAGES_STACK_ID, application);
+		if(pagesElement instanceof MPartStack pages) {
+			concealTaskTabs(pages);
+		}
+		applyPlantWindowTitle(application, modelService);
+		return shown;
+	}
+
+	public static void applyPlantWindowTitle(MApplication application, EModelService modelService) {
+
+		if(application == null || modelService == null) {
+			return;
+		}
+		String title = BaijiuPlantStatus.windowTitle(BaijiuShellChrome.WINDOW_TITLE);
+		MUIElement window = modelService.find(BaijiuShellChrome.MAIN_WINDOW_ID, application);
+		if(window instanceof MWindow trimmed) {
+			trimmed.setLabel(title);
+		}
+		try {
+			Object widget = window == null ? null : window.getWidget();
+			if(widget instanceof Shell shell && !shell.isDisposed()) {
+				shell.setText(title);
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// headless fragment tests
+		}
+	}
+
+	public static void inform(Shell shell, String message) {
+
+		if(message == null || message.isBlank()) {
+			return;
+		}
+		try {
+			org.eclipse.swt.widgets.MessageBox box = new org.eclipse.swt.widgets.MessageBox(shell, org.eclipse.swt.SWT.ICON_INFORMATION | org.eclipse.swt.SWT.OK);
+			box.setText(BaijiuShellChrome.WINDOW_TITLE);
+			box.setMessage(message);
+			box.open();
+		} catch(RuntimeException | LinkageError e) {
+			// no display
+		}
+	}
+
+	/**
+	 * Hide the task-stack tab strip. The nav is the only switcher. The
+	 * chromatogram stack is a different widget and keeps its tabs.
+	 */
+	static void concealTaskTabs(MPartStack pages) {
+
+		if(pages == null) {
+			return;
+		}
+		Object widget;
+		try {
+			widget = pages.getWidget();
+		} catch(RuntimeException | LinkageError e) {
+			return;
+		}
+		if(!(widget instanceof org.eclipse.swt.custom.CTabFolder folder) || folder.isDisposed()) {
+			return;
+		}
+		try {
+			if(folder.getTabHeight() != 0) {
+				folder.setTabHeight(0);
+			}
+			folder.setMinimizeVisible(false);
+			folder.setMaximizeVisible(false);
+		} catch(RuntimeException | LinkageError e) {
+			// folder closing
+		}
+	}
+
+	private static MPartStack chromatogramStack(MApplication application, EModelService modelService) {
+
+		if(application == null || modelService == null) {
+			return null;
+		}
+		MUIElement found = modelService.find(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, application);
+		return found instanceof MPartStack stack ? stack : null;
 	}
 
 	public static boolean showChromatogram(MApplication application, EModelService modelService, EPartService partService) {
@@ -2900,8 +3001,11 @@ public final class BaijiuShellParts {
 		MUIElement leftElement = modelService.find(BaijiuShellChrome.PLANT_LEFT_SASH_ID, application);
 		MUIElement plantElement = modelService.find(BaijiuShellChrome.PLANT_SASH_ID, application);
 		MUIElement workflowElement = modelService.find(BaijiuShellChrome.WORKFLOW_STACK_ID, application);
-		if(plantElement instanceof MPartSashContainer plantSash && leftElement instanceof MPartSashContainer leftSash && pagesElement instanceof MPartStack pages && chromatogramElement instanceof MPartStack chromatogram && workflowElement instanceof MPartStack workflow) {
-			BaijiuShellModel.arrangePlantHome(plantSash, leftSash, pages, chromatogram, workflow);
+		MUIElement navElement = modelService.find(BaijiuShellChrome.NAV_STACK_ID, application);
+		if(plantElement instanceof MPartSashContainer plantSash && leftElement instanceof MPartSashContainer leftSash && pagesElement instanceof MPartStack pages && chromatogramElement instanceof MPartStack chromatogram) {
+			MPartStack nav = navElement instanceof MPartStack navStack ? navStack : null;
+			MPartStack workflow = workflowElement instanceof MPartStack workflowStack ? workflowStack : null;
+			BaijiuShellModel.arrangePlantHome(plantSash, nav, leftSash, pages, chromatogram, workflow);
 			return;
 		}
 		if(pagesElement instanceof MPartStack pages && chromatogramElement instanceof MPartStack chromatogram) {
@@ -3059,7 +3163,12 @@ public final class BaijiuShellParts {
 		} catch(RuntimeException | LinkageError e) {
 			selected = null;
 		}
-		if(selected instanceof MUIElement element && BaijiuShellChrome.LEFT_WORKFLOW_PART_IDS.contains(element.getElementId()) && element.isVisible() && element.isToBeRendered()) {
+		if(selected instanceof MUIElement element && isSelectedTask(element) && element.isVisible() && element.isToBeRendered()) {
+			return;
+		}
+		MPart acquire = findPart(modelService, application, BaijiuShellChrome.ACQUIRE_HOME_PART_ID);
+		if(acquire != null) {
+			BaijiuShellSelection.selectInParent(acquire);
 			return;
 		}
 		MPart analysis = findPart(modelService, application, BaijiuShellChrome.ANALYSIS_HOME_PART_ID);
@@ -3089,7 +3198,7 @@ public final class BaijiuShellParts {
 		if(application == null || modelService == null) {
 			return;
 		}
-		revealStackChildren(application, modelService, BaijiuShellChrome.WORKFLOW_STACK_ID);
+		revealStackChildren(application, modelService, BaijiuShellChrome.NAV_STACK_ID);
 		revealStackChildren(application, modelService, BaijiuShellChrome.PAGES_STACK_ID);
 		revealStackChildren(application, modelService, BaijiuShellChrome.CHROMATOGRAM_STACK_ID);
 		selectUpperWorkflowPage(application, modelService);
@@ -3099,10 +3208,23 @@ public final class BaijiuShellParts {
 				BaijiuShellSelection.selectInParent(chromatogramHome);
 			}
 		}
-		MPart workbench = findPart(modelService, application, BaijiuShellChrome.WORKBENCH_HOME_PART_ID);
-		if(workbench != null) {
-			BaijiuShellSelection.selectInParent(workbench);
+		MPart nav = findPart(modelService, application, BaijiuShellChrome.NAV_PART_ID);
+		if(nav != null) {
+			BaijiuShellSelection.selectInParent(nav);
 		}
+		MUIElement pagesElement = modelService.find(BaijiuShellChrome.PAGES_STACK_ID, application);
+		if(pagesElement instanceof MPartStack pages) {
+			concealTaskTabs(pages);
+		}
+	}
+
+	private static boolean isSelectedTask(MUIElement element) {
+
+		if(element == null) {
+			return false;
+		}
+		String id = element.getElementId();
+		return BaijiuShellChrome.LEFT_WORKFLOW_PART_IDS.contains(id) || BaijiuPlantNav.isTaskAreaPart(id);
 	}
 
 	static void revealStackChildren(MApplication application, EModelService modelService, String stackId) {
@@ -3359,6 +3481,9 @@ public final class BaijiuShellParts {
 
 	private static MMenu findMenu(EModelService modelService, MApplication application, String menuId) {
 
+		if(modelService == null || application == null || menuId == null) {
+			return null;
+		}
 		MUIElement found = modelService.find(menuId, application);
 		if(found instanceof MMenu menu) {
 			return menu;
