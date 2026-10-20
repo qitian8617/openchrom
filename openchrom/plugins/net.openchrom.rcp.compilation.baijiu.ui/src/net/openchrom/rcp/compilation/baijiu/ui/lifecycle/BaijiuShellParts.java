@@ -368,6 +368,20 @@ public final class BaijiuShellParts {
 		return show;
 	}
 
+	/**
+	 * Open the singleton reverse-control window, or bring the existing one
+	 * forward. A second call does not create another shell and does not hide it.
+	 */
+	public static boolean showGcConsole(MApplication application, EModelService modelService, EPartService partService) {
+
+		if(application != null && modelService != null) {
+			setGcConsoleVisible(application, modelService, partService, true);
+		} else {
+			BaijiuGcConsoleShell.show();
+		}
+		return BaijiuGcConsoleShell.isShowing();
+	}
+
 	private static boolean gcVisibilityBusy;
 
 	public static void setGcConsoleVisible(MApplication application, EModelService modelService, EPartService partService, boolean visible) {

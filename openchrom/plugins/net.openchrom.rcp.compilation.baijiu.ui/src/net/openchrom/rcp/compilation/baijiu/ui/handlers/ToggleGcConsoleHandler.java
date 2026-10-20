@@ -29,6 +29,11 @@ public class ToggleGcConsoleHandler {
 	@Execute
 	public void execute(@Optional MItem item, @Optional MApplication application, @Optional EModelService modelService, @Optional EPartService partService) {
 
+		/*
+		 * The toolbar check item still hides on a second click. The 连接与采集
+		 * card uses showGcConsole so a repeat click only focuses the same window.
+		 * Neither path reports success in a dialog.
+		 */
 		boolean visible = BaijiuShellParts.toggleGcConsole(application, modelService, partService);
 		if(item != null) {
 			item.setSelected(visible);
