@@ -17,6 +17,7 @@ import org.eclipse.swt.widgets.Label;
 
 import jakarta.annotation.PostConstruct;
 import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuPlantNav;
+import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuPlantNav.Section;
 
 /**
  * QC summary placeholder. Sample results and GB 2757 stay on the existing
@@ -37,14 +38,15 @@ public class BaijiuQcHomePart {
 			return;
 		}
 		created = true;
-		parent.setLayout(new GridLayout(1, false));
-		Label title = new Label(parent, SWT.NONE);
+		Composite body = BaijiuPageChrome.embed(parent, Section.QUANT);
+		body.setLayout(new GridLayout(1, false));
+		Label title = new Label(body, SWT.NONE);
 		title.setText("QC 摘要");
-		title.setForeground(parent.getDisplay().getSystemColor(SWT.COLOR_DARK_GRAY));
-		Label note = new Label(parent, SWT.WRAP);
+		title.setForeground(body.getDisplay().getSystemColor(SWT.COLOR_DARK_GRAY));
+		Label note = new Label(body, SWT.WRAP);
 		note.setText(BaijiuPlantNav.LATER + "。样品结果与 GB 2757 判定仍在「样品结果」。");
-		note.setForeground(parent.getDisplay().getSystemColor(SWT.COLOR_DARK_GRAY));
-		GridData data = new GridData(SWT.FILL, SWT.CENTER, true, false);
+		note.setForeground(body.getDisplay().getSystemColor(SWT.COLOR_DARK_GRAY));
+		GridData data = new GridData(SWT.CENTER, SWT.CENTER, true, false);
 		data.widthHint = 480;
 		note.setLayoutData(data);
 	}

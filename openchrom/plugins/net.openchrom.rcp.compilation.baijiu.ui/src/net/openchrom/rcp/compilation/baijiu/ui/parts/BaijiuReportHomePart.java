@@ -11,11 +11,11 @@ package net.openchrom.rcp.compilation.baijiu.ui.parts;
 
 import org.eclipse.e4.core.di.annotations.Optional;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
-import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
+import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuPlantNav.Section;
 
 /**
  * Left-stack host for 预览报告. OSGi-loads {@code BaijiuReportShell}.
@@ -46,8 +46,8 @@ public class BaijiuReportHomePart {
 		}
 		created = true;
 		try {
-			parent.setLayout(new FillLayout());
-			BaijiuHomePanels.createReportPanel(parent, partService);
+			Composite body = BaijiuPageChrome.embed(parent, Section.REPORT);
+			BaijiuHomePanels.createReportPanel(body, partService);
 			parent.layout(true, true);
 		} catch(Throwable t) {
 			BaijiuHomePanels.showError(parent, t);

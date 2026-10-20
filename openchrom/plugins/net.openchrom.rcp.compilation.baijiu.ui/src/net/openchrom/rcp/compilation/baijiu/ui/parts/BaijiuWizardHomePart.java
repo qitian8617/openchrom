@@ -11,11 +11,11 @@ package net.openchrom.rcp.compilation.baijiu.ui.parts;
 
 import org.eclipse.e4.core.di.annotations.Optional;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
-import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
+import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuPlantNav.Section;
 
 /**
  * Left-stack host for 三步向导. Embeds wizard pages in this Part instead of
@@ -47,8 +47,8 @@ public class BaijiuWizardHomePart {
 		}
 		created = true;
 		try {
-			parent.setLayout(new FillLayout());
-			BaijiuHomePanels.createWizardPanel(parent, partService);
+			Composite body = BaijiuPageChrome.embed(parent, Section.CALIBRATE);
+			BaijiuHomePanels.createWizardPanel(body, partService);
 			parent.layout(true, true);
 		} catch(Throwable t) {
 			BaijiuHomePanels.showError(parent, t);

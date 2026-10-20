@@ -32,6 +32,9 @@ public final class BaijiuPlantNav {
 	public static final String ACTION_THEME = "theme";
 
 	private static final AtomicReference<Section> ACTIVE = new AtomicReference<>(Section.ACQUIRE);
+	private static final AtomicReference<Target> ACTIVE_TARGET = new AtomicReference<>();
+	private static final AtomicReference<TaskOpener> OPENER = new AtomicReference<>();
+	private static final AtomicReference<Runnable> SECTION_WATCH = new AtomicReference<>();
 	private static final Map<Section, List<Target>> TARGETS = targetsBySection();
 	private static final Map<String, Section> LEGACY = legacyLabels();
 
@@ -125,8 +128,98 @@ public final class BaijiuPlantNav {
 
 	public static void activate(Section section) {
 
-		if(section != null) {
-			ACTIVE.set(section);
+		if(section == null) {
+			return;
+		}
+		ACTIVE.set(section);
+		ACTIVE_TARGET.set(primaryTarget(section));
+		notifySectionWatch();
+	}
+
+	public static void activate(Section section, Target target) {
+
+		activate(section);
+		if(target != null) {
+			ACTIVE_TARGET.set(target);
+			notifySectionWatch();
+		}
+	}
+
+	/**
+	 * The shared analysis page registers this so its step strip can follow
+	 * 校正 versus 定量结果. The runnable must tolerate being called off a
+	 * disposed widget and must not touch SWT from a unit test.
+	 */
+	public static void setSectionWatch(Runnable watch) {
+
+		SECTION_WATCH.set(watch);
+	}
+
+	private static void notifySectionWatch() {
+
+		Runnable watch = SECTION_WATCH.get();
+		if(watch == null) {
+			return;
+		}
+		try {
+			watch.run();
+		} catch(RuntimeException ignored) {
+			// A disposed strip must not break navigation.
+		}
+	}
+
+	public static Target activeTarget() {
+
+		return ACTIVE_TARGET.get();
+	}
+
+	/**
+	 * Child rows under an expanded parent. A section with only its own
+	 * page has no children, so 连接与采集 does not indent a copy of itself.
+	 */
+	public static List<Target> childTargets(Section section) {
+
+		List<Target> all = targets(section);
+		if(all.size() <= 1) {
+			return List.of();
+		}
+		return all;
+	}
+
+	public static int stepOf(Section section) {
+
+		int index = primarySections().indexOf(section);
+		return index < 0 ? 0 : index + 1;
+	}
+
+	/**
+	 * Only the active parent shows its children. Maintenance never expands
+	 * into the workflow column.
+	 */
+	public static boolean expandsChildren(Section section) {
+
+		return section != null && section == active() && !section.maintenance() && !childTargets(section).isEmpty();
+	}
+
+	public interface TaskOpener {
+
+		void open(Section section, Target target);
+	}
+
+	public static void setTaskOpener(TaskOpener opener) {
+
+		OPENER.set(opener);
+	}
+
+	public static void openTarget(Section section, Target target) {
+
+		if(section == null || target == null) {
+			return;
+		}
+		activate(section, target);
+		TaskOpener opener = OPENER.get();
+		if(opener != null) {
+			opener.open(section, target);
 		}
 	}
 
@@ -239,7 +332,7 @@ public final class BaijiuPlantNav {
 		map.put(Section.ACQUIRE, List.of(part(BaijiuShellChrome.ACQUIRE_HOME_PART_ID, "连接与采集", false)));
 		map.put(Section.METHOD, List.of(part(BaijiuShellChrome.METHOD_PACK_HOME_PART_ID, "方法包", false)));
 		map.put(Section.CALIBRATE, List.of( //
-				part(BaijiuShellChrome.WIZARD_HOME_PART_ID, "混标校正", false), //
+				part(BaijiuShellChrome.WIZARD_HOME_PART_ID, "三步向导", false), //
 				part(BaijiuShellChrome.INTEGRATION_HOME_PART_ID, "推荐积分", false), //
 				part(BaijiuShellChrome.ANALYSIS_HOME_PART_ID, "响应因子 RF", false)));
 		map.put(Section.SEQUENCE, List.of( //

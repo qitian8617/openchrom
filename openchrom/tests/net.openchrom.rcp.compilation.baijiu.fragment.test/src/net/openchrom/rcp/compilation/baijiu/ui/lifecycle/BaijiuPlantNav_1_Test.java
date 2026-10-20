@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 
 import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuPlantNav.Section;
 import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuPlantNav.Target;
+import net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuGlyphs;
 
 public class BaijiuPlantNav_1_Test {
 
@@ -74,6 +75,64 @@ public class BaijiuPlantNav_1_Test {
 		assertTrue(title.contains("15组分"));
 		assertTrue(title.contains("离线"));
 		assertTrue(title.startsWith(BaijiuShellChrome.WINDOW_TITLE));
+	}
+
+	@Test
+	public void workflowStepsChildrenAndCardMetrics() {
+
+		assertEquals(1, BaijiuPlantNav.stepOf(Section.ACQUIRE));
+		assertEquals(2, BaijiuPlantNav.stepOf(Section.METHOD));
+		assertEquals(3, BaijiuPlantNav.stepOf(Section.CALIBRATE));
+		assertEquals(4, BaijiuPlantNav.stepOf(Section.SEQUENCE));
+		assertEquals(5, BaijiuPlantNav.stepOf(Section.QUANT));
+		assertEquals(6, BaijiuPlantNav.stepOf(Section.REPORT));
+		assertEquals(0, BaijiuPlantNav.stepOf(Section.MAINTENANCE));
+		assertEquals(List.of("三步向导", "推荐积分", "响应因子 RF"), labels(BaijiuPlantNav.childTargets(Section.CALIBRATE)));
+		assertEquals(List.of("进样序列", "批处理结果", "简单批量", "平行样"), labels(BaijiuPlantNav.childTargets(Section.SEQUENCE)));
+		assertEquals(List.of("样品结果", "QC 摘要"), labels(BaijiuPlantNav.childTargets(Section.QUANT)));
+		assertTrue(BaijiuPlantNav.childTargets(Section.ACQUIRE).isEmpty());
+		assertTrue(BaijiuPlantNav.childTargets(Section.METHOD).isEmpty());
+		assertTrue(BaijiuPlantNav.childTargets(Section.REPORT).isEmpty());
+		assertEquals(BaijiuGlyphs.PLUG, BaijiuGlyphs.forSection(Section.ACQUIRE));
+		assertEquals(BaijiuGlyphs.VIAL, BaijiuGlyphs.forSection(Section.METHOD));
+		assertEquals(BaijiuGlyphs.CURVE, BaijiuGlyphs.forSection(Section.CALIBRATE));
+		assertEquals(BaijiuGlyphs.TRAY, BaijiuGlyphs.forSection(Section.SEQUENCE));
+		assertEquals(BaijiuGlyphs.TABLE, BaijiuGlyphs.forSection(Section.QUANT));
+		assertEquals(BaijiuGlyphs.DOCUMENT, BaijiuGlyphs.forSection(Section.REPORT));
+		assertEquals(BaijiuGlyphs.WRENCH, BaijiuGlyphs.forSection(Section.MAINTENANCE));
+		assertEquals(BaijiuGlyphs.STEPS, BaijiuGlyphs.forTarget(BaijiuPlantNav.childTargets(Section.CALIBRATE).get(0)));
+		assertEquals(BaijiuGlyphs.PEAKS, BaijiuGlyphs.forTarget(BaijiuPlantNav.childTargets(Section.CALIBRATE).get(1)));
+		assertEquals(BaijiuGlyphs.CHECK, BaijiuGlyphs.forTarget(BaijiuPlantNav.childTargets(Section.QUANT).get(1)));
+		assertEquals(188, BaijiuWorkflowMetrics.NAV_CARD_WIDTH);
+		assertTrue(BaijiuWorkflowMetrics.CHILD_CARD_WIDTH < BaijiuWorkflowMetrics.NAV_CARD_WIDTH);
+		assertTrue(BaijiuWorkflowMetrics.MAINTENANCE_HEIGHT < BaijiuWorkflowMetrics.CHILD_CARD_HEIGHT);
+		assertEquals(188, BaijiuWorkflowMetrics.px(null, BaijiuWorkflowMetrics.NAV_CARD_WIDTH));
+		int[] notifications = {0};
+		try {
+			BaijiuPlantNav.setSectionWatch(() -> notifications[0]++);
+			BaijiuPlantNav.activate(Section.CALIBRATE);
+			assertTrue(BaijiuPlantNav.expandsChildren(Section.CALIBRATE));
+			assertFalse(BaijiuPlantNav.expandsChildren(Section.SEQUENCE));
+			assertFalse(BaijiuPlantNav.expandsChildren(Section.ACQUIRE));
+			assertFalse(BaijiuPlantNav.expandsChildren(Section.MAINTENANCE));
+			assertEquals("三步向导", BaijiuPlantNav.activeTarget().label());
+			BaijiuPlantNav.activate(Section.CALIBRATE, BaijiuPlantNav.childTargets(Section.CALIBRATE).get(1));
+			assertEquals("推荐积分", BaijiuPlantNav.activeTarget().label());
+			BaijiuPlantNav.activate(Section.SEQUENCE);
+			assertTrue(BaijiuPlantNav.expandsChildren(Section.SEQUENCE));
+			assertFalse(BaijiuPlantNav.expandsChildren(Section.CALIBRATE));
+			BaijiuPlantNav.activate(Section.ACQUIRE);
+			assertFalse(BaijiuPlantNav.expandsChildren(Section.ACQUIRE));
+			assertTrue(notifications[0] > 0);
+		} finally {
+			BaijiuPlantNav.setSectionWatch(null);
+			BaijiuPlantNav.activate(Section.ACQUIRE);
+		}
+	}
+
+	private static List<String> labels(List<Target> targets) {
+
+		return targets.stream().map(Target::label).toList();
 	}
 
 	@Test

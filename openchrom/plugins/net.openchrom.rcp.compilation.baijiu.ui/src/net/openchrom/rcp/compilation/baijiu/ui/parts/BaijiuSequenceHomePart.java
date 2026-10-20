@@ -9,11 +9,11 @@
  *******************************************************************************/
 package net.openchrom.rcp.compilation.baijiu.ui.parts;
 
-import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
+import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuPlantNav.Section;
 
 /**
  * Plant-home host for the injection-sequence table. Lives in the branding
@@ -45,8 +45,8 @@ public class BaijiuSequenceHomePart {
 		}
 		created = true;
 		try {
-			parent.setLayout(new FillLayout());
-			BaijiuHomePanels.createSequenceComposite(parent);
+			Composite body = BaijiuPageChrome.embed(parent, Section.SEQUENCE);
+			BaijiuHomePanels.createSequenceComposite(body);
 			parent.layout(true, true);
 		} catch(Throwable t) {
 			BaijiuHomePanels.showError(parent, t);
