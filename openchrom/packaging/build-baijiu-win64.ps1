@@ -86,6 +86,10 @@ if ($LASTEXITCODE -ne 0) {
     throw "mvn -version failed with exit code $LASTEXITCODE"
 }
 
+# Product materialize stays on -DskipTests. The plant-chrome guard is a
+# separate verify, documented in packaging/README.txt. Hooking it into
+# this script would also run unrelated fragment tests and block a
+# workstation build on failures outside the whitelist.
 $mvnArgs = @(
     "-f", "releng/net.openchrom.aggregator/pom.xml",
     "-pl", "net.openchrom:net.openchrom.targetplatform,net.openchrom:openchrom.compilation.baijiu",

@@ -518,6 +518,7 @@ public class BaijiuShellAddon {
 			return;
 		}
 		if(!BaijiuShellChrome.researchMenusVisible()) {
+			BaijiuShellParts.stripForeignPlantChrome(application);
 			hideRestrictedMenuChildren(findMenu(modelService, application, BaijiuShellChrome.MAIN_MENU_ID));
 			hideRestrictedMenuChildren(findMenu(modelService, application, BaijiuShellChrome.ECLIPSE_MAIN_MENU_ID));
 			List<MWindow> windows = modelService.findElements(application, null, MWindow.class, null);

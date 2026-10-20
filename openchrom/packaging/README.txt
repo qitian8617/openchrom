@@ -40,7 +40,16 @@ mvn -f releng/net.openchrom.aggregator/pom.xml -pl net.openchrom:net.openchrom.t
   leftover from an OpenChrom 1.6.20 build pulls Tycho 5.0.3 into this
   reactor ("Several versions of Tycho plugins are configured").
 - -DskipTests skips test execution. This repo does not run the product
-  materialize in GitHub Actions.
+  materialize in GitHub Actions. The win64 script keeps -DskipTests:
+  packaging must not depend on the full fragment suite. Before
+  packaging, run the plant-chrome guard (from openchrom/):
+
+  mvn -f releng/net.openchrom.aggregator/pom.xml -pl :net.openchrom.targetplatform,:net.openchrom.rcp.compilation.baijiu.ui,:net.openchrom.rcp.compilation.baijiu.fragment.test -Dtest=BaijiuPlantChromeWhitelist_1_Test,BaijiuShellChrome_1_Test,BaijiuShellMenus_1_Test,BaijiuShellParts_1_Test,BaijiuPlantNav_1_Test verify
+
+  That test fails if a plant menu, chart popup, or plant toolbar item
+  is outside BaijiuPlantChromeWhitelist or shows English / OpenChrom /
+  ChemClipse text. It does not remove community features from the
+  product.
 
 Where the win64 folder lands
 -----------------------------

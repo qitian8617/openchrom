@@ -266,10 +266,13 @@ public class BaijiuShellParts_1_Test {
 		baijiu.getChildren().add(gc);
 		BaijiuShellParts.sanitizeBaijiuMenuChildren(baijiu);
 		assertTrue(open.isVisible());
+		assertFalse(baijiu.getChildren().contains(gc), "GC console is removed from 白酒, not merely hidden");
 		assertFalse(gc.isVisible());
 		gc.setVisible(true);
+		baijiu.getChildren().add(gc);
 		BaijiuShellParts.sanitizeBaijiuMenuChildren(baijiu);
-		assertFalse(gc.isVisible(), "GC console must not flash back on 白酒");
+		assertFalse(baijiu.getChildren().contains(gc), "GC console must not flash back on 白酒");
+		assertFalse(gc.isVisible());
 
 		MMenu help = MMenuFactory.INSTANCE.createMenu();
 		help.setElementId(BaijiuShellChrome.HELP_MENU_ID);
