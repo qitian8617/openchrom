@@ -9,7 +9,6 @@
  *******************************************************************************/
 package net.openchrom.rcp.compilation.baijiu.ui.parts;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.swt.SWT;
@@ -21,9 +20,6 @@ import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
 
-import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuPlantNav;
-import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuPlantNav.Section;
-import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuPlantNav.Target;
 import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuWorkflowMetrics;
 import net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuIconCard.BaijiuCardPalette;
 import net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuIconCard.Layout;
@@ -85,73 +81,6 @@ public final class BaijiuActionBoard {
 			}
 		}
 		return host;
-	}
-
-	/**
-	 * Step cards for a section that has more than one page. Highlight
-	 * follows {@link BaijiuPlantNav#activeTarget()}.
-	 */
-	public static Composite installSection(Composite parent, BaijiuCardPalette palette, Section section) {
-
-		List<Target> targets = BaijiuPlantNav.childTargets(section);
-		if(targets.isEmpty() && BaijiuPlantNav.targets(section).size() == 1) {
-			targets = BaijiuPlantNav.targets(section);
-		}
-		List<Action> actions = new ArrayList<>();
-		Target current = BaijiuPlantNav.activeTarget();
-		for(int i = 0; i < targets.size(); i++) {
-			Target target = targets.get(i);
-			boolean last = i == targets.size() - 1;
-			actions.add(new Action(BaijiuGlyphs.forTarget(target), target.label(), target.stub() ? BaijiuPlantNav.LATER : "", !last, () -> BaijiuPlantNav.openTarget(section, target)));
-		}
-		Composite host = install(parent, palette, actions);
-		int index = 0;
-		for(org.eclipse.swt.widgets.Control child : host.getChildren()) {
-			if(child instanceof BaijiuIconCard card && index < targets.size()) {
-				Target target = targets.get(index);
-				card.setCardSelected(target.equals(current) || (current == null && index == 0));
-				card.setMuted(target.stub());
-				index++;
-			}
-		}
-		return host;
-	}
-
-	/**
-	 * Move the highlight without disposing cards. Returns false when the
-	 * row does not already show {@code targets}, so the caller can rebuild.
-	 */
-	public static boolean highlight(Composite host, List<Target> targets, Target current) {
-
-		if(host == null || host.isDisposed() || targets == null) {
-			return false;
-		}
-		List<BaijiuIconCard> cards = new ArrayList<>();
-		collectCards(host, cards);
-		if(cards.size() != targets.size()) {
-			return false;
-		}
-		for(int i = 0; i < cards.size(); i++) {
-			if(!targets.get(i).label().equals(cards.get(i).cardText())) {
-				return false;
-			}
-		}
-		for(int i = 0; i < cards.size(); i++) {
-			Target target = targets.get(i);
-			cards.get(i).setCardSelected(target.equals(current) || (current == null && i == 0));
-		}
-		return true;
-	}
-
-	private static void collectCards(Composite host, List<BaijiuIconCard> cards) {
-
-		for(org.eclipse.swt.widgets.Control child : host.getChildren()) {
-			if(child instanceof BaijiuIconCard card) {
-				cards.add(card);
-			} else if(child instanceof Composite composite) {
-				collectCards(composite, cards);
-			}
-		}
 	}
 
 	static final class FlowArrow extends Canvas {
