@@ -2661,7 +2661,7 @@ public final class BaijiuShellParts {
 	 * open-chromatogram ids are on the global keep list and would otherwise
 	 * survive.
 	 */
-	@SuppressWarnings({"rawtypes", "unchecked"})
+	@SuppressWarnings("rawtypes")
 	static void removeMenuChild(MMenu parent, MUIElement element) {
 
 		if(element == null) {
