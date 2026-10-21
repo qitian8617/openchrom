@@ -146,9 +146,10 @@ public final class BaijiuPlantNav {
 	}
 
 	/**
-	 * The shared analysis page registers this so its step strip can follow
-	 * 校正 versus 定量结果. The runnable must tolerate being called off a
-	 * disposed widget and must not touch SWT from a unit test.
+	 * Optional listener for a section change. Task pages do not use it to
+	 * paint a second copy of the left-nav children. The runnable must
+	 * tolerate being called off a disposed widget and must not touch SWT
+	 * from a unit test.
 	 */
 	public static void setSectionWatch(Runnable watch) {
 

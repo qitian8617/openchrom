@@ -12,10 +12,11 @@ package net.openchrom.rcp.compilation.baijiu.ui.parts;
 import java.util.List;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
@@ -25,17 +26,16 @@ import jakarta.annotation.PostConstruct;
 import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuPlantNav;
 import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuPlantStatus;
 import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuPlantStatus.PeakLine;
-import net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuActionBoard.Action;
-import net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuIconCard.BaijiuCardPalette;
 
 /**
- * 方法包. Shows the working 15-component pack, its peak table and internal
- * standard when the analysis bundle is present, and a switcher that keeps
- * 15 selected. Other market mixes are named and marked for a later version.
+ * 方法包. The working 15-component pack stays selected. Other market mixes
+ * are listed in the same combo and marked for a later version; choosing
+ * one does not change the working pack.
  */
 public class BaijiuMethodPackHomePart {
 
 	private boolean created;
+	private boolean reverting;
 
 	public BaijiuMethodPackHomePart() {
 
@@ -52,57 +52,36 @@ public class BaijiuMethodPackHomePart {
 		layout.marginWidth = 12;
 		layout.marginHeight = 12;
 		parent.setLayout(layout);
-		Label title = new Label(parent, SWT.NONE);
-		title.setText("方法包");
-		title.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, true, false));
-		Label current = new Label(parent, SWT.NONE);
-		current.setText("当前方法包：" + BaijiuPlantStatus.WORKING_LABEL);
-		current.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, true, false));
-		Label istd = new Label(parent, SWT.WRAP | SWT.CENTER);
-		istd.setText(BaijiuPlantStatus.istdSummary());
-		GridData istdData = new GridData(SWT.CENTER, SWT.CENTER, true, false);
-		istdData.widthHint = 420;
-		istd.setLayoutData(istdData);
-		Label switchLabel = new Label(parent, SWT.NONE);
-		switchLabel.setText("切换方法包");
-		switchLabel.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, true, false));
-		BaijiuCardPalette palette = new BaijiuCardPalette(parent.getDisplay());
-		parent.addDisposeListener(event -> palette.dispose());
-		java.util.List<Action> actions = new java.util.ArrayList<>();
-		Label note = new Label(parent, SWT.WRAP | SWT.CENTER);
+		Composite row = new Composite(parent, SWT.NONE);
+		row.setLayoutData(new GridData(SWT.CENTER, SWT.TOP, true, false));
+		GridLayout rowLayout = new GridLayout(3, false);
+		rowLayout.marginWidth = 0;
+		rowLayout.marginHeight = 0;
+		rowLayout.horizontalSpacing = 12;
+		row.setLayout(rowLayout);
+		Label packLabel = new Label(row, SWT.NONE);
+		packLabel.setText("方法包：");
+		packLabel.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false));
+		Combo packs = new Combo(row, SWT.DROP_DOWN | SWT.READ_ONLY);
 		for(int sku : BaijiuPlantStatus.SKUS) {
-			int choice = sku;
-			actions.add(new Action(BaijiuGlyphs.VIAL, BaijiuPlantStatus.packLabel(choice), BaijiuPlantStatus.skuAvailable(choice) ? "当前方法包" : BaijiuPlantNav.LATER, false, () -> {
-				note.setText(BaijiuPlantStatus.switchMessage(choice));
-				note.setForeground(parent.getDisplay().getSystemColor(BaijiuPlantStatus.skuAvailable(choice) ? SWT.COLOR_WIDGET_FOREGROUND : SWT.COLOR_DARK_GRAY));
-				parent.layout(true, true);
-			}));
+			packs.add(optionLabel(sku));
 		}
-		Composite board = BaijiuActionBoard.install(parent, palette, actions);
-		int skuIndex = 0;
-		for(Control child : board.getChildren()) {
-			if(child instanceof BaijiuIconCard card && skuIndex < BaijiuPlantStatus.SKUS.length) {
-				int sku = BaijiuPlantStatus.SKUS[skuIndex];
-				card.setCardSelected(sku == BaijiuPlantStatus.WORKING_SKU);
-				card.setMuted(!BaijiuPlantStatus.skuAvailable(sku));
-				skuIndex++;
-			}
-		}
-		GridData noteData = new GridData(SWT.CENTER, SWT.CENTER, true, false);
-		noteData.widthHint = 420;
-		note.setLayoutData(noteData);
-		note.setText(BaijiuPlantStatus.switchMessage(BaijiuPlantStatus.WORKING_SKU));
-		note.moveBelow(board);
+		packs.select(workingIndex());
+		packs.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false));
+		packs.addSelectionListener(SelectionListener.widgetSelectedAdapter(event -> revertUnavailable(packs)));
+		Label istd = new Label(row, SWT.NONE);
+		istd.setText(BaijiuPlantStatus.istdSummary());
+		istd.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false));
 		List<PeakLine> peaks = BaijiuPlantStatus.peakLines();
 		if(peaks.isEmpty()) {
 			Label empty = new Label(parent, SWT.WRAP);
-			empty.setText("峰表在分析组件加载后显示。当前方法包仍为 " + BaijiuPlantStatus.WORKING_LABEL + "。");
+			empty.setText("峰表在分析组件加载后显示。");
 			empty.setForeground(parent.getDisplay().getSystemColor(SWT.COLOR_DARK_GRAY));
 			empty.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 			return;
 		}
 		Label tableTitle = new Label(parent, SWT.NONE);
-		tableTitle.setText("峰表 / 内标");
+		tableTitle.setText("峰表");
 		Table table = new Table(parent, SWT.BORDER | SWT.FULL_SELECTION);
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
@@ -116,9 +95,55 @@ public class BaijiuMethodPackHomePart {
 			item.setText(1, peak.retention());
 			item.setText(2, peak.internalStandard() ? "是" : "");
 		}
-		Label later = new Label(parent, SWT.WRAP);
-		later.setText("22 / 30 / 36 / 37 / 38 组分：" + BaijiuPlantNav.LATER + "。");
-		later.setForeground(parent.getDisplay().getSystemColor(SWT.COLOR_DARK_GRAY));
+	}
+
+	private void revertUnavailable(Combo packs) {
+
+		if(reverting || packs == null || packs.isDisposed()) {
+			return;
+		}
+		int working = workingIndex();
+		int index = packs.getSelectionIndex();
+		boolean allowed = index >= 0 && index < BaijiuPlantStatus.SKUS.length && BaijiuPlantStatus.skuAvailable(BaijiuPlantStatus.SKUS[index]);
+		if(allowed) {
+			return;
+		}
+		reverting = true;
+		try {
+			packs.select(working);
+		} finally {
+			reverting = false;
+		}
+		packs.getDisplay().asyncExec(() -> {
+			if(packs.isDisposed() || packs.getSelectionIndex() == working) {
+				return;
+			}
+			reverting = true;
+			try {
+				packs.select(working);
+			} finally {
+				reverting = false;
+			}
+		});
+	}
+
+	static String optionLabel(int sku) {
+
+		String label = BaijiuPlantStatus.packLabel(sku);
+		if(BaijiuPlantStatus.skuAvailable(sku)) {
+			return label;
+		}
+		return label + "（" + BaijiuPlantNav.LATER + "）";
+	}
+
+	private static int workingIndex() {
+
+		for(int i = 0; i < BaijiuPlantStatus.SKUS.length; i++) {
+			if(BaijiuPlantStatus.SKUS[i] == BaijiuPlantStatus.WORKING_SKU) {
+				return i;
+			}
+		}
+		return 0;
 	}
 
 	private static void column(Table table, String title, int width) {
