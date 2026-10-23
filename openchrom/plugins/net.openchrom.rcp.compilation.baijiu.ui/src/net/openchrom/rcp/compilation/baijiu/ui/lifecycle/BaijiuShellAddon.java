@@ -55,6 +55,7 @@ public class BaijiuShellAddon {
 	private static volatile boolean shuttingDown;
 	private static final AtomicInteger chromeGeneration = new AtomicInteger();
 	private static final AtomicInteger sanitizeGeneration = new AtomicInteger();
+	private static final AtomicInteger editorChromeGeneration = new AtomicInteger();
 
 	@Inject
 	private MApplication application;
@@ -75,6 +76,7 @@ public class BaijiuShellAddon {
 			BaijiuOpenSelectViewHandler.bindWorkbench(application, modelService);
 			BaijiuChromatogramReadability.apply();
 			BaijiuShellMenus.install();
+			BaijiuPlantProgress.install();
 		} catch(RuntimeException | LinkageError e) {
 			BaijiuShellLog.warn("Baijiu shell menu/readability install failed", e);
 		}
@@ -91,19 +93,33 @@ public class BaijiuShellAddon {
 						BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
 					} else if(BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID.equals(element.getElementId())) {
 						BaijiuShellParts.hostOpenCsdEditors(application, modelService, partService(application));
-						schedulePlantWindowChrome(application, modelService);
+						scheduleQuietEditorChrome(application, modelService);
 					} else if(BaijiuShellChrome.CSD_EDITOR_PART_ID.equals(element.getElementId())) {
-						schedulePlantWindowChrome(application, modelService);
+						scheduleQuietEditorChrome(application, modelService);
 					}
 				}
 				if(container instanceof MUIElement stack && BaijiuShellChrome.CHROMATOGRAM_STACK_ID.equals(stack.getElementId())) {
-					schedulePlantWindowChrome(application, modelService);
+					scheduleQuietEditorChrome(application, modelService);
+				} else {
+					scheduleSanitizePlantMenus(application, modelService);
 				}
-				scheduleSanitizePlantMenus(application, modelService);
 			} catch(RuntimeException | LinkageError e) {
 				// never let a selection bounce abort the workbench
 			}
 		});
+		try {
+			eventBroker.subscribe(UIEvents.UILabel.TOPIC_LABEL, event -> {
+				if(shuttingDown) {
+					return;
+				}
+				Object element = event.getProperty(UIEvents.EventTags.ELEMENT);
+				if(element instanceof org.eclipse.e4.ui.model.application.ui.basic.MPart part && (BaijiuShellChrome.CSD_EDITOR_PART_ID.equals(part.getElementId()) || BaijiuShellChrome.isGeneratedCloneOf(BaijiuShellChrome.CSD_EDITOR_PART_ID, part.getElementId()))) {
+					BaijiuShellParts.shortenChromatogramTabLabel(part);
+				}
+			});
+		} catch(RuntimeException | LinkageError e) {
+			// older E4
+		}
 		eventBroker.subscribe(UIEvents.UILifeCycle.APP_STARTUP_COMPLETE, new EventHandler() {
 
 			@Override
@@ -114,6 +130,7 @@ public class BaijiuShellAddon {
 					BaijiuPlantTheme.forceLightTheme(application == null ? null : application.getContext());
 					BaijiuChromatogramReadability.apply();
 					BaijiuShellMenus.install();
+					BaijiuPlantProgress.install();
 					applyChrome(application, modelService);
 					selectBaijiuPerspective(application, modelService);
 					schedulePlantHomeRender(application, modelService);
@@ -155,11 +172,10 @@ public class BaijiuShellAddon {
 				}
 				Object element = event.getProperty(UIEvents.EventTags.ELEMENT);
 				String elementId = element instanceof MUIElement ui ? ui.getElementId() : null;
-				if(BaijiuShellChrome.shouldSanitizeAfterPartActivation(elementId)) {
-					scheduleSanitizePlantMenus(application, modelService);
-				}
 				if(isCsdChromeActivation(element)) {
-					schedulePlantWindowChrome(application, modelService);
+					scheduleQuietEditorChrome(application, modelService);
+				} else if(BaijiuShellChrome.shouldSanitizeAfterPartActivation(elementId)) {
+					scheduleSanitizePlantMenus(application, modelService);
 				}
 			});
 		} catch(RuntimeException | LinkageError e) {
@@ -706,6 +722,42 @@ public class BaijiuShellAddon {
 			});
 		} catch(RuntimeException | LinkageError e) {
 			reveal.run();
+		}
+	}
+
+	/**
+	 * Chromatogram open and tab switch. One delayed pass, not the
+	 * async+80+250 sanitize plus the 200/800/1500 window reveal. Those
+	 * repeats relayout the plot and flash the chart toolbar.
+	 */
+	private static void scheduleQuietEditorChrome(MApplication application, EModelService modelService) {
+
+		Runnable pass = () -> {
+			BaijiuShellParts.shortenChromatogramTabLabels(application, modelService);
+			BaijiuShellParts.sanitizePlantMenuContributions(application, modelService);
+			BaijiuShellMenus.hideChromatogramTargetLabelControls();
+			BaijiuShellMenus.hideChromatogramPolarityControls();
+			BaijiuShellMenus.hideChromatogramChartToolbar();
+			BaijiuShellMenus.lockChromatogramSeriesColorColumns();
+		};
+		try {
+			Display display = Display.getCurrent();
+			if(display == null || display.isDisposed()) {
+				display = Display.getDefault();
+			}
+			if(display == null || display.isDisposed()) {
+				pass.run();
+				return;
+			}
+			final Display ui = display;
+			final int generation = editorChromeGeneration.incrementAndGet();
+			ui.timerExec(BaijiuChromatogramOpenChrome.editorChromeDelayMs(), () -> {
+				if(!ui.isDisposed() && !shuttingDown && generation == editorChromeGeneration.get()) {
+					pass.run();
+				}
+			});
+		} catch(RuntimeException | LinkageError e) {
+			pass.run();
 		}
 	}
 

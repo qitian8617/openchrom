@@ -41,8 +41,11 @@ public final class BaijiuChartToolbarIcons {
 	 */
 	private static final String APPLYING = "net.openchrom.baijiu.chartToolbarApplying";
 	private static final int SLOTS = 4;
-	/** Logical toolbar glyph. The {@code _32} PNG is the same slot at 2×. */
-	private static final int TOOLBAR_ICON = 16;
+	/**
+	 * Painted glyph. The 32px PNG is scaled to this so the four buttons
+	 * are readable without crowding the plot.
+	 */
+	private static final int TOOLBAR_ICON = 22;
 	private static final Map<Display, List<Image>> LIVE = new IdentityHashMap<>();
 
 	private BaijiuChartToolbarIcons() {
@@ -241,13 +244,12 @@ public final class BaijiuChartToolbarIcons {
 		/*
 		 * Stream → ImageData → Image(Device, ImageData). A zoom lambda is
 		 * ambiguous on ECJ between ImageFileNameProvider (a filename
-		 * String) and ImageDataProvider, so the 16×16 glyph is the 100%
-		 * image and SWT scales it. The 32×32 file is only the fallback
-		 * when that read fails, folded back to one toolbar slot.
+		 * String) and ImageDataProvider. Prefer the 32px file scaled to
+		 * {@link #TOOLBAR_ICON}; the 16px file is the fallback.
 		 */
-		ImageData data = read(BaijiuShellChrome.chartToolbarIconFile(slot));
+		ImageData data = toolbarSlot(read(BaijiuShellChrome.chartToolbarIconFileHiDpi(slot)));
 		if(data == null) {
-			data = toolbarSlot(read(BaijiuShellChrome.chartToolbarIconFileHiDpi(slot)));
+			data = toolbarSlot(read(BaijiuShellChrome.chartToolbarIconFile(slot)));
 		}
 		if(data == null) {
 			BaijiuShellLog.warn("Plant chart toolbar icon missing for slot " + slot);

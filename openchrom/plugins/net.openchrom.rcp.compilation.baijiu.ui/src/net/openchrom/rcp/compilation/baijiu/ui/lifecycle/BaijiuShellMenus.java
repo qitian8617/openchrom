@@ -108,6 +108,11 @@ public final class BaijiuShellMenus {
 	 */
 	private static final String CHART_TOOLBAR_ROW = "net.openchrom.baijiu.chartToolbarRow";
 	private static final String CHART_TOOLBAR_READY = "net.openchrom.baijiu.chartToolbarReady";
+	/**
+	 * Set once the four keepers are on the plant row. Later Paint events
+	 * must not schedule another layout.
+	 */
+	private static final String CHART_TOOLBAR_STABLE = "net.openchrom.baijiu.chartToolbarStable";
 	private static final String CHART_TOOLBAR_RETRIES = "net.openchrom.baijiu.chartToolbarRetries";
 	/**
 	 * Slot remembered on a keeper after the first English or Chinese match.
@@ -217,6 +222,7 @@ public final class BaijiuShellMenus {
 				display.addFilter(SWT.Paint, listener);
 				display.addFilter(SWT.Selection, listener);
 				installed = listener;
+				BaijiuPlantProgress.install();
 			}
 		} catch(RuntimeException | LinkageError e) {
 			// headless fragment tests / Display not ready
@@ -1138,19 +1144,27 @@ public final class BaijiuShellMenus {
 		if(Boolean.TRUE.equals(editor.getData(CHART_TOOLBAR_BUSY))) {
 			return;
 		}
-		if(Boolean.TRUE.equals(editor.getData(CHART_TOOLBAR_READY)) && !chartToolbarNeedsWork(editor)) {
+		if(Boolean.TRUE.equals(editor.getData(CHART_TOOLBAR_STABLE))) {
+			if(start instanceof Button button && !button.isDisposed() && chartToolbarButtonSlot(button) < 0 && !sparesChartButton(button)) {
+				editor.setData(CHART_TOOLBAR_STABLE, null);
+			} else {
+				return;
+			}
+		}
+		boolean ready = Boolean.TRUE.equals(editor.getData(CHART_TOOLBAR_READY));
+		boolean needsWork = chartToolbarNeedsWork(editor);
+		if(!BaijiuChromatogramOpenChrome.shouldRebuildChartToolbar(ready, needsWork)) {
 			applyChartToolbarChrome(editor);
+			editor.setData(CHART_TOOLBAR_STABLE, Boolean.TRUE);
 			return;
 		}
 		/*
 		 * SWT.Show runs before the first paint, and setVisible(false) inside
 		 * that Show is undone when the outer show continues. Freeze the
-		 * editor here. The async pass runs after ExtendedChromatogramUI
-		 * finishes initialize(), disposes non-keepers, and only then lets
-		 * the first paint happen.
+		 * toolbar strip only. setRedraw(false) on the editor blanks the plot
+		 * to the sash gray and is what makes an open look jittery.
 		 */
-		holdChartRedraw(start);
-		holdChartRedraw(editor);
+		holdChartToolbarSurface(editor);
 		if(Boolean.TRUE.equals(editor.getData(CHART_TOOLBAR_QUEUED))) {
 			return;
 		}
@@ -1183,7 +1197,7 @@ public final class BaijiuShellMenus {
 				return;
 			}
 			editor.setData(CHART_TOOLBAR_RETRIES, Integer.valueOf(retries + 1));
-			holdChartRedraw(editor);
+			holdChartToolbarSurface(editor);
 			scheduleChartToolbarSanitize(editor);
 		});
 	}
@@ -1230,6 +1244,12 @@ public final class BaijiuShellMenus {
 		if(editor == null || editor.isDisposed() || Boolean.TRUE.equals(editor.getData(CHART_TOOLBAR_BUSY))) {
 			return false;
 		}
+		boolean ready = Boolean.TRUE.equals(editor.getData(CHART_TOOLBAR_READY));
+		if(!BaijiuChromatogramOpenChrome.shouldRebuildChartToolbar(ready, chartToolbarNeedsWork(editor))) {
+			editor.setData(CHART_TOOLBAR_STABLE, Boolean.TRUE);
+			releaseChartRedrawTree(editor, 0);
+			return true;
+		}
 		editor.setData(CHART_TOOLBAR_BUSY, Boolean.TRUE);
 		boolean done = false;
 		try {
@@ -1237,6 +1257,9 @@ public final class BaijiuShellMenus {
 			if(done && !editor.isDisposed()) {
 				editor.setData(CHART_TOOLBAR_READY, Boolean.TRUE);
 				editor.setData(CHART_TOOLBAR_RETRIES, null);
+				if(!chartToolbarNeedsWork(editor)) {
+					editor.setData(CHART_TOOLBAR_STABLE, Boolean.TRUE);
+				}
 			}
 		} catch(RuntimeException e) {
 			// editor closing
@@ -1274,6 +1297,10 @@ public final class BaijiuShellMenus {
 		 */
 		if(chartToolbarRetries(editor) < 3 && chartToolbarTooltipPending(editor, 0)) {
 			return false;
+		}
+		Composite existing = findPlantChartToolbarRow(chartToolbarSection(editor));
+		if(existing != null && !existing.isDisposed() && chartToolbarRowInOrder(existing) && !chartToolbarHasStray(existing.getParent() instanceof Composite parent ? parent : editor, existing)) {
+			return true;
 		}
 		Composite section = chartToolbarSection(editor);
 		if(section == null || section.isDisposed() || !(section.getLayout() instanceof GridLayout)) {
@@ -1431,7 +1458,7 @@ public final class BaijiuShellMenus {
 		layout.marginHeight = 0;
 		layout.marginTop = 2;
 		layout.marginBottom = 0;
-		layout.horizontalSpacing = 2;
+		layout.horizontalSpacing = 6;
 		layout.verticalSpacing = 0;
 		row.setLayout(layout);
 		revealChartToolbarRow(row);
@@ -1698,10 +1725,13 @@ public final class BaijiuShellMenus {
 					button.setParent(row);
 				}
 				/*
-				 * FILL matches the toggle (grid) and push (marker, range,
-				 * restore) heights so the four sit on one bar instead of two rows.
+				 * One fixed slot so the toggle and the push buttons share a
+				 * height. 32 leaves room for the 22px plant glyph.
 				 */
-				button.setLayoutData(new GridData(SWT.CENTER, SWT.FILL, false, false));
+				GridData slotData = new GridData(SWT.CENTER, SWT.CENTER, false, false);
+				slotData.widthHint = 32;
+				slotData.heightHint = 32;
+				button.setLayoutData(slotData);
 				if(!button.getVisible()) {
 					button.setVisible(true);
 				}
@@ -2058,6 +2088,19 @@ public final class BaijiuShellMenus {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * Freeze the toolbar strip, never the editor. The plot is a sibling of
+	 * that strip, so it keeps its last paint while the row is built once.
+	 */
+	private static void holdChartToolbarSurface(Composite editor) {
+
+		Composite section = chartToolbarSection(editor);
+		if(section == null || section.isDisposed() || section == editor || isChromatogramPlotControl(section)) {
+			return;
+		}
+		holdChartRedraw(section);
 	}
 
 	private static void holdChartRedraw(Control control) {
