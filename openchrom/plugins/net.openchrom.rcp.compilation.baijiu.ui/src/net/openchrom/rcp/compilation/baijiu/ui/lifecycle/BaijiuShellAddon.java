@@ -216,10 +216,16 @@ public class BaijiuShellAddon {
 		}
 		try {
 			eventBroker.subscribe(UIEvents.UIElement.TOPIC_WIDGET, event -> {
-				if(shuttingDown || BaijiuShellParts.isRevealingPlantWindowChrome()) {
+				if(shuttingDown) {
 					return;
 				}
 				if(!isWidgetGone(event)) {
+					if(!BaijiuShellParts.isRevealingPlantWindowChrome()) {
+						BaijiuShellParts.onPlantWidgetSet(application, modelService, event.getProperty(UIEvents.EventTags.ELEMENT));
+					}
+					return;
+				}
+				if(BaijiuShellParts.isRevealingPlantWindowChrome()) {
 					return;
 				}
 				Object element = event.getProperty(UIEvents.EventTags.ELEMENT);
@@ -255,6 +261,7 @@ public class BaijiuShellAddon {
 		if(application == null || modelService == null) {
 			return;
 		}
+		BaijiuShellParts.disablePartStackMinMax(application);
 		BaijiuOpenSelectViewHandler.bindWorkbench(application, modelService);
 		try {
 			applyChromeUnguarded(application, modelService);
@@ -282,6 +289,7 @@ public class BaijiuShellAddon {
 			hideTopWindowMenus(application, modelService);
 			revealPlantParts(application, modelService);
 			BaijiuShellSelection.selectPlantHomeIfPresent(application, modelService);
+			BaijiuShellParts.concealFixedStackChrome(application, modelService);
 			return;
 		}
 		hideResearchElements(application, modelService, elements);
@@ -296,6 +304,7 @@ public class BaijiuShellAddon {
 		BaijiuShellParts.revealPlantWindowChrome(application, modelService);
 		BaijiuShellParts.applyGcConsoleVisibility(application, modelService);
 		BaijiuShellParts.syncGcToggleToolItem(application, modelService);
+		BaijiuShellParts.concealFixedStackChrome(application, modelService);
 	}
 
 	static void recoverPlantHome(MApplication application, EModelService modelService) {
@@ -320,6 +329,7 @@ public class BaijiuShellAddon {
 			BaijiuShellLog.warn("Plant-home recovery failed", e);
 		} finally {
 			try {
+				BaijiuShellParts.concealFixedStackChrome(application, modelService);
 				BaijiuShellParts.sanitizePlantMenuContributions(application, modelService);
 			} catch(RuntimeException | LinkageError e) {
 				BaijiuShellLog.warn("Plant-home recovery chrome sanitize failed", e);

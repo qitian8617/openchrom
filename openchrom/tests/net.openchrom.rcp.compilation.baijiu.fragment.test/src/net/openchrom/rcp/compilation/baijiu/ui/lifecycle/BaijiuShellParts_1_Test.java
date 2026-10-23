@@ -79,6 +79,11 @@ public class BaijiuShellParts_1_Test {
 		BaijiuShellParts.ensureFileMenuContents(null, null, null);
 		BaijiuShellParts.ensureHelpMenuContents(null, null, null);
 		BaijiuShellParts.ensurePlantToolbarContents(null, null, null);
+		BaijiuShellParts.disablePartStackMinMax(null);
+		BaijiuShellParts.concealFixedStackChrome(null, null);
+		BaijiuShellParts.onPlantWidgetSet(null, null, null);
+		BaijiuPlantToolbarIcons.apply((org.eclipse.e4.ui.model.application.ui.menu.MToolBar)null);
+		BaijiuPlantToolbarIcons.apply((org.eclipse.e4.ui.model.application.ui.menu.MHandledToolItem)null);
 		BaijiuShellParts.sanitizeViewMenuChildren(null);
 		BaijiuShellParts.sanitizeFileMenuChildren(null);
 		BaijiuShellParts.sanitizeBaijiuMenuChildren(null);
@@ -522,6 +527,35 @@ public class BaijiuShellParts_1_Test {
 		assertEquals(1, workflow.getChildren().size());
 		assertEquals(home, workflow.getChildren().get(0));
 		assertTrue(chromatogram.getChildren().contains(csd));
+	}
+
+	@Test
+	public void fixedPanesTagTheApplicationOnceAndMapToolbarGlyphs() {
+
+		MApplication application = org.eclipse.e4.ui.model.application.MApplicationFactory.INSTANCE.createApplication();
+		BaijiuShellParts.disablePartStackMinMax(application);
+		BaijiuShellParts.disablePartStackMinMax(application);
+		BaijiuShellParts.concealFixedStackChrome(application, null);
+		assertTrue(application.getTags().contains(BaijiuShellChrome.DISABLE_MIN_MAX_ADDON_TAG));
+		int count = 0;
+		for(String tag : application.getTags()) {
+			if(BaijiuShellChrome.DISABLE_MIN_MAX_ADDON_TAG.equals(tag)) {
+				count++;
+			}
+		}
+		assertEquals(1, count);
+		assertEquals(net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuGlyphs.FOLDER, BaijiuPlantToolbarIcons.glyphFor(BaijiuShellChrome.OPEN_CHROMATOGRAM_TOOLITEM_ID));
+		assertEquals(net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuGlyphs.THERMO, BaijiuPlantToolbarIcons.glyphFor(BaijiuShellChrome.TOGGLE_GC_TOOLITEM_ID));
+		assertEquals(net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuGlyphs.PLAY, BaijiuPlantToolbarIcons.glyphFor(BaijiuShellChrome.START_ANALYSIS_TOOLITEM_ID));
+		assertEquals(net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuGlyphs.PEAKS, BaijiuPlantToolbarIcons.glyphFor(BaijiuShellChrome.INTEGRATE_TOOLITEM_ID));
+		assertEquals(net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuGlyphs.CURVE, BaijiuPlantToolbarIcons.glyphFor(BaijiuShellChrome.ANALYSIS_TOOLITEM_ID));
+		assertEquals(net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuGlyphs.DOCUMENT, BaijiuPlantToolbarIcons.glyphFor(BaijiuShellChrome.REPORT_TOOLITEM_ID));
+		assertEquals(null, BaijiuPlantToolbarIcons.glyphFor(BaijiuShellChrome.PLANT_TOOLBAR_ID));
+		assertEquals(null, BaijiuPlantToolbarIcons.glyphFor(null));
+		org.eclipse.e4.ui.model.application.ui.menu.MToolBar toolbar = MMenuFactory.INSTANCE.createToolBar();
+		toolbar.setElementId(BaijiuShellChrome.PLANT_TOOLBAR_ID);
+		BaijiuPlantToolbarIcons.apply(toolbar);
+		BaijiuShellParts.onPlantWidgetSet(application, null, toolbar);
 	}
 
 	private static MMenu findView(MMenu main) {

@@ -177,6 +177,22 @@ public final class BaijiuShellChrome {
 	 * {@link #PAGES_STACK_ID}.
 	 */
 	public static final String CHROMATOGRAM_STACK_ID = "net.openchrom.rcp.compilation.baijiu.ui.partstack.plantChromatogram";
+	/**
+	 * Eclipse {@code MinMaxAddon} checks this application tag and, when it
+	 * is present, never creates part-stack minimize / maximize buttons.
+	 * The string matches {@code MinMaxAddon}'s private constant. The main
+	 * window keeps its OS min / max chrome.
+	 */
+	public static final String DISABLE_MIN_MAX_ADDON_TAG = "DisableMinMaxAddon";
+	/**
+	 * Plant sash panes that stay in the layout. Operators must not be able
+	 * to collapse or zoom 导航, the task pages, or 谱图/采集.
+	 */
+	public static final List<String> FIXED_PLANT_STACK_IDS = List.of( //
+			NAV_STACK_ID, //
+			PAGES_STACK_ID, //
+			CHROMATOGRAM_STACK_ID, //
+			WORKFLOW_STACK_ID);
 	public static final String INTEGRATION_HOME_PART_ID = "net.openchrom.rcp.compilation.baijiu.ui.part.integrationHome";
 	public static final String INTEGRATION_HOME_CONTRIBUTION_URI = "bundleclass://net.openchrom.rcp.compilation.baijiu.ui/net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuIntegrationHomePart";
 	public static final String WIZARD_HOME_PART_ID = "net.openchrom.rcp.compilation.baijiu.ui.part.wizardHome";

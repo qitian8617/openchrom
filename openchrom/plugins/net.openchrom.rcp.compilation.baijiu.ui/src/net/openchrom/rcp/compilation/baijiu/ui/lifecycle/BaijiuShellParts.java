@@ -77,6 +77,7 @@ public final class BaijiuShellParts {
 
 	private static final AtomicBoolean revealingPlantWindowChrome = new AtomicBoolean();
 	private static final AtomicBoolean hostingCsdEditors = new AtomicBoolean();
+	private static final AtomicBoolean fixedStackConcealQueued = new AtomicBoolean();
 
 	private BaijiuShellParts() {
 
@@ -123,6 +124,7 @@ public final class BaijiuShellParts {
 		dedupePlantWorkflowStack(application, modelService);
 		revealPlantWindowChrome(application, modelService);
 		syncGcToggleToolItem(application, modelService);
+		concealFixedStackChrome(application, modelService);
 		if(!BaijiuShellModel.plantHomeSurfacePresent(application, modelService)) {
 			return false;
 		}
@@ -160,6 +162,7 @@ public final class BaijiuShellParts {
 				forceCreateGui(application, modelService, part.getElementId());
 			}
 		}
+		concealFixedStackChrome(application, modelService);
 		applyPlantWindowTitle(application, modelService);
 	}
 
@@ -183,10 +186,7 @@ public final class BaijiuShellParts {
 				BaijiuShellSelection.selectInParent(kept);
 			}
 		}
-		MUIElement pagesElement = modelService == null || application == null ? null : modelService.find(BaijiuShellChrome.PAGES_STACK_ID, application);
-		if(pagesElement instanceof MPartStack pages) {
-			concealTaskTabs(pages);
-		}
+		concealFixedStackChrome(application, modelService);
 		applyPlantWindowTitle(application, modelService);
 		return shown;
 	}
@@ -227,29 +227,168 @@ public final class BaijiuShellParts {
 	}
 
 	/**
+	 * Stop Eclipse {@code MinMaxAddon} from creating part min/max buttons.
+	 * Idempotent. Does nothing when the application is missing.
+	 */
+	public static void disablePartStackMinMax(MApplication application) {
+
+		addTag(application, BaijiuShellChrome.DISABLE_MIN_MAX_ADDON_TAG);
+	}
+
+	/**
+	 * Plant sash panes stay fixed. The addon tag is what stops the buttons
+	 * from being created on the next widget or children event (layout
+	 * rebuild, opening a chromatogram). Any buttons already painted on
+	 * 导航 / task pages / 谱图/采集 are removed here. Task pages also keep
+	 * a hidden tab strip. This does not touch the main window's OS chrome
+	 * and does not call {@code setVisible(false)} on the folders.
+	 */
+	public static void concealFixedStackChrome(MApplication application, EModelService modelService) {
+
+		disablePartStackMinMax(application);
+		if(application == null || modelService == null) {
+			return;
+		}
+		for(String id : BaijiuShellChrome.FIXED_PLANT_STACK_IDS) {
+			MUIElement found;
+			try {
+				found = modelService.find(id, application);
+			} catch(RuntimeException | LinkageError e) {
+				continue;
+			}
+			if(!(found instanceof MPartStack stack)) {
+				continue;
+			}
+			clearMinMaxTags(stack);
+			if(BaijiuShellChrome.PAGES_STACK_ID.equals(id)) {
+				concealTaskTabs(stack);
+			} else {
+				concealStackMinMaxButtons(stack);
+			}
+		}
+	}
+
+	/**
+	 * A stack or plant toolbar widget was just created. Re-apply fixed
+	 * chrome after other listeners in this event, so a late min/max pass
+	 * cannot leave the buttons up.
+	 */
+	public static void onPlantWidgetSet(MApplication application, EModelService modelService, Object element) {
+
+		if(element instanceof MToolBar toolbar && BaijiuShellChrome.PLANT_TOOLBAR_ID.equals(toolbar.getElementId())) {
+			BaijiuPlantToolbarIcons.apply(toolbar);
+			return;
+		}
+		if(element instanceof MHandledToolItem item && BaijiuShellChrome.PLANT_TOOLBAR_ITEM_IDS.contains(item.getElementId())) {
+			BaijiuPlantToolbarIcons.apply(item);
+			return;
+		}
+		if(!(element instanceof MPartStack stack)) {
+			return;
+		}
+		String id = stack.getElementId();
+		if(id == null || !BaijiuShellChrome.FIXED_PLANT_STACK_IDS.contains(id)) {
+			return;
+		}
+		concealFixedStackChrome(application, modelService);
+		scheduleFixedStackConceal(application, modelService);
+	}
+
+	private static void scheduleFixedStackConceal(MApplication application, EModelService modelService) {
+
+		org.eclipse.swt.widgets.Display display;
+		try {
+			display = org.eclipse.swt.widgets.Display.getCurrent();
+		} catch(RuntimeException | LinkageError e) {
+			return;
+		}
+		if(display == null || display.isDisposed()) {
+			return;
+		}
+		if(!fixedStackConcealQueued.compareAndSet(false, true)) {
+			return;
+		}
+		try {
+			display.asyncExec(() -> {
+				fixedStackConcealQueued.set(false);
+				concealFixedStackChrome(application, modelService);
+			});
+		} catch(RuntimeException | LinkageError e) {
+			fixedStackConcealQueued.set(false);
+		}
+	}
+
+	private static void clearMinMaxTags(MUIElement element) {
+
+		removeTag(element, IPresentationEngine.MINIMIZED);
+		removeTag(element, IPresentationEngine.MAXIMIZED);
+		removeTag(element, IPresentationEngine.MINIMIZED_BY_ZOOM);
+	}
+
+	/**
 	 * Hide the task-stack tab strip. The nav is the only switcher. The
 	 * chromatogram stack is a different widget and keeps its tabs.
 	 */
 	static void concealTaskTabs(MPartStack pages) {
 
-		if(pages == null) {
-			return;
-		}
-		Object widget;
-		try {
-			widget = pages.getWidget();
-		} catch(RuntimeException | LinkageError e) {
-			return;
-		}
-		if(!(widget instanceof org.eclipse.swt.custom.CTabFolder folder) || folder.isDisposed()) {
+		org.eclipse.swt.custom.CTabFolder folder = tabFolder(pages);
+		if(folder == null) {
 			return;
 		}
 		try {
 			if(folder.getTabHeight() != 0) {
 				folder.setTabHeight(0);
 			}
+			concealFolderMinMax(folder);
+		} catch(RuntimeException | LinkageError e) {
+			// folder closing
+		}
+	}
+
+	/**
+	 * Drop min/max chrome but keep the tab the operator uses as the pane
+	 * title (导航, 谱图/采集).
+	 */
+	static void concealStackMinMaxButtons(MPartStack stack) {
+
+		org.eclipse.swt.custom.CTabFolder folder = tabFolder(stack);
+		if(folder == null) {
+			return;
+		}
+		concealFolderMinMax(folder);
+	}
+
+	private static org.eclipse.swt.custom.CTabFolder tabFolder(MPartStack stack) {
+
+		if(stack == null) {
+			return null;
+		}
+		Object widget;
+		try {
+			widget = stack.getWidget();
+		} catch(RuntimeException | LinkageError e) {
+			return null;
+		}
+		if(!(widget instanceof org.eclipse.swt.custom.CTabFolder folder) || folder.isDisposed()) {
+			return null;
+		}
+		return folder;
+	}
+
+	private static void concealFolderMinMax(org.eclipse.swt.custom.CTabFolder folder) {
+
+		if(folder == null || folder.isDisposed()) {
+			return;
+		}
+		try {
 			folder.setMinimizeVisible(false);
 			folder.setMaximizeVisible(false);
+			if(folder.getMaximized()) {
+				folder.setMaximized(false);
+			}
+			if(folder.getMinimized()) {
+				folder.setMinimized(false);
+			}
 		} catch(RuntimeException | LinkageError e) {
 			// folder closing
 		}
@@ -285,6 +424,7 @@ public final class BaijiuShellParts {
 				forceCreateGui(application, modelService, BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID);
 			}
 		}
+		concealFixedStackChrome(application, modelService);
 		return hosted || findPart(modelService, application, BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID) != null || findPlantChromatogram(application, modelService) != null;
 	}
 
@@ -504,6 +644,7 @@ public final class BaijiuShellParts {
 			recreatePlantChromeWidgets(application, modelService);
 			sanitizePlantMenuContributions(application, modelService);
 			BaijiuWindowIcons.apply(application, modelService);
+			concealFixedStackChrome(application, modelService);
 		} finally {
 			revealingPlantWindowChrome.set(false);
 		}
@@ -1236,6 +1377,7 @@ public final class BaijiuShellParts {
 		}
 		stripForeignToolbarChildren(toolbar);
 		restoreGcConsoleToolItemIcon(modelService, application);
+		BaijiuPlantToolbarIcons.apply(toolbar);
 	}
 
 	/**
@@ -1520,6 +1662,7 @@ public final class BaijiuShellParts {
 			if(toolbar instanceof MToolBar plantToolbar) {
 				ensurePlantToolbarContents(modelService, application, plantToolbar);
 				forceCreateElement(application, modelService, plantToolbar);
+				BaijiuPlantToolbarIcons.apply(plantToolbar);
 			} else if(toolbar != null) {
 				forceCreateElement(application, modelService, toolbar);
 			}
@@ -3210,12 +3353,14 @@ public final class BaijiuShellParts {
 		separateChromatogramHost(application, modelService);
 		MUIElement stackElement = modelService.find(BaijiuShellChrome.CHROMATOGRAM_STACK_ID, application);
 		if(!(stackElement instanceof MPartStack plantStack)) {
+			concealFixedStackChrome(application, modelService);
 			return false;
 		}
 		MPart home = findPart(modelService, application, BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID);
 		List<MPart> editors = modelService.findElements(application, BaijiuShellChrome.CSD_EDITOR_PART_ID, MPart.class, null);
 		if(editors == null || editors.isEmpty()) {
 			hideEmptyChromatogramHome(home, false);
+			concealFixedStackChrome(application, modelService);
 			return false;
 		}
 		boolean hosted = false;
@@ -3238,6 +3383,7 @@ public final class BaijiuShellParts {
 		} else {
 			hideEmptyChromatogramHome(home, false);
 		}
+		concealFixedStackChrome(application, modelService);
 		return hosted;
 	}
 
@@ -3522,10 +3668,7 @@ public final class BaijiuShellParts {
 		if(nav != null) {
 			BaijiuShellSelection.selectInParent(nav);
 		}
-		MUIElement pagesElement = modelService.find(BaijiuShellChrome.PAGES_STACK_ID, application);
-		if(pagesElement instanceof MPartStack pages) {
-			concealTaskTabs(pages);
-		}
+		concealFixedStackChrome(application, modelService);
 	}
 
 	private static boolean isSelectedTask(MUIElement element) {
