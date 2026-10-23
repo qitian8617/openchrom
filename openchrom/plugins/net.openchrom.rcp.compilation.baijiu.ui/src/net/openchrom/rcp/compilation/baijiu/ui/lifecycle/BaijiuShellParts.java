@@ -3343,6 +3343,40 @@ public final class BaijiuShellParts {
 		}
 	}
 
+	static void shortenChromatogramTabLabels(MApplication application, EModelService modelService) {
+
+		if(application == null || modelService == null) {
+			return;
+		}
+		List<MPart> editors;
+		try {
+			editors = modelService.findElements(application, BaijiuShellChrome.CSD_EDITOR_PART_ID, MPart.class, null);
+		} catch(RuntimeException | LinkageError e) {
+			return;
+		}
+		if(editors == null) {
+			return;
+		}
+		for(MPart part : editors) {
+			shortenChromatogramTabLabel(part);
+		}
+	}
+
+	static void shortenChromatogramTabLabel(MPart part) {
+
+		if(part == null) {
+			return;
+		}
+		try {
+			String next = BaijiuChromatogramOpenChrome.plantChromatogramTabLabel(part.getLabel());
+			if(!next.isBlank() && !next.equals(part.getLabel())) {
+				part.setLabel(next);
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// part closing
+		}
+	}
+
 	static boolean hostOpenCsdEditors(MApplication application, EModelService modelService, EPartService partService) {
 
 		if(application == null || modelService == null) {
@@ -3379,6 +3413,7 @@ public final class BaijiuShellParts {
 			if(part == null || !hasCsdInput(part)) {
 				continue;
 			}
+			shortenChromatogramTabLabel(part);
 			if(!hostCsdInPlantStack(partService, plantStack, part)) {
 				continue;
 			}
