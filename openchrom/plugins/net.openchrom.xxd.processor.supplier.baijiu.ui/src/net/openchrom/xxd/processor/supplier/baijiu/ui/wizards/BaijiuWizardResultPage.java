@@ -10,8 +10,6 @@
 package net.openchrom.xxd.processor.supplier.baijiu.ui.wizards;
 
 import org.eclipse.jface.wizard.WizardPage;
-import org.eclipse.swt.SWT;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuPlantLayout;
@@ -39,12 +37,8 @@ public class BaijiuWizardResultPage extends WizardPage {
 		Composite root = BaijiuPlantLayout.tabBody(parent);
 		status = BaijiuPlantLayout.hint(root, "");
 		gb = BaijiuPlantLayout.hint(root, "");
-		Button quantify = new Button(root, SWT.PUSH);
-		quantify.setText("\u5b9a\u91cf\u5e76\u5199\u56de\u5cf0\u8868");
-		quantify.addListener(SWT.Selection, e -> refresh(true));
-		Button report = new Button(root, SWT.PUSH);
-		report.setText("\u9884\u89c8\u62a5\u544a");
-		report.addListener(SWT.Selection, e -> wizard.previewReport(getShell()));
+		BaijiuPlantLayout.primary(root, "\u5b9a\u91cf\u5e76\u5199\u56de\u5cf0\u8868", e -> refresh(true));
+		BaijiuPlantLayout.command(root, "\u9884\u89c8\u62a5\u544a", e -> wizard.previewReport(getShell()));
 		setControl(BaijiuPlantLayout.tabControlOf(root));
 	}
 

@@ -48,7 +48,7 @@ public class BaijiuChromatogramHomePart {
 		created = true;
 		try {
 			parent.setLayout(new FillLayout());
-			BaijiuHomePanels.createChromatogramEmptyState(parent);
+			BaijiuHomePanels.createChromatogramEmptyState(parent, true);
 			parent.layout(true, true);
 		} catch(Throwable t) {
 			BaijiuHomePanels.showError(parent, t);

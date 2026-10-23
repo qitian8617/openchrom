@@ -148,10 +148,45 @@ public class BaijiuPlantChromePolish_1_Test {
 		assertTrue(read("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/parts/BaijiuNavHomePart.java").contains("CONNECTOR"));
 	}
 
+	@Test
+	public void analysisDropsDuplicateChipsAndChromatogramTitle() throws Exception {
+
+		String analysis = read("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/shell/BaijiuAnalysisShell.java");
+		String layout = read("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/shell/BaijiuPlantLayout.java");
+		String button = read("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/shell/BaijiuPlantButton.java");
+		String panels = read("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/parts/BaijiuHomePanels.java");
+		String home = read("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/parts/BaijiuChromatogramHomePart.java");
+		String report = read("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/shell/BaijiuReportShell.java");
+		String integrate = read("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/shell/BaijiuIntegrationShell.java");
+		assertFalse(analysis.contains("stepButton"), "白酒分析 must not build the top workflow chip row");
+		assertFalse(analysis.contains(esc("8def") + esc("5f84")), "path breadcrumb repeats the tabs");
+		String header = method(analysis, "createWorkflowHeader");
+		assertFalse(header.contains(esc("6837") + esc("54c1")), "header must not repeat the sample chip");
+		assertTrue(header.contains(esc("5f53") + esc("524d") + esc("8c31") + esc("56fe")), "compact current-chromatogram line");
+		assertTrue(analysis.contains("BaijiuPlantTabs"));
+		assertTrue(analysis.contains("BaijiuPlantLayout.primary"));
+		assertTrue(analysis.contains(esc("4fdd") + esc("5b58") + esc("65b9") + esc("6cd5")));
+		assertFalse(layout.contains("new Group"), "sections are flat, not a Group frame");
+		assertTrue(button.contains("31, 111, 168"));
+		assertTrue(button.contains("SWT.Selection"));
+		assertTrue(report.contains("BaijiuPlantLayout.primary"));
+		assertTrue(report.contains("生成报告"));
+		assertTrue(integrate.contains("BaijiuPlantLayout.primary"));
+		assertTrue(home.contains("createChromatogramEmptyState(parent, true)"));
+		assertTrue(panels.contains("if(!hostProvidesTitle)"));
+		assertTrue(panels.contains("CHROMATOGRAM_EMPTY_TITLE"));
+		assertTrue(panels.contains("CHROMATOGRAM_EMPTY_HINT"));
+	}
+
 	private static void assertEqualsEpoch(String chrome) {
 
 		assertTrue(chrome.contains("CHROME_EPOCH = 36"));
 		assertFalse(chrome.contains("CHROME_EPOCH = 37"));
+	}
+
+	private static String esc(String hex) {
+
+		return "\\" + "u" + hex;
 	}
 
 	private static String method(String source, String name) {

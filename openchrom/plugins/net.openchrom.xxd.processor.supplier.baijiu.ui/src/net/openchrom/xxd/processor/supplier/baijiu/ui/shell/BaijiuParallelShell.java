@@ -16,7 +16,6 @@ import java.util.Locale;
 import org.eclipse.chemclipse.model.core.IChromatogram;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.FileDialog;
@@ -131,18 +130,14 @@ public final class BaijiuParallelShell {
 
 		Composite buttons = BaijiuPlantLayout.buttonRow(body);
 
-		Button pickA = new Button(buttons, SWT.PUSH);
-		pickA.setText("选择针 A .ocb");
-		pickA.addListener(SWT.Selection, e -> {
+		BaijiuPlantLayout.command(buttons, "选择针 A .ocb", e -> {
 			File chosen = chooseFile(host, "选择针 A 色谱图");
 			if(chosen != null) {
 				files[0] = chosen;
 				fileALabel.setText("针 A：" + chosen.getName());
 			}
 		});
-		Button pickB = new Button(buttons, SWT.PUSH);
-		pickB.setText("选择针 B .ocb");
-		pickB.addListener(SWT.Selection, e -> {
+		BaijiuPlantLayout.command(buttons, "选择针 B .ocb", e -> {
 			File chosen = chooseFile(host, "选择针 B 色谱图");
 			if(chosen != null) {
 				files[1] = chosen;
@@ -150,9 +145,7 @@ public final class BaijiuParallelShell {
 			}
 		});
 
-		Button run = new Button(buttons, SWT.PUSH);
-		run.setText("计算均值与偏差");
-		run.addListener(SWT.Selection, e -> {
+		BaijiuPlantLayout.primary(buttons, "计算均值与偏差", e -> {
 			if(files[0] == null || files[1] == null) {
 				warn(host, "请先为针 A 和针 B 各选一个 .ocb（演示可两次选择 sample-nongxiang.ocb）。\nChoose a chromatogram for needle A and needle B (the demo file may be used twice).");
 				return;
@@ -191,9 +184,7 @@ public final class BaijiuParallelShell {
 		});
 
 		if(parent instanceof Shell dialog) {
-			Button close = new Button(buttons, SWT.PUSH);
-			close.setText("关闭");
-			close.addListener(SWT.Selection, e -> dialog.close());
+			BaijiuPlantLayout.command(buttons, "关闭", e -> dialog.close());
 		}
 	}
 
