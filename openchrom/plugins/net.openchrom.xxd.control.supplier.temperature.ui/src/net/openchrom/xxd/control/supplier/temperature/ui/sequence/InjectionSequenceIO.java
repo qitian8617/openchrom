@@ -49,7 +49,8 @@ public final class InjectionSequenceIO {
 			json.append("      \"notes\": ").append(quote(entry.getNotes())).append(",\n");
 			json.append("      \"status\": ").append(quote(entry.getStatus().name())).append(",\n");
 			json.append("      \"chromatogramPath\": ").append(quote(entry.getChromatogramPath())).append(",\n");
-			json.append("      \"parallelGroupId\": ").append(quote(entry.getParallelGroupId())).append("\n");
+			json.append("      \"parallelGroupId\": ").append(quote(entry.getParallelGroupId())).append(",\n");
+			json.append("      \"concentrationBand\": ").append(quote(entry.getConcentrationBand())).append("\n");
 			json.append("    }");
 			if(i < entries.size() - 1) {
 				json.append(',');
@@ -106,7 +107,11 @@ public final class InjectionSequenceIO {
 
 	private static InjectionSequenceEntry entryOf(Map<?, ?> map) {
 
-		return new InjectionSequenceEntry(stringOf(map.get("id")), InjectionType.parse(stringOf(map.get("type"))), stringOf(map.get("sampleId")), stringOf(map.get("sampleName")), stringOf(map.get("notes")), InjectionStatus.parse(stringOf(map.get("status"))), stringOf(map.get("chromatogramPath")), stringOf(map.get("parallelGroupId")));
+		InjectionSequenceEntry entry = new InjectionSequenceEntry(stringOf(map.get("id")), InjectionType.parse(stringOf(map.get("type"))), stringOf(map.get("sampleId")), stringOf(map.get("sampleName")), stringOf(map.get("notes")), InjectionStatus.parse(stringOf(map.get("status"))), stringOf(map.get("chromatogramPath")), stringOf(map.get("parallelGroupId")));
+		if(map.containsKey("concentrationBand")) {
+			entry.setConcentrationBand(stringOf(map.get("concentrationBand")));
+		}
+		return entry;
 	}
 
 	private static String stringOf(Object value) {

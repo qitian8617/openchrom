@@ -228,4 +228,41 @@ public class InjectionSequence_1_Test {
 		assertEquals(InjectionType.MIX_STD, InjectionType.parse("mix_std"));
 		assertEquals(InjectionStatus.FAILED, InjectionStatus.parse("failed"));
 	}
+
+	@Test
+	public void concentrationBandDefaultsPersistAndCopyOntoParallel() {
+
+		InjectionSequence sequence = new InjectionSequence();
+		sequence.fillTypical(1);
+		assertEquals("UNKNOWN", sequence.get(0).getConcentrationBand());
+		assertEquals("HIGH", sequence.get(1).getConcentrationBand());
+		assertEquals("LOW", sequence.get(2).getConcentrationBand());
+		assertEquals("MEDIUM", sequence.get(3).getConcentrationBand());
+		assertEquals("UNKNOWN", InjectionType.BLANK.defaultConcentrationBand());
+		assertEquals("HIGH", InjectionType.MIX_STD.defaultConcentrationBand());
+		assertEquals("LOW", InjectionType.QC.defaultConcentrationBand());
+		assertEquals("MEDIUM", InjectionType.SAMPLE.defaultConcentrationBand());
+
+		assertTrue(sequence.updateEntry(3, InjectionType.SAMPLE, "S-01", "高浓样品", "", "HIGH"));
+		assertEquals("HIGH", sequence.get(3).getConcentrationBand());
+		InjectionSequenceEntry twin = sequence.addParallelOf(3);
+		assertNotNull(twin);
+		assertEquals("HIGH", twin.getConcentrationBand());
+
+		String json = InjectionSequenceIO.toJson(sequence);
+		assertTrue(json.contains("\"concentrationBand\": \"HIGH\""));
+		assertTrue(json.contains("\"concentrationBand\": \"LOW\""));
+		InjectionSequence loaded = InjectionSequenceIO.fromJson(json);
+		assertEquals("HIGH", loaded.get(3).getConcentrationBand());
+		assertEquals("LOW", loaded.get(2).getConcentrationBand());
+		assertEquals("HIGH", loaded.get(4).getConcentrationBand());
+		assertEquals(sequence.get(3).getParallelGroupId(), loaded.get(4).getParallelGroupId());
+
+		InjectionSequence legacy = InjectionSequenceIO.fromJson("""
+				{"version":1,"name":"","currentIndex":0,"entries":[
+				  {"id":"a","type":"SAMPLE","sampleId":"S-01","sampleName":"样品","notes":"","status":"PENDING","chromatogramPath":"","parallelGroupId":""}
+				]}
+				""");
+		assertEquals("", legacy.get(0).getConcentrationBand());
+	}
 }
