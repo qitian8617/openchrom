@@ -11,7 +11,6 @@ package net.openchrom.xxd.processor.supplier.baijiu.ui.shell;
 
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Text;
 
@@ -44,9 +43,7 @@ public final class BaijiuIntegrationShell {
 		result.setLayoutData(BaijiuPlantLayout.tableFill(240));
 		result.setText("尚未运行。打开谱图后点「运行推荐积分」。");
 
-		Button run = new Button(body, SWT.PUSH);
-		run.setText(BaijiuTerms.RECOMMENDED_INTEGRATION);
-		run.addListener(SWT.Selection, e -> {
+		BaijiuPlantLayout.primary(body, BaijiuTerms.RECOMMENDED_INTEGRATION, e -> {
 			String message = BaijiuRecommendedIntegration.integrate(ChromatogramBridge.resolve(partService));
 			BaijiuAnalysisEngine.refreshSelection(ChromatogramBridge.resolve(partService));
 			if(!result.isDisposed()) {

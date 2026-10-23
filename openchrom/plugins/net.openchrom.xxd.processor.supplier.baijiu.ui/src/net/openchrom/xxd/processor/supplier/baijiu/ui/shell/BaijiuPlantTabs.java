@@ -62,7 +62,7 @@ public final class BaijiuPlantTabs {
 		folder.setSimple(true);
 		folder.setTabHeight(TAB_PX);
 		folder.setMRUVisible(false);
-		folder.setBorderVisible(true);
+		folder.setBorderVisible(false);
 		folder.setMinimizeVisible(false);
 		folder.setMaximizeVisible(false);
 		Color[] colors = renderer.colors;
@@ -195,8 +195,6 @@ public final class BaijiuPlantTabs {
 			} else {
 				gc.fillRectangle(bounds);
 			}
-			gc.setForeground(colors[BORDER]);
-			gc.drawRectangle(bounds.x, bounds.y, Math.max(0, bounds.width - 1), Math.max(0, bounds.height - 1));
 		}
 
 		private void drawHeader(GC gc, Rectangle bounds) {
@@ -205,7 +203,10 @@ public final class BaijiuPlantTabs {
 				return;
 			}
 			gc.setBackground(colors[HEADER]);
-			gc.fillRectangle(bounds.x + 1, bounds.y + 1, Math.max(0, bounds.width - 2), Math.max(0, bounds.height - 2));
+			gc.fillRectangle(bounds.x, bounds.y, bounds.width, Math.max(0, bounds.height - 1));
+			gc.setForeground(colors[BORDER]);
+			int line = bounds.y + bounds.height - 1;
+			gc.drawLine(bounds.x, line, bounds.x + Math.max(0, bounds.width - 1), line);
 		}
 
 		private void drawTab(int part, int state, Rectangle bounds, GC gc) {

@@ -10,7 +10,6 @@
 package net.openchrom.xxd.processor.supplier.baijiu.ui.shell;
 
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Text;
 
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuPreferences;
@@ -30,7 +29,7 @@ final class BaijiuReportHeaderForm {
 
 	BaijiuReportHeaderForm(Composite parent) {
 
-		Group group = BaijiuPlantLayout.group(parent, "\u62a5\u544a\u62ac\u5934", 1);
+		Composite group = BaijiuPlantLayout.group(parent, "\u62a5\u544a\u62ac\u5934", 1);
 		unitName = BaijiuPlantLayout.labeledText(group, BaijiuReportHeader.UNIT_LABEL, BaijiuPlantLayout.METHOD);
 		title = BaijiuPlantLayout.labeledText(group, BaijiuReportHeader.TITLE_LABEL, BaijiuPlantLayout.METHOD);
 		Composite people = BaijiuPlantLayout.row(group, 4);

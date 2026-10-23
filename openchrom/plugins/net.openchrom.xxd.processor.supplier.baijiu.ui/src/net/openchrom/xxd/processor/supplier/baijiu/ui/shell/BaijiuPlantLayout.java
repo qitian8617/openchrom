@@ -9,10 +9,14 @@
  *******************************************************************************/
 package net.openchrom.xxd.processor.supplier.baijiu.ui.shell;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
 import org.eclipse.swt.custom.ScrolledComposite;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.FillLayout;
@@ -22,7 +26,7 @@ import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Group;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.Listener;
@@ -54,6 +58,12 @@ public final class BaijiuPlantLayout {
 	public static final int GAS = 120;
 	public static final int COMPOUND_NAME = 160;
 	public static final int TYPE = 140;
+
+	private static final int FILL = 0;
+	private static final int INK = 1;
+	private static final int ACCENT = 2;
+
+	private static final Map<Display, Color[]> PALETTE = new HashMap<>();
 
 	private BaijiuPlantLayout() {
 
@@ -133,10 +143,11 @@ public final class BaijiuPlantLayout {
 		fillClient(parent);
 		Composite root = compact(parent);
 		GridLayout layout = new GridLayout(1, false);
-		layout.marginWidth = 0;
-		layout.marginHeight = 0;
+		layout.marginWidth = 8;
+		layout.marginHeight = 6;
 		layout.verticalSpacing = 6;
 		root.setLayout(layout);
+		cardSurface(root);
 		return root;
 	}
 
@@ -149,11 +160,13 @@ public final class BaijiuPlantLayout {
 		ScrolledComposite scroll = scrolled(parent);
 		Composite body = new Composite(scroll, SWT.NONE);
 		GridLayout layout = new GridLayout(1, false);
-		layout.marginWidth = 6;
+		layout.marginWidth = 8;
 		layout.marginHeight = 6;
 		layout.verticalSpacing = 6;
 		body.setLayout(layout);
 		scroll.setContent(body);
+		cardSurface(scroll);
+		cardSurface(body);
 		bindMinSize(scroll, body);
 		return body;
 	}
@@ -166,11 +179,13 @@ public final class BaijiuPlantLayout {
 		}
 		Composite body = new Composite(scroll, SWT.NONE);
 		GridLayout layout = new GridLayout(1, false);
-		layout.marginWidth = 6;
+		layout.marginWidth = 8;
 		layout.marginHeight = 6;
 		layout.verticalSpacing = 6;
 		body.setLayout(layout);
 		scroll.setContent(body);
+		cardSurface(scroll);
+		cardSurface(body);
 		bindMinSize(scroll, body);
 		return scroll;
 	}
@@ -306,13 +321,65 @@ public final class BaijiuPlantLayout {
 		}
 	}
 
-	public static Group group(Composite parent, String title, int columns) {
+	/**
+	 * Flat section. An SWT {@code Group} draws another window frame inside
+	 * the page; the heading and a short accent rule replace that border.
+	 */
+	public static Composite group(Composite parent, String title, int columns) {
 
-		Group group = new Group(parent, SWT.NONE);
-		group.setText(title == null ? "" : title);
-		group.setLayout(new GridLayout(columns, false));
-		group.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		return group;
+		int span = Math.max(1, columns);
+		Composite section = new Composite(parent, SWT.NONE);
+		GridLayout layout = new GridLayout(span, false);
+		layout.marginWidth = 0;
+		layout.marginHeight = 2;
+		layout.verticalSpacing = 4;
+		section.setLayout(layout);
+		section.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
+		cardSurface(section);
+		if(title != null && !title.isBlank()) {
+			Label heading = new Label(section, SWT.NONE);
+			heading.setText(title);
+			heading.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, span, 1));
+			card(heading);
+			Color[] colors = palette(section.getDisplay());
+			if(colors != null) {
+				heading.setForeground(colors[INK]);
+			}
+			Composite rule = new Composite(section, SWT.NONE);
+			GridData ruleData = new GridData(SWT.FILL, SWT.CENTER, true, false, span, 1);
+			ruleData.heightHint = 2;
+			rule.setLayoutData(ruleData);
+			if(colors != null) {
+				rule.setBackground(colors[ACCENT]);
+			}
+		}
+		return section;
+	}
+
+	/**
+	 * Accent action (保存方法 / 生成报告 / 推荐积分).
+	 */
+	public static BaijiuPlantButton primary(Composite parent, String text, Listener listener) {
+
+		return push(parent, text, true, listener);
+	}
+
+	/**
+	 * Quiet flat action. Same click as a push button, without dialog chrome.
+	 */
+	public static BaijiuPlantButton command(Composite parent, String text, Listener listener) {
+
+		return push(parent, text, false, listener);
+	}
+
+	private static BaijiuPlantButton push(Composite parent, String text, boolean primary, Listener listener) {
+
+		BaijiuPlantButton button = new BaijiuPlantButton(parent, primary);
+		button.setText(text);
+		if(listener != null) {
+			button.addListener(SWT.Selection, listener);
+		}
+		return button;
 	}
 
 	public static Composite row(Composite parent, int columns) {
@@ -320,6 +387,7 @@ public final class BaijiuPlantLayout {
 		Composite row = new Composite(parent, SWT.NONE);
 		row.setLayout(new GridLayout(columns, false));
 		row.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		cardSurface(row);
 		return row;
 	}
 
@@ -345,6 +413,7 @@ public final class BaijiuPlantLayout {
 		GridData data = new GridData(SWT.FILL, SWT.CENTER, true, false);
 		data.widthHint = 1;
 		row.setLayoutData(data);
+		cardSurface(row);
 		return row;
 	}
 
@@ -378,8 +447,10 @@ public final class BaijiuPlantLayout {
 		GridData data = wrapHint();
 		data.horizontalSpan = Math.max(1, horizontalSpan);
 		host.setLayoutData(data);
+		cardSurface(host);
 		Label label = new Label(host, SWT.WRAP);
 		label.setText(text == null ? "" : text);
+		card(label);
 		return label;
 	}
 
@@ -476,6 +547,97 @@ public final class BaijiuPlantLayout {
 
 		Label label = new Label(parent, SWT.NONE);
 		label.setText(title == null ? "" : title);
+		card(label);
+	}
+
+	/**
+	 * One white card surface so nested composites do not read as gray windows.
+	 */
+	public static void cardSurface(Composite composite) {
+
+		if(composite == null || composite.isDisposed()) {
+			return;
+		}
+		card(composite);
+		composite.setBackgroundMode(SWT.INHERIT_DEFAULT);
+	}
+
+	public static void card(Control control) {
+
+		if(control == null || control.isDisposed()) {
+			return;
+		}
+		Color[] colors = palette(control.getDisplay());
+		if(colors == null) {
+			return;
+		}
+		control.setBackground(colors[FILL]);
+	}
+
+	private static Color[] palette(Display display) {
+
+		if(display == null || display.isDisposed()) {
+			return null;
+		}
+		boolean hook = false;
+		synchronized(PALETTE) {
+			Color[] existing = PALETTE.get(display);
+			if(existing != null) {
+				return existing;
+			}
+			hook = true;
+		}
+		if(hook) {
+			try {
+				/*
+				 * Register outside the cache lock. disposeExec can run
+				 * inline while the display is already closing.
+				 */
+				display.disposeExec(() -> releasePalette(display));
+			} catch(RuntimeException | LinkageError e) {
+				// headless
+			}
+		}
+		Color[] created;
+		try {
+			created = new Color[]{ //
+					new Color(display, 255, 255, 255), //
+					new Color(display, 36, 72, 97), //
+					new Color(display, 31, 111, 168) //
+			};
+		} catch(RuntimeException | LinkageError e) {
+			return null;
+		}
+		synchronized(PALETTE) {
+			Color[] existing = PALETTE.get(display);
+			if(existing != null) {
+				disposeColors(created);
+				return existing;
+			}
+			PALETTE.put(display, created);
+			return created;
+		}
+	}
+
+	private static void releasePalette(Display display) {
+
+		Color[] colors;
+		synchronized(PALETTE) {
+			colors = PALETTE.remove(display);
+		}
+		disposeColors(colors);
+	}
+
+	private static void disposeColors(Color[] colors) {
+
+		if(colors == null) {
+			return;
+		}
+		for(Color color : colors) {
+			if(color != null && !color.isDisposed()) {
+				color.dispose();
+			}
+		}
 	}
 
 	private static Composite compact(Composite parent) {

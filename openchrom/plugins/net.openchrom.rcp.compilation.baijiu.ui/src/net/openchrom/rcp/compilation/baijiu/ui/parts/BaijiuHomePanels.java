@@ -168,13 +168,29 @@ public final class BaijiuHomePanels {
 
 	public static void createChromatogramEmptyState(Composite parent) {
 
+		createChromatogramEmptyState(parent, false);
+	}
+
+	/**
+	 * @param hostProvidesTitle
+	 *            the sash / part title already says {@link #CHROMATOGRAM_EMPTY_TITLE},
+	 *            so the body must not repeat it
+	 */
+	public static void createChromatogramEmptyState(Composite parent, boolean hostProvidesTitle) {
+
 		if(parent == null || parent.isDisposed()) {
 			return;
 		}
 		try {
 			disposeChildren(parent);
-			parent.setLayout(new GridLayout(1, false));
-			Label title = wrapLabel(parent, CHROMATOGRAM_EMPTY_TITLE, false);
+			GridLayout grid = new GridLayout(1, false);
+			grid.marginWidth = 12;
+			grid.marginHeight = 10;
+			parent.setLayout(grid);
+			Label title = null;
+			if(!hostProvidesTitle) {
+				title = wrapLabel(parent, CHROMATOGRAM_EMPTY_TITLE, false);
+			}
 			Label hint = wrapLabel(parent, CHROMATOGRAM_EMPTY_HINT, true);
 			applyEmptyStateColors(parent, title, hint);
 			layout(parent);
@@ -504,17 +520,17 @@ public final class BaijiuHomePanels {
 		if(display == null || display.isDisposed()) {
 			return;
 		}
-		parent.setBackground(display.getSystemColor(SWT.COLOR_WIDGET_BACKGROUND));
+		parent.setBackground(display.getSystemColor(SWT.COLOR_WHITE));
 		if(labels == null) {
 			return;
 		}
 		for(Label label : labels) {
 			if(label != null && !label.isDisposed()) {
 				label.setForeground(display.getSystemColor(SWT.COLOR_WIDGET_FOREGROUND));
-				label.setBackground(display.getSystemColor(SWT.COLOR_WIDGET_BACKGROUND));
+				label.setBackground(display.getSystemColor(SWT.COLOR_WHITE));
 				Composite host = label.getParent();
 				if(host != null && host != parent && !host.isDisposed()) {
-					host.setBackground(display.getSystemColor(SWT.COLOR_WIDGET_BACKGROUND));
+					host.setBackground(display.getSystemColor(SWT.COLOR_WHITE));
 				}
 			}
 		}

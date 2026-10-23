@@ -19,7 +19,6 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTError;
 import org.eclipse.swt.browser.Browser;
 import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.FileDialog;
@@ -95,9 +94,7 @@ public final class BaijiuReportShell {
 		Browser printable = browser;
 		Text fallbackText = fallback;
 
-		Button generate = new Button(buttons, SWT.PUSH);
-		generate.setText("生成报告");
-		generate.addListener(SWT.Selection, e -> {
+		BaijiuPlantLayout.primary(buttons, "生成报告", e -> {
 			if(BaijiuLicenseShell.blockQuantify(host)) {
 				return;
 			}
@@ -128,31 +125,21 @@ public final class BaijiuReportShell {
 			}
 		});
 
-		Button print = new Button(buttons, SWT.PUSH);
-		print.setText("\u6253\u5370 / \u53e6\u5b58\u4e3a PDF");
-		print.setEnabled(printable != null);
-		print.addListener(SWT.Selection, e -> {
+		BaijiuPlantButton print = BaijiuPlantLayout.command(buttons, "\u6253\u5370 / \u53e6\u5b58\u4e3a PDF", e -> {
 			if(printable != null) {
 				printable.execute("window.print();");
 			}
 		});
+		print.setEnabled(printable != null);
 
-		Button saveHtml = new Button(buttons, SWT.PUSH);
-		saveHtml.setText("\u4fdd\u5b58 HTML");
-		saveHtml.addListener(SWT.Selection, e -> save(host, htmlRef.get(), "*.html", "baijiu-report.html", SaveKind.HTML, sampleRef.get(), settingsRef.get(), resultRef.get(), generatedRef.get()));
+		BaijiuPlantLayout.command(buttons, "\u4fdd\u5b58 HTML", e -> save(host, htmlRef.get(), "*.html", "baijiu-report.html", SaveKind.HTML, sampleRef.get(), settingsRef.get(), resultRef.get(), generatedRef.get()));
 
-		Button saveCsv = new Button(buttons, SWT.PUSH);
-		saveCsv.setText("\u5bfc\u51fa CSV");
-		saveCsv.addListener(SWT.Selection, e -> save(host, htmlRef.get(), "*.csv", "baijiu-results.csv", SaveKind.CSV, sampleRef.get(), settingsRef.get(), resultRef.get(), generatedRef.get()));
+		BaijiuPlantLayout.command(buttons, "\u5bfc\u51fa CSV", e -> save(host, htmlRef.get(), "*.csv", "baijiu-results.csv", SaveKind.CSV, sampleRef.get(), settingsRef.get(), resultRef.get(), generatedRef.get()));
 
-		Button saveExcel = new Button(buttons, SWT.PUSH);
-		saveExcel.setText("\u5bfc\u51fa Excel(CSV)");
-		saveExcel.addListener(SWT.Selection, e -> save(host, htmlRef.get(), "*.csv", "baijiu-results-excel.csv", SaveKind.EXCEL_CSV, sampleRef.get(), settingsRef.get(), resultRef.get(), generatedRef.get()));
+		BaijiuPlantLayout.command(buttons, "\u5bfc\u51fa Excel(CSV)", e -> save(host, htmlRef.get(), "*.csv", "baijiu-results-excel.csv", SaveKind.EXCEL_CSV, sampleRef.get(), settingsRef.get(), resultRef.get(), generatedRef.get()));
 
 		if(parent instanceof Shell dialog) {
-			Button close = new Button(buttons, SWT.PUSH);
-			close.setText("\u5173\u95ed");
-			close.addListener(SWT.Selection, e -> dialog.close());
+			BaijiuPlantLayout.command(buttons, "\u5173\u95ed", e -> dialog.close());
 		}
 	}
 
@@ -188,36 +175,26 @@ public final class BaijiuReportShell {
 			fallback.setText(html);
 		}
 
-		Button print = new Button(buttons, SWT.PUSH);
-		print.setText("\u6253\u5370 / \u53e6\u5b58\u4e3a PDF");
 		Browser printable = browser;
-		print.setEnabled(printable != null);
-		print.addListener(SWT.Selection, e -> {
+		BaijiuPlantButton print = BaijiuPlantLayout.command(buttons, "\u6253\u5370 / \u53e6\u5b58\u4e3a PDF", e -> {
 			if(printable != null) {
 				printable.execute("window.print();");
 			}
 		});
+		print.setEnabled(printable != null);
 
-		Button saveHtml = new Button(buttons, SWT.PUSH);
-		saveHtml.setText("\u4fdd\u5b58 HTML");
-		saveHtml.addListener(SWT.Selection, e -> {
+		BaijiuPlantLayout.command(buttons, "\u4fdd\u5b58 HTML", e -> {
 			BaijiuReportHeader current = headerForm.save();
 			String next = BaijiuReportHtml.render(sample, settings, result, generatedAt, current);
 			save(host, next, "*.html", "baijiu-report.html", SaveKind.HTML, sample, settings, result, generatedAt);
 		});
 
-		Button saveCsv = new Button(buttons, SWT.PUSH);
-		saveCsv.setText("\u5bfc\u51fa CSV");
-		saveCsv.addListener(SWT.Selection, e -> save(host, html, "*.csv", "baijiu-results.csv", SaveKind.CSV, sample, settings, result, generatedAt));
+		BaijiuPlantLayout.command(buttons, "\u5bfc\u51fa CSV", e -> save(host, html, "*.csv", "baijiu-results.csv", SaveKind.CSV, sample, settings, result, generatedAt));
 
-		Button saveExcel = new Button(buttons, SWT.PUSH);
-		saveExcel.setText("\u5bfc\u51fa Excel(CSV)");
-		saveExcel.addListener(SWT.Selection, e -> save(host, html, "*.csv", "baijiu-results-excel.csv", SaveKind.EXCEL_CSV, sample, settings, result, generatedAt));
+		BaijiuPlantLayout.command(buttons, "\u5bfc\u51fa Excel(CSV)", e -> save(host, html, "*.csv", "baijiu-results-excel.csv", SaveKind.EXCEL_CSV, sample, settings, result, generatedAt));
 
 		if(parent instanceof Shell dialog) {
-			Button close = new Button(buttons, SWT.PUSH);
-			close.setText("\u5173\u95ed");
-			close.addListener(SWT.Selection, e -> dialog.close());
+			BaijiuPlantLayout.command(buttons, "\u5173\u95ed", e -> dialog.close());
 		}
 	}
 
