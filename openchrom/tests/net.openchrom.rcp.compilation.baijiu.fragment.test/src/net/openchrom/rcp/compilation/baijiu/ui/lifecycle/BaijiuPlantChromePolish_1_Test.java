@@ -102,6 +102,52 @@ public class BaijiuPlantChromePolish_1_Test {
 		assertEqualsEpoch(chrome);
 	}
 
+	@Test
+	public void plantSashTitlesAndWizardTabsUseCardChrome() throws Exception {
+
+		String parts = read("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuShellParts.java");
+		String pane = read("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/lifecycle/BaijiuPlantPaneChrome.java");
+		String css = read("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/stylesheets/baijiu-shell.css");
+		String wizard = read("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/wizards/BaijiuWorkflowWizard.java");
+		String analysis = read("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/shell/BaijiuAnalysisShell.java");
+		String tabs = read("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/shell/BaijiuPlantTabs.java");
+		String layout = read("openchrom/plugins/net.openchrom.xxd.processor.supplier.baijiu.ui/src/net/openchrom/xxd/processor/supplier/baijiu/ui/shell/BaijiuPlantLayout.java");
+		String conceal = method(parts, "concealFixedStackChrome");
+		assertTrue(conceal.contains("stylePlantFrames"));
+		assertTrue(conceal.contains("styleStack"));
+		assertTrue(conceal.contains("concealTaskTabs"), "task pages stay a hidden strip");
+		assertTrue(method(parts, "onPlantWidgetSet").contains("styleSash"));
+		assertTrue(css.contains("partsash.plantLeft"));
+		assertTrue(css.contains("partsash.plantHome"));
+		assertTrue(css.contains("#244861"));
+		assertTrue(css.contains("swt-selected-tab-highlight"));
+		assertTrue(css.contains("#1F6FA8"));
+		assertTrue(css.contains("partstack.plantPages"));
+		assertTrue(css.contains("swt-tab-height: 0px"));
+		assertFalse(css.contains("partsash.gcConsole"), "GC window sash stays on the platform renderer");
+		assertTrue(pane.contains("sashWidth"));
+		assertTrue(pane.contains("DIVIDER_PX = 6"));
+		assertTrue(pane.contains("setRenderer"));
+		assertTrue(pane.contains("setTabHeight"));
+		assertTrue(pane.contains("227, 240, 250"));
+		assertTrue(pane.contains("31, 111, 168"));
+		assertTrue(pane.contains("PLANT_SASH_PAINT"));
+		assertFalse(pane.contains("setMinimizeVisible(true)"));
+		assertFalse(pane.contains("setVisible(false)"));
+		assertFalse(pane.contains("NoMove"));
+		assertFalse(pane.contains("CHROME_EPOCH"));
+		assertTrue(wizard.contains("BaijiuPlantTabs"));
+		assertFalse(wizard.contains("new TabFolder"));
+		assertTrue(analysis.contains("BaijiuPlantTabs"));
+		assertFalse(analysis.contains("new TabFolder"));
+		assertTrue(tabs.contains("227, 240, 250"));
+		assertTrue(tabs.contains("31, 111, 168"));
+		assertTrue(tabs.contains("setTabHeight(TAB_PX)"));
+		assertTrue(tabs.contains("TAB_PX = 36"));
+		assertTrue(layout.contains("constrainToClient(CTabFolder"));
+		assertTrue(read("openchrom/plugins/net.openchrom.rcp.compilation.baijiu.ui/src/net/openchrom/rcp/compilation/baijiu/ui/parts/BaijiuNavHomePart.java").contains("CONNECTOR"));
+	}
+
 	private static void assertEqualsEpoch(String chrome) {
 
 		assertTrue(chrome.contains("CHROME_EPOCH = 36"));

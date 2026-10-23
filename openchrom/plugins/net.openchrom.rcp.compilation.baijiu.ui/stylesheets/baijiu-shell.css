@@ -100,3 +100,44 @@ ColorDefinition#org-eclipse-chemclipse-ux-extension-xxd-ui-internal-charts-Targe
 ColorDefinition#org-eclipse-chemclipse-ux-extension-xxd-ui-internal-charts-TargetReferenceLabelMarker-InactiveColor {
 	color: #202020;
 }
+
+/*
+ * Plant sash gap. SashLayout paints no handle; the host background is the
+ * divider. Java widens it and repaints after the theme stylesheet.
+ */
+#net.openchrom.rcp.compilation.baijiu.ui.partsash.plantLeft,
+#net.openchrom.rcp.compilation.baijiu.ui.partsash.plantHome {
+	background-color: #244861;
+}
+
+/*
+ * 导航 and 谱图/采集 title strips. The plant renderer replaces the CSS
+ * keylines; these values cover the first paint.
+ */
+#net.openchrom.rcp.compilation.baijiu.ui.partstack.plantNav,
+#net.openchrom.rcp.compilation.baijiu.ui.partstack.plantChromatogram,
+#net.openchrom.rcp.compilation.baijiu.ui.partstack.plantWorkflow {
+	background-color: #FFFFFF;
+	color: #244861;
+	swt-simple: true;
+	swt-shadow-visible: false;
+	swt-mru-visible: false;
+	swt-tab-height: 32px;
+	swt-selected-tab-fill: #E3F0FA;
+	swt-unselected-tabs-color: #F4F7FA;
+	swt-selected-tab-highlight: #1F6FA8;
+	swt-tab-outline: #C6CED6;
+	swt-outer-keyline-color: #C6CED6;
+	swt-inner-keyline-color: #FFFFFF;
+	font-size: 11pt;
+}
+
+/* Task pages keep a hidden strip. Navigation is the only page switcher. */
+#net.openchrom.rcp.compilation.baijiu.ui.partstack.plantPages {
+	background-color: #FFFFFF;
+	swt-simple: true;
+	swt-shadow-visible: false;
+	swt-tab-height: 0px;
+	swt-outer-keyline-color: #C6CED6;
+	swt-inner-keyline-color: #FFFFFF;
+}

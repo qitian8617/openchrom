@@ -25,6 +25,8 @@ import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventHandler;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.CTabFolder;
+import org.eclipse.swt.custom.CTabItem;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -37,8 +39,6 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.TabFolder;
-import org.eclipse.swt.widgets.TabItem;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
@@ -135,7 +135,7 @@ public final class BaijiuAnalysisShell {
 	private Label multipointStatus;
 	private Table pointTable;
 	private Table fitTable;
-	private TabFolder tabs;
+	private CTabFolder tabs;
 	private BaijiuReportHeaderForm reportHeader;
 
 	private BaijiuAnalysisShell(IChromatogramSelection chromatogramSelection, EPartService partService) {
@@ -181,26 +181,26 @@ public final class BaijiuAnalysisShell {
 
 		Composite root = BaijiuPlantLayout.pageBody(parent);
 		createWorkflowHeader(root);
-		tabs = new TabFolder(root, SWT.NONE);
+		tabs = BaijiuPlantTabs.create(root);
 		tabs.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
-		TabItem sampleTab = new TabItem(tabs, SWT.NONE);
+		CTabItem sampleTab = new CTabItem(tabs, SWT.NONE);
 		sampleTab.setText("\u6837\u54c1");
 		sampleTab.setControl(createSampleTab(tabs));
 
-		TabItem methodTab = new TabItem(tabs, SWT.NONE);
+		CTabItem methodTab = new CTabItem(tabs, SWT.NONE);
 		methodTab.setText("\u7ec4\u5206\u65b9\u6cd5");
 		methodTab.setControl(createMethodTab(tabs));
 
-		TabItem calTab = new TabItem(tabs, SWT.NONE);
+		CTabItem calTab = new CTabItem(tabs, SWT.NONE);
 		calTab.setText("\u6821\u6b63");
 		calTab.setControl(createMultipointTab(tabs));
 
-		TabItem quantTab = new TabItem(tabs, SWT.NONE);
+		CTabItem quantTab = new CTabItem(tabs, SWT.NONE);
 		quantTab.setText("\u5b9a\u91cf");
 		quantTab.setControl(createMatchTab(tabs));
 
-		TabItem reportTab = new TabItem(tabs, SWT.NONE);
+		CTabItem reportTab = new CTabItem(tabs, SWT.NONE);
 		reportTab.setText("\u62a5\u544a");
 		reportTab.setControl(createReportTab(tabs));
 		BaijiuPlantLayout.constrainToClient(tabs);

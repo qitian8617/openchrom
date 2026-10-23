@@ -261,11 +261,14 @@ public final class BaijiuShellParts {
 			}
 			clearMinMaxTags(stack);
 			if(BaijiuShellChrome.PAGES_STACK_ID.equals(id)) {
+				BaijiuPlantPaneChrome.styleStack(stack, true);
 				concealTaskTabs(stack);
 			} else {
+				BaijiuPlantPaneChrome.styleStack(stack, false);
 				concealStackMinMaxButtons(stack);
 			}
 		}
+		BaijiuPlantPaneChrome.stylePlantFrames(application, modelService);
 	}
 
 	/**
@@ -281,6 +284,13 @@ public final class BaijiuShellParts {
 		}
 		if(element instanceof MHandledToolItem item && BaijiuShellChrome.PLANT_TOOLBAR_ITEM_IDS.contains(item.getElementId())) {
 			BaijiuPlantToolbarIcons.apply(item);
+			return;
+		}
+		if(element instanceof MPartSashContainer sash) {
+			String id = sash.getElementId();
+			if(BaijiuShellChrome.PLANT_SASH_ID.equals(id) || BaijiuShellChrome.PLANT_LEFT_SASH_ID.equals(id)) {
+				BaijiuPlantPaneChrome.styleSash(sash);
+			}
 			return;
 		}
 		if(!(element instanceof MPartStack stack)) {
