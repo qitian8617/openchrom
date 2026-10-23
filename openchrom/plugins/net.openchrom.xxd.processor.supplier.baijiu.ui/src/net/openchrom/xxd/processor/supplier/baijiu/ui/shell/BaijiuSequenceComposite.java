@@ -32,7 +32,15 @@ import net.openchrom.xxd.control.supplier.temperature.ui.sequence.InjectionSeque
 import net.openchrom.xxd.control.supplier.temperature.ui.sequence.InjectionSequenceManager;
 import net.openchrom.xxd.control.supplier.temperature.ui.sequence.InjectionStatus;
 import net.openchrom.xxd.control.supplier.temperature.ui.sequence.InjectionType;
+import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuSequenceOptimizeMemory;
+import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuSequenceOptimizer;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuTerms;
+import net.openchrom.xxd.processor.supplier.baijiu.core.ConcentrationBand;
+import net.openchrom.xxd.processor.supplier.baijiu.core.OptimizeSequenceRequest;
+import net.openchrom.xxd.processor.supplier.baijiu.core.OptimizeSequenceRow;
+import net.openchrom.xxd.processor.supplier.baijiu.core.OptimizeSequenceResult;
+import net.openchrom.xxd.processor.supplier.baijiu.ui.sequence.BaijiuSequenceOptimizeBridge;
+import net.openchrom.xxd.processor.supplier.baijiu.ui.sequence.BaijiuSequenceOptimizePreferences;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.sequence.BaijiuSequenceResultsBridge;
 
 /**
@@ -46,12 +54,18 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 	};
 
 	private final InjectionSequenceManager manager = InjectionSequenceManager.getInstance();
+	private final BaijiuSequenceOptimizeMemory orderMemory = new BaijiuSequenceOptimizeMemory();
 	private boolean rebuilding;
+	private boolean fillingEditor;
 
 	private Label subtitleLabel;
 	private Spinner sampleCountSpinner;
+	private Button optimizeEnabledButton;
+	private Button optimizeButton;
+	private Label optimizeStatusLabel;
 	private Table table;
 	private Combo typeCombo;
+	private Combo bandCombo;
 	private Text sampleIdText;
 	private Text sampleNameText;
 	private Text notesText;
@@ -70,6 +84,7 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 		subtitleLabel.setText("编排空白 → 混标 → QC → 样品×N。选中样品后「添加平行样」插入第二针（同编号，类型仍为样品）。每针仍手动：加热 → 点火 → 进样 → 气相色谱控制台主界面开始分析。两针完成后可看均值与相对偏差。");
 
 		createTemplateRow(body);
+		createOptimizeBar(body);
 		createTable(body);
 		createEditorCard(body);
 		createAddRow(body);
@@ -116,11 +131,114 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 		});
 	}
 
+	private void createOptimizeBar(Composite parent) {
+
+		Composite row = BaijiuPlantLayout.buttonRow(parent);
+		optimizeEnabledButton = new Button(row, SWT.CHECK);
+		optimizeEnabledButton.setText("启用污染规避排序");
+		boolean enabled = BaijiuSequenceOptimizePreferences.isEnabled();
+		optimizeEnabledButton.setSelection(enabled);
+		optimizeEnabledButton.addListener(SWT.Selection, e -> {
+			boolean on = optimizeEnabledButton.getSelection();
+			BaijiuSequenceOptimizePreferences.setEnabled(on);
+			if(optimizeButton != null && !optimizeButton.isDisposed()) {
+				optimizeButton.setEnabled(on);
+			}
+		});
+		optimizeButton = new Button(row, SWT.PUSH);
+		optimizeButton.setText("智能排序");
+		optimizeButton.setEnabled(enabled);
+		optimizeButton.addListener(SWT.Selection, e -> optimizeSequence());
+		Button restoreButton = new Button(row, SWT.PUSH);
+		restoreButton.setText("还原原序");
+		restoreButton.addListener(SWT.Selection, e -> restoreSequence());
+		optimizeStatusLabel = wrapLabel(parent);
+		optimizeStatusLabel.setText("");
+	}
+
+	private void optimizeSequence() {
+
+		if(optimizeEnabledButton == null || !optimizeEnabledButton.getSelection()) {
+			showOptimizeStatus("未启用污染规避排序", List.of());
+			return;
+		}
+		InjectionSequence current = manager.snapshot();
+		if(current.isEmpty()) {
+			showOptimizeStatus("序列为空", List.of());
+			return;
+		}
+		OptimizeSequenceRequest request = BaijiuSequenceOptimizeBridge.toRequest(current);
+		OptimizeSequenceResult result = BaijiuSequenceOptimizer.optimize(request);
+		if(!result.isOrderChanged()) {
+			showOptimizeStatus(result.getSummary(), result.getExplanations());
+			return;
+		}
+		orderMemory.capture(request.getRows());
+		manager.replaceAll(BaijiuSequenceOptimizeBridge.apply(current, result.getRows()));
+		showOptimizeStatus(result.getSummary(), result.getExplanations());
+	}
+
+	private void restoreSequence() {
+
+		if(!orderMemory.hasSnapshot()) {
+			showOptimizeStatus("没有可还原的顺序", java.util.List.of());
+			return;
+		}
+		InjectionSequence current = manager.snapshot();
+		List<OptimizeSequenceRow> restored = orderMemory.restore();
+		orderMemory.clear();
+		manager.replaceAll(BaijiuSequenceOptimizeBridge.apply(current, restored));
+		showOptimizeStatus("已还原智能排序前的顺序", List.of());
+	}
+
+	private void showOptimizeStatus(String summary, List<String> explanations) {
+
+		if(optimizeStatusLabel == null || optimizeStatusLabel.isDisposed()) {
+			return;
+		}
+		optimizeStatusLabel.setText(summary == null ? "" : summary);
+		String tip = explanations == null || explanations.isEmpty() ? null : String.join("；", explanations);
+		optimizeStatusLabel.setToolTipText(tip);
+		Composite host = optimizeStatusLabel.getParent();
+		if(host != null && !host.isDisposed()) {
+			Composite body = host.getParent();
+			if(body != null && !body.isDisposed()) {
+				body.layout(true, true);
+			}
+		}
+	}
+
+	private void selectBand(ConcentrationBand band) {
+
+		if(bandCombo == null || bandCombo.isDisposed()) {
+			return;
+		}
+		ConcentrationBand chosen = band == null ? ConcentrationBand.MEDIUM : band;
+		int index = chosen.ordinal();
+		if(index >= 0 && index < bandCombo.getItemCount()) {
+			bandCombo.select(index);
+		}
+	}
+
+	private ConcentrationBand selectedBand() {
+
+		if(bandCombo == null || bandCombo.isDisposed()) {
+			return ConcentrationBand.MEDIUM;
+		}
+		int index = bandCombo.getSelectionIndex();
+		ConcentrationBand[] bands = ConcentrationBand.values();
+		if(index < 0 || index >= bands.length) {
+			return ConcentrationBand.MEDIUM;
+		}
+		return bands[index];
+	}
+
 	private void createTable(Composite parent) {
 
 		table = BaijiuPlantLayout.table(parent, 220);
 		addColumn("#", 40);
 		addColumn("类型", 72);
+		addColumn("浓度档", 64);
 		addColumn("编号", 88);
 		addColumn("名称", 120);
 		addColumn("平行", 80);
@@ -149,6 +267,23 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 		fillTypeCombo();
 		label(typeRow, "编号");
 		sampleIdText = new Text(BaijiuPlantLayout.widthHost(typeRow, BaijiuPlantLayout.SAMPLE_ID), SWT.BORDER);
+		typeCombo.addListener(SWT.Selection, e -> {
+			if(rebuilding || fillingEditor) {
+				return;
+			}
+			int index = typeCombo.getSelectionIndex();
+			if(index < 0 || index >= TYPE_ORDER.length) {
+				return;
+			}
+			selectBand(ConcentrationBand.defaultForType(TYPE_ORDER[index].name()));
+		});
+		Composite bandRow = BaijiuPlantLayout.row(parent, 2);
+		label(bandRow, "浓度档");
+		bandCombo = new Combo(BaijiuPlantLayout.widthHost(bandRow, BaijiuPlantLayout.TYPE), SWT.READ_ONLY);
+		for(ConcentrationBand band : ConcentrationBand.values()) {
+			bandCombo.add(band.label());
+		}
+		bandCombo.select(ConcentrationBand.MEDIUM.ordinal());
 		Composite nameRow = BaijiuPlantLayout.row(parent, 2);
 		label(nameRow, "名称");
 		sampleNameText = new Text(BaijiuPlantLayout.widthHost(nameRow, BaijiuPlantLayout.SAMPLE_NAME), SWT.BORDER);
@@ -287,13 +422,14 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 			String mark = i == current ? "▶ " : "";
 			row.setText(0, mark + (i + 1));
 			row.setText(1, entry.getType().label(true));
-			row.setText(2, entry.getSampleId());
-			row.setText(3, entry.getSampleName());
-			row.setText(4, snapshot.parallelNeedleLabel(i, true));
-			row.setText(5, entry.getNotes());
-			row.setText(6, entry.getStatus().label(true));
-			row.setText(7, shortPath(entry.getChromatogramPath()));
-			row.setForeground(6, display.getSystemColor(statusColor(entry.getStatus())));
+			row.setText(2, ConcentrationBand.storedOrDefault(entry.getConcentrationBand(), entry.getType().name()).label());
+			row.setText(3, entry.getSampleId());
+			row.setText(4, entry.getSampleName());
+			row.setText(5, snapshot.parallelNeedleLabel(i, true));
+			row.setText(6, entry.getNotes());
+			row.setText(7, entry.getStatus().label(true));
+			row.setText(8, shortPath(entry.getChromatogramPath()));
+			row.setForeground(7, display.getSystemColor(statusColor(entry.getStatus())));
 			if(i == current) {
 				row.setForeground(0, display.getSystemColor(SWT.COLOR_DARK_BLUE));
 			}
@@ -314,20 +450,27 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 		if(rebuilding) {
 			return;
 		}
-		int index = table.getSelectionIndex();
-		InjectionSequence snapshot = manager.snapshot();
-		InjectionSequenceEntry entry = snapshot.get(index);
-		if(entry == null) {
-			sampleIdText.setText("");
-			sampleNameText.setText("");
-			notesText.setText("");
-			typeCombo.select(3);
-			return;
+		fillingEditor = true;
+		try {
+			int index = table.getSelectionIndex();
+			InjectionSequence snapshot = manager.snapshot();
+			InjectionSequenceEntry entry = snapshot.get(index);
+			if(entry == null) {
+				sampleIdText.setText("");
+				sampleNameText.setText("");
+				notesText.setText("");
+				typeCombo.select(3);
+				selectBand(ConcentrationBand.MEDIUM);
+				return;
+			}
+			typeCombo.select(indexOfType(entry.getType()));
+			selectBand(ConcentrationBand.storedOrDefault(entry.getConcentrationBand(), entry.getType().name()));
+			sampleIdText.setText(entry.getSampleId());
+			sampleNameText.setText(entry.getSampleName());
+			notesText.setText(entry.getNotes());
+		} finally {
+			fillingEditor = false;
 		}
-		typeCombo.select(indexOfType(entry.getType()));
-		sampleIdText.setText(entry.getSampleId());
-		sampleNameText.setText(entry.getSampleName());
-		notesText.setText(entry.getNotes());
 	}
 
 	private void applyEditor() {
@@ -338,7 +481,8 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 			return;
 		}
 		InjectionType type = TYPE_ORDER[Math.max(0, typeCombo.getSelectionIndex())];
-		if(!manager.updateEntry(index, type, sampleIdText.getText(), sampleNameText.getText(), notesText.getText())) {
+		ConcentrationBand band = selectedBand();
+		if(!manager.updateEntry(index, type, sampleIdText.getText(), sampleNameText.getText(), notesText.getText(), band.name())) {
 			warn("运行中的行不能改。");
 		}
 	}

@@ -104,6 +104,7 @@ public final class InjectionSequence {
 	public InjectionSequenceEntry add(InjectionType type, String sampleId, String sampleName, String notes) {
 
 		InjectionSequenceEntry entry = new InjectionSequenceEntry(type, sampleId, sampleName, notes);
+		entry.setConcentrationBand(entry.getType().defaultConcentrationBand());
 		entries.add(entry);
 		if(currentIndex < 0) {
 			currentIndex = 0;
@@ -175,6 +176,25 @@ public final class InjectionSequence {
 	}
 
 	/**
+	 * Same as {@link #updateEntry(int, InjectionType, String, String, String)}
+	 * and stores the contamination-band token. A null token leaves the band
+	 * unchanged. Running rows are still rejected.
+	 */
+	public boolean updateEntry(int index, InjectionType type, String sampleId, String sampleName, String notes, String concentrationBand) {
+
+		if(!updateEntry(index, type, sampleId, sampleName, notes)) {
+			return false;
+		}
+		if(concentrationBand != null) {
+			InjectionSequenceEntry entry = get(index);
+			if(entry != null) {
+				entry.setConcentrationBand(concentrationBand);
+			}
+		}
+		return true;
+	}
+
+	/**
 	 * Insert a second SAMPLE needle after {@code index}, sharing sample id/name
 	 * and a {@code parallelGroupId}. Queue type stays SAMPLE so acquire/status
 	 * semantics are unchanged. At most two members per group.
@@ -202,6 +222,7 @@ public final class InjectionSequence {
 		}
 		InjectionSequenceEntry twin = new InjectionSequenceEntry(InjectionType.SAMPLE, source.getSampleId(), source.getSampleName(), "平行针 B");
 		twin.setParallelGroupId(groupId);
+		twin.setConcentrationBand(source.getConcentrationBand());
 		entries.add(index + 1, twin);
 		if(currentIndex > index) {
 			currentIndex++;

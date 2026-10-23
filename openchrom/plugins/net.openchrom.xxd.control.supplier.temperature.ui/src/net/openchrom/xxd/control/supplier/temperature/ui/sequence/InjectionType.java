@@ -45,6 +45,21 @@ public enum InjectionType {
 		return label(chinese);
 	}
 
+	/**
+	 * Wire token for the baijiu contamination band. Empty means "not stored";
+	 * new rows from {@code ofType} / typical fill store this default.
+	 * BLANK → UNKNOWN, MIX_STD → HIGH, QC → LOW, SAMPLE → MEDIUM.
+	 */
+	public String defaultConcentrationBand() {
+
+		return switch(this) {
+			case BLANK -> "UNKNOWN";
+			case MIX_STD -> "HIGH";
+			case QC -> "LOW";
+			case SAMPLE -> "MEDIUM";
+		};
+	}
+
 	public static InjectionType parse(String raw) {
 
 		if(raw == null || raw.isBlank()) {

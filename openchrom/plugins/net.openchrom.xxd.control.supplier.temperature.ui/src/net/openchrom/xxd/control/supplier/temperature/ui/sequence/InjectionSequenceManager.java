@@ -177,6 +177,21 @@ public final class InjectionSequenceManager implements IAcquisitionListener {
 		return updated;
 	}
 
+	public synchronized boolean updateEntry(int index, InjectionType type, String sampleId, String sampleName, String notes, String concentrationBand) {
+
+		boolean updated = sequence.updateEntry(index, type, sampleId, sampleName, notes, concentrationBand);
+		if(updated) {
+			persistAndFire();
+		}
+		return updated;
+	}
+
+	public synchronized void replaceAll(InjectionSequence replacement) {
+
+		sequence.replaceAll(replacement);
+		persistAndFire();
+	}
+
 	public synchronized InjectionSequenceEntry addParallelOf(int index) {
 
 		InjectionSequenceEntry entry = sequence.addParallelOf(index);

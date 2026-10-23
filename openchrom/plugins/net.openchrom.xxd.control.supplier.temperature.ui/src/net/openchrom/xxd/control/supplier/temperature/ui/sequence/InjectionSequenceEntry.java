@@ -24,6 +24,12 @@ public final class InjectionSequenceEntry {
 	private InjectionStatus status;
 	private String chromatogramPath;
 	private String parallelGroupId;
+	/**
+	 * Contamination band token: HIGH / MEDIUM / LOW / UNKNOWN, or blank when
+	 * the row has never been classified. Display and the optimizer apply the
+	 * type default when this is blank.
+	 */
+	private String concentrationBand = "";
 
 	public InjectionSequenceEntry(InjectionType type, String sampleId, String sampleName, String notes) {
 
@@ -53,7 +59,9 @@ public final class InjectionSequenceEntry {
 	public static InjectionSequenceEntry ofType(InjectionType type, int ordinalOneBased) {
 
 		InjectionType kind = type == null ? InjectionType.SAMPLE : type;
-		return new InjectionSequenceEntry(kind, kind.defaultSampleId(ordinalOneBased), kind.defaultSampleName(true), "");
+		InjectionSequenceEntry entry = new InjectionSequenceEntry(kind, kind.defaultSampleId(ordinalOneBased), kind.defaultSampleName(true), "");
+		entry.setConcentrationBand(kind.defaultConcentrationBand());
+		return entry;
 	}
 
 	public String getId() {
@@ -142,6 +150,16 @@ public final class InjectionSequenceEntry {
 		return type == InjectionType.SAMPLE && !parallelGroupId.isBlank();
 	}
 
+	public String getConcentrationBand() {
+
+		return concentrationBand;
+	}
+
+	public void setConcentrationBand(String concentrationBand) {
+
+		this.concentrationBand = concentrationBand == null ? "" : concentrationBand.trim();
+	}
+
 	public String displayLabel(boolean chinese) {
 
 		String name = sampleName.isBlank() ? type.label(chinese) : sampleName;
@@ -156,6 +174,8 @@ public final class InjectionSequenceEntry {
 
 	public InjectionSequenceEntry copy() {
 
-		return new InjectionSequenceEntry(id, type, sampleId, sampleName, notes, status, chromatogramPath, parallelGroupId);
+		InjectionSequenceEntry copy = new InjectionSequenceEntry(id, type, sampleId, sampleName, notes, status, chromatogramPath, parallelGroupId);
+		copy.setConcentrationBand(concentrationBand);
+		return copy;
 	}
 }
