@@ -12,22 +12,18 @@ package net.openchrom.rcp.compilation.baijiu.ui.parts;
 import java.util.List;
 
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.graphics.GC;
-import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.RowData;
 import org.eclipse.swt.layout.RowLayout;
-import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
 
-import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuWorkflowMetrics;
 import net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuIconCard.BaijiuCardPalette;
 import net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuIconCard.Layout;
 
 /**
- * Centered flow of fixed action cards. Optional arrows sit between cards
- * that form a sequence. The row packs to the cards; it does not grow
- * with the sash.
+ * Centered row of fixed action cards. The cards are peer actions, not
+ * ordered steps, so the board does not draw arrows between them. The row
+ * packs to the cards; it does not grow with the sash.
  */
 public final class BaijiuActionBoard {
 
@@ -36,15 +32,13 @@ public final class BaijiuActionBoard {
 		final BaijiuGlyphs glyph;
 		final String label;
 		final String hint;
-		final boolean arrowAfter;
 		final Runnable run;
 
-		public Action(BaijiuGlyphs glyph, String label, String hint, boolean arrowAfter, Runnable run) {
+		public Action(BaijiuGlyphs glyph, String label, String hint, Runnable run) {
 
 			this.glyph = glyph;
 			this.label = label;
 			this.hint = hint;
-			this.arrowAfter = arrowAfter;
 			this.run = run;
 		}
 	}
@@ -62,54 +56,19 @@ public final class BaijiuActionBoard {
 		row.pack = true;
 		row.justify = false;
 		row.center = true;
-		row.spacing = 8;
+		row.spacing = 16;
 		row.marginWidth = 0;
 		row.marginHeight = 4;
 		host.setLayout(row);
 		if(actions == null) {
 			return host;
 		}
-		for(int i = 0; i < actions.size(); i++) {
-			Action action = actions.get(i);
+		for(Action action : actions) {
 			BaijiuIconCard card = new BaijiuIconCard(host, palette, action.glyph, Layout.ACTION, action.label);
 			card.setHint(action.hint);
 			card.setAction(action.run);
 			card.setLayoutData(new RowData(card.computeSize(SWT.DEFAULT, SWT.DEFAULT)));
-			if(action.arrowAfter && i + 1 < actions.size()) {
-				FlowArrow arrow = new FlowArrow(host, palette);
-				arrow.setLayoutData(new RowData(arrow.computeSize(SWT.DEFAULT, SWT.DEFAULT)));
-			}
 		}
 		return host;
-	}
-
-	static final class FlowArrow extends Canvas {
-
-		private final BaijiuCardPalette palette;
-		private final int size;
-
-		FlowArrow(Composite parent, BaijiuCardPalette palette) {
-
-			super(parent, SWT.DOUBLE_BUFFERED);
-			this.palette = palette;
-			this.size = BaijiuWorkflowMetrics.px(getDisplay(), BaijiuWorkflowMetrics.CONNECTOR);
-			addPaintListener(event -> paint(event.gc));
-		}
-
-		@Override
-		public Point computeSize(int wHint, int hHint, boolean changed) {
-
-			return new Point(size, size);
-		}
-
-		private void paint(GC gc) {
-
-			gc.setAntialias(SWT.ON);
-			gc.setBackground(palette.accent);
-			gc.setForeground(palette.accent);
-			int mid = size / 2;
-			gc.drawLine(2, mid, size - 8, mid);
-			gc.fillPolygon(new int[] {size - 8, mid - 4, size - 2, mid, size - 8, mid + 4});
-		}
 	}
 }

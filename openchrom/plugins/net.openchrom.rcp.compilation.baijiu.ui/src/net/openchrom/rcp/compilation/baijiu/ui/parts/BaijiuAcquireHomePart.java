@@ -82,9 +82,9 @@ public class BaijiuAcquireHomePart {
 		BaijiuCardPalette palette = new BaijiuCardPalette(parent.getDisplay());
 		parent.addDisposeListener(event -> palette.dispose());
 		java.util.List<Action> actions = java.util.List.of( //
-				new Action(BaijiuGlyphs.FOLDER, "打开已有谱图", "从文件载入", true, () -> openChromatogram(parent)), //
-				new Action(BaijiuGlyphs.PLAY, acquisitionLabel(), "开始或停止", true, () -> toggleAcquisition(parent)), //
-				new Action(BaijiuGlyphs.THERMO, "温度反控", "打开反控窗口", false, () -> {
+				new Action(BaijiuGlyphs.FOLDER, "打开已有谱图", "从文件载入", () -> openChromatogram(parent)), //
+				new Action(BaijiuGlyphs.PLAY, acquisitionLabel(), "开始或停止", () -> toggleAcquisition(parent)), //
+				new Action(BaijiuGlyphs.THERMO, "温度反控", "打开反控窗口", () -> {
 					openTemperatureConsole(application, modelService, partService, parent.getShell());
 					refreshInstrument();
 				}));

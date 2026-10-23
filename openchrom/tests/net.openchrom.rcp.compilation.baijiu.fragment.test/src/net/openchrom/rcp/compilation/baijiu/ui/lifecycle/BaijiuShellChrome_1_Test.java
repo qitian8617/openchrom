@@ -441,6 +441,13 @@ public class BaijiuShellChrome_1_Test {
 		assertEquals(BaijiuShellChrome.PLANT_ICON_INTEGRATE, BaijiuShellChrome.plantToolbarItemIconUri(BaijiuShellChrome.INTEGRATE_TOOLITEM_ID));
 		assertEquals(BaijiuShellChrome.PLANT_ICON_ANALYSIS, BaijiuShellChrome.plantToolbarItemIconUri(BaijiuShellChrome.ANALYSIS_TOOLITEM_ID));
 		assertEquals(BaijiuShellChrome.PLANT_ICON_REPORT, BaijiuShellChrome.plantToolbarItemIconUri(BaijiuShellChrome.REPORT_TOOLITEM_ID));
+		assertEquals("DisableMinMaxAddon", BaijiuShellChrome.DISABLE_MIN_MAX_ADDON_TAG);
+		assertTrue(BaijiuShellChrome.FIXED_PLANT_STACK_IDS.contains(BaijiuShellChrome.NAV_STACK_ID));
+		assertTrue(BaijiuShellChrome.FIXED_PLANT_STACK_IDS.contains(BaijiuShellChrome.PAGES_STACK_ID));
+		assertTrue(BaijiuShellChrome.FIXED_PLANT_STACK_IDS.contains(BaijiuShellChrome.CHROMATOGRAM_STACK_ID));
+		assertTrue(BaijiuShellChrome.FIXED_PLANT_STACK_IDS.contains(BaijiuShellChrome.WORKFLOW_STACK_ID));
+		assertFalse(BaijiuShellChrome.FIXED_PLANT_STACK_IDS.contains(BaijiuShellChrome.MAIN_WINDOW_ID));
+		assertFalse(BaijiuShellChrome.FIXED_PLANT_STACK_IDS.contains(BaijiuShellChrome.GC_WINDOW_ID));
 		assertEquals(BaijiuShellChrome.PLANT_ICON_CHROM, BaijiuShellChrome.plantChromeIconUri(BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID));
 		assertEquals(BaijiuShellChrome.PLANT_ICON_OPS, BaijiuShellChrome.plantChromeIconUri(BaijiuShellChrome.WORKBENCH_HOME_PART_ID));
 		assertEquals(BaijiuShellChrome.WINDOW_ICON_URI, BaijiuShellChrome.plantChromeIconUri(BaijiuShellChrome.MAIN_WINDOW_ID));

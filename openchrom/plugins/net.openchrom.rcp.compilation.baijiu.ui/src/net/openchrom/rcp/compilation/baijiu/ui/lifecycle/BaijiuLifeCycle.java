@@ -48,6 +48,7 @@ public class BaijiuLifeCycle {
 		if(application == null || modelService == null) {
 			return;
 		}
+		BaijiuShellParts.disablePartStackMinMax(application);
 		System.setProperty(BaijiuShellChrome.PERSPECTIVE_PROPERTY, BaijiuShellChrome.PERSPECTIVE_ID);
 		BaijiuShellModel.ensureChemclipsePerspectiveStack(application, modelService);
 		MUIElement window = modelService.find(BaijiuShellChrome.MAIN_WINDOW_ID, application);
