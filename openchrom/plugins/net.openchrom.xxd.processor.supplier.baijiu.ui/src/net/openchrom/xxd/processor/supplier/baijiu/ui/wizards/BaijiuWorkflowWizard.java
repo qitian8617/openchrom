@@ -15,11 +15,11 @@ import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.CTabFolder;
+import org.eclipse.swt.custom.CTabItem;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.TabFolder;
-import org.eclipse.swt.widgets.TabItem;
 
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuAnalysisEngine;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuAnalysisResult;
@@ -31,6 +31,7 @@ import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuRecommendedIntegra
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuSampleInfo;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.ChromatogramBridge;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuPlantLayout;
+import net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuPlantTabs;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuReportShell;
 
 public class BaijiuWorkflowWizard extends Wizard {
@@ -81,7 +82,7 @@ public class BaijiuWorkflowWizard extends Wizard {
 		BaijiuPlantLayout.ensureGrid(parent);
 		Composite body = BaijiuPlantLayout.scrollBody(parent);
 		BaijiuPlantLayout.hint(body, getWindowTitle() + " — 页签代替对话框。熟练操作员可直接用「白酒分析」。");
-		TabFolder tabs = new TabFolder(body, SWT.NONE);
+		CTabFolder tabs = BaijiuPlantTabs.create(body);
 		tabs.setLayoutData(BaijiuPlantLayout.tableFill(360));
 		embed(tabs, methodPage);
 		embed(tabs, processPage);
@@ -89,12 +90,12 @@ public class BaijiuWorkflowWizard extends Wizard {
 		BaijiuPlantLayout.constrainToClient(tabs);
 	}
 
-	private static void embed(TabFolder tabs, WizardPage page) {
+	private static void embed(CTabFolder tabs, WizardPage page) {
 
 		Composite host = new Composite(tabs, SWT.NONE);
 		host.setLayout(new FillLayout());
 		page.createControl(host);
-		TabItem item = new TabItem(tabs, SWT.NONE);
+		CTabItem item = new CTabItem(tabs, SWT.NONE);
 		String label = page.getTitle();
 		item.setText(label == null || label.isBlank() ? page.getName() : label);
 		item.setControl(host);

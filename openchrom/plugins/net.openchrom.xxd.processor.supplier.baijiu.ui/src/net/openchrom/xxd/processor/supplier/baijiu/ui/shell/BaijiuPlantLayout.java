@@ -10,6 +10,8 @@
 package net.openchrom.xxd.processor.supplier.baijiu.ui.shell;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.CTabFolder;
+import org.eclipse.swt.custom.CTabItem;
 import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
@@ -189,6 +191,21 @@ public final class BaijiuPlantLayout {
 	 * (wide tables) and clips. Pin the selected page to the folder client.
 	 */
 	public static void constrainToClient(TabFolder tabs) {
+
+		if(tabs == null || tabs.isDisposed()) {
+			return;
+		}
+		Listener resize = e -> layoutSelectedTab(tabs);
+		tabs.addListener(SWT.Resize, resize);
+		tabs.addListener(SWT.Selection, resize);
+		layoutSelectedTab(tabs);
+	}
+
+	/**
+	 * Same pin as {@link #constrainToClient(TabFolder)} for plant
+	 * {@link CTabFolder} pages (wizard and 白酒分析).
+	 */
+	public static void constrainToClient(CTabFolder tabs) {
 
 		if(tabs == null || tabs.isDisposed()) {
 			return;
@@ -505,6 +522,26 @@ public final class BaijiuPlantLayout {
 			return;
 		}
 		TabItem item = tabs.getItem(index);
+		Control control = item.getControl();
+		if(control == null || control.isDisposed()) {
+			return;
+		}
+		Rectangle client = tabs.getClientArea();
+		if(client.width > 0 && client.height > 0) {
+			control.setBounds(client);
+		}
+	}
+
+	private static void layoutSelectedTab(CTabFolder tabs) {
+
+		if(tabs == null || tabs.isDisposed()) {
+			return;
+		}
+		int index = tabs.getSelectionIndex();
+		if(index < 0) {
+			return;
+		}
+		CTabItem item = tabs.getItem(index);
 		Control control = item.getControl();
 		if(control == null || control.isDisposed()) {
 			return;
