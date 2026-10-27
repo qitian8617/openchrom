@@ -43,7 +43,7 @@ import net.openchrom.xxd.control.supplier.temperature.ui.swt.WidgetFactory;
 
 /**
  * Column-oven page wired to F407 KVDB oven program over TCP
- * ({@code READ_OVEN_PROGRAM} / {@code WRITE_OVEN_PROGRAM}).
+ * ({@code READ_OVEN_PROGRAM} / {@code WRITE_OVEN_PROGRAM}), including the {@code loop} flag.
  */
 public class ColumnOvenView extends Composite implements LanguageListener {
 
@@ -66,6 +66,7 @@ public class ColumnOvenView extends Composite implements LanguageListener {
 	private TableEditor tableEditor;
 	private Button applyButton;
 	private Button resetButton;
+	private Button loopButton;
 	private boolean chinese = true;
 	private ColumnOvenProgram lastLoaded = ColumnOvenProgram.zeros();
 
@@ -124,6 +125,13 @@ public class ColumnOvenView extends Composite implements LanguageListener {
 		stableText.setText("30");
 		stableText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		new Label(stableRow, SWT.NONE).setText("s");
+
+		loopButton = new Button(settingsRow, SWT.CHECK);
+		loopButton.setBackground(getBackground());
+		loopButton.setText(loopLabel());
+		loopButton.setToolTipText(loopTooltip());
+		loopButton.setSelection(false);
+		loopButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
 		phaseLabel = WidgetFactory.createTitle(this, chinese ? "升温阶段设置" : "Heating Phase Settings");
 
@@ -197,7 +205,7 @@ public class ColumnOvenView extends Composite implements LanguageListener {
 
 	/**
 	 * Called each time the user navigates to the column-oven page.
-	 * Reloads max temp / equilibrium / 8-stage program from F407 KVDB via READ_OVEN_PROGRAM.
+	 * Reloads max temp / equilibrium / loop / 8-stage program from F407 KVDB via READ_OVEN_PROGRAM.
 	 */
 	public void onShown() {
 
@@ -222,6 +230,8 @@ public class ColumnOvenView extends Composite implements LanguageListener {
 		}
 		applyButton.setText(chinese ? "应用配置" : "Apply Configuration");
 		resetButton.setText(chinese ? "重置" : "Reset");
+		loopButton.setText(loopLabel());
+		loopButton.setToolTipText(loopTooltip());
 		updateIdleStatus();
 	}
 
@@ -340,6 +350,7 @@ public class ColumnOvenView extends Composite implements LanguageListener {
 		program.setMaxTemperature(parseFloatField(maxTempText.getText(), chinese ? "最高温度限制" : "Max Temperature"));
 		program.setEquilibriumTime(parseFloatField(equilText.getText(), chinese ? "平衡时间" : "Equilibrium Time"));
 		program.setEquilibriumStableSec(parseFloatField(stableText.getText(), chinese ? "连续稳定时间" : "Stable Time"));
+		program.setLoop(loopButton.getSelection());
 		for(int stage = 0; stage < ColumnOvenProgram.STAGE_COUNT; stage++) {
 			TableItem item = table.getItem(stage);
 			program.setRate(stage, parseFloatField(item.getText(1), stageField(stage, chinese ? "速率" : "Rate")));
@@ -355,6 +366,7 @@ public class ColumnOvenView extends Composite implements LanguageListener {
 		maxTempText.setText(ColumnOvenProgram.formatNumber(program.getMaxTemperature()));
 		equilText.setText(ColumnOvenProgram.formatNumber(program.getEquilibriumTime()));
 		stableText.setText(ColumnOvenProgram.formatNumber(program.getEquilibriumStableSec()));
+		loopButton.setSelection(program.isLoop());
 		for(int stage = 0; stage < ColumnOvenProgram.STAGE_COUNT; stage++) {
 			TableItem item = table.getItem(stage);
 			item.setText(0, stageLabel(stage));
@@ -442,6 +454,7 @@ public class ColumnOvenView extends Composite implements LanguageListener {
 		maxTempText.setEnabled(!busy);
 		equilText.setEnabled(!busy);
 		stableText.setEnabled(!busy);
+		loopButton.setEnabled(!busy);
 		table.setEnabled(!busy);
 	}
 
@@ -465,6 +478,18 @@ public class ColumnOvenView extends Composite implements LanguageListener {
 		dialog.setText(title);
 		dialog.setMessage(message == null ? "" : message);
 		dialog.open();
+	}
+
+	private String loopLabel() {
+
+		return chinese ? "循环" : "Loop";
+	}
+
+	private String loopTooltip() {
+
+		return chinese
+				? "勾选后柱箱程序结束后自动从初温再跑一轮；取消则停在终温"
+				: "Checked: after DONE, restart from the initial stage. Unchecked: hold the final temperature.";
 	}
 
 	private String stageLabel(int stage) {
