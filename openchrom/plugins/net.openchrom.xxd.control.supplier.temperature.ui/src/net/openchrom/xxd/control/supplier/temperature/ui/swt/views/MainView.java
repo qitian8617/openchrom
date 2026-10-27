@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import org.eclipse.chemclipse.csd.model.core.IChromatogramCSD;
@@ -117,6 +118,9 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 	private String[] rowChannelIds = ParameterSettingsStore.DEFAULT_CHANNEL_IDS.clone();
 	private Runnable openParameterSettingsHandler;
 	private Supplier<String[]> channelIdReader;
+	private BooleanSupplier showDebugInfoReader;
+	private Composite readinessCard;
+	private Composite trendCard;
 	private boolean tempControlRunning;
 	private boolean tempControlBusy;
 	private boolean ovenFaultActive;
@@ -241,6 +245,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 		});
 		reloadChannelNamesFromSettings();
 		syncAuxSetpointsFromCalibration();
+		applyDebugChrome(resolveShowDebugInfo());
 	}
 
 	private void connectionStateChanged(boolean connected, GcDeviceEndpoint endpoint) {
@@ -274,6 +279,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 
 		reloadChannelNamesFromSettings();
 		syncAuxSetpointsFromCalibration();
+		applyDebugChrome(resolveShowDebugInfo());
 		pushZoneSelectQuietly();
 		pollLiveTempsQuietly();
 		readinessMonitor.requestPoll();
@@ -288,6 +294,11 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 	public void setChannelIdReader(Supplier<String[]> reader) {
 
 		this.channelIdReader = reader;
+	}
+
+	public void setShowDebugInfoReader(BooleanSupplier reader) {
+
+		this.showDebugInfoReader = reader;
 	}
 
 	private void syncAuxSetpointsFromCalibration() {
@@ -330,24 +341,67 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 
 		ParameterSettingsStore.ChannelOption[] channels = resolveChannelOptions();
 		Map<String, ChannelRow> byId = snapshotRowsByChannelId();
-		ChannelRow[] next = new ChannelRow[ParameterSettingsStore.CHANNEL_COUNT];
-		String[] nextIds = new String[ParameterSettingsStore.CHANNEL_COUNT];
-		for(int i = 0; i < ParameterSettingsStore.CHANNEL_COUNT; i++) {
+		List<ChannelRow> nextRows = new ArrayList<>();
+		List<String> nextIds = new ArrayList<>();
+		for(int i = 0; i < channels.length; i++) {
 			ParameterSettingsStore.ChannelOption option = channels[i];
-			nextIds[i] = option.id;
-			ChannelRow previous = byId.get(option.id);
-			ChannelRow fallback = i < DEFAULT_ROWS.length ? DEFAULT_ROWS[i] : DEFAULT_ROWS[DEFAULT_ROWS.length - 1];
-			if(previous != null) {
-				next[i] = new ChannelRow(option.zh, option.en, previous.selected(), previous.setTemp(), previous.measured(), previous.statusCn(), previous.statusEn(), previous.statusColor());
-			} else {
-				next[i] = new ChannelRow(option.zh, option.en, defaultZoneSelected(option.id), fallback.setTemp(), "0.0", fallback.statusCn(), fallback.statusEn(), fallback.statusColor());
+			if(ParameterSettingsStore.isEmptyChannel(option)) {
+				continue;
 			}
+			nextIds.add(option.id);
+			ChannelRow previous = byId.get(option.id);
+			nextRows.add(channelRowFor(option, previous));
 		}
-		rowChannelIds = nextIds;
-		rows = next;
+		rowChannelIds = nextIds.toArray(String[]::new);
+		rows = nextRows.toArray(ChannelRow[]::new);
 		if(table != null && !table.isDisposed()) {
 			populateTable();
 		}
+	}
+
+	private ChannelRow channelRowFor(ParameterSettingsStore.ChannelOption option, ChannelRow previous) {
+
+		if(previous != null) {
+			return new ChannelRow(option.zh, option.en, previous.selected(), previous.setTemp(), previous.measured(), previous.statusCn(), previous.statusEn(), previous.statusColor());
+		}
+		String setTemp = "inlet1".equalsIgnoreCase(option.id) ? "100.0" : "0.0";
+		StatusLabels idle = idleStopStatus();
+		return new ChannelRow(option.zh, option.en, defaultZoneSelected(option.id), setTemp, "0.0", idle.cn(), idle.en(), idle.color());
+	}
+
+	private boolean resolveShowDebugInfo() {
+
+		if(showDebugInfoReader != null) {
+			return showDebugInfoReader.getAsBoolean();
+		}
+		return ParameterSettingsStore.loadShowDebugInfo();
+	}
+
+	/**
+	 * Hide FID readiness and the realtime trend. The Start Analysis gate still
+	 * reads {@link FidReadinessMonitor}; this only changes widgets.
+	 */
+	private void applyDebugChrome(boolean show) {
+
+		boolean changed = setChromeVisible(readinessCard, show);
+		changed = setChromeVisible(trendCard, show) || changed;
+		if(changed && !isDisposed()) {
+			layout();
+		}
+	}
+
+	private static boolean setChromeVisible(Composite section, boolean visible) {
+
+		if(section == null || section.isDisposed()) {
+			return false;
+		}
+		boolean changed = section.getVisible() != visible;
+		section.setVisible(visible);
+		if(section.getLayoutData() instanceof GridData grid && grid.exclude == visible) {
+			grid.exclude = !visible;
+			changed = true;
+		}
+		return changed;
 	}
 
 	private Map<String, ChannelRow> snapshotRowsByChannelId() {
@@ -450,6 +504,29 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 			table.getColumn(2).setWidth(80);
 			table.getColumn(3).setWidth(100);
 		}
+		fitChannelTableHeight();
+	}
+
+	private void fitChannelTableHeight() {
+
+		if(table == null || table.isDisposed()) {
+			return;
+		}
+		if(!(table.getLayoutData() instanceof GridData grid)) {
+			return;
+		}
+		int rowHeight = table.getItemHeight();
+		if(rowHeight <= 0) {
+			rowHeight = 28;
+		}
+		int hint = table.getHeaderHeight() + table.getItemCount() * rowHeight + 4;
+		if(grid.heightHint == hint) {
+			return;
+		}
+		grid.heightHint = hint;
+		if(!isDisposed()) {
+			layout();
+		}
 	}
 
 	private void createTableButtons() {
@@ -499,6 +576,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 		}
 		reloadChannelNamesFromSettings();
 		syncAuxSetpointsFromCalibration();
+		applyDebugChrome(resolveShowDebugInfo());
 	}
 
 	private static boolean auxActualDisplayable(GcTcpConnection.AuxLiveTemp live) {
@@ -805,6 +883,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 	private void createReadinessCard() {
 
 		Composite card = WidgetFactory.createCard(this);
+		readinessCard = card;
 		readinessTitle = WidgetFactory.createTitle(card, FidReadiness.title(FidReadiness.Kind.DISCONNECTED, chinese));
 		readinessValueFont = UiStyles.createBoldFont(card, 11);
 
@@ -1040,6 +1119,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 	private void createTrendCard() {
 
 		Composite card = WidgetFactory.createCard(this);
+		trendCard = card;
 		trendTitleLabel = WidgetFactory.createTitle(card, chinese ? "进样 / 检测器 / 柱箱 实时曲线" : "Inlet / Detector / Oven Trend");
 
 		Composite canvasWrap = new Composite(card, SWT.BORDER);
@@ -1529,17 +1609,20 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 
 	private ZoneSelection collectZoneSelection() {
 
-		ParameterSettingsStore.ChannelOption[] channels = ParameterSettingsStore.loadChannelOptions();
 		boolean wantInlet = false;
 		boolean wantDetector = false;
 		boolean wantOven = false;
 		float inletSet = 0f;
 		float detectorSet = 0f;
-		for(int i = 0; i < table.getItemCount() && i < channels.length; i++) {
+		int count = table.getItemCount();
+		for(int i = 0; i < count && i < rowChannelIds.length; i++) {
 			if(!table.getItem(i).getChecked()) {
 				continue;
 			}
-			String id = channels[i].id;
+			String id = rowChannelIds[i];
+			if(ParameterSettingsStore.isEmptyChannel(id)) {
+				continue;
+			}
 			if("inlet1".equalsIgnoreCase(id)) {
 				wantInlet = true;
 				inletSet = AuxTempSetpointStore.getInletSetpointC().orElseThrow(() -> new IllegalArgumentException(chinese ? "进样口1 目标温未在「温度校准」设置，请先设置并下载" : "Inlet 1 target missing — set it on Temperature Calibration first"));
@@ -1632,15 +1715,24 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 
 	private void applyRemoteZoneChecks(boolean inletOn, boolean detectorOn, boolean ovenWant, boolean ovenRun) {
 
-		setChannelChecked("inlet1", inletOn);
-		setChannelChecked("detector1", detectorOn);
-		setChannelChecked("oven", ovenWant);
-		sessionWantInlet = inletOn;
-		sessionWantDetector = detectorOn;
-		sessionWantOven = ovenWant;
-		sessionInletHeating = inletOn;
-		sessionDetectorHeating = detectorOn;
-		sessionOvenStarted = ovenRun;
+		boolean inletMapped = channelMapped("inlet1");
+		boolean detectorMapped = channelMapped("detector1");
+		boolean ovenMapped = channelMapped("oven");
+		if(inletMapped) {
+			setChannelChecked("inlet1", inletOn);
+		}
+		if(detectorMapped) {
+			setChannelChecked("detector1", detectorOn);
+		}
+		if(ovenMapped) {
+			setChannelChecked("oven", ovenWant);
+		}
+		sessionWantInlet = inletMapped && inletOn;
+		sessionWantDetector = detectorMapped && detectorOn;
+		sessionWantOven = ovenMapped && ovenWant;
+		sessionInletHeating = inletMapped && inletOn;
+		sessionDetectorHeating = detectorMapped && detectorOn;
+		sessionOvenStarted = ovenMapped && ovenRun;
 	}
 
 	private void setChannelChecked(String channelId, boolean checked) {
@@ -1694,16 +1786,31 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 		});
 	}
 
+	private boolean channelMapped(String channelId) {
+
+		return indexOfChannelId(channelId) >= 0;
+	}
+
 	private boolean channelChecked(String channelId) {
 
-		int row = findChannelRowIndex(channelId);
-		if(row < 0) {
+		if(ParameterSettingsStore.isEmptyChannel(channelId)) {
 			return false;
 		}
-		if(table != null && !table.isDisposed() && row < table.getItemCount()) {
-			return table.getItem(row).getChecked();
+		boolean checked = false;
+		for(int i = 0; i < rowChannelIds.length; i++) {
+			if(!channelId.equalsIgnoreCase(rowChannelIds[i])) {
+				continue;
+			}
+			if(table != null && !table.isDisposed() && i < table.getItemCount()) {
+				checked = table.getItem(i).getChecked();
+			} else if(i < rows.length) {
+				checked = rows[i].selected();
+			}
+			if(checked) {
+				return true;
+			}
 		}
-		return row < rows.length && rows[row].selected();
+		return false;
 	}
 
 	private static boolean inferRemoteAuxHeating(GcTcpConnection.AuxLiveTemp live, boolean deviceHeat) {
