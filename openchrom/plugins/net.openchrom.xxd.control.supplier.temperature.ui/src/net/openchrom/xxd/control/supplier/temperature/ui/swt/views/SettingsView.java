@@ -98,6 +98,18 @@ public class SettingsView extends Composite implements LanguageListener {
 		return ParameterSettingsStore.DEFAULT_CHANNEL_IDS.clone();
 	}
 
+	/**
+	 * Live 显示调试信息 checkbox. Missing settings page stays off.
+	 */
+	public boolean showDebugInfo() {
+
+		Control content = tabContents.get(SettingsTab.PARAMETERS);
+		if(content instanceof ParameterSettingsView parameterView) {
+			return parameterView.isShowDebugInfo();
+		}
+		return ParameterSettingsStore.loadShowDebugInfo();
+	}
+
 	private Composite createTabButton(Composite parent, SettingsTab tab) {
 
 		Composite button = new Composite(parent, SWT.BORDER);

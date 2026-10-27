@@ -106,6 +106,7 @@ public class TemperatureControlPanel extends Composite implements LanguageListen
 		if(pageContents.get(PanelView.MAIN) instanceof MainView mainView) {
 			mainView.setOpenParameterSettingsHandler(this::openParameterSettings);
 			mainView.setChannelIdReader(this::parameterSettingsChannelIds);
+			mainView.setShowDebugInfoReader(this::parameterSettingsShowDebug);
 		}
 
 		statusBar = new StatusBar(this, this);
@@ -130,6 +131,14 @@ public class TemperatureControlPanel extends Composite implements LanguageListen
 			return settingsView.selectedChannelIds();
 		}
 		return new String[0];
+	}
+
+	private boolean parameterSettingsShowDebug() {
+
+		if(pageContents.get(PanelView.SETTINGS) instanceof SettingsView settingsView) {
+			return settingsView.showDebugInfo();
+		}
+		return false;
 	}
 
 	private void registerPage(PanelView view, Function<Composite, Composite> factory) {
