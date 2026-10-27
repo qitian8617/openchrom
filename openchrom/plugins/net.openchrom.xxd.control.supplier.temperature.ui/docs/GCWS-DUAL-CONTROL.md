@@ -52,6 +52,35 @@ OpenChrom **Main** shows a read-only FID strip (connection, H₂/Air MPa, flame/
 
 `owner` is `PC` or `NONE`. The panel greys primary-write buttons from this.
 
+## Column oven program (`READ_OVEN_PROGRAM` / `WRITE_OVEN_PROGRAM`)
+
+Numeric fields are quoted strings. `row` is a JSON number. The body must stay under 1536 bytes.
+
+```json
+{
+  "maxTemperature": "450",
+  "equilibriumTime": "1",
+  "equilibriumStableSec": "30",
+  "loop": "0",
+  "rows": [
+    { "row": 0, "rate": "0", "temperature": "50", "holdTime": "1" }
+  ]
+}
+```
+
+`loop` is stored in the same KVDB oven-program record as the stages.
+
+| `loop` | After the program reaches DONE |
+|--------|--------------------------------|
+| `"0"` or key absent | Hold the final setpoint (today's behavior). Workstation checkbox **循环** is unchecked. |
+| `"1"` | Re-enter from the initial stage (stage 0 / 初温, `TO_INITIAL`) without `STOP_OVEN_CONTROL` + `START_OVEN_CONTROL`. |
+
+The workstation writes the canonical quoted flag `"0"` or `"1"` (same style as `valid` / `fault`). On read, a missing key is `"0"`. A bare `0` / `1` or JSON `true` / `false` is also accepted so the checkbox still loads.
+
+`START_OVEN_CONTROL` does not carry the flag. It runs the program already stored by `WRITE_OVEN_PROGRAM`. `STOP_OVEN_CONTROL` stops the heater and clears the run, including a looping program. It does not clear the saved `loop` value; the next start uses whatever was last written.
+
+Firmware (`oven_program_ctrl.c`) and the Android panel are not in this repo. They must persist `loop` in this JSON and apply the DONE → restart rule only when it is `"1"`.
+
 ## Primary writes (panel gets DENIED while PC is online)
 
 `WRITE_*`, `START_INLET_HEAT`, `START_DETECTOR_HEAT`, `START_OVEN_CONTROL`, `START_FID_IGNITE`, `FID_AUTO_ON` / `FID_AUTO_OFF`

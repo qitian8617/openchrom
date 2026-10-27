@@ -139,6 +139,7 @@ public class GcTcpConnection {
 
 	/**
 	 * F407 {@code GCWS\tWRITE_OVEN_PROGRAM} + JSON → {@code WRITE_OK} / {@code WRITE_FAIL}.
+	 * JSON includes {@code loop} ({@code "0"} hold final T, {@code "1"} restart from stage 0 after DONE).
 	 */
 	public void writeOvenProgram(ColumnOvenProgram program, long timeoutMs) throws IOException {
 
@@ -317,6 +318,7 @@ public class GcTcpConnection {
 
 	/**
 	 * F407 {@code GCWS\tSTOP_OVEN_CONTROL} → stop program + heater off → WRITE_OK.
+	 * Clears the run, including a program with {@code loop} {@code "1"}. Does not change the stored flag.
 	 */
 	public void stopOvenControl(long timeoutMs) throws IOException {
 

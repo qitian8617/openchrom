@@ -22,12 +22,18 @@ import java.util.Objects;
  * {
  *   "maxTemperature": "450",
  *   "equilibriumTime": "1",
+ *   "equilibriumStableSec": "30",
+ *   "loop": "0",
  *   "rows": [
  *     { "row": 0, "rate": "0", "temperature": "50", "holdTime": "1" },
  *     ...
  *   ]
  * }
  * </pre>
+ * {@code loop} is {@code "0"} or {@code "1"} (same quoted-numeric style as {@code valid} / {@code fault}).
+ * Absent on read means {@code "0"}. {@code "0"}: program DONE holds the final setpoint.
+ * {@code "1"}: program DONE re-enters the initial stage (stage 0) without STOP+START.
+ * {@code STOP_OVEN_CONTROL} still clears the run, including a looping program.
  */
 public final class ColumnOvenProgram {
 
@@ -36,6 +42,11 @@ public final class ColumnOvenProgram {
 	private float maxTemperature;
 	private float equilibriumTime;
 	private float equilibriumStableSec;
+	/**
+	 * When {@code true}, firmware restarts from stage 0 after DONE.
+	 * Default {@code false}: DONE holds the final setpoint.
+	 */
+	private boolean loop;
 	private final float[] rates = new float[STAGE_COUNT];
 	private final float[] temperatures = new float[STAGE_COUNT];
 	private final float[] holdTimes = new float[STAGE_COUNT];
@@ -68,6 +79,19 @@ public final class ColumnOvenProgram {
 	public void setEquilibriumStableSec(float equilibriumStableSec) {
 
 		this.equilibriumStableSec = equilibriumStableSec;
+	}
+
+	/**
+	 * {@code true} when the stored program should restart from the initial stage after DONE.
+	 */
+	public boolean isLoop() {
+
+		return loop;
+	}
+
+	public void setLoop(boolean loop) {
+
+		this.loop = loop;
 	}
 
 	public float getRate(int stage) {
@@ -111,6 +135,7 @@ public final class ColumnOvenProgram {
 		copy.maxTemperature = maxTemperature;
 		copy.equilibriumTime = equilibriumTime;
 		copy.equilibriumStableSec = equilibriumStableSec;
+		copy.loop = loop;
 		System.arraycopy(rates, 0, copy.rates, 0, STAGE_COUNT);
 		System.arraycopy(temperatures, 0, copy.temperatures, 0, STAGE_COUNT);
 		System.arraycopy(holdTimes, 0, copy.holdTimes, 0, STAGE_COUNT);
@@ -155,6 +180,7 @@ public final class ColumnOvenProgram {
 		json.append("  \"maxTemperature\": \"").append(formatNumber(maxTemperature)).append("\",\n");
 		json.append("  \"equilibriumTime\": \"").append(formatNumber(equilibriumTime)).append("\",\n");
 		json.append("  \"equilibriumStableSec\": \"").append(formatNumber(equilibriumStableSec)).append("\",\n");
+		json.append("  \"loop\": \"").append(loop ? "1" : "0").append("\",\n");
 		json.append("  \"rows\": [\n");
 		for(int i = 0; i < STAGE_COUNT; i++) {
 			if(i > 0) {
@@ -180,6 +206,7 @@ public final class ColumnOvenProgram {
 		program.equilibriumStableSec = json.contains("\"equilibriumStableSec\"")
 				? parseQuotedFloat(json, "equilibriumStableSec")
 				: 0.0f;
+		program.loop = parseOptionalLoop(json);
 
 		int rowsIdx = json.indexOf("\"rows\"");
 		if(rowsIdx < 0) {
@@ -237,6 +264,68 @@ public final class ColumnOvenProgram {
 			throw new IllegalArgumentException("stage out of range: " + stage);
 		}
 		return stage;
+	}
+
+	/**
+	 * {@code loop} is optional. Canonical value is the quoted flag {@code "0"} / {@code "1"}.
+	 * A missing key is {@code false}. Bare {@code 0}/{@code 1} and JSON {@code true}/{@code false}
+	 * are accepted so a firmware reader that emits either form still fills the checkbox.
+	 */
+	private static boolean parseOptionalLoop(String json) {
+
+		int keyIdx = json.indexOf("\"loop\"");
+		if(keyIdx < 0) {
+			return false;
+		}
+		int colon = json.indexOf(':', keyIdx + "\"loop\"".length());
+		if(colon < 0) {
+			throw new IllegalArgumentException("Missing ':' after loop");
+		}
+		int i = colon + 1;
+		while(i < json.length() && Character.isWhitespace(json.charAt(i))) {
+			i++;
+		}
+		if(i >= json.length()) {
+			throw new IllegalArgumentException("Missing loop value");
+		}
+		if(json.charAt(i) == '"') {
+			int start = ++i;
+			while(i < json.length() && json.charAt(i) != '"') {
+				i++;
+			}
+			if(i >= json.length()) {
+				throw new IllegalArgumentException("Unterminated loop value");
+			}
+			return interpretLoopToken(json.substring(start, i));
+		}
+		int start = i;
+		while(i < json.length()) {
+			char ch = json.charAt(i);
+			if(ch == ',' || ch == '}' || ch == ']' || Character.isWhitespace(ch)) {
+				break;
+			}
+			i++;
+		}
+		if(start == i) {
+			throw new IllegalArgumentException("Missing loop value");
+		}
+		return interpretLoopToken(json.substring(start, i));
+	}
+
+	private static boolean interpretLoopToken(String raw) {
+
+		String token = raw.trim();
+		if(token.equalsIgnoreCase("true")) {
+			return true;
+		}
+		if(token.equalsIgnoreCase("false")) {
+			return false;
+		}
+		try {
+			return Float.parseFloat(token) != 0f;
+		} catch(NumberFormatException e) {
+			throw new IllegalArgumentException("Invalid loop flag: " + raw, e);
+		}
 	}
 
 	private static float parseQuotedFloat(String json, String key) {

@@ -97,6 +97,9 @@ public final class GcConnectionManager {
 		connection.sendProtocolLine(lineWithoutCrLf);
 	}
 
+	/**
+	 * {@code READ_OVEN_PROGRAM}. A missing {@code loop} field loads as unchecked.
+	 */
 	public ColumnOvenProgram readOvenProgram() throws IOException {
 
 		return connection.readOvenProgram(DEFAULT_RESPONSE_TIMEOUT_MS);
@@ -107,6 +110,9 @@ public final class GcConnectionManager {
 		return connection.readOvenProgram(timeoutMs);
 	}
 
+	/**
+	 * {@code WRITE_OVEN_PROGRAM}. Persists stages and the {@code loop} flag ({@code "0"} / {@code "1"}).
+	 */
 	public void writeOvenProgram(ColumnOvenProgram program) throws IOException {
 
 		connection.writeOvenProgram(program, DEFAULT_RESPONSE_TIMEOUT_MS);
