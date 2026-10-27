@@ -605,7 +605,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 			}
 			item.setText(2, formatTemp(live.getActual()));
 		} else if(!Float.isNaN(lastGood)) {
-			item.setText(2, heatingActive ? formatTemp(lastGood) + "?" : formatTemp(lastGood));
+			item.setText(2, formatTemp(lastGood));
 		} else {
 			item.setText(2, "\u2014");
 		}
@@ -636,7 +636,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 			}
 			return;
 		}
-		/* 加热中或会话内：持续 invalid 才记事件，避免偶发「?」刷屏 */
+		/* 加热中或会话内：持续 invalid 才记事件，避免偶发无效读数刷事件 */
 		if(!(heatingActive || sessionInletHeating)) {
 			inletInvalidPolls = 0;
 			return;
@@ -844,7 +844,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 		}
 		/*
 		 * valid=0：读数陈旧。若 last-good 已在恒温带内显示恒温，否则显示升温/降温。
-		 * 实测列由 applyAuxLiveTemp 加「?」提示未刷新。
+		 * 实测列由 applyAuxLiveTemp 继续显示上次有效温度，不加「?」。
 		 */
 		float actual;
 		if(auxActualDisplayable(live)) {
