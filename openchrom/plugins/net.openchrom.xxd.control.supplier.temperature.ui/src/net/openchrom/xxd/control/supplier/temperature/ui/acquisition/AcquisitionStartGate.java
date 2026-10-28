@@ -14,8 +14,12 @@ import net.openchrom.xxd.control.supplier.temperature.ui.communication.FidReadin
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.FidReadinessSnapshot;
 
 /**
- * Shared Start Analysis toggle for MainView and the dedicated-shell toolbar.
- * Same FID gate as the reverse-control Start button; no second protocol.
+ * Shared Start Analysis toggle for MainView, the plant toolbar, and the
+ * Baijiu shell (reflection on {@code toggle}). Same gate everywhere.
+ * <p>
+ * 电流判据暂不可用，先不拦开始采集 — {@link FidReadiness#REQUIRE_FID_CURRENT_FOR_START}
+ * is {@code false}, so flame / FID current does not block. Not connected still
+ * blocks. Already acquiring toggles to stop. Current pA stays on the strip.
  */
 public final class AcquisitionStartGate {
 
@@ -49,6 +53,7 @@ public final class AcquisitionStartGate {
 			return Outcome.stopped();
 		}
 		FidReadinessSnapshot snapshot = FidReadinessMonitor.getInstance().getSnapshot();
+		// 电流判据暂不可用，先不拦开始采集. Disconnected and FID-board-offline still block.
 		if(!snapshot.canStartAnalysis()) {
 			return Outcome.blocked(FidReadiness.startBlockedTitle(chinese), snapshot.operatorTip(chinese));
 		}
