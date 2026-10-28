@@ -18,12 +18,23 @@ import java.util.Locale;
 public final class FidReadiness {
 
 	/**
-	 * Developer-only JVM flag. When {@code true}, Start Analysis skips the FID
-	 * online + flame-on gate but still requires TCP connected. Default is gated.
-	 * Not for production or pilot sites. Example:
-	 * {@code -Dnet.openchrom.gcws.skipFidReadinessGate=true}
+	 * Developer-only JVM flag. When {@code true}, Start Analysis also skips the
+	 * FID-board-offline block and still requires TCP connected. Not a substitute
+	 * for {@link #REQUIRE_FID_CURRENT_FOR_START}. Not for production or pilot
+	 * sites. Example: {@code -Dnet.openchrom.gcws.skipFidReadinessGate=true}
 	 */
 	public static final String SKIP_FID_READINESS_GATE_PROPERTY = "net.openchrom.gcws.skipFidReadinessGate";
+
+	/**
+	 * 电流判据暂不可用，先不拦开始采集.
+	 * <p>
+	 * Flame and FID current (pA) stay classified and shown. Start Analysis does
+	 * not wait for flame-on, an ignite result, or a successful current / FID
+	 * status read. {@link Kind#DISCONNECTED} still blocks. {@link Kind#FID_OFFLINE}
+	 * still blocks (board not answering — not a current threshold). Set this to
+	 * {@code true} when current sensing can judge FID success again.
+	 */
+	public static final boolean REQUIRE_FID_CURRENT_FOR_START = false;
 
 	public enum Kind {
 		DISCONNECTED, READING, STATUS_READ_FAIL, FID_OFFLINE, IGNITE_FAIL, IGNITING, FLAME_OUT, READY
@@ -80,16 +91,41 @@ public final class FidReadiness {
 	}
 
 	/**
-	 * Default: only {@link Kind#READY} (connected + FID online + flame on).
-	 * With {@link #skipFidReadinessGate()}, any connected kind is allowed;
-	 * {@link Kind#DISCONNECTED} still blocks.
+	 * {@link Kind#DISCONNECTED} always blocks. With
+	 * {@link #REQUIRE_FID_CURRENT_FOR_START} {@code false} (current default),
+	 * flame / current / “FID ready from current” kinds do not block — 电流判据暂不可用，先不拦开始采集.
+	 * {@link Kind#FID_OFFLINE} still blocks unless {@link #skipFidReadinessGate()}.
+	 * {@link Kind#READY} always allows start.
 	 */
 	public static boolean canStartAnalysis(Kind kind) {
 
+		return canStartAnalysis(kind, REQUIRE_FID_CURRENT_FOR_START);
+	}
+
+	static boolean canStartAnalysis(Kind kind, boolean requireFidCurrentForStart) {
+
+		if(kind == null || kind == Kind.DISCONNECTED) {
+			return false;
+		}
 		if(kind == Kind.READY) {
 			return true;
 		}
-		return skipFidReadinessGate() && kind != null && kind != Kind.DISCONNECTED;
+		if(!requireFidCurrentForStart && isCurrentReadinessBlock(kind)) {
+			return true;
+		}
+		return skipFidReadinessGate();
+	}
+
+	/**
+	 * Start blocks whose only job is to wait on flame / FID current.
+	 * 电流判据暂不可用，先不拦开始采集.
+	 */
+	static boolean isCurrentReadinessBlock(Kind kind) {
+
+		return switch(kind) {
+			case READING, STATUS_READ_FAIL, IGNITE_FAIL, IGNITING, FLAME_OUT -> true;
+			case DISCONNECTED, FID_OFFLINE, READY -> false;
+		};
 	}
 
 	/**

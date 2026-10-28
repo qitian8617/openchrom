@@ -43,11 +43,19 @@ The JVM property overrides the stored preference. When auto-open succeeds, the s
 
 If the Baijiu feature is not installed or not enabled, reverse-control does **not** crash. A Chinese (+ English) tip asks to install/enable `net.openchrom.xxd.processor.supplier.baijiu.feature`.
 
-## Developer-only: skip FID readiness gate
+## FID current gate (temporary)
 
-Production and pilot sites must **not** set this. Default Start Analysis stays blocked until connected + FID online + flame on.
+电流判据暂不可用，先不拦开始采集. `FidReadiness.REQUIRE_FID_CURRENT_FOR_START` is `false`.
 
-When the FID flame will not light (for example air reads 0.000 MPa) but TCP is up, local checklist item 2 (acquire → save an openable chromatogram) can still be exercised by starting the JVM with:
+- Connected Start Analysis is allowed when the flame is out, ignition is in progress or failed, or FID status / current has not been read yet.
+- Current pA and flame stay on the strip. Sensing code is not removed.
+- **Disconnected still blocks.** **FID board offline** (RS485 no reply) still blocks.
+- Already acquiring still toggles to stop.
+- Set the constant to `true` to require flame-on / current readiness again. Main「启动」, the plant toolbar **开始分析**, and the Baijiu shell start card all use `AcquisitionStartGate`. Android does not start acquisition while the PC is the owner.
+
+## Developer-only: skip remaining FID gate
+
+Production and pilot sites must **not** set this. The current/flame bypass above is already the plant default; this flag is only for also ignoring a dead FID board.
 
 ```
 -Dnet.openchrom.gcws.skipFidReadinessGate=true
@@ -55,8 +63,8 @@ When the FID flame will not light (for example air reads 0.000 MPa) but TCP is u
 
 When this property is `true`:
 
-- Start Analysis is allowed whenever the chromatograph TCP session is connected, even if FID is offline, flame is out, or status is still reading / failed.
-- **Disconnected still blocks** Start Analysis. The gate is not removed; only the FID online + flame-on part is skipped.
+- Start Analysis is allowed whenever the chromatograph TCP session is connected, including FID board offline.
+- **Disconnected still blocks** Start Analysis.
 - Main shows a bilingual DEBUG banner on the FID strip (Chinese and English together). The bypass is never silent.
 
 There is no operator checkbox. Do not use this flag on production or pilot workstations.
