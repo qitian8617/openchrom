@@ -17,6 +17,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Label;
@@ -74,26 +75,21 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 	public BaijiuSequenceComposite(Composite parent, int style) {
 
 		super(parent, style);
-		Composite body = BaijiuPlantLayout.scrollBody(this);
+		BaijiuPlantLayout.WorkbenchPage page = BaijiuPlantLayout.railBody(this);
+		Composite body = page.main();
 
-		Label title = new Label(body, SWT.NONE);
-		title.setText(BaijiuTerms.SEQUENCE);
-		title.setLayoutData(BaijiuPlantLayout.wrapHint());
+		createTemplateRow(body);
+		optimizeStatusLabel = wrapLabel(body);
+		showOptimizeStatus("", List.of());
+		createTable(body);
+		createEditorCard(body);
 
 		subtitleLabel = wrapLabel(body);
 		subtitleLabel.setText("编排空白 → 混标 → QC → 样品×N。选中样品后「添加平行样」插入第二针（同编号，类型仍为样品）。每针仍手动：加热 → 点火 → 进样 → 气相色谱控制台主界面开始分析。两针完成后可看均值与相对偏差。");
-
-		createTemplateRow(body);
-		createOptimizeBar(body);
-		createTable(body);
-		createEditorCard(body);
-		createAddRow(body);
-		createOrderRow(body);
-		createFileRow(body);
-
 		hintLabel = wrapLabel(body);
 		hintLabel.setText("序列文件默认 " + manager.getDirectory() + "（可用 -D" + InjectionSequenceManager.DIRECTORY_PROPERTY + " 覆盖）。不控制自动进样器；「" + BaijiuTerms.BATCH_RESULTS + "」按本序列已完成针汇总；「" + BaijiuTerms.SIMPLE_BATCH + "」仍用于任选已保存谱图定量。「" + BaijiuTerms.PARALLEL + "」计算两针均值与相对偏差。");
 
+		createRail(page.rail());
 		rebuildTable();
 		manager.addListener(this);
 		addDisposeListener(e -> manager.removeListener(this));
@@ -114,28 +110,28 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 
 	private void createTemplateRow(Composite parent) {
 
-		Composite row = BaijiuPlantLayout.row(parent, 3);
+		Composite row = BaijiuPlantLayout.row(parent, 2);
 		Label templateLabel = new Label(row, SWT.NONE);
 		templateLabel.setText("样品数");
 		sampleCountSpinner = new Spinner(BaijiuPlantLayout.widthHost(row, BaijiuPlantLayout.NUMERIC), SWT.BORDER);
 		sampleCountSpinner.setMinimum(1);
 		sampleCountSpinner.setMaximum(InjectionSequence.MAX_SAMPLES_IN_TEMPLATE);
 		sampleCountSpinner.setSelection(3);
-		Button fillTypicalButton = new Button(row, SWT.PUSH);
-		fillTypicalButton.setText("填入典型队列");
-		fillTypicalButton.addListener(SWT.Selection, e -> {
+	}
+
+	private void createRail(Composite rail) {
+
+		railPush(rail, "填入典型队列", e -> {
 			if(!confirmReplace()) {
 				return;
 			}
 			manager.fillTypical(sampleCountSpinner.getSelection());
 		});
-	}
 
-	private void createOptimizeBar(Composite parent) {
-
-		Composite row = BaijiuPlantLayout.buttonRow(parent);
-		optimizeEnabledButton = new Button(row, SWT.CHECK);
+		BaijiuPlantLayout.railGap(rail);
+		optimizeEnabledButton = new Button(rail, SWT.CHECK);
 		optimizeEnabledButton.setText("启用污染规避排序");
+		BaijiuPlantLayout.inRail(optimizeEnabledButton);
 		boolean enabled = BaijiuSequenceOptimizePreferences.isEnabled();
 		optimizeEnabledButton.setSelection(enabled);
 		optimizeEnabledButton.addListener(SWT.Selection, e -> {
@@ -145,15 +141,65 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 				optimizeButton.setEnabled(on);
 			}
 		});
-		optimizeButton = new Button(row, SWT.PUSH);
-		optimizeButton.setText("智能排序");
+		optimizeButton = railPush(rail, "智能排序", e -> optimizeSequence());
 		optimizeButton.setEnabled(enabled);
-		optimizeButton.addListener(SWT.Selection, e -> optimizeSequence());
-		Button restoreButton = new Button(row, SWT.PUSH);
-		restoreButton.setText("还原原序");
-		restoreButton.addListener(SWT.Selection, e -> restoreSequence());
-		optimizeStatusLabel = wrapLabel(parent);
-		optimizeStatusLabel.setText("");
+		railPush(rail, "还原原序", e -> restoreSequence());
+
+		BaijiuPlantLayout.railGap(rail);
+		railPush(rail, "保存本行", e -> applyEditor());
+
+		BaijiuPlantLayout.railGap(rail);
+		addTypeButton(rail, InjectionType.BLANK, "+ 空白");
+		addTypeButton(rail, InjectionType.MIX_STD, "+ 混标");
+		addTypeButton(rail, InjectionType.QC, "+ QC");
+		addTypeButton(rail, InjectionType.SAMPLE, "+ 样品");
+		railPush(rail, "添加平行样", e -> addParallel());
+		railPush(rail, "删除", e -> {
+			int index = selectedIndex();
+			if(index < 0) {
+				warn("请先选择一行。");
+				return;
+			}
+			manager.remove(index);
+		});
+
+		BaijiuPlantLayout.railGap(rail);
+		railPush(rail, "上移", e -> {
+			int index = selectedIndexOrWarn();
+			if(index >= 0) {
+				manager.moveUp(index);
+			}
+		});
+		railPush(rail, "下移", e -> {
+			int index = selectedIndexOrWarn();
+			if(index >= 0) {
+				manager.moveDown(index);
+			}
+		});
+		railPush(rail, "设为当前", e -> {
+			int index = selectedIndexOrWarn();
+			if(index >= 0) {
+				manager.setCurrent(index);
+			}
+		});
+		railPush(rail, "跳过", e -> {
+			int index = selectedIndexOrWarn();
+			if(index >= 0 && !manager.skip(index)) {
+				warn("只能跳过待进样或失败的行。");
+			}
+		});
+		railPush(rail, "重试", e -> {
+			int index = selectedIndexOrWarn();
+			if(index >= 0 && !manager.retry(index)) {
+				warn("只能重试失败或已跳过的行。");
+			}
+		});
+
+		BaijiuPlantLayout.railGap(rail);
+		railPush(rail, "保存序列…", e -> saveSequence());
+		railPush(rail, "打开序列…", e -> loadSequence());
+		railPush(rail, "平行样结果…", e -> openParallelResults());
+		railPush(rail, "生成结果表", e -> openBatchResults());
 	}
 
 	private void optimizeSequence() {
@@ -196,16 +242,15 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 		if(optimizeStatusLabel == null || optimizeStatusLabel.isDisposed()) {
 			return;
 		}
-		optimizeStatusLabel.setText(summary == null ? "" : summary);
+		String text = summary == null ? "" : summary;
+		optimizeStatusLabel.setText(text);
 		String tip = explanations == null || explanations.isEmpty() ? null : String.join("；", explanations);
 		optimizeStatusLabel.setToolTipText(tip);
-		Composite host = optimizeStatusLabel.getParent();
-		if(host != null && !host.isDisposed()) {
-			Composite body = host.getParent();
-			if(body != null && !body.isDisposed()) {
-				body.layout(true, true);
-			}
+		Control host = optimizeStatusLabel.getParent();
+		if(host != null && !host.isDisposed() && host.getLayoutData() instanceof org.eclipse.swt.layout.GridData data) {
+			data.exclude = text.isBlank();
 		}
+		BaijiuPlantLayout.reflow(optimizeStatusLabel);
 	}
 
 	private void selectBand(ConcentrationBand band) {
@@ -235,16 +280,17 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 
 	private void createTable(Composite parent) {
 
-		table = BaijiuPlantLayout.table(parent, 220);
+		table = BaijiuPlantLayout.table(parent, 168);
 		addColumn("#", 40);
 		addColumn("类型", 72);
 		addColumn("浓度档", 64);
 		addColumn("编号", 88);
 		addColumn("名称", 120);
-		addColumn("平行", 80);
-		addColumn("备注", 140);
+		addColumn("平行", 72);
+		addColumn("备注", 120);
 		addColumn("状态", 72);
-		addColumn("谱图", 140);
+		addColumn("谱图", 120);
+		BaijiuPlantLayout.fillTrailingColumn(table);
 		table.addListener(SWT.Selection, e -> fillEditorFromSelection());
 	}
 
@@ -261,10 +307,16 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 		editTitle.setText("编辑选中行");
 		editTitle.setLayoutData(BaijiuPlantLayout.wrapHint());
 
-		Composite typeRow = BaijiuPlantLayout.row(parent, 4);
+		Composite typeRow = BaijiuPlantLayout.row(parent, 6);
 		label(typeRow, "类型");
 		typeCombo = new Combo(BaijiuPlantLayout.widthHost(typeRow, BaijiuPlantLayout.TYPE), SWT.READ_ONLY);
 		fillTypeCombo();
+		label(typeRow, "浓度档");
+		bandCombo = new Combo(BaijiuPlantLayout.widthHost(typeRow, BaijiuPlantLayout.TYPE), SWT.READ_ONLY);
+		for(ConcentrationBand band : ConcentrationBand.values()) {
+			bandCombo.add(band.label());
+		}
+		bandCombo.select(ConcentrationBand.MEDIUM.ordinal());
 		label(typeRow, "编号");
 		sampleIdText = new Text(BaijiuPlantLayout.widthHost(typeRow, BaijiuPlantLayout.SAMPLE_ID), SWT.BORDER);
 		typeCombo.addListener(SWT.Selection, e -> {
@@ -277,109 +329,26 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 			}
 			selectBand(ConcentrationBand.defaultForType(TYPE_ORDER[index].name()));
 		});
-		Composite bandRow = BaijiuPlantLayout.row(parent, 2);
-		label(bandRow, "浓度档");
-		bandCombo = new Combo(BaijiuPlantLayout.widthHost(bandRow, BaijiuPlantLayout.TYPE), SWT.READ_ONLY);
-		for(ConcentrationBand band : ConcentrationBand.values()) {
-			bandCombo.add(band.label());
-		}
-		bandCombo.select(ConcentrationBand.MEDIUM.ordinal());
 		Composite nameRow = BaijiuPlantLayout.row(parent, 2);
 		label(nameRow, "名称");
 		sampleNameText = new Text(BaijiuPlantLayout.widthHost(nameRow, BaijiuPlantLayout.SAMPLE_NAME), SWT.BORDER);
 		notesText = BaijiuPlantLayout.labeledRemarks(parent, "备注", 1);
-		Composite applyRow = BaijiuPlantLayout.buttonRow(parent);
-		Button applyRowButton = new Button(applyRow, SWT.PUSH);
-		applyRowButton.setText("保存本行");
-		applyRowButton.addListener(SWT.Selection, e -> applyEditor());
 	}
 
-	private void createAddRow(Composite parent) {
+	private Button railPush(Composite rail, String text, org.eclipse.swt.widgets.Listener listener) {
 
-		Composite row = BaijiuPlantLayout.buttonRow(parent);
-		addTypeButton(row, InjectionType.BLANK, "+ 空白");
-		addTypeButton(row, InjectionType.MIX_STD, "+ 混标");
-		addTypeButton(row, InjectionType.QC, "+ QC");
-		addTypeButton(row, InjectionType.SAMPLE, "+ 样品");
-		Button parallelButton = new Button(row, SWT.PUSH);
-		parallelButton.setText("添加平行样");
-		parallelButton.addListener(SWT.Selection, e -> addParallel());
-		Button removeButton = new Button(row, SWT.PUSH);
-		removeButton.setText("删除");
-		removeButton.addListener(SWT.Selection, e -> {
-			int index = selectedIndex();
-			if(index < 0) {
-				warn("请先选择一行。");
-				return;
-			}
-			manager.remove(index);
-		});
-	}
-
-	private void createOrderRow(Composite parent) {
-
-		Composite row = BaijiuPlantLayout.buttonRow(parent);
-		actionButton(row, "上移", e -> {
-			int index = selectedIndexOrWarn();
-			if(index >= 0) {
-				manager.moveUp(index);
-			}
-		});
-		actionButton(row, "下移", e -> {
-			int index = selectedIndexOrWarn();
-			if(index >= 0) {
-				manager.moveDown(index);
-			}
-		});
-		actionButton(row, "设为当前", e -> {
-			int index = selectedIndexOrWarn();
-			if(index >= 0) {
-				manager.setCurrent(index);
-			}
-		});
-		actionButton(row, "跳过", e -> {
-			int index = selectedIndexOrWarn();
-			if(index >= 0 && !manager.skip(index)) {
-				warn("只能跳过待进样或失败的行。");
-			}
-		});
-		actionButton(row, "重试", e -> {
-			int index = selectedIndexOrWarn();
-			if(index >= 0 && !manager.retry(index)) {
-				warn("只能重试失败或已跳过的行。");
-			}
-		});
-	}
-
-	private void createFileRow(Composite parent) {
-
-		Composite row = BaijiuPlantLayout.buttonRow(parent);
-		Button saveButton = new Button(row, SWT.PUSH);
-		saveButton.setText("保存序列…");
-		saveButton.addListener(SWT.Selection, e -> saveSequence());
-		Button loadButton = new Button(row, SWT.PUSH);
-		loadButton.setText("打开序列…");
-		loadButton.addListener(SWT.Selection, e -> loadSequence());
-		Button parallelResultButton = new Button(row, SWT.PUSH);
-		parallelResultButton.setText("平行样结果…");
-		parallelResultButton.addListener(SWT.Selection, e -> openParallelResults());
-		Button batchResultButton = new Button(row, SWT.PUSH);
-		batchResultButton.setText("生成结果表");
-		batchResultButton.addListener(SWT.Selection, e -> openBatchResults());
+		Button button = new Button(rail, SWT.PUSH);
+		button.setText(text);
+		BaijiuPlantLayout.inRail(button);
+		if(listener != null) {
+			button.addListener(SWT.Selection, listener);
+		}
+		return button;
 	}
 
 	private void addTypeButton(Composite parent, InjectionType type, String text) {
 
-		Button button = new Button(parent, SWT.PUSH);
-		button.setText(text);
-		button.addListener(SWT.Selection, e -> manager.add(type));
-	}
-
-	private void actionButton(Composite parent, String text, org.eclipse.swt.widgets.Listener listener) {
-
-		Button button = new Button(parent, SWT.PUSH);
-		button.setText(text);
-		button.addListener(SWT.Selection, listener);
+		railPush(parent, text, e -> manager.add(type));
 	}
 
 	private static void label(Composite parent, String text) {

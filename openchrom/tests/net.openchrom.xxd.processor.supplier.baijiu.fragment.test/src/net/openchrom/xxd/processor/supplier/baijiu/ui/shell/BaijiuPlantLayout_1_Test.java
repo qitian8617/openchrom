@@ -69,6 +69,26 @@ public class BaijiuPlantLayout_1_Test {
 	}
 
 	@Test
+	public void taskTablesStayAShortBandInsteadOfAnEmptyGrid() {
+
+		GridData band = BaijiuPlantLayout.tableBand(148);
+		assertEquals(1, band.widthHint);
+		assertTrue(band.grabExcessHorizontalSpace);
+		assertFalse(band.grabExcessVerticalSpace);
+		assertEquals(148, band.heightHint);
+		GridData fallback = BaijiuPlantLayout.tableBand(0);
+		assertEquals(148, fallback.heightHint);
+		assertFalse(fallback.grabExcessVerticalSpace);
+	}
+
+	@Test
+	public void actionRailIsACompactFixedColumn() {
+
+		assertTrue(BaijiuPlantLayout.RAIL >= 200);
+		assertTrue(BaijiuPlantLayout.RAIL <= 280);
+	}
+
+	@Test
 	public void remarksFillHorizontallyWithHeight() {
 
 		GridData remarks = BaijiuPlantLayout.remarks();

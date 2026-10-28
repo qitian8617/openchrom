@@ -83,7 +83,9 @@ public final class BaijiuParallelShell {
 			return;
 		}
 		BaijiuPlantLayout.ensureGrid(parent);
-		Composite body = BaijiuPlantLayout.scrollBody(parent);
+		BaijiuPlantLayout.WorkbenchPage page = BaijiuPlantLayout.railBody(parent);
+		Composite body = page.main();
+		Composite rail = page.rail();
 		BaijiuMethodSettings settings = BaijiuPreferences.loadMethod();
 		BaijiuSampleInfo template = new BaijiuSampleInfo();
 		BaijiuPreferences.loadSampleDefaults(template);
@@ -118,26 +120,25 @@ public final class BaijiuParallelShell {
 
 		final File[] files = new File[]{needleA, needleB};
 
-		Table table = BaijiuPlantLayout.table(body, 280);
+		Table table = BaijiuPlantLayout.table(body, 168);
 		addColumn(table, "组分", 120);
-		addColumn(table, "针 A g/L", 90);
-		addColumn(table, "针 B g/L", 90);
-		addColumn(table, "均值 g/L", 90);
-		addColumn(table, "相对偏差 %", 100);
-		addColumn(table, "说明", 220);
+		addColumn(table, "针 A g/L", 84);
+		addColumn(table, "针 B g/L", 84);
+		addColumn(table, "均值 g/L", 84);
+		addColumn(table, "相对偏差 %", 96);
+		addColumn(table, "说明", 140);
+		BaijiuPlantLayout.fillTrailingColumn(table);
 
 		Label status = BaijiuPlantLayout.hint(body, "选择两针后点「计算均值与偏差」。");
 
-		Composite buttons = BaijiuPlantLayout.buttonRow(body);
-
-		BaijiuPlantLayout.command(buttons, "选择针 A .ocb", e -> {
+		BaijiuPlantLayout.railCommand(rail, "选择针 A .ocb", e -> {
 			File chosen = chooseFile(host, "选择针 A 色谱图");
 			if(chosen != null) {
 				files[0] = chosen;
 				fileALabel.setText("针 A：" + chosen.getName());
 			}
 		});
-		BaijiuPlantLayout.command(buttons, "选择针 B .ocb", e -> {
+		BaijiuPlantLayout.railCommand(rail, "选择针 B .ocb", e -> {
 			File chosen = chooseFile(host, "选择针 B 色谱图");
 			if(chosen != null) {
 				files[1] = chosen;
@@ -145,7 +146,7 @@ public final class BaijiuParallelShell {
 			}
 		});
 
-		BaijiuPlantLayout.primary(buttons, "计算均值与偏差", e -> {
+		BaijiuPlantLayout.railPrimary(rail, "计算均值与偏差", e -> {
 			if(files[0] == null || files[1] == null) {
 				warn(host, "请先为针 A 和针 B 各选一个 .ocb（演示可两次选择 sample-nongxiang.ocb）。\nChoose a chromatogram for needle A and needle B (the demo file may be used twice).");
 				return;
@@ -184,7 +185,8 @@ public final class BaijiuParallelShell {
 		});
 
 		if(parent instanceof Shell dialog) {
-			BaijiuPlantLayout.command(buttons, "关闭", e -> dialog.close());
+			BaijiuPlantLayout.railGap(rail);
+			BaijiuPlantLayout.railCommand(rail, "关闭", e -> dialog.close());
 		}
 	}
 

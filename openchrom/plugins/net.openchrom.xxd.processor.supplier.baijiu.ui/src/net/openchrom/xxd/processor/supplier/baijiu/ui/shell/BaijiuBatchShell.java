@@ -74,7 +74,9 @@ public final class BaijiuBatchShell {
 			return;
 		}
 		BaijiuPlantLayout.ensureGrid(parent);
-		Composite body = BaijiuPlantLayout.scrollBody(parent);
+		BaijiuPlantLayout.WorkbenchPage page = BaijiuPlantLayout.railBody(parent);
+		Composite body = page.main();
+		Composite rail = page.rail();
 		BaijiuMethodSettings settings = BaijiuPreferences.loadMethod();
 		BaijiuSampleInfo template = new BaijiuSampleInfo();
 		BaijiuPreferences.loadSampleDefaults(template);
@@ -94,26 +96,27 @@ public final class BaijiuBatchShell {
 
 		Label filesLabel = BaijiuPlantLayout.hint(body, "\u5c1a\u672a\u9009\u62e9\u6587\u4ef6");
 
-		Table table = BaijiuPlantLayout.table(body, 220);
+		Table table = BaijiuPlantLayout.table(body, 168);
 		addColumn(table, "\u6837\u54c1", 140);
 		for(BaijiuCompound compound : BaijiuCatalog.compounds()) {
 			if(BaijiuBatchEngine.includeBatchColumn(settings, compound)) {
-				addColumn(table, settings.displayName(compound), 80);
+				addColumn(table, settings.displayName(compound), 72);
 			}
 		}
-		addColumn(table, "GB 2757", 80);
-		addColumn(table, "\u8bf4\u660e", 240);
+		addColumn(table, "GB 2757", 72);
+		addColumn(table, "\u8bf4\u660e", 160);
+		BaijiuPlantLayout.fillTrailingColumn(table);
 
 		BaijiuPlantLayout.hint(body, BaijiuTerms.PARALLEL + " \u2014 " + BaijiuParallelEngine.FORMULA_ZH);
 		Label parallelHint = BaijiuPlantLayout.hint(body, "\u76f8\u540c\u6837\u54c1\u7f16\u53f7\u7684\u4e24\u884c\u4f1a\u914d\u5bf9\u3002\u6f14\u793a\u53ef\u590d\u5236 sample-nongxiang.ocb\uff0c\u6216\u7528\u5de5\u4f5c\u53f0\u300c" + BaijiuTerms.PARALLEL + "\u300d\u5404\u9009\u9488 A/B\u3002");
 
-		Table parallelTable = BaijiuPlantLayout.table(body, 160);
+		Table parallelTable = BaijiuPlantLayout.table(body, 120);
 		BaijiuParallelShell.addBatchColumns(parallelTable);
+		BaijiuPlantLayout.fillTrailingColumn(parallelTable);
 
-		Composite buttons = BaijiuPlantLayout.buttonRow(body);
-
-		Button pick = new Button(buttons, SWT.PUSH);
+		Button pick = new Button(rail, SWT.PUSH);
 		pick.setText("\u9009\u62e9\u591a\u4e2a .ocb");
+		BaijiuPlantLayout.inRail(pick);
 		pick.addListener(SWT.Selection, e -> {
 			FileDialog picker = new FileDialog(host, SWT.OPEN | SWT.MULTI);
 			picker.setFilterExtensions(new String[] {"*.ocb", "*.*"});
@@ -129,12 +132,14 @@ public final class BaijiuBatchShell {
 			filesLabel.setText("\u5df2\u9009 " + files.size() + " \u4e2a\u6587\u4ef6");
 		});
 
-		Button fromSequence = new Button(buttons, SWT.PUSH);
+		Button fromSequence = new Button(rail, SWT.PUSH);
 		fromSequence.setText("\u4ece\u5f53\u524d\u5e8f\u5217\u751f\u6210\u7ed3\u679c\u8868");
+		BaijiuPlantLayout.inRail(fromSequence);
 		fromSequence.addListener(SWT.Selection, e -> BaijiuSequenceResultsShell.open(host));
 
-		Button run = new Button(buttons, SWT.PUSH);
+		Button run = new Button(rail, SWT.PUSH);
 		run.setText("\u6309\u540c\u4e00\u65b9\u6cd5\u6279\u91cf\u5b9a\u91cf");
+		BaijiuPlantLayout.inRail(run);
 		run.addListener(SWT.Selection, e -> {
 			if(files.isEmpty()) {
 				warn(host, "\u8bf7\u5148\u9009\u62e9\u591a\u4e2a .ocb \u6587\u4ef6\u3002");
@@ -171,8 +176,9 @@ public final class BaijiuBatchShell {
 			}
 		});
 
-		Button export = new Button(buttons, SWT.PUSH);
+		Button export = new Button(rail, SWT.PUSH);
 		export.setText("\u5bfc\u51fa\u6c47\u603b\u8868");
+		BaijiuPlantLayout.inRail(export);
 		export.addListener(SWT.Selection, e -> {
 			if(rows.isEmpty()) {
 				warn(host, "\u6ca1\u6709\u53ef\u5bfc\u51fa\u7684\u6279\u91cf\u7ed3\u679c\u3002");
@@ -195,8 +201,10 @@ public final class BaijiuBatchShell {
 		});
 
 		if(parent instanceof Shell dialog) {
-			Button close = new Button(buttons, SWT.PUSH);
+			BaijiuPlantLayout.railGap(rail);
+			Button close = new Button(rail, SWT.PUSH);
 			close.setText("\u5173\u95ed");
+			BaijiuPlantLayout.inRail(close);
 			close.addListener(SWT.Selection, e -> dialog.close());
 		}
 	}

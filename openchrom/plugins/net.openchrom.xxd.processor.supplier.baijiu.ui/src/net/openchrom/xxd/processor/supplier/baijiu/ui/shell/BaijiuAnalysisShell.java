@@ -136,6 +136,7 @@ public final class BaijiuAnalysisShell {
 	private Table fitTable;
 	private CTabFolder tabs;
 	private BaijiuReportHeaderForm reportHeader;
+	private boolean dialogChrome;
 
 	private BaijiuAnalysisShell(IChromatogramSelection chromatogramSelection, EPartService partService) {
 
@@ -178,6 +179,7 @@ public final class BaijiuAnalysisShell {
 
 	private void createControls(Composite parent, boolean dialogChrome) {
 
+		this.dialogChrome = dialogChrome;
 		Composite root = BaijiuPlantLayout.pageBody(parent);
 		createWorkflowHeader(root);
 		tabs = BaijiuPlantTabs.create(root);
@@ -204,26 +206,7 @@ public final class BaijiuAnalysisShell {
 		reportTab.setControl(createReportTab(tabs));
 		BaijiuPlantLayout.constrainToClient(tabs);
 
-		Composite bottom = BaijiuPlantLayout.row(root, 1);
-		bottom.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		status = BaijiuPlantLayout.hint(bottom, "");
-		Composite closeRow = BaijiuPlantLayout.buttonRow(bottom);
-		Composite saveRoot = root;
-		org.eclipse.swt.widgets.Listener save = e -> {
-			collectAll();
-			BaijiuPreferences.saveMethod(settings);
-			BaijiuPreferences.saveSampleDefaults(readSample());
-			if(dialogChrome) {
-				saveRoot.getShell().close();
-			} else {
-				setStatus("\u5df2\u4fdd\u5b58\u65b9\u6cd5\u4e0e\u6837\u54c1\u9ed8\u8ba4\u3002");
-			}
-		};
-		if(dialogChrome) {
-			BaijiuPlantLayout.command(closeRow, "\u5173\u95ed", save);
-		} else {
-			BaijiuPlantLayout.primary(closeRow, "\u4fdd\u5b58\u65b9\u6cd5", save);
-		}
+		status = BaijiuPlantLayout.hint(root, "");
 
 		loadFields();
 		refreshChromatogramLabel();
@@ -244,22 +227,26 @@ public final class BaijiuAnalysisShell {
 
 	private Composite createReportTab(Composite parent) {
 
-		Composite root = BaijiuPlantLayout.tabBody(parent);
+		BaijiuPlantLayout.WorkbenchPage page = BaijiuPlantLayout.railTab(parent);
+		Composite root = page.main();
+		Composite rail = page.rail();
 		BaijiuPlantLayout.hint(root, "\u5b9a\u91cf\u5b8c\u6210\u540e\u9884\u89c8\u62a5\u544a\u3002\u8bb8\u53ef\u95e8\u4e0e\u5b9a\u91cf\u5f15\u64ce\u4e0d\u53d8\uff1b\u672c\u9875\u53ea\u6253\u5f00\u5df2\u6709\u62a5\u544a\u7a97\u3002");
 		reportHeader = new BaijiuReportHeaderForm(root);
-		Composite buttons = BaijiuPlantLayout.buttonRow(root);
-		button(buttons, "\u9884\u89c8/\u6253\u5370\u62a5\u544a", e -> report(parent.getShell()));
-		button(buttons, "\u5bfc\u51fa\u7ed3\u679c CSV", e -> exportCsv(parent.getShell()));
-		button(buttons, "\u8bb8\u53ef / \u7248\u672c\u2026", e -> {
+		button(rail, "\u9884\u89c8/\u6253\u5370\u62a5\u544a", e -> report(parent.getShell()));
+		button(rail, "\u5bfc\u51fa\u7ed3\u679c CSV", e -> exportCsv(parent.getShell()));
+		button(rail, "\u8bb8\u53ef / \u7248\u672c\u2026", e -> {
 			BaijiuLicenseShell.open(parent.getShell());
 			setStatus(BaijiuLicenseGate.statusLine());
 		});
-		return BaijiuPlantLayout.tabControlOf(root);
+		addPageAction(rail);
+		return page.chrome();
 	}
 
 	private Composite createSampleTab(Composite parent) {
 
-		Composite root = BaijiuPlantLayout.tabBody(parent);
+		BaijiuPlantLayout.WorkbenchPage page = BaijiuPlantLayout.railTab(parent);
+		Composite root = page.main();
+		Composite rail = page.rail();
 
 		chromatogramLabel = BaijiuPlantLayout.hint(root, "");
 		BaijiuPlantLayout.hint(root, BaijiuTerms.GLOSSARY + " \u719f\u7ec3\u64cd\u4f5c\u5458\u53ef\u76f4\u63a5\u7528\u672c\u7a97\uff1b\u65b0\u64cd\u4f5c\u5458\u53ef\u8d70\u300c\u4e09\u6b65\u5411\u5bfc\u300d\u3002");
@@ -315,20 +302,20 @@ public final class BaijiuAnalysisShell {
 		sampleMl.addModifyListener(e -> updateInjectedLabel());
 		istdMl.addModifyListener(e -> updateInjectedLabel());
 
-		Composite buttons = BaijiuPlantLayout.buttonRow(root);
-		button(buttons, "\u8bfb\u53d6\u5f53\u524d\u8c31\u56fe", e -> reloadChromatogram());
-		button(buttons, "\u63a8\u8350\u79ef\u5206", e -> recommendedIntegrate(parent.getShell()));
-		button(buttons, "\u7528\u5f53\u524d\u8c31\u56fe\u505a\u6821\u6b63", e -> calibrate(parent.getShell()));
-		button(buttons, "\u5b9a\u91cf\u5e76\u5199\u56de\u5cf0\u8868", e -> quantify(parent.getShell(), true, true));
-		button(buttons, "\u9884\u89c8/\u6253\u5370\u62a5\u544a", e -> report(parent.getShell()));
-		button(buttons, "\u5bfc\u51fa\u7ed3\u679c CSV", e -> exportCsv(parent.getShell()));
-		button(buttons, "\u4fdd\u5b58\u65b9\u6cd5", e -> saveMethod(parent.getShell()));
-		button(buttons, "\u53e6\u5b58\u5382\u65b9\u6cd5", e -> savePlantMethod(parent.getShell()));
-		button(buttons, "\u52a0\u8f7d\u9ed8\u8ba4\u6d53\u9999\u65b9\u6cd5\u5305", e -> restoreDefaultPackage(parent.getShell()));
-		button(buttons, "\u8bb8\u53ef / \u7248\u672c\u2026", e -> {
+		button(rail, "\u8bfb\u53d6\u5f53\u524d\u8c31\u56fe", e -> reloadChromatogram());
+		button(rail, "\u63a8\u8350\u79ef\u5206", e -> recommendedIntegrate(parent.getShell()));
+		button(rail, "\u7528\u5f53\u524d\u8c31\u56fe\u505a\u6821\u6b63", e -> calibrate(parent.getShell()));
+		button(rail, "\u5b9a\u91cf\u5e76\u5199\u56de\u5cf0\u8868", e -> quantify(parent.getShell(), true, true));
+		button(rail, "\u9884\u89c8/\u6253\u5370\u62a5\u544a", e -> report(parent.getShell()));
+		button(rail, "\u5bfc\u51fa\u7ed3\u679c CSV", e -> exportCsv(parent.getShell()));
+		button(rail, "\u4fdd\u5b58\u65b9\u6cd5", e -> saveMethod(parent.getShell()));
+		button(rail, "\u53e6\u5b58\u5382\u65b9\u6cd5", e -> savePlantMethod(parent.getShell()));
+		button(rail, "\u52a0\u8f7d\u9ed8\u8ba4\u6d53\u9999\u65b9\u6cd5\u5305", e -> restoreDefaultPackage(parent.getShell()));
+		button(rail, "\u8bb8\u53ef / \u7248\u672c\u2026", e -> {
 			BaijiuLicenseShell.open(parent.getShell());
 			setStatus(BaijiuLicenseGate.statusLine());
 		});
+		addPageAction(rail);
 		BaijiuPlantLayout.hint(root, BaijiuLicenseGate.OPERATOR_HINT + " " + BaijiuCalibrationGate.OPERATOR_HINT + " \u5355\u70b9\u4ecd\u7528\u300c\u7528\u5f53\u524d\u8c31\u56fe\u505a\u6821\u6b63\u300d\uff1b\u7532\u9187+\u4e3b\u916f\u4e5f\u53ef\u5728\u300c\u591a\u70b9\u6821\u6b63\u300d\u9875\u8bb0 \u2265 3 \u70b9\u5e76\u62df\u5408 R\u00b2\u3002");
 
 		Composite gbGroup = BaijiuPlantLayout.group(root, "GB 2757 \u7532\u9187\u5224\u5b9a", 1);
@@ -339,94 +326,105 @@ public final class BaijiuAnalysisShell {
 		gbSource = BaijiuPlantLayout.hint(gbGroup, "");
 		clearGbPanel();
 
-		resultTable = BaijiuPlantLayout.table(root, 220);
+		resultTable = BaijiuPlantLayout.table(root, 148);
 		String[] columns = {"\u7ec4\u5206", "\u671f\u671bRT", "\u5339\u914dRT", "\u5cf0\u9762\u79ef", "\u54cd\u5e94\u56e0\u5b50", "\u542b\u91cf g/L", "\u5185\u6807", "\u8d85\u9650", "\u5907\u6ce8"};
-		int[] widths = {100, 70, 70, 80, 70, 80, 50, 70, 140};
+		int[] widths = {100, 70, 70, 80, 70, 80, 50, 64, 120};
 		for(int i = 0; i < columns.length; i++) {
 			BaijiuPlantLayout.column(resultTable, columns[i], widths[i]);
 		}
-		return BaijiuPlantLayout.tabControlOf(root);
+		BaijiuPlantLayout.fillTrailingColumn(resultTable);
+		return page.chrome();
 	}
 
 	private Composite createMethodTab(Composite parent) {
 
-		Composite root = BaijiuPlantLayout.tabBody(parent);
+		BaijiuPlantLayout.WorkbenchPage page = BaijiuPlantLayout.railTab(parent);
+		Composite root = page.main();
+		Composite rail = page.rail();
 		BaijiuPlantLayout.hint(root, "\u5b9a\u7a3f\u6d53\u9999 FID \u65b9\u6cd5\u5305\uff1aXP-\u767d\u9152 C2 + \u4e59\u9178\u6b63\u4e01\u916f + 15 \u6df7\u6807\u3002\u53ef\u7f16\u8f91\u672c\u673a RT\u3001\u7a97\u53e3\u3001\u662f\u5426\u5b9a\u91cf\u3001\u662f\u5426\u7532\u9187\u5224\u5b9a\uff0c\u53e6\u5b58/\u52a0\u8f7d *.bjm\u3002\u4e0d\u5b9a\u91cf\u7684\u7ec4\u5206\u4ecd\u53ef\u5339\u914d\u51fa\u5cf0\uff0c\u4f46\u4e0d\u5199\u542b\u91cf\u3002\u7532\u9187\u5224\u5b9a\u6700\u591a\u52fe\u9009\u4e00\u4e2a\uff0c\u7528\u4e8e GB 2757\u3002\u9650\u91cf\u4e0d\u5199\u6b7b\u5728\u5224\u5b9a\u903b\u8f91\u4e2d\u3002");
 
 		Composite limits = BaijiuPlantLayout.row(root, 4);
 		grainLimit = BaijiuPlantLayout.labeledText(limits, "\u7cae\u8c37\u7532\u9187\u9650\u91cf g/L\uff08100%vol\uff09", BaijiuPlantLayout.NUMERIC);
 		otherLimit = BaijiuPlantLayout.labeledText(limits, "\u5176\u4ed6\u539f\u6599\u9650\u91cf g/L\uff08100%vol\uff09", BaijiuPlantLayout.NUMERIC);
-		Composite limitButtons = BaijiuPlantLayout.buttonRow(root);
-		button(limitButtons, "\u52a0\u8f7d\u5382\u65b9\u6cd5", e -> loadPlantMethod(parent.getShell()));
-		button(limitButtons, "\u53e6\u5b58\u5382\u65b9\u6cd5", e -> savePlantMethod(parent.getShell()));
-		button(limitButtons, "\u52a0\u8f7d\u9ed8\u8ba4\u6d53\u9999\u65b9\u6cd5\u5305", e -> restoreDefaultPackage(parent.getShell()));
+		button(rail, "\u52a0\u8f7d\u5382\u65b9\u6cd5", e -> loadPlantMethod(parent.getShell()));
+		button(rail, "\u53e6\u5b58\u5382\u65b9\u6cd5", e -> savePlantMethod(parent.getShell()));
+		button(rail, "\u52a0\u8f7d\u9ed8\u8ba4\u6d53\u9999\u65b9\u6cd5\u5305", e -> restoreDefaultPackage(parent.getShell()));
 
-		methodTable = BaijiuPlantLayout.table(root, 240);
+		methodTable = BaijiuPlantLayout.table(root, 220);
 		String[] columns = {"\u7ec4\u5206", "\u5382\u5546RT", "\u672c\u673aRT", "\u7a97\u53e3", BaijiuTerms.QUANTIFY, BaijiuTerms.METHANOL_JUDGMENT, "\u6df7\u6807 g/L", "RF", "\u8bf4\u660e"};
-		int[] widths = {110, 80, 80, 70, 70, 90, 90, 80, 200};
+		int[] widths = {100, 72, 72, 64, 64, 88, 80, 64, 140};
 		for(int i = 0; i < columns.length; i++) {
 			BaijiuPlantLayout.column(methodTable, columns[i], widths[i]);
 		}
+		BaijiuPlantLayout.fillTrailingColumn(methodTable);
 		methodTable.addListener(SWT.Selection, e -> loadSelectedCompound());
 
 		Composite editor = BaijiuPlantLayout.row(root, 6);
 		editName = BaijiuPlantLayout.labeledText(editor, "\u7ec4\u5206\u540d", BaijiuPlantLayout.COMPOUND_NAME);
 		editRt = BaijiuPlantLayout.labeledText(editor, "\u672c\u673aRT", BaijiuPlantLayout.NUMERIC);
 		editWindow = BaijiuPlantLayout.labeledText(editor, "\u7a97\u53e3", BaijiuPlantLayout.NUMERIC);
-		Composite editorFlags = BaijiuPlantLayout.row(root, 8);
+		Composite editorFlags = BaijiuPlantLayout.row(root, 6);
 		editMix = BaijiuPlantLayout.labeledText(editorFlags, "\u6df7\u6807 g/L", BaijiuPlantLayout.NUMERIC);
 		editRf = BaijiuPlantLayout.labeledText(editorFlags, "RF", BaijiuPlantLayout.NUMERIC);
 		editQuantify = labeledCheck(editorFlags, BaijiuTerms.QUANTIFY);
 		editGb2757 = labeledCheck(editorFlags, BaijiuTerms.METHANOL_JUDGMENT);
-		button(editorFlags, "\u5e94\u7528\u9009\u4e2d\u884c", e -> applyCompoundEdit());
+		BaijiuPlantLayout.railGap(rail);
+		button(rail, "\u5e94\u7528\u9009\u4e2d\u884c", e -> applyCompoundEdit());
+		addPageAction(rail);
 		BaijiuPlantLayout.hint(root, "\u52fe\u9009\u300c" + BaijiuTerms.QUANTIFY + "\u300d\u624d\u5199\u542b\u91cf\uff1b\u5185\u6807\u56fa\u5b9a\u4e0d\u5b9a\u91cf\u3002\u300c" + BaijiuTerms.METHANOL_JUDGMENT + "\u300d\u6700\u591a\u4e00\u4e2a\uff0c\u9ed8\u8ba4\u4e3a\u76ee\u5f55\u7532\u9187\u3002\u70b9\u300c\u5e94\u7528\u9009\u4e2d\u884c\u300d\u540e\u53ef\u300c\u4fdd\u5b58\u65b9\u6cd5\u300d\u6216\u300c\u53e6\u5b58\u5382\u65b9\u6cd5\u300d\u3002");
-		return BaijiuPlantLayout.tabControlOf(root);
+		return page.chrome();
 	}
 
 	private Composite createMatchTab(Composite parent) {
 
-		Composite root = BaijiuPlantLayout.tabBody(parent);
+		BaijiuPlantLayout.WorkbenchPage page = BaijiuPlantLayout.railTab(parent);
+		Composite root = page.main();
+		Composite rail = page.rail();
 		BaijiuPlantLayout.hint(root, "\u4e0a\u8868\u4e3a\u671f\u671b\u7ec4\u5206\u7684\u5339\u914d\u7ed3\u679c\uff1b\u4e0b\u8868\u4e3a\u672a\u5339\u914d\u5cf0\u3002\u53ef\u5c06\u672a\u5339\u914d\u5cf0\u6307\u5b9a\u7ed9\u7ec4\u5206\uff0c\u6216\u4fee\u6539\u5cf0\u8d77\u6b62\u65f6\u95f4\u540e\u7acb\u5373\u91cd\u7b97\u5b9a\u91cf\u3002");
-		Composite quantRow = BaijiuPlantLayout.row(root, 2);
-		button(quantRow, "\u5b9a\u91cf\u5e76\u5199\u56de\u5cf0\u8868", e -> quantify(parent.getShell(), true, true));
+		button(rail, "\u5b9a\u91cf\u5e76\u5199\u56de\u5cf0\u8868", e -> quantify(parent.getShell(), true, true));
 
-		matchTable = BaijiuPlantLayout.table(root, 220);
+		matchTable = BaijiuPlantLayout.table(root, 160);
 		String[] matchColumns = {"\u671f\u671b\u7ec4\u5206", "\u671f\u671bRT", "\u5339\u914dRT", "\u9762\u79ef", "\u5185\u6807", "\u72b6\u6001"};
-		int[] matchWidths = {120, 80, 80, 90, 60, 140};
+		int[] matchWidths = {120, 72, 72, 80, 56, 120};
 		for(int i = 0; i < matchColumns.length; i++) {
 			BaijiuPlantLayout.column(matchTable, matchColumns[i], matchWidths[i]);
 		}
+		BaijiuPlantLayout.fillTrailingColumn(matchTable);
 		matchTable.addListener(SWT.Selection, e -> loadSelectedMatchedPeak());
 
-		Composite bounds = BaijiuPlantLayout.row(root, 6);
+		Composite bounds = BaijiuPlantLayout.row(root, 4);
 		peakStart = BaijiuPlantLayout.labeledText(bounds, "\u5cf0\u8d77\u70b9 min", BaijiuPlantLayout.NUMERIC);
 		peakStop = BaijiuPlantLayout.labeledText(bounds, "\u5cf0\u7ec8\u70b9 min", BaijiuPlantLayout.NUMERIC);
-		button(bounds, "\u5e94\u7528\u8fb9\u754c\u5e76\u91cd\u7b97", e -> applyPeakBounds(parent.getShell()));
+		button(rail, "\u5e94\u7528\u8fb9\u754c\u5e76\u91cd\u7b97", e -> applyPeakBounds(parent.getShell()));
 
 		Label unmatchedLabel = new Label(root, SWT.NONE);
 		unmatchedLabel.setText("\u672a\u5339\u914d\u5cf0");
-		unmatchedTable = BaijiuPlantLayout.table(root, 140);
+		unmatchedTable = BaijiuPlantLayout.table(root, 112);
 		String[] unmatchedColumns = {"RT min", "\u9762\u79ef"};
-		int[] unmatchedWidths = {100, 120};
+		int[] unmatchedWidths = {88, 100};
 		for(int i = 0; i < unmatchedColumns.length; i++) {
 			BaijiuPlantLayout.column(unmatchedTable, unmatchedColumns[i], unmatchedWidths[i]);
 		}
+		BaijiuPlantLayout.fillTrailingColumn(unmatchedTable);
 		unmatchedTable.addListener(SWT.Selection, e -> loadSelectedUnmatchedPeak());
 
-		Composite assign = BaijiuPlantLayout.row(root, 4);
+		Composite assign = BaijiuPlantLayout.row(root, 2);
 		assignCompound = BaijiuPlantLayout.labeledCombo(assign, "\u6307\u5b9a\u7ed9\u7ec4\u5206", compoundLabels(), BaijiuPlantLayout.SAMPLE_NAME);
-		button(assign, "\u6307\u5b9a\u9009\u4e2d\u672a\u5339\u914d\u5cf0", e -> assignUnmatched(parent.getShell()));
-		button(assign, "\u5237\u65b0\u5339\u914d", e -> {
+		button(rail, "\u6307\u5b9a\u9009\u4e2d\u672a\u5339\u914d\u5cf0", e -> assignUnmatched(parent.getShell()));
+		button(rail, "\u5237\u65b0\u5339\u914d", e -> {
 			collectAll();
 			fillMatchTables();
 			recalculateQuiet();
 		});
-		return BaijiuPlantLayout.tabControlOf(root);
+		addPageAction(rail);
+		return page.chrome();
 	}
 
 	private Composite createMultipointTab(Composite parent) {
 
-		Composite root = BaijiuPlantLayout.tabBody(parent);
+		BaijiuPlantLayout.WorkbenchPage page = BaijiuPlantLayout.railTab(parent);
+		Composite root = page.main();
+		Composite rail = page.rail();
 		BaijiuPlantLayout.hint(root, "\u591a\u70b9\u6df7\u6807\u6821\u6b63\uff08\u8bd5\u70b9 P1\uff09\uff1a\u7532\u9187\u3001\u4e59\u9178\u4e59\u916f\u3001\u4e73\u9178\u4e59\u916f\u3001\u5df1\u9178\u4e59\u916f\u3002\u6bcf\u9488\u58f0\u660e\u6df7\u6807\u500d\u6570\uff08\u76f8\u5bf9\u65b9\u6cd5\u6df7\u6807 g/L\uff09\uff0c\u4ece\u5f53\u524d\u8c31\u56fe\u52a0\u70b9\uff1b\u2265 3 \u70b9\u540e\u300c\u62df\u5408\u300d\u7ebf\u6027\u66f2\u7ebf\u5e76\u663e\u793a\u659c\u7387/\u622a\u8ddd/R\u00b2\u3002\u6709\u6548 RF \u5199\u5165\u65e2\u6709 RF \u8868\uff0c\u5b9a\u91cf\u4e0e\u95e8\u95ea\u4e0d\u53d8\u3002\u5176\u4f59\u7ec4\u5206\u4ecd\u7528\u300c\u7528\u5f53\u524d\u8c31\u56fe\u505a\u6821\u6b63\u300d\u5355\u70b9 RF\u3002\u79bb\u7ebf\u6f14\u793a\u53ef\u7528\u540c\u4e00\u5f20 mix-15plus-istd.ocb\uff0c\u52fe\u9009\u6309\u500d\u6570\u7f29\u653e\u5f85\u6d4b\u5cf0\u9762\u79ef\u6216\u76f4\u63a5\u300c\u6f14\u793a\u4e09\u70b9\u300d\uff08 0.5 / 1.0 / 1.5\uff09\u3002\u8be6\u89c1 docs/GCWS-MULTIPOINT.md\u3002");
 
 		Composite level = BaijiuPlantLayout.row(root, 6);
@@ -439,30 +437,56 @@ public final class BaijiuAnalysisShell {
 		scaleAreas.setLayoutData(BaijiuPlantLayout.wrapHint());
 		updateMixLevelHint();
 
-		Composite actions = BaijiuPlantLayout.buttonRow(root);
-		button(actions, "\u4ece\u5f53\u524d\u8c31\u56fe\u6dfb\u52a0\u6821\u6b63\u70b9", e -> addCalibrationPoint(parent.getShell()));
-		button(actions, "\u6f14\u793a\u4e09\u70b9\uff080.5/1.0/1.5\uff09", e -> addDemoCalibrationPoints(parent.getShell()));
-		button(actions, "\u66f4\u65b0\u9009\u4e2d\u70b9\u6d53\u5ea6", e -> updateSelectedPointScale(parent.getShell()));
-		button(actions, "\u5220\u9664\u9009\u4e2d\u70b9", e -> removeSelectedPoint(parent.getShell()));
-		button(actions, "\u6e05\u7a7a\u6821\u6b63\u70b9", e -> clearCalibrationPoints(parent.getShell()));
-		button(actions, "\u62df\u5408", e -> fitMultipoint(parent.getShell()));
+		button(rail, "\u4ece\u5f53\u524d\u8c31\u56fe\u6dfb\u52a0\u6821\u6b63\u70b9", e -> addCalibrationPoint(parent.getShell()));
+		button(rail, "\u6f14\u793a\u4e09\u70b9\uff080.5/1.0/1.5\uff09", e -> addDemoCalibrationPoints(parent.getShell()));
+		button(rail, "\u66f4\u65b0\u9009\u4e2d\u70b9\u6d53\u5ea6", e -> updateSelectedPointScale(parent.getShell()));
+		button(rail, "\u5220\u9664\u9009\u4e2d\u70b9", e -> removeSelectedPoint(parent.getShell()));
+		button(rail, "\u6e05\u7a7a\u6821\u6b63\u70b9", e -> clearCalibrationPoints(parent.getShell()));
+		button(rail, "\u62df\u5408", e -> fitMultipoint(parent.getShell()));
+		addPageAction(rail);
 
-		pointTable = BaijiuPlantLayout.table(root, 180);
+		pointTable = BaijiuPlantLayout.table(root, 132);
 		String[] pointColumns = {"#", "\u6807\u7b7e", "\u6765\u6e90", "\u500d\u6570", "\u7532\u9187 g/L", "\u7532\u9187 \u9762\u79ef\u6bd4", "\u4e59\u9178\u4e59\u916f", "\u4e73\u9178\u4e59\u916f", "\u5df1\u9178\u4e59\u916f"};
-		int[] pointWidths = {36, 60, 220, 60, 80, 90, 90, 90, 90};
+		int[] pointWidths = {36, 56, 160, 56, 76, 88, 80, 80, 88};
 		for(int i = 0; i < pointColumns.length; i++) {
 			BaijiuPlantLayout.column(pointTable, pointColumns[i], pointWidths[i]);
 		}
+		BaijiuPlantLayout.fillTrailingColumn(pointTable);
 
-		fitTable = BaijiuPlantLayout.table(root, 140);
+		fitTable = BaijiuPlantLayout.table(root, 112);
 		String[] fitColumns = {"\u7ec4\u5206", "n", "\u659c\u7387", "\u622a\u8ddd", "R\u00b2", "\u6709\u6548 RF", "\u63d0\u793a"};
-		int[] fitWidths = {110, 40, 90, 90, 80, 90, 280};
+		int[] fitWidths = {100, 36, 72, 72, 64, 80, 160};
 		for(int i = 0; i < fitColumns.length; i++) {
 			BaijiuPlantLayout.column(fitTable, fitColumns[i], fitWidths[i]);
 		}
+		BaijiuPlantLayout.fillTrailingColumn(fitTable);
 
 		multipointStatus = BaijiuPlantLayout.hint(root, "x = \u542b\u91cf g/L\uff0c y = A\u5f85\u6d4b / A\u5185\u6807\u3002R\u00b2 < 0.99 \u4ec5\u63d0\u793a\uff0c\u4e0d\u963b\u6b62\u95e8\u95ea\u3002");
-		return BaijiuPlantLayout.tabControlOf(root);
+		return page.chrome();
+	}
+
+	/**
+	 * Page-level save / close, previously a full-width row under the tabs.
+	 * Embedded plant pages keep the quiet save; the modal shell still closes.
+	 */
+	private void addPageAction(Composite rail) {
+
+		BaijiuPlantLayout.railGap(rail);
+		if(dialogChrome) {
+			button(rail, "\u5173\u95ed", e -> {
+				collectAll();
+				BaijiuPreferences.saveMethod(settings);
+				BaijiuPreferences.saveSampleDefaults(readSample());
+				rail.getShell().close();
+			});
+			return;
+		}
+		button(rail, "\u4fdd\u5b58\u65b9\u6cd5", e -> {
+			collectAll();
+			BaijiuPreferences.saveMethod(settings);
+			BaijiuPreferences.saveSampleDefaults(readSample());
+			setStatus("\u5df2\u4fdd\u5b58\u65b9\u6cd5\u4e0e\u6837\u54c1\u9ed8\u8ba4\u3002");
+		});
 	}
 
 	private void loadFields() {
@@ -1320,9 +1344,9 @@ public final class BaijiuAnalysisShell {
 	private static BaijiuPlantButton button(Composite parent, String title, org.eclipse.swt.widgets.Listener listener) {
 
 		if(primaryAction(title)) {
-			return BaijiuPlantLayout.primary(parent, title, listener);
+			return BaijiuPlantLayout.railPrimary(parent, title, listener);
 		}
-		return BaijiuPlantLayout.command(parent, title, listener);
+		return BaijiuPlantLayout.railCommand(parent, title, listener);
 	}
 
 	private static boolean primaryAction(String title) {
