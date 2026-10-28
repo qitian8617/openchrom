@@ -27,6 +27,7 @@ import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.Listener;
@@ -58,10 +59,19 @@ public final class BaijiuPlantLayout {
 	public static final int GAS = 120;
 	public static final int COMPOUND_NAME = 160;
 	public static final int TYPE = 140;
+	/**
+	 * Fixed width of the right-hand action column. Wide enough for the longest
+	 * plant label (演示三点 / 从当前谱图添加校正点) without eating the table.
+	 */
+	public static final int RAIL = 248;
 
 	private static final int FILL = 0;
 	private static final int INK = 1;
 	private static final int ACCENT = 2;
+	private static final String FLEX_KEY = "baijiu.flex";
+	private static final String FLEX_INDEX = "baijiu.flexIndex";
+	private static final String FLEX_MIN = "baijiu.flexMin";
+	private static final String FLEX_BUSY = "baijiu.flexBusy";
 
 	private static final Map<Display, Color[]> PALETTE = new HashMap<>();
 
@@ -98,6 +108,19 @@ public final class BaijiuPlantLayout {
 		GridData data = new GridData(SWT.FILL, SWT.FILL, true, true);
 		data.widthHint = 1;
 		data.heightHint = heightHint > 0 ? heightHint : 160;
+		return data;
+	}
+
+	/**
+	 * Task-page table band. Fills the main column but does not grow into a
+	 * tall empty grid when only a few rows are present. Leftover width goes
+	 * to {@link #fillTrailingColumn(Table)} instead of a blank tail.
+	 */
+	public static GridData tableBand(int heightHint) {
+
+		GridData data = new GridData(SWT.FILL, SWT.FILL, true, false);
+		data.widthHint = 1;
+		data.heightHint = heightHint > 0 ? heightHint : 148;
 		return data;
 	}
 
@@ -418,6 +441,93 @@ public final class BaijiuPlantLayout {
 	}
 
 	/**
+	 * Task page: scrolling form and tables on the left, a fixed action column
+	 * on the right. Buttons live beside the content, so they do not add a
+	 * stacked row above the 谱图/采集 sash.
+	 */
+	public static WorkbenchPage railBody(Composite parent) {
+
+		if(parent == null || parent.isDisposed()) {
+			return null;
+		}
+		fillClient(parent);
+		Composite split = new Composite(parent, SWT.NONE);
+		layoutSplit(split);
+		cardSurface(split);
+		return finishRail(split, parent);
+	}
+
+	/**
+	 * Same split as {@link #railBody(Composite)} for one 白酒分析 tab. The
+	 * returned {@link WorkbenchPage#chrome()} is the tab control.
+	 */
+	public static WorkbenchPage railTab(Composite tabFolder) {
+
+		Composite holder = tabHolder(tabFolder);
+		Composite split = new Composite(holder, SWT.NONE);
+		layoutSplit(split);
+		cardSurface(split);
+		return finishRail(split, holder);
+	}
+
+	/**
+	 * Stretch one rail action to the column width so Chinese labels stay on
+	 * one line and the buttons line up.
+	 */
+	public static void inRail(Control control) {
+
+		if(control == null || control.isDisposed()) {
+			return;
+		}
+		GridData data = new GridData(SWT.FILL, SWT.CENTER, true, false);
+		data.widthHint = RAIL - 16;
+		control.setLayoutData(data);
+	}
+
+	/** Quiet spacer between groups of rail actions. Not a second title. */
+	public static void railGap(Composite rail) {
+
+		if(rail == null || rail.isDisposed()) {
+			return;
+		}
+		Composite gap = new Composite(rail, SWT.NONE);
+		GridData data = new GridData(SWT.FILL, SWT.CENTER, true, false);
+		data.heightHint = 8;
+		gap.setLayoutData(data);
+		cardSurface(gap);
+	}
+
+	public static BaijiuPlantButton railPrimary(Composite rail, String text, Listener listener) {
+
+		BaijiuPlantButton button = primary(rail, text, listener);
+		inRail(button);
+		return button;
+	}
+
+	public static BaijiuPlantButton railCommand(Composite rail, String text, Listener listener) {
+
+		BaijiuPlantButton button = command(rail, text, listener);
+		inRail(button);
+		return button;
+	}
+
+	/**
+	 * Ask the enclosing {@link ScrolledComposite} to recompute its min size
+	 * after a wrap label changes.
+	 */
+	public static void reflow(Control control) {
+
+		Control node = control;
+		while(node != null && !node.isDisposed()) {
+			if(node instanceof ScrolledComposite scroll) {
+				scroll.notifyListeners(SWT.Resize, new Event());
+				return;
+			}
+			node = node.getParent();
+		}
+	}
+
+	/**
 	 * GTK {@code Text}/{@code Combo} ignore {@code widthHint} when the cell is
 	 * wider than the hint. Nest the control in a FillLayout host whose
 	 * GridData is the real cap.
@@ -506,7 +616,7 @@ public final class BaijiuPlantLayout {
 
 		Composite host = compact(parent);
 		host.setLayout(new FillLayout());
-		host.setLayoutData(tableFill(heightHint));
+		host.setLayoutData(tableBand(heightHint));
 		Table table = new Table(host, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
@@ -534,6 +644,35 @@ public final class BaijiuPlantLayout {
 				columns[i].setWidth(48);
 			}
 		}
+	}
+
+	/**
+	 * Grow the last column into leftover client width so row lines do not run
+	 * off into an empty trailing region. Overflowing compound matrices keep
+	 * their horizontal scrollbar.
+	 */
+	public static void fillTrailingColumn(Table table) {
+
+		if(table == null || table.isDisposed() || table.getColumnCount() <= 0) {
+			return;
+		}
+		fillTrailingColumn(table, table.getColumnCount() - 1);
+	}
+
+	public static void fillTrailingColumn(Table table, int columnIndex) {
+
+		if(table == null || table.isDisposed() || columnIndex < 0) {
+			return;
+		}
+		TableColumn[] columns = table.getColumns();
+		if(columnIndex >= columns.length || Boolean.TRUE.equals(table.getData(FLEX_KEY))) {
+			return;
+		}
+		table.setData(FLEX_KEY, Boolean.TRUE);
+		table.setData(FLEX_INDEX, Integer.valueOf(columnIndex));
+		table.setData(FLEX_MIN, Integer.valueOf(Math.max(48, columns[columnIndex].getWidth())));
+		table.addListener(SWT.Resize, e -> applyTrailingColumn(table));
+		applyTrailingColumn(table);
 	}
 
 	public static void ensureGrid(Composite parent) {
@@ -655,6 +794,25 @@ public final class BaijiuPlantLayout {
 		};
 	}
 
+	private static ScrolledComposite scrolledVertical(Composite parent) {
+
+		ScrolledComposite scroll = new ScrolledComposite(parent, SWT.V_SCROLL) {
+
+			@Override
+			public Point computeSize(int wHint, int hHint, boolean changed) {
+
+				if(wHint == SWT.DEFAULT && hHint == SWT.DEFAULT) {
+					return new Point(RAIL, 1);
+				}
+				return super.computeSize(wHint, hHint, changed);
+			}
+		};
+		scroll.setExpandHorizontal(true);
+		scroll.setExpandVertical(true);
+		scroll.setAlwaysShowScrollBars(false);
+		return scroll;
+	}
+
 	private static ScrolledComposite scrolled(Composite parent) {
 
 		ScrolledComposite scroll = new ScrolledComposite(parent, SWT.V_SCROLL | SWT.H_SCROLL) {
@@ -711,6 +869,158 @@ public final class BaijiuPlantLayout {
 		Rectangle client = tabs.getClientArea();
 		if(client.width > 0 && client.height > 0) {
 			control.setBounds(client);
+		}
+	}
+
+	private static void layoutSplit(Composite split) {
+
+		GridLayout layout = new GridLayout(3, false);
+		layout.marginWidth = 8;
+		layout.marginHeight = 4;
+		layout.horizontalSpacing = 8;
+		layout.verticalSpacing = 0;
+		split.setLayout(layout);
+	}
+
+	private static WorkbenchPage finishRail(Composite split, Composite chrome) {
+
+		ScrolledComposite mainScroll = scrolled(split);
+		mainScroll.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		Composite main = new Composite(mainScroll, SWT.NONE);
+		GridLayout mainLayout = new GridLayout(1, false);
+		mainLayout.marginWidth = 0;
+		mainLayout.marginHeight = 0;
+		mainLayout.verticalSpacing = 4;
+		main.setLayout(mainLayout);
+		mainScroll.setContent(main);
+		cardSurface(mainScroll);
+		cardSurface(main);
+		bindMinSize(mainScroll, main);
+
+		Composite rule = new Composite(split, SWT.NONE);
+		GridData ruleData = new GridData(SWT.CENTER, SWT.FILL, false, true);
+		ruleData.widthHint = 2;
+		rule.setLayoutData(ruleData);
+		Color[] colors = palette(split.getDisplay());
+		if(colors != null) {
+			rule.setBackground(colors[ACCENT]);
+		}
+
+		ScrolledComposite railScroll = scrolledVertical(split);
+		railScroll.setLayoutData(railData());
+		cardSurface(railScroll);
+		Composite rail = new Composite(railScroll, SWT.NONE);
+		GridLayout railLayout = new GridLayout(1, false);
+		railLayout.marginWidth = 0;
+		railLayout.marginHeight = 0;
+		railLayout.verticalSpacing = 4;
+		rail.setLayout(railLayout);
+		railScroll.setContent(rail);
+		cardSurface(rail);
+		bindRail(railScroll, rail);
+		return new WorkbenchPage(main, rail, chrome);
+	}
+
+	private static GridData railData() {
+
+		GridData data = new GridData(SWT.FILL, SWT.FILL, false, true);
+		data.widthHint = RAIL;
+		data.minimumWidth = RAIL;
+		return data;
+	}
+
+	private static void bindRail(ScrolledComposite scroll, Composite rail) {
+
+		if(scroll == null || rail == null) {
+			return;
+		}
+		final boolean[] busy = {false};
+		Listener update = e -> {
+			if(busy[0] || scroll.isDisposed() || rail.isDisposed()) {
+				return;
+			}
+			busy[0] = true;
+			try {
+				int client = scroll.getClientArea().width;
+				int width = client > 20 ? client : RAIL;
+				Point size = rail.computeSize(width, SWT.DEFAULT, true);
+				scroll.setMinSize(Math.max(RAIL, size.x), size.y);
+			} finally {
+				busy[0] = false;
+			}
+		};
+		scroll.addListener(SWT.Resize, update);
+		update.handleEvent(null);
+	}
+
+	private static void applyTrailingColumn(Table table) {
+
+		if(table == null || table.isDisposed() || Boolean.TRUE.equals(table.getData(FLEX_BUSY))) {
+			return;
+		}
+		Object indexValue = table.getData(FLEX_INDEX);
+		Object minValue = table.getData(FLEX_MIN);
+		if(!(indexValue instanceof Integer columnIndex) || !(minValue instanceof Integer minWidth)) {
+			return;
+		}
+		TableColumn[] columns = table.getColumns();
+		if(columnIndex < 0 || columnIndex >= columns.length) {
+			return;
+		}
+		int others = 0;
+		for(int i = 0; i < columns.length; i++) {
+			if(i != columnIndex) {
+				others += columns[i].getWidth();
+			}
+		}
+		int client = table.getClientArea().width;
+		if(client <= 1) {
+			return;
+		}
+		int target = client - others - 3;
+		if(target < minWidth.intValue()) {
+			target = minWidth.intValue();
+		}
+		table.setData(FLEX_BUSY, Boolean.TRUE);
+		try {
+			if(columns[columnIndex].getWidth() != target) {
+				columns[columnIndex].setWidth(target);
+			}
+		} finally {
+			table.setData(FLEX_BUSY, Boolean.FALSE);
+		}
+	}
+
+	/**
+	 * Left main column plus the right action rail for one task page.
+	 */
+	public static final class WorkbenchPage {
+
+		private final Composite main;
+		private final Composite rail;
+		private final Composite chrome;
+
+		private WorkbenchPage(Composite main, Composite rail, Composite chrome) {
+
+			this.main = main;
+			this.rail = rail;
+			this.chrome = chrome;
+		}
+
+		public Composite main() {
+
+			return main;
+		}
+
+		public Composite rail() {
+
+			return rail;
+		}
+
+		/** Tab control, or the filled host when the page is not inside a tab. */
+		public Composite chrome() {
+
+			return chrome;
 		}
 	}
 

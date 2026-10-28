@@ -95,7 +95,9 @@ public final class BaijiuSequenceResultsShell {
 			return;
 		}
 		BaijiuPlantLayout.ensureGrid(parent);
-		Composite body = BaijiuPlantLayout.scrollBody(parent);
+		BaijiuPlantLayout.WorkbenchPage page = BaijiuPlantLayout.railBody(parent);
+		Composite body = page.main();
+		Composite rail = page.rail();
 		BaijiuMethodSettings settings = BaijiuPreferences.loadMethod();
 		BaijiuSampleInfo template = new BaijiuSampleInfo();
 		BaijiuPreferences.loadSampleDefaults(template);
@@ -115,7 +117,7 @@ public final class BaijiuSequenceResultsShell {
 
 		Label summary = BaijiuPlantLayout.hint(body, source.isEmpty() ? "尚未载入序列。可从当前进样序列生成，或打开已保存的序列 JSON（条目中的谱图路径可指向 demo .ocb）。" : "已载入 " + source.size() + " 行序列。");
 
-		Table table = BaijiuPlantLayout.table(body, 280);
+		Table table = BaijiuPlantLayout.table(body, 200);
 		addColumn(table, "序号", 48);
 		addColumn(table, "类型", 56);
 		addColumn(table, "编号", 88);
@@ -127,13 +129,12 @@ public final class BaijiuSequenceResultsShell {
 				addColumn(table, settings.displayName(compound), 80);
 			}
 		}
-		addColumn(table, "GB 2757", 80);
-		addColumn(table, "备注", 280);
+		addColumn(table, "GB 2757", 72);
+		addColumn(table, "备注", 160);
 
-		Composite buttons = BaijiuPlantLayout.buttonRow(body);
-
-		Button fromCurrent = new Button(buttons, SWT.PUSH);
+		Button fromCurrent = new Button(rail, SWT.PUSH);
 		fromCurrent.setText("从当前序列生成结果表");
+		BaijiuPlantLayout.inRail(fromCurrent);
 		fromCurrent.addListener(SWT.Selection, e -> {
 			List<BaijiuSequenceVial> loaded = loadCurrent(host);
 			if(loaded == null) {
@@ -144,8 +145,9 @@ public final class BaijiuSequenceResultsShell {
 			runTable(host, source, settings, template, abv, rows, table, summary);
 		});
 
-		Button fromJson = new Button(buttons, SWT.PUSH);
+		Button fromJson = new Button(rail, SWT.PUSH);
 		fromJson.setText("打开序列 JSON…");
+		BaijiuPlantLayout.inRail(fromJson);
 		fromJson.addListener(SWT.Selection, e -> {
 			List<BaijiuSequenceVial> loaded = loadJson(host);
 			if(loaded == null) {
@@ -156,21 +158,26 @@ public final class BaijiuSequenceResultsShell {
 			runTable(host, source, settings, template, abv, rows, table, summary);
 		});
 
-		Button export = new Button(buttons, SWT.PUSH);
+		Button export = new Button(rail, SWT.PUSH);
 		export.setText("导出汇总表");
+		BaijiuPlantLayout.inRail(export);
 		export.addListener(SWT.Selection, e -> exportCsv(host, rows, settings));
 
-		Button parallel = new Button(buttons, SWT.PUSH);
+		Button parallel = new Button(rail, SWT.PUSH);
 		parallel.setText(BaijiuTerms.PARALLEL + "…");
+		BaijiuPlantLayout.inRail(parallel);
 		parallel.addListener(SWT.Selection, e -> BaijiuParallelShell.open(host));
 
 		if(parent instanceof Shell dialog) {
-			Button close = new Button(buttons, SWT.PUSH);
+			BaijiuPlantLayout.railGap(rail);
+			Button close = new Button(rail, SWT.PUSH);
 			close.setText("关闭");
+			BaijiuPlantLayout.inRail(close);
 			close.addListener(SWT.Selection, e -> dialog.close());
 		}
 
 		BaijiuPlantLayout.packLeading(table, 6);
+		BaijiuPlantLayout.fillTrailingColumn(table);
 		if(runImmediately && !source.isEmpty() && BaijiuLicenseGate.allowsQuantifyAndReport()) {
 			runTable(host, source, settings, template, abv, rows, table, summary);
 		}

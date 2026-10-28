@@ -164,7 +164,7 @@ public class BaijiuPlantChromePolish_1_Test {
 		assertFalse(header.contains(esc("6837") + esc("54c1")), "header must not repeat the sample chip");
 		assertTrue(header.contains(esc("5f53") + esc("524d") + esc("8c31") + esc("56fe")), "compact current-chromatogram line");
 		assertTrue(analysis.contains("BaijiuPlantTabs"));
-		assertTrue(analysis.contains("BaijiuPlantLayout.primary"));
+		assertTrue(analysis.contains("BaijiuPlantLayout.railPrimary"), "analysis actions stay plant primary buttons, on the right rail");
 		assertTrue(analysis.contains(esc("4fdd") + esc("5b58") + esc("65b9") + esc("6cd5")));
 		assertFalse(layout.contains("new Group"), "sections are flat, not a Group frame");
 		assertTrue(button.contains("31, 111, 168"));
