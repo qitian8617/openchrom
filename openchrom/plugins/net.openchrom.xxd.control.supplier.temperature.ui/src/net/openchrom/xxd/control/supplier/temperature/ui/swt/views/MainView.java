@@ -120,7 +120,6 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 	private Runnable openParameterSettingsHandler;
 	private Supplier<String[]> channelIdReader;
 	private BooleanSupplier showDebugInfoReader;
-	private Composite readinessCard;
 	private Composite debugReadinessCard;
 	private Composite trendCard;
 	private boolean tempControlRunning;
@@ -384,8 +383,9 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 
 	/**
 	 * Debug display may hide FID current and the live trend. Connection,
-	 * flame, and acquiring stay on {@link #readinessCard}. The Start Analysis
-	 * gate still reads {@link FidReadinessMonitor}.
+	 * flame, and acquiring stay on the readiness strip created in
+	 * {@link #createReadinessCard()}, which this method never hides. The
+	 * Start Analysis gate still reads {@link FidReadinessMonitor}.
 	 */
 	private void applyDebugChrome(boolean show) {
 
@@ -894,7 +894,6 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 	private void createReadinessCard() {
 
 		Composite card = WidgetFactory.createCard(this);
-		readinessCard = card;
 		readinessTitle = WidgetFactory.createTitle(card, FidReadiness.title(FidReadiness.Kind.DISCONNECTED, chinese));
 		readinessValueFont = UiStyles.createBoldFont(card, 11);
 
