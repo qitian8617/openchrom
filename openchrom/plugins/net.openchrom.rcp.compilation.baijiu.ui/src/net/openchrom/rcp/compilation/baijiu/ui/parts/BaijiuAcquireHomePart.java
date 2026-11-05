@@ -77,7 +77,7 @@ public class BaijiuAcquireHomePart {
 		instrument.setLayoutData(centeredHint(parent));
 		refreshInstrument();
 		Label hint = new Label(parent, SWT.WRAP | SWT.CENTER);
-		hint.setText("谱图显示在下方，切换导航不会关闭已打开的谱图。温度反控从这里打开，不再单独占一项导航。");
+		hint.setText("谱图显示在下方，切换导航不会关闭已打开的谱图。温度反控从这里打开。温度程序、气路、FID 调试和系统参数在「维护」的工程师模式里。");
 		hint.setLayoutData(centeredHint(parent));
 		BaijiuCardPalette palette = new BaijiuCardPalette(parent.getDisplay());
 		parent.addDisposeListener(event -> palette.dispose());
@@ -149,8 +149,7 @@ public class BaijiuAcquireHomePart {
 		}
 		boolean online = BaijiuPlantStatus.probeOnline();
 		boolean acquiring = BaijiuPlantStatus.probeAcquiring();
-		String run = acquiring ? "采集中" : "未采集";
-		instrument.setText("仪器：" + BaijiuPlantStatus.connectivityLabel(online) + "    " + run);
+		instrument.setText("仪器：" + BaijiuPlantStatus.instrumentLine(online, acquiring, BaijiuPlantStatus.probeFlameLabel()));
 		instrument.setForeground(instrument.getDisplay().getSystemColor(online ? SWT.COLOR_DARK_GREEN : SWT.COLOR_DARK_GRAY));
 		if(acquisition != null && !acquisition.isDisposed()) {
 			acquisition.setCardText(acquisitionLabel());

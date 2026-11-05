@@ -68,6 +68,7 @@ import net.openchrom.xxd.control.supplier.temperature.ui.communication.IFidReadi
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.IGcConnectionListener;
 import net.openchrom.xxd.control.supplier.temperature.ui.events.GcEventListModel;
 import net.openchrom.xxd.control.supplier.temperature.ui.sequence.InjectionSequenceManager;
+import net.openchrom.xxd.control.supplier.temperature.ui.swt.InstrumentIndicatorPolicy;
 import net.openchrom.xxd.control.supplier.temperature.ui.swt.LanguageListener;
 import net.openchrom.xxd.control.supplier.temperature.ui.swt.UiColors;
 import net.openchrom.xxd.control.supplier.temperature.ui.swt.UiStyles;
@@ -120,6 +121,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 	private Supplier<String[]> channelIdReader;
 	private BooleanSupplier showDebugInfoReader;
 	private Composite readinessCard;
+	private Composite debugReadinessCard;
 	private Composite trendCard;
 	private boolean tempControlRunning;
 	private boolean tempControlBusy;
@@ -169,6 +171,9 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 	private Label airValueLabel;
 	private Label flameNameLabel;
 	private Label flameValueLabel;
+	private Label acquiringNameLabel;
+	private Label acquiringValueLabel;
+	private Label debugTitleLabel;
 	private Label fidNameLabel;
 	private Label fidValueLabel;
 	private Label readinessTipLabel;
@@ -378,13 +383,19 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 	}
 
 	/**
-	 * Hide FID readiness and the realtime trend. The Start Analysis gate still
-	 * reads {@link FidReadinessMonitor}; this only changes widgets.
+	 * Debug display may hide FID current and the live trend. Connection,
+	 * flame, and acquiring stay on {@link #readinessCard}. The Start Analysis
+	 * gate still reads {@link FidReadinessMonitor}.
 	 */
 	private void applyDebugChrome(boolean show) {
 
-		boolean changed = setChromeVisible(readinessCard, show);
-		changed = setChromeVisible(trendCard, show) || changed;
+		boolean changed = false;
+		if(InstrumentIndicatorPolicy.debugDisplayMayHide(InstrumentIndicatorPolicy.FID_CURRENT)) {
+			changed = setChromeVisible(debugReadinessCard, show);
+		}
+		if(InstrumentIndicatorPolicy.debugDisplayMayHide(InstrumentIndicatorPolicy.TREND)) {
+			changed = setChromeVisible(trendCard, show) || changed;
+		}
 		if(changed && !isDisposed()) {
 			layout();
 		}
@@ -897,7 +908,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 
 		Composite metrics = new Composite(card, SWT.NONE);
 		metrics.setBackground(card.getBackground());
-		GridLayout metricsLayout = new GridLayout(5, true);
+		GridLayout metricsLayout = new GridLayout(3, true);
 		metricsLayout.marginWidth = 0;
 		metricsLayout.marginHeight = 0;
 		metricsLayout.horizontalSpacing = 8;
@@ -905,16 +916,13 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 		metrics.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
 		connectionNameLabel = metricHeader(metrics, chinese ? "连接" : "Link");
-		h2NameLabel = metricHeader(metrics, "H₂");
-		airNameLabel = metricHeader(metrics, chinese ? "空气" : "Air");
 		flameNameLabel = metricHeader(metrics, chinese ? "火焰" : "Flame");
-		fidNameLabel = metricHeader(metrics, "FID pA");
+		acquiringNameLabel = metricHeader(metrics, chinese ? "采集" : "Run");
 
 		connectionValueLabel = metricValue(metrics);
-		h2ValueLabel = metricValue(metrics);
-		airValueLabel = metricValue(metrics);
 		flameValueLabel = metricValue(metrics);
-		fidValueLabel = metricValue(metrics);
+		acquiringValueLabel = metricValue(metrics);
+		refreshAcquiringIndicator();
 
 		readinessTipLabel = new Label(card, SWT.WRAP);
 		readinessTipLabel.setBackground(card.getBackground());
@@ -930,7 +938,43 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 		carrierReminderLabel.setLayoutData(reminderLayout);
 		carrierReminderLabel.setText(FidReadiness.carrierReminder(chinese) + " " + FidReadiness.pressureHint(chinese));
 
+		Composite debug = WidgetFactory.createCard(this);
+		debugReadinessCard = debug;
+		debugTitleLabel = WidgetFactory.createTitle(debug, chinese ? "调试读数" : "Debug readings");
+		Composite debugMetrics = new Composite(debug, SWT.NONE);
+		debugMetrics.setBackground(debug.getBackground());
+		GridLayout debugLayout = new GridLayout(3, true);
+		debugLayout.marginWidth = 0;
+		debugLayout.marginHeight = 0;
+		debugLayout.horizontalSpacing = 8;
+		debugMetrics.setLayout(debugLayout);
+		debugMetrics.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		h2NameLabel = metricHeader(debugMetrics, "H₂");
+		airNameLabel = metricHeader(debugMetrics, chinese ? "空气" : "Air");
+		fidNameLabel = metricHeader(debugMetrics, "FID pA");
+		h2ValueLabel = metricValue(debugMetrics);
+		airValueLabel = metricValue(debugMetrics);
+		fidValueLabel = metricValue(debugMetrics);
+
 		applyReadiness(lastReadiness);
+	}
+
+	private void refreshAcquiringIndicator() {
+
+		if(acquiringValueLabel == null || acquiringValueLabel.isDisposed()) {
+			return;
+		}
+		boolean running = acquisitionManager.isAcquiring();
+		acquiringValueLabel.setText(running ? (chinese ? "采集中" : "Running") : (chinese ? "未采集" : "Idle"));
+		acquiringValueLabel.setForeground(UiStyles.color(getDisplay(), running ? UiColors.STATUS_GREEN : UiColors.TEXT_SECONDARY));
+	}
+
+	private void setAcquisitionStatus(String text) {
+
+		if(acquisitionStatusLabel != null && !acquisitionStatusLabel.isDisposed()) {
+			acquisitionStatusLabel.setText(text == null ? "" : text);
+		}
+		refreshAcquiringIndicator();
 	}
 
 	private Label metricHeader(Composite parent, String text) {
@@ -1026,7 +1070,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 		acquisitionStatusLabel = new Label(this, SWT.WRAP);
 		acquisitionStatusLabel.setBackground(getBackground());
 		acquisitionStatusLabel.setForeground(UiStyles.color(getDisplay(), UiColors.TEXT_SECONDARY));
-		acquisitionStatusLabel.setText(idleStatusText());
+		setAcquisitionStatus(idleStatusText());
 		acquisitionStatusLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 	}
 
@@ -2193,7 +2237,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 			if(!isDisposed()) {
 				lastSavedChromatogramPath = null;
 				lastSavedHandedToBaijiu = false;
-				acquisitionStatusLabel.setText(chinese ? "\u91C7\u96C6\u72B6\u6001: \u91C7\u96C6\u4E2D..." : "Acquisition: Running");
+				setAcquisitionStatus(chinese ? "\u91C7\u96C6\u72B6\u6001: \u91C7\u96C6\u4E2D..." : "Acquisition: Running");
 				updateAcquisitionButtonLabel();
 			}
 		});
@@ -2210,7 +2254,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 		getDisplay().asyncExec(() -> {
 			if(!isDisposed()) {
 				if(lastSavedChromatogramPath == null) {
-					acquisitionStatusLabel.setText(chinese ? "\u91C7\u96C6\u72B6\u6001: \u5B8C\u6210" : "Acquisition: Completed");
+					setAcquisitionStatus(chinese ? "\u91C7\u96C6\u72B6\u6001: \u5B8C\u6210" : "Acquisition: Completed");
 				}
 				updateAcquisitionButtonLabel();
 			}
@@ -2227,14 +2271,14 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 			String path = file == null ? "" : file.getAbsolutePath();
 			lastSavedChromatogramPath = path;
 			lastSavedHandedToBaijiu = false;
-			acquisitionStatusLabel.setText(AcquisitionMessages.saveSuccessStatus(path, chinese));
+			setAcquisitionStatus(AcquisitionMessages.saveSuccessStatus(path, chinese));
 			updateAcquisitionButtonLabel();
 			boolean editorOpened = getDisplay() != null && !getDisplay().isDisposed();
 			boolean xyFallback = result != null && result.getFormat() == AcquisitionSaveResult.Format.XY;
 			BaijiuHandoffOutcome outcome = AcquisitionHandoffUi.offer(getShell(), file, chinese, editorOpened, xyFallback);
 			if(outcome != null && outcome.isOpened()) {
 				lastSavedHandedToBaijiu = true;
-				acquisitionStatusLabel.setText(AcquisitionMessages.saveSuccessStatus(path, chinese, true));
+				setAcquisitionStatus(AcquisitionMessages.saveSuccessStatus(path, chinese, true));
 			}
 		});
 	}
@@ -2248,7 +2292,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 			}
 			lastSavedChromatogramPath = null;
 			lastSavedHandedToBaijiu = false;
-			acquisitionStatusLabel.setText(AcquisitionMessages.failedStatus(reason, chinese));
+			setAcquisitionStatus(AcquisitionMessages.failedStatus(reason, chinese));
 			updateAcquisitionButtonLabel();
 			showWarning(reason != null && reason.contains("保存失败") ? AcquisitionMessages.saveFailedTitle(chinese) : AcquisitionMessages.failedTitle(chinese), reason == null || reason.isBlank() ? AcquisitionMessages.saveFailedDialog(null, 0, null) : reason);
 		});
@@ -2273,9 +2317,16 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 			h2NameLabel.setText("H₂");
 			airNameLabel.setText(chinese ? "空气" : "Air");
 			flameNameLabel.setText(chinese ? "火焰" : "Flame");
+			if(acquiringNameLabel != null && !acquiringNameLabel.isDisposed()) {
+				acquiringNameLabel.setText(chinese ? "采集" : "Run");
+			}
 			fidNameLabel.setText("FID pA");
+			if(debugTitleLabel != null && !debugTitleLabel.isDisposed()) {
+				debugTitleLabel.setText(chinese ? "调试读数" : "Debug readings");
+			}
 			carrierReminderLabel.setText(FidReadiness.carrierReminder(chinese) + " " + FidReadiness.pressureHint(chinese));
 			applyReadiness(lastReadiness);
+			refreshAcquiringIndicator();
 		}
 		trendTitleLabel.setText(chinese ? "进样 / 检测器 / 柱箱 实时曲线" : "Inlet / Detector / Oven Trend");
 		startRecordButton.setText(chinese ? "开始记录" : "Start Log");
@@ -2283,11 +2334,11 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 		updateTempControlButtonLabel();
 		updateTempControlButtonEnabled();
 		if(acquisitionManager.isAcquiring()) {
-			acquisitionStatusLabel.setText(chinese ? "\u91C7\u96C6\u72B6\u6001: \u91C7\u96C6\u4E2D..." : "Acquisition: Running");
+			setAcquisitionStatus(chinese ? "\u91C7\u96C6\u72B6\u6001: \u91C7\u96C6\u4E2D..." : "Acquisition: Running");
 		} else if(lastSavedChromatogramPath != null) {
-			acquisitionStatusLabel.setText(AcquisitionMessages.saveSuccessStatus(lastSavedChromatogramPath, chinese, lastSavedHandedToBaijiu));
+			setAcquisitionStatus(AcquisitionMessages.saveSuccessStatus(lastSavedChromatogramPath, chinese, lastSavedHandedToBaijiu));
 		} else {
-			acquisitionStatusLabel.setText(idleStatusText());
+			setAcquisitionStatus(idleStatusText());
 		}
 		if(!trendRecording) {
 			updateTrendStatus(null);

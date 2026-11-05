@@ -36,6 +36,7 @@ public final class BaijiuPlantStatus {
 	public static final String TEMPERATURE_BUNDLE_ID = "net.openchrom.xxd.control.supplier.temperature.ui";
 	public static final String BAIJIU_BUNDLE_ID = "net.openchrom.xxd.processor.supplier.baijiu.ui";
 	public static final String CONNECTION_TYPE = "net.openchrom.xxd.control.supplier.temperature.ui.communication.GcConnectionManager";
+	public static final String READINESS_TYPE = "net.openchrom.xxd.control.supplier.temperature.ui.communication.FidReadinessMonitor";
 	public static final String ACQUISITION_TYPE = "net.openchrom.xxd.control.supplier.temperature.ui.acquisition.RealtimeAcquisitionManager";
 	public static final String GATE_TYPE = "net.openchrom.xxd.control.supplier.temperature.ui.acquisition.AcquisitionStartGate";
 	public static final String OPEN_CHROMATOGRAM_TYPE = "net.openchrom.xxd.processor.supplier.baijiu.ui.handlers.OpenBaijiuChromatogramHandler";
@@ -76,9 +77,26 @@ public final class BaijiuPlantStatus {
 		return online ? ONLINE : OFFLINE;
 	}
 
+	/**
+	 * Plant chrome for every mode: method pack, connection, flame, and
+	 * acquiring. There is no display or debug flag. Those three indicators
+	 * cannot be omitted from this line.
+	 */
 	public static String statusLine(boolean online) {
 
-		return WORKING_LABEL + "  ·  " + connectivityLabel(online);
+		return statusLine(online, probeAcquiring(), probeFlameLabel());
+	}
+
+	public static String statusLine(boolean online, boolean acquiring, String flame) {
+
+		return WORKING_LABEL + "  ·  " + instrumentLine(online, acquiring, flame);
+	}
+
+	public static String instrumentLine(boolean online, boolean acquiring, String flame) {
+
+		String flameText = flame == null || flame.isBlank() ? "—" : flame.trim();
+		String run = acquiring ? "采集中" : "未采集";
+		return "连接 " + connectivityLabel(online) + "  ·  火焰 " + flameText + "  ·  " + run;
 	}
 
 	public static String windowTitle(String base) {
@@ -103,6 +121,30 @@ public final class BaijiuPlantStatus {
 			return Boolean.TRUE.equals(type.getMethod("isConnected").invoke(instance));
 		} catch(Throwable t) {
 			return false;
+		}
+	}
+
+	/**
+	 * Short flame text from the shared FID snapshot. {@code —} when the
+	 * temperature bundle is absent. Not gated by the debug-display checkbox.
+	 */
+	public static String probeFlameLabel() {
+
+		try {
+			Class<?> type = load(TEMPERATURE_BUNDLE_ID, READINESS_TYPE);
+			if(type == null) {
+				return "—";
+			}
+			Object instance = type.getMethod("getInstance").invoke(null);
+			Object snapshot = type.getMethod("getSnapshot").invoke(instance);
+			if(snapshot == null) {
+				return "—";
+			}
+			Object text = snapshot.getClass().getMethod("flameText", boolean.class).invoke(snapshot, Boolean.TRUE);
+			String value = text(text);
+			return value.isBlank() ? "—" : value;
+		} catch(Throwable t) {
+			return "—";
 		}
 	}
 
