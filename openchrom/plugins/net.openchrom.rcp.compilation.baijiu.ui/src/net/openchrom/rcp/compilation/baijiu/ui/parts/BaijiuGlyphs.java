@@ -89,6 +89,21 @@ public enum BaijiuGlyphs {
 		if(label.contains("温度") || label.contains("反控")) {
 			return THERMO;
 		}
+		if(label.contains("气路")) {
+			return PLUG;
+		}
+		if(label.contains("FID")) {
+			return THERMO;
+		}
+		if(label.contains("诊断")) {
+			return LIST;
+		}
+		if(label.contains("方法")) {
+			return VIAL;
+		}
+		if(label.contains("参数") || label.contains("关于") || label.contains("重置")) {
+			return WRENCH;
+		}
 		return DOCUMENT;
 	}
 

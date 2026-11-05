@@ -67,6 +67,27 @@ public final class BaijiuHomePanels {
 		}
 	}
 
+	/**
+	 * Ask the live GC console to show an engineer page
+	 * ({@code COLUMN_OVEN}, {@code DETECTOR}, {@code AUX_PID}, {@code PARAMETERS}).
+	 * If the panel is not built yet, the request is kept and applied when the
+	 * console is created. Returns false when the temperature bundle is missing.
+	 */
+	public static boolean showTemperaturePage(String page) {
+
+		if(page == null || page.isBlank()) {
+			return false;
+		}
+		try {
+			Class<?> type = loadBundleClass(TEMPERATURE_BUNDLE_ID, TEMPERATURE_PANEL_TYPE);
+			Method show = type.getMethod("showEngineerPage", String.class);
+			Object result = show.invoke(null, page);
+			return Boolean.TRUE.equals(result);
+		} catch(Throwable t) {
+			return false;
+		}
+	}
+
 	public static void createSequenceComposite(Composite parent) {
 
 		try {

@@ -59,6 +59,9 @@ public class BaijiuPlantNav_1_Test {
 		assertEquals(Section.ACQUIRE, BaijiuPlantNav.sectionForLegacyLabel("打开谱图"));
 		assertEquals(Section.SEQUENCE, BaijiuPlantNav.sectionForLegacyLabel("进样序列"));
 		assertEquals(Section.MAINTENANCE, BaijiuPlantNav.sectionForLegacyLabel("白酒操作"));
+		BaijiuPlantNav.activate(Section.MAINTENANCE);
+		assertEquals(Section.MAINTENANCE, BaijiuPlantNav.sectionForPart(BaijiuShellChrome.ANALYSIS_HOME_PART_ID));
+		BaijiuPlantNav.activate(Section.ACQUIRE);
 	}
 
 	@Test
@@ -128,6 +131,44 @@ public class BaijiuPlantNav_1_Test {
 			BaijiuPlantNav.setSectionWatch(null);
 			BaijiuPlantNav.activate(Section.ACQUIRE);
 		}
+	}
+
+	@Test
+	public void maintenanceOpensTheEngineerToolbox() {
+
+		assertEquals("维护", BaijiuPlantNav.maintenanceSection().label());
+		assertEquals("工程师/维护模式", BaijiuPlantNav.ENGINEER_MODE);
+		assertEquals(List.of("温度程序", "气路", "FID 调试", "采集诊断", "方法编辑", "系统参数"), labels(BaijiuPlantNav.engineerTargets()));
+		assertEquals(List.of("关于", "重置窗口布局"), labels(BaijiuPlantNav.systemTargets()));
+		List<Target> tools = BaijiuPlantNav.engineerTargets();
+		assertFalse(tools.get(0).stub());
+		assertTrue(BaijiuPlantNav.opensConsole(tools.get(0)));
+		assertEquals(BaijiuPlantNav.PAGE_OVEN, tools.get(0).actionKey());
+		assertEquals(BaijiuPlantNav.PAGE_GAS, tools.get(1).actionKey());
+		assertEquals(BaijiuPlantNav.PAGE_FID, tools.get(2).actionKey());
+		assertTrue(tools.get(3).stub(), "采集诊断 has no panel yet");
+		assertFalse(BaijiuPlantNav.opensConsole(tools.get(3)));
+		assertEquals(BaijiuShellChrome.ANALYSIS_HOME_PART_ID, tools.get(4).partId());
+		assertEquals(BaijiuPlantNav.PAGE_PARAMETERS, tools.get(5).actionKey());
+		for(Target target : BaijiuPlantNav.targets(Section.MAINTENANCE)) {
+			assertFalse("高级处理".equals(target.label()));
+			assertFalse("浅色主题".equals(target.label()));
+			assertFalse("选择视图".equals(target.label()));
+		}
+		assertTrue(BaijiuPlantNav.targets(Section.MAINTENANCE).get(6).secondary());
+		assertEquals(Section.MAINTENANCE, BaijiuPlantNav.sectionForLegacyLabel("工程师/维护模式"));
+		assertEquals(Section.MAINTENANCE, BaijiuPlantNav.sectionForLegacyLabel("高级处理"));
+		assertEquals(List.of("连接与采集", "方法包", "校正", "序列与批跑", "定量结果 / QC", "报告"), BaijiuPlantNav.primarySections().stream().map(Section::label).toList());
+		String idle = BaijiuPlantStatus.statusLine(false, false, "—");
+		assertTrue(idle.contains("连接"));
+		assertTrue(idle.contains("火焰"));
+		assertTrue(idle.contains("未采集"));
+		assertTrue(idle.contains("15组分"));
+		String running = BaijiuPlantStatus.statusLine(true, true, "已着火");
+		assertTrue(running.contains("采集中"));
+		assertTrue(running.contains("在线"));
+		assertTrue(running.contains("已着火"));
+		assertFalse(idle.contains("showDebug"));
 	}
 
 	private static List<String> labels(List<Target> targets) {
