@@ -20,7 +20,14 @@
 		<!-- definition of the target to use -->
 		<tycho.target.groupId>net.openchrom</tycho.target.groupId>
 		<tycho.target.artifactId>net.openchrom.targetplatform</tycho.target.artifactId>
-		<tycho.target.version>${project.version}</tycho.target.version>
+		<!--
+		  The target file is the reactor module net.openchrom.targetplatform at
+		  this master version. Do not use ${project.version}: pomless bundles
+		  keep their own Bundle-Version (nl.zh fragments are 1.0.0, the GC
+		  simulator is 1.6.20) and Tycho then looks up a target artifact that
+		  does not exist.
+		-->
+		<tycho.target.version>1.6.32-SNAPSHOT</tycho.target.version>
 		<skip.install>false</skip.install>
 		<!-- other settings -->
 		<tycho.groupid>org.eclipse.tycho</tycho.groupid>

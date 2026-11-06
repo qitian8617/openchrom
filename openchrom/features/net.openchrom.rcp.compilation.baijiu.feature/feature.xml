@@ -70,8 +70,8 @@
 
    <!--
       ChemClipse PCR/xxd.ui Import-Package jakarta.annotation [2.1.0,3.0.0).
-      Eclipse 2026-06 SimRel ships 3.0.0 (and 1.3.5); 3.0.0 is outside that
-      exclusive upper bound. Orbit 2026-06 still has 2.1.1 — pin it so the
+      Eclipse 2026-09 SimRel ships 3.0.0 (and 1.3.5); 3.0.0 is outside that
+      exclusive upper bound. Orbit 2026-09 still has 2.1.1 — pin it so the
       Baijiu product launch set always includes a matching provider.
    -->
    <plugin

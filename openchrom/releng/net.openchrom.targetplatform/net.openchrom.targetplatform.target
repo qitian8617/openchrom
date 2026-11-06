@@ -3,7 +3,7 @@
 <target name="OpenChrom" sequenceNumber="45">
 <locations>
 	<location includeAllPlatforms="false" includeConfigurePhase="false" includeMode="planner" includeSource="true" type="InstallableUnit">
-		<repository location="https://mirror.lablicate.com/eclipse/releases/2026-06/"/>
+		<repository location="https://mirror.lablicate.com/eclipse/releases/2026-09/"/>
 		<unit id="org.eclipse.equinox.sdk.feature.group"/>
 		<unit id="org.eclipse.platform.feature.group"/>
 		<unit id="org.eclipse.jdt.junit6.runtime"/>
@@ -27,13 +27,12 @@
 	</location>
 	<location includeAllPlatforms="false" includeConfigurePhase="false" includeMode="planner" includeSource="true" type="InstallableUnit">
 		<repository location="https://bundles.openchrom.net/3rdparty"/>
-		<unit id="net.openchrom.thirdparty.jhdf5.feature.feature.group"/>
 		<unit id="net.openchrom.thirdparty.cdk.feature.feature.group"/>
 		<unit id="net.openchrom.thirdparty.inchi.feature.feature.group"/>
 		<unit id="net.openchrom.thirdparty.beam.feature.feature.group"/>
 	</location>
 	<location includeAllPlatforms="false" includeConfigurePhase="false" includeMode="planner" includeSource="true" type="InstallableUnit">
-		<repository location="https://mirror.lablicate.com/eclipse/tools/orbit/simrel/orbit-aggregation/2026-06"/>
+		<repository location="https://mirror.lablicate.com/eclipse/tools/orbit/simrel/orbit-aggregation/2026-09"/>
 		<unit id="org.apache.commons.commons-csv"/>
 		<unit id="org.apache.poi"/>
 		<unit id="org.apache.poi.ooxml"/>
@@ -152,6 +151,58 @@
 				<type>jar</type>
 			</dependency>
 		</dependencies>
+	</location>
+	<!--
+	  bundles.openchrom.net/3rdparty as of 2026-11-05 no longer publishes
+	  net.openchrom.thirdparty.jhdf5 (CISD API). The replacement feature
+	  exports hdf.hdf5lib and is a different library. mz5/mzMLB/microbeMS
+	  still compile against ch.systemsx.cisd.hdf5, so wrap the last CISD
+	  release and keep the bundle name those manifests require.
+	-->
+	<location includeDependencyDepth="none" includeDependencyScopes="compile" missingManifest="generate" type="Maven" label="cisd-jhdf5">
+		<dependencies>
+			<dependency>
+				<groupId>cisd</groupId>
+				<artifactId>jhdf5</artifactId>
+				<version>19.04.1</version>
+				<type>jar</type>
+			</dependency>
+		</dependencies>
+		<repositories>
+			<repository>
+				<id>scijava</id>
+				<url>https://maven.scijava.org/content/groups/public/</url>
+			</repository>
+		</repositories>
+		<instructions>
+Bundle-SymbolicName: net.openchrom.thirdparty.jhdf5
+Bundle-Version: 19.4.1
+Export-Package: ch.systemsx.cisd.hdf5;version="19.4.1",ch.systemsx.cisd.hdf5.*;version="19.4.1",hdf.hdf5lib.exceptions;version="19.4.1"
+Require-Bundle: cisd.base;bundle-version="18.9.0";visibility:=reexport
+Import-Package: *;resolution:=optional
+		</instructions>
+	</location>
+	<location includeDependencyDepth="none" includeDependencyScopes="compile" missingManifest="generate" type="Maven" label="cisd-base">
+		<dependencies>
+			<dependency>
+				<groupId>cisd</groupId>
+				<artifactId>base</artifactId>
+				<version>18.09.0</version>
+				<type>jar</type>
+			</dependency>
+		</dependencies>
+		<repositories>
+			<repository>
+				<id>scijava</id>
+				<url>https://maven.scijava.org/content/groups/public/</url>
+			</repository>
+		</repositories>
+		<instructions>
+Bundle-SymbolicName: cisd.base
+Bundle-Version: 18.9.0
+Export-Package: ch.systemsx.cisd.base;version="18.9.0",ch.systemsx.cisd.base.*;version="18.9.0"
+Import-Package: *;resolution:=optional
+		</instructions>
 	</location>
 </locations>
 	<targetJRE path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-25"/>

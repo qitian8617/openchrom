@@ -125,6 +125,9 @@ public class BaijiuWorkbenchParts_1_Test {
 		assertFalse(BaijiuWorkbenchParts.partMatchesSavedFile(other, saved));
 	}
 
+	@Test
+	public void perspectiveIdsStayStable() {
+
 		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui.part.sequence", BaijiuPerspectiveIds.SEQUENCE_PART_ID);
 		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui.part.sequence.plantHome", BaijiuPerspectiveIds.SEQUENCE_HOME_PART_ID);
 		assertEquals("net.openchrom.xxd.processor.supplier.baijiu.ui.part.analysis", BaijiuPerspectiveIds.ANALYSIS_PART_ID);

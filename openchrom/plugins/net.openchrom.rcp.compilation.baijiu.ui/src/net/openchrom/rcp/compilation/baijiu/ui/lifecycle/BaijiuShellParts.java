@@ -3795,7 +3795,6 @@ public final class BaijiuShellParts {
 				keepPriority = priority;
 			}
 		}
-		boolean alreadyKeptOps = false;
 		for(int i = 0; i < children.size();) {
 			Object child = children.get(i);
 			if(!(child instanceof MUIElement element)) {
@@ -3807,7 +3806,6 @@ public final class BaijiuShellParts {
 			if(element == keep) {
 				element.setVisible(true);
 				element.setToBeRendered(true);
-				alreadyKeptOps = true;
 				i++;
 				continue;
 			}
@@ -3818,7 +3816,7 @@ public final class BaijiuShellParts {
 				i++;
 				continue;
 			}
-			if(!BaijiuShellChrome.shouldKeepPlantWorkflowChild(id, label, alreadyKeptOps) && BaijiuShellChrome.isPlantWorkflowOpsChild(id, label)) {
+			if(element != keep && BaijiuShellChrome.isPlantWorkflowOpsChild(id, label)) {
 				element.setVisible(false);
 				element.setToBeRendered(false);
 				children.remove(i);
