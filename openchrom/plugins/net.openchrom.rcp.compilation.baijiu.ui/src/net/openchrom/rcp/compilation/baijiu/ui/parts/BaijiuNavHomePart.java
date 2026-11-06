@@ -365,6 +365,12 @@ public class BaijiuNavHomePart {
 	private void toggleMaintenance(Composite parent) {
 
 		boolean open = !drawerHost.getVisible();
+		if(open && !BaijiuHomePanels.grantEngineerEntry(parent.getShell())) {
+			return;
+		}
+		if(!open) {
+			BaijiuHomePanels.lockEngineer();
+		}
 		drawerHost.setVisible(open);
 		drawerData.exclude = !open;
 		if(open) {
@@ -390,6 +396,8 @@ public class BaijiuNavHomePart {
 		BaijiuPlantNav.activate(section, target);
 		if(target.opensPart()) {
 			BaijiuShellParts.showPlantTask(application, modelService, partService, target.partId());
+		} else if(BaijiuPlantNav.opensEngineerPage(target)) {
+			openEngineerPage(parent, target.actionKey());
 		} else if(BaijiuPlantNav.opensConsole(target)) {
 			openConsolePage(parent, target.actionKey());
 		} else if(target.stub()) {
@@ -401,6 +409,14 @@ public class BaijiuNavHomePart {
 		}
 		applySelection();
 		refreshStatus();
+	}
+
+	private void openEngineerPage(Composite parent, String page) {
+
+		boolean opened = parent != null && !parent.isDisposed() && BaijiuHomePanels.openEngineerPage(parent.getShell(), page);
+		if(!opened && parent != null && !parent.isDisposed()) {
+			BaijiuShellParts.inform(parent.getShell(), "工程师页面未打开。取消或校验失败都不会进入该页。");
+		}
 	}
 
 	private void openConsolePage(Composite parent, String page) {

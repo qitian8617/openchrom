@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import java.io.IOException;
@@ -37,6 +36,8 @@ import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Text;
 
 import net.openchrom.xxd.control.supplier.temperature.ui.Activator;
+import net.openchrom.xxd.control.supplier.temperature.ui.engineering.ConsoleControlPolicy;
+import net.openchrom.xxd.control.supplier.temperature.ui.engineering.EngineerSession;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.ColumnOvenProgram;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.GcConnectionManager;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.GcDeviceEndpoint;
@@ -76,9 +77,6 @@ public class TemperatureControlPanel extends Composite implements LanguageListen
 	public static final String ENGINEER_FID = EngineerConsolePages.FID;
 	public static final String ENGINEER_PARAMETERS = EngineerConsolePages.PARAMETERS;
 
-	private static final AtomicReference<TemperatureControlPanel> LIVE = new AtomicReference<>();
-	private static final AtomicReference<String> PENDING_ENGINEER_PAGE = new AtomicReference<>();
-
 	private final Color backgroundColor;
 	private final NavigationBar navigationBar;
 	private final StatusBar statusBar;
@@ -116,7 +114,6 @@ public class TemperatureControlPanel extends Composite implements LanguageListen
 		registerPage(PanelView.EVENTS, pageParent -> new EventsView(pageParent, SWT.NONE));
 		registerPage(PanelView.STOPWATCH, pageParent -> new StopwatchView(pageParent, SWT.NONE));
 		registerPage(PanelView.SETTINGS, pageParent -> new SettingsView(pageParent, SWT.NONE));
-		registerPage(PanelView.AUX_PID, pageParent -> new AuxPidDebugView(pageParent, SWT.NONE));
 
 		if(pageContents.get(PanelView.MAIN) instanceof MainView mainView) {
 			mainView.setOpenParameterSettingsHandler(this::openParameterSettings);
@@ -126,75 +123,18 @@ public class TemperatureControlPanel extends Composite implements LanguageListen
 
 		statusBar = new StatusBar(this, this);
 		statusBar.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-
-		LIVE.set(this);
-		addDisposeListener(event -> LIVE.compareAndSet(this, null));
-		String requested = PENDING_ENGINEER_PAGE.getAndSet(null);
-		if(requested != null) {
-			applyEngineerPage(requested);
-		} else {
-			showView(PanelView.MAIN);
-		}
+		showView(PanelView.MAIN);
 	}
 
 	/**
-	 * Show an engineer page on the live console, or remember it until the
-	 * console is created. Connection, flame, and acquiring stay visible on
-	 * Main regardless of this call.
+	 * Engineer tools no longer reopen this operator panel. The plant shell
+	 * opens {@code EngineerMaintenanceShell} after a password check.
 	 *
-	 * @return {@code true} when a live panel applied the page on this thread
+	 * @return always {@code false}
 	 */
 	public static boolean showEngineerPage(String page) {
 
-		if(page == null || page.isBlank() || engineerPanel(page) == null) {
-			return false;
-		}
-		TemperatureControlPanel panel = LIVE.get();
-		if(panel == null || panel.isDisposed()) {
-			PENDING_ENGINEER_PAGE.set(page);
-			return false;
-		}
-		Display display = panel.getDisplay();
-		if(display == null || display.isDisposed()) {
-			PENDING_ENGINEER_PAGE.set(page);
-			return false;
-		}
-		Runnable apply = () -> {
-			if(panel.isDisposed()) {
-				return;
-			}
-			panel.applyEngineerPage(page);
-			PENDING_ENGINEER_PAGE.compareAndSet(page, null);
-		};
-		if(display.getThread() == Thread.currentThread()) {
-			apply.run();
-			return true;
-		}
-		PENDING_ENGINEER_PAGE.set(page);
-		display.asyncExec(apply);
-		return true;
-	}
-
-	static PanelView engineerPanel(String page) {
-
-		return EngineerConsolePages.viewFor(page);
-	}
-
-	static boolean engineerOpensParameterTab(String page) {
-
-		return EngineerConsolePages.opensParameterTab(page);
-	}
-
-	private void applyEngineerPage(String page) {
-
-		if(engineerOpensParameterTab(page)) {
-			openParameterSettings();
-			return;
-		}
-		PanelView view = engineerPanel(page);
-		if(view != null) {
-			showView(view);
-		}
+		return false;
 	}
 
 	private void openParameterSettings() {
@@ -641,6 +581,10 @@ class AuxPidDebugView extends Composite implements LanguageListener {
 		if(busy || heating || recording) {
 			return;
 		}
+		if(!EngineerSession.shared().allowsEngineeringWrite(System.currentTimeMillis())) {
+			showInfo(chinese ? "工程师模式已锁定" : "Engineer mode is locked", chinese ? "请重新验证后再启动 PID 调试。停止加热不受影响。" : "Verify engineer mode again before starting PID debug. Heat stop stays available.");
+			return;
+		}
 		if(!connectionManager.isConnected()) {
 			showInfo(chinese ? "未连接" : "Not connected", chinese ? "请先在「设置 / 通信」连接设备" : "Connect on Settings / Communication first");
 			return;
@@ -998,10 +942,10 @@ class AuxPidDebugView extends Composite implements LanguageListener {
 		boolean connected = connectionManager.isConnected();
 		boolean idle = !busy && !heating && !recording && !pidDebugRunning;
 		if(startDebugButton != null && !startDebugButton.isDisposed()) {
-			startDebugButton.setEnabled(connected && idle);
+			startDebugButton.setEnabled(ConsoleControlPolicy.pidDebugStartEnabled(connected, busy, heating, recording, pidDebugRunning));
 		}
 		if(stopHeatButton != null && !stopHeatButton.isDisposed()) {
-			stopHeatButton.setEnabled(connected && (heating || pidDebugRunning) && !busy);
+			stopHeatButton.setEnabled(ConsoleControlPolicy.pidDebugStopHeatEnabled(connected, busy, heating, pidDebugRunning));
 		}
 		if(startLogButton != null && !startLogButton.isDisposed()) {
 			startLogButton.setEnabled(connected && !recording && !busy);

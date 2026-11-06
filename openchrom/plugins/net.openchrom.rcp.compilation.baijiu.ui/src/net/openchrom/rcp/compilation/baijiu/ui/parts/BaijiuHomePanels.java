@@ -73,6 +73,46 @@ public final class BaijiuHomePanels {
 	 * If the panel is not built yet, the request is kept and applied when the
 	 * console is created. Returns false when the temperature bundle is missing.
 	 */
+	/**
+	 * Password gate for engineer mode. Cancel and a missing temperature
+	 * bundle are denied. This does not open the remote-control panel.
+	 */
+	public static boolean grantEngineerEntry(org.eclipse.swt.widgets.Shell shell) {
+
+		return Boolean.TRUE.equals(invokeEngineer("grantEntry", shell));
+	}
+
+	public static void lockEngineer() {
+
+		invokeEngineer("lockForExit", null);
+	}
+
+	public static boolean openEngineerPage(org.eclipse.swt.widgets.Shell shell, String page) {
+
+		try {
+			Class<?> type = loadBundleClass(TEMPERATURE_BUNDLE_ID, "net.openchrom.xxd.control.supplier.temperature.ui.engineering.WorkstationEngineerAuth");
+			Method open = type.getMethod("openPage", org.eclipse.swt.widgets.Shell.class, String.class);
+			return Boolean.TRUE.equals(open.invoke(null, shell, page));
+		} catch(Throwable t) {
+			return false;
+		}
+	}
+
+	private static Object invokeEngineer(String method, org.eclipse.swt.widgets.Shell shell) {
+
+		try {
+			Class<?> type = loadBundleClass(TEMPERATURE_BUNDLE_ID, "net.openchrom.xxd.control.supplier.temperature.ui.engineering.WorkstationEngineerAuth");
+			if(shell == null && "lockForExit".equals(method)) {
+				type.getMethod(method).invoke(null);
+				return Boolean.TRUE;
+			}
+			Method grant = type.getMethod(method, org.eclipse.swt.widgets.Shell.class);
+			return grant.invoke(null, shell);
+		} catch(Throwable t) {
+			return Boolean.FALSE;
+		}
+	}
+
 	public static boolean showTemperaturePage(String page) {
 
 		if(page == null || page.isBlank()) {

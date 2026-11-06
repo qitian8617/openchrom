@@ -23,14 +23,22 @@ public final class FidReadinessSnapshot {
 	private final GcTcpConnection.GasPressure pressure;
 	private final String fidReadError;
 	private final String pressureReadError;
+	/** {@code null} when {@code heat} was missing or the control read failed. */
+	private final Boolean deviceHeat;
 
 	public FidReadinessSnapshot(boolean connected, GcTcpConnection.FidStatus fidStatus, GcTcpConnection.GasPressure pressure, String fidReadError, String pressureReadError) {
+
+		this(connected, fidStatus, pressure, fidReadError, pressureReadError, null);
+	}
+
+	public FidReadinessSnapshot(boolean connected, GcTcpConnection.FidStatus fidStatus, GcTcpConnection.GasPressure pressure, String fidReadError, String pressureReadError, Boolean deviceHeat) {
 
 		this.connected = connected;
 		this.fidStatus = fidStatus;
 		this.pressure = pressure;
 		this.fidReadError = blankToNull(fidReadError);
 		this.pressureReadError = blankToNull(pressureReadError);
+		this.deviceHeat = deviceHeat;
 	}
 
 	public boolean isConnected() {
@@ -56,6 +64,14 @@ public final class FidReadinessSnapshot {
 	public String getPressureReadError() {
 
 		return pressureReadError;
+	}
+
+	/**
+	 * @return device {@code heat} bit, or {@code null} when that sample has no heat key
+	 */
+	public Boolean deviceHeat() {
+
+		return deviceHeat;
 	}
 
 	public FidReadiness.Kind kind() {
@@ -115,6 +131,7 @@ public final class FidReadinessSnapshot {
 		return connected == other.connected
 				&& Objects.equals(fidReadError, other.fidReadError)
 				&& Objects.equals(pressureReadError, other.pressureReadError)
+				&& Objects.equals(deviceHeat, other.deviceHeat)
 				&& sameFid(fidStatus, other.fidStatus)
 				&& samePressure(pressure, other.pressure);
 	}
@@ -122,7 +139,7 @@ public final class FidReadinessSnapshot {
 	@Override
 	public int hashCode() {
 
-		return Objects.hash(Boolean.valueOf(connected), fidReadError, pressureReadError, fidKey(fidStatus), pressure == null ? null : Float.valueOf(pressure.getH2Mpa()), pressure == null ? null : Float.valueOf(pressure.getAirMpa()));
+		return Objects.hash(Boolean.valueOf(connected), fidReadError, pressureReadError, deviceHeat, fidKey(fidStatus), pressure == null ? null : Float.valueOf(pressure.getH2Mpa()), pressure == null ? null : Float.valueOf(pressure.getAirMpa()));
 	}
 
 	private static String blankToNull(String value) {
@@ -147,6 +164,8 @@ public final class FidReadinessSnapshot {
 				&& a.isFlame() == b.isFlame()
 				&& a.isValve1() == b.isValve1()
 				&& a.isValve2() == b.isValve2()
+				&& a.isValve1Known() == b.isValve1Known()
+				&& a.isValve2Known() == b.isValve2Known()
 				&& a.getCurrentPa() == b.getCurrentPa()
 				&& a.isDetectorValid() == b.isDetectorValid()
 				&& Float.compare(a.getDetectorC(), b.getDetectorC()) == 0

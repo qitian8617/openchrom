@@ -41,6 +41,11 @@ public final class BaijiuPlantNav {
 	public static final String PAGE_FID = "AUX_PID";
 	/** Settings page, parameter tab. */
 	public static final String PAGE_PARAMETERS = "PARAMETERS";
+	/** Dedicated engineer page. Does not reopen the operator remote panel. */
+	public static final String PAGE_DEVICE = "ENGINEER_DEVICE";
+	public static final String PAGE_TEMP = "ENGINEER_TEMP";
+	public static final String PAGE_GAS_ENG = "ENGINEER_GAS";
+	public static final String PAGE_LINK = "ENGINEER_LINK";
 	public static final String ACTION_ABOUT = "about";
 	public static final String ACTION_RESET = "reset";
 	public static final String ACTION_SELECT_VIEW = "selectView";
@@ -157,6 +162,19 @@ public final class BaijiuPlantNav {
 		}
 		String key = target.actionKey();
 		return PAGE_OVEN.equals(key) || PAGE_GAS.equals(key) || PAGE_FID.equals(key) || PAGE_PARAMETERS.equals(key);
+	}
+
+	/**
+	 * Dedicated engineer content. Password is required before the page opens.
+	 * These actions do not reopen the operator remote-control panel.
+	 */
+	public static boolean opensEngineerPage(Target target) {
+
+		if(target == null || target.stub() || target.opensPart()) {
+			return false;
+		}
+		String key = target.actionKey();
+		return PAGE_DEVICE.equals(key) || PAGE_TEMP.equals(key) || PAGE_GAS_ENG.equals(key) || PAGE_LINK.equals(key);
 	}
 
 	private static List<Target> filterMaintenance(boolean secondary) {
@@ -411,17 +429,15 @@ public final class BaijiuPlantNav {
 				part(BaijiuShellChrome.QC_HOME_PART_ID, "QC 摘要", true)));
 		map.put(Section.REPORT, List.of(part(BaijiuShellChrome.REPORT_HOME_PART_ID, "预览与导出", false)));
 		/*
-		 * 温度程序 / 气路 / FID 调试 / 系统参数 open GC-console pages that already
-		 * exist. 方法编辑 opens the analysis host (method summary), not the
-		 * daily 方法包. 采集诊断 has no panel yet.
+		 * Four engineer pages. They are not links back into the operator
+		 * remote panel, and they do not own method / integration / quant /
+		 * calibration / report editors.
 		 */
 		map.put(Section.MAINTENANCE, List.of( //
-				action(PAGE_OVEN, "温度程序"), //
-				action(PAGE_GAS, "气路"), //
-				action(PAGE_FID, "FID 调试"), //
-				new Target(null, "采集诊断", true, null), //
-				part(BaijiuShellChrome.ANALYSIS_HOME_PART_ID, "方法编辑", false), //
-				action(PAGE_PARAMETERS, "系统参数"), //
+				action(PAGE_DEVICE, "设备配置"), //
+				action(PAGE_TEMP, "温度标定/整定"), //
+				action(PAGE_GAS_ENG, "气路与FID"), //
+				action(PAGE_LINK, "通信与采集"), //
 				action(ACTION_ABOUT, "关于"), //
 				action(ACTION_RESET, "重置窗口布局")));
 		return map;

@@ -32,7 +32,6 @@ public class SettingsView extends Composite implements LanguageListener {
 
 	public enum SettingsTab {
 		CALIBRATION,
-		PID,
 		PARAMETERS,
 		COMMUNICATION
 	}
@@ -77,7 +76,6 @@ public class SettingsView extends Composite implements LanguageListener {
 		contentStack.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
 		tabContents.put(SettingsTab.CALIBRATION, new CalibrationSettingsView(contentStack, SWT.NONE));
-		tabContents.put(SettingsTab.PID, new PidSettingsView(contentStack, SWT.NONE));
 		tabContents.put(SettingsTab.PARAMETERS, new ParameterSettingsView(contentStack, SWT.NONE));
 		tabContents.put(SettingsTab.COMMUNICATION, new CommunicationSettingsView(contentStack, SWT.NONE));
 
@@ -132,15 +130,13 @@ public class SettingsView extends Composite implements LanguageListener {
 
 		if(chinese) {
 			return switch(tab) {
-				case CALIBRATION -> "温度校准";
-				case PID -> "PID设置";
-				case PARAMETERS -> "参数设置";
+			case CALIBRATION -> "温度校准";
+			case PARAMETERS -> "参数设置";
 				case COMMUNICATION -> "通讯";
 			};
 		}
 		return switch(tab) {
 			case CALIBRATION -> "Calibration";
-			case PID -> "PID";
 			case PARAMETERS -> "Parameters";
 			case COMMUNICATION -> "Communication";
 		};
@@ -162,9 +158,6 @@ public class SettingsView extends Composite implements LanguageListener {
 				return;
 			}
 			Control shown = tabContents.get(tab);
-			if(shown instanceof PidSettingsView pidView) {
-				pidView.onShown();
-			}
 			if(shown instanceof CalibrationSettingsView calibView) {
 				calibView.onShown();
 			}

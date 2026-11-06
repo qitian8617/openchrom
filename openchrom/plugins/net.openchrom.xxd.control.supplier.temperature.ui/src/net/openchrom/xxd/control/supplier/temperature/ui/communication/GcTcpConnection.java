@@ -34,6 +34,9 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.eclipse.chemclipse.logging.core.Logger;
 
+import net.openchrom.xxd.control.supplier.temperature.ui.engineering.EngineerSession;
+import net.openchrom.xxd.control.supplier.temperature.ui.engineering.EngineeringCommandGate;
+
 public class GcTcpConnection {
 
 	private static final Logger logger = Logger.getLogger(GcTcpConnection.class);
@@ -113,6 +116,7 @@ public class GcTcpConnection {
 	public void sendProtocolLine(String lineWithoutCrLf) throws IOException {
 
 		Objects.requireNonNull(lineWithoutCrLf, "lineWithoutCrLf");
+		EngineeringCommandGate.check(lineWithoutCrLf, EngineerSession.shared(), System.currentTimeMillis());
 		synchronized(writeLock) {
 			if(!connected.get() || outputStream == null) {
 				throw new IOException("Not connected to GC device");
@@ -446,6 +450,7 @@ public class GcTcpConnection {
 
 	private String exchangeAscii(String commandLine, String payloadAfterLine, AsciiCapture.Mode mode, long timeoutMs) throws IOException {
 
+		EngineeringCommandGate.check(commandLine, EngineerSession.shared(), System.currentTimeMillis());
 		long waitMs = Math.max(200L, timeoutMs);
 		boolean locked;
 		try {
@@ -1006,6 +1011,8 @@ public class GcTcpConnection {
 		private final boolean fire1;
 		private final boolean valve1;
 		private final boolean valve2;
+		private final boolean valve1Known;
+		private final boolean valve2Known;
 		private final int vlogUv;
 		private final int currentPa;
 		private final float detectorC;
@@ -1014,6 +1021,11 @@ public class GcTcpConnection {
 
 		public FidStatus(boolean online, boolean autoIgnite, boolean busy, boolean flame, boolean fire1, boolean valve1, boolean valve2, int vlogUv, int currentPa, float detectorC, boolean detectorValid, String state) {
 
+			this(online, autoIgnite, busy, flame, fire1, valve1, valve2, true, true, vlogUv, currentPa, detectorC, detectorValid, state);
+		}
+
+		public FidStatus(boolean online, boolean autoIgnite, boolean busy, boolean flame, boolean fire1, boolean valve1, boolean valve2, boolean valve1Known, boolean valve2Known, int vlogUv, int currentPa, float detectorC, boolean detectorValid, String state) {
+
 			this.online = online;
 			this.autoIgnite = autoIgnite;
 			this.busy = busy;
@@ -1021,6 +1033,8 @@ public class GcTcpConnection {
 			this.fire1 = fire1;
 			this.valve1 = valve1;
 			this.valve2 = valve2;
+			this.valve1Known = valve1Known;
+			this.valve2Known = valve2Known;
 			this.vlogUv = vlogUv;
 			this.currentPa = currentPa;
 			this.detectorC = detectorC;
@@ -1061,6 +1075,16 @@ public class GcTcpConnection {
 		public boolean isValve2() {
 
 			return valve2;
+		}
+
+		public boolean isValve1Known() {
+
+			return valve1Known;
+		}
+
+		public boolean isValve2Known() {
+
+			return valve2Known;
 		}
 
 		public boolean areValvesOpen() {
@@ -1104,6 +1128,8 @@ public class GcTcpConnection {
 					quotedFlag(json, "fire1"),
 					quotedFlag(json, "valve1"),
 					quotedFlag(json, "valve2"),
+					json.contains("\"valve1\""),
+					json.contains("\"valve2\""),
 					quotedInt(json, "vlogUv"),
 					quotedInt(json, "currentPa"),
 					json.contains("\"detectorC\"") ? OvenPid.parseQuotedFloat(json, "detectorC") : 0.0f,
@@ -1161,23 +1187,30 @@ public class GcTcpConnection {
 		private final String owner;
 		private final boolean acquiring;
 		private final boolean heatRunning;
+		private final boolean heatKnown;
 		private final int selMask;
 
 		public ControlStatus(String owner, boolean acquiring) {
 
-			this(owner, acquiring, false);
+			this(owner, acquiring, false, -1, false);
 		}
 
 		public ControlStatus(String owner, boolean acquiring, boolean heatRunning) {
 
-			this(owner, acquiring, heatRunning, -1);
+			this(owner, acquiring, heatRunning, -1, true);
 		}
 
 		public ControlStatus(String owner, boolean acquiring, boolean heatRunning, int selMask) {
 
+			this(owner, acquiring, heatRunning, selMask, false);
+		}
+
+		public ControlStatus(String owner, boolean acquiring, boolean heatRunning, int selMask, boolean heatKnown) {
+
 			this.owner = owner == null || owner.isBlank() ? "NONE" : owner;
 			this.acquiring = acquiring;
 			this.heatRunning = heatRunning;
+			this.heatKnown = heatKnown;
 			this.selMask = selMask;
 		}
 
@@ -1201,6 +1234,12 @@ public class GcTcpConnection {
 			return heatRunning;
 		}
 
+		/** {@code false} when the status JSON had no {@code heat} key. */
+		public boolean isHeatKnown() {
+
+			return heatKnown;
+		}
+
 		/** Bitmask from F407 {@code sel}, or {@code -1} if the key is missing. */
 		public int getSelMask() {
 
@@ -1215,7 +1254,8 @@ public class GcTcpConnection {
 		public static ControlStatus fromDeviceJson(String json) {
 
 			Objects.requireNonNull(json, "json");
-			return new ControlStatus(extractQuoted(json, "owner"), quotedTruthy(json, "acq"), quotedTruthy(json, "heat"), parseSelMask(json));
+			boolean heatKnown = json.indexOf("\"heat\"") >= 0;
+			return new ControlStatus(extractQuoted(json, "owner"), quotedTruthy(json, "acq"), quotedTruthy(json, "heat"), parseSelMask(json), heatKnown);
 		}
 
 		private static int parseSelMask(String json) {

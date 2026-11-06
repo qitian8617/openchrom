@@ -37,6 +37,8 @@ import net.openchrom.xxd.control.supplier.temperature.ui.communication.FidReadin
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.GcConnectionManager;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.GcDeviceEndpoint;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.GcTcpConnection;
+import net.openchrom.xxd.control.supplier.temperature.ui.engineering.ConsoleControlPolicy;
+import net.openchrom.xxd.control.supplier.temperature.ui.engineering.InstrumentSchematicModel;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.IFidReadinessListener;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.IGcConnectionListener;
 import net.openchrom.xxd.control.supplier.temperature.ui.swt.LanguageListener;
@@ -75,6 +77,7 @@ public class DetectorView extends Composite implements LanguageListener {
 	private boolean applyingRemote;
 	private boolean busy;
 	private boolean valvesOpen;
+	private boolean valveStateKnown;
 	private boolean ignitionCommandSent;
 	private boolean ignitionBusySeen;
 	private boolean deviceIgniting;
@@ -406,7 +409,7 @@ public class DetectorView extends Composite implements LanguageListener {
 		valvesOpen = false;
 		applyValveButtonChrome();
 		setBusy(true);
-		statusLabel.setText(chinese ? "正在关闭 FID 阀1/阀2..." : "Closing FID valve 1 and valve 2...");
+		statusLabel.setText(chinese ? "正在关闭空气阀..." : "Closing the air valve...");
 		Thread.ofVirtual().name("gc-fid-valves-off").start(() -> {
 			try {
 				connectionManager.stopFidValves(IO_TIMEOUT_MS);
@@ -415,7 +418,7 @@ public class DetectorView extends Composite implements LanguageListener {
 						return;
 					}
 					setBusy(false);
-					statusLabel.setText(chinese ? "阀1、阀2已关闭" : "Valve 1 and valve 2 closed");
+					statusLabel.setText(chinese ? "空气阀已关闭" : "Air valve closed");
 					readinessMonitor.requestPoll();
 				});
 			} catch(Exception ex) {
@@ -438,7 +441,7 @@ public class DetectorView extends Composite implements LanguageListener {
 		valvesOpen = true;
 		applyValveButtonChrome();
 		setBusy(true);
-		statusLabel.setText(chinese ? "正在打开 FID 阀1/阀2..." : "Opening FID valve 1 and valve 2...");
+		statusLabel.setText(chinese ? "正在打开空气阀..." : "Opening the air valve...");
 		Thread.ofVirtual().name("gc-fid-valves-on").start(() -> {
 			try {
 				connectionManager.startFidValves(IO_TIMEOUT_MS);
@@ -447,7 +450,7 @@ public class DetectorView extends Composite implements LanguageListener {
 						return;
 					}
 					setBusy(false);
-					statusLabel.setText(chinese ? "阀1、阀2已打开" : "Valve 1 and valve 2 opened");
+					statusLabel.setText(chinese ? "空气阀已打开" : "Air valve opened");
 					readinessMonitor.requestPoll();
 				});
 			} catch(Exception ex) {
@@ -476,7 +479,9 @@ public class DetectorView extends Composite implements LanguageListener {
 		if(busy) {
 			return;
 		}
-		valvesOpen = status.areValvesOpen();
+		InstrumentSchematicModel.Signal air = InstrumentSchematicModel.airValve(status.isValve1Known(), status.isValve1(), status.isValve2Known(), status.isValve2());
+		valveStateKnown = air != InstrumentSchematicModel.Signal.UNKNOWN;
+		valvesOpen = air == InstrumentSchematicModel.Signal.ON;
 		applyValveButtonChrome();
 		if(!status.isOnline()) {
 			statusLabel.setText(FidReadiness.operatorTip(FidReadiness.Kind.FID_OFFLINE, chinese));
@@ -484,7 +489,7 @@ public class DetectorView extends Composite implements LanguageListener {
 			return;
 		}
 		String flame = status.isFlame() ? (chinese ? "已着火" : "Flame on") : (chinese ? "未着火" : "Flame out");
-		String valves = valvesOpen ? (chinese ? "阀开" : "Valves open") : (chinese ? "阀关" : "Valves closed");
+		String valves = !valveStateKnown ? (chinese ? "空气阀未知" : "Air valve unknown") : (valvesOpen ? (chinese ? "空气阀开" : "Air valve open") : (chinese ? "空气阀关" : "Air valve closed"));
 		String state = switch(status.getState()) {
 			case "igniting" -> chinese ? "点火中" : "Igniting";
 			case "flame" -> chinese ? "火焰稳定" : "Flame stable";
@@ -577,13 +582,13 @@ public class DetectorView extends Composite implements LanguageListener {
 
 	private void updateButtonsEnabled() {
 
-		boolean ok = connectionManager.isConnected() && !busy;
+		boolean connected = connectionManager.isConnected();
 		applyIgniteButtonChrome();
 		if(valveButton != null && !valveButton.isDisposed()) {
-			valveButton.setEnabled(ok);
+			valveButton.setEnabled(ConsoleControlPolicy.detectorValveEnabled(connected, busy, valveStateKnown));
 		}
 		if(autoIgnitionToggle != null && !autoIgnitionToggle.isDisposed()) {
-			autoIgnitionToggle.setEnabled(ok);
+			autoIgnitionToggle.setEnabled(ConsoleControlPolicy.detectorAutoIgniteEnabled(connected, busy));
 		}
 	}
 
@@ -738,7 +743,7 @@ public class DetectorView extends Composite implements LanguageListener {
 			return;
 		}
 		boolean locked = isIgnitionLocked();
-		boolean enabled = connectionManager.isConnected() && !busy && !locked;
+		boolean enabled = ConsoleControlPolicy.detectorIgniteEnabled(connectionManager.isConnected(), busy, locked);
 		igniteButton.setEnabled(enabled);
 		igniteButton.setText(locked
 				? (chinese ? "点火中..." : "Igniting...")
@@ -747,9 +752,12 @@ public class DetectorView extends Composite implements LanguageListener {
 
 	private String valveButtonText() {
 
+		if(!valveStateKnown) {
+			return chinese ? "空气阀未知" : "Air valve unknown";
+		}
 		return valvesOpen
-				? (chinese ? "手动关阀" : "Close Valves")
-				: (chinese ? "手动开阀" : "Open Valves");
+				? (chinese ? "关闭空气阀" : "Close air valve")
+				: (chinese ? "打开空气阀" : "Open air valve");
 	}
 
 	private void applyValveButtonChrome() {

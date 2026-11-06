@@ -66,7 +66,10 @@ import net.openchrom.xxd.control.supplier.temperature.ui.communication.GcDeviceE
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.GcTcpConnection;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.IFidReadinessListener;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.IGcConnectionListener;
+import net.openchrom.xxd.control.supplier.temperature.ui.engineering.ConsoleControlPolicy;
 import net.openchrom.xxd.control.supplier.temperature.ui.events.GcEventListModel;
+import net.openchrom.xxd.control.supplier.temperature.ui.swt.InstrumentSchematicCanvas;
+import net.openchrom.xxd.control.supplier.temperature.ui.swt.SchematicSamples;
 import net.openchrom.xxd.control.supplier.temperature.ui.sequence.InjectionSequenceManager;
 import net.openchrom.xxd.control.supplier.temperature.ui.swt.InstrumentIndicatorPolicy;
 import net.openchrom.xxd.control.supplier.temperature.ui.swt.LanguageListener;
@@ -183,6 +186,10 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 	private Label trendTitleLabel;
 	private Label trendStatusLabel;
 	private Canvas trendCanvas;
+	private InstrumentSchematicCanvas schematicCanvas;
+	private Label schematicTitle;
+	private boolean schematicTicking;
+	private final Runnable schematicTick = this::tickSchematic;
 	private boolean chinese = true;
 	private final List<ZoneTrendPoint> trendPoints = new ArrayList<>();
 	private boolean trendRecording;
@@ -200,6 +207,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 		layout.verticalSpacing = 8;
 		setLayout(layout);
 
+		createSchematicCard();
 		createTable();
 		createTableButtons();
 		createReadinessCard();
@@ -431,6 +439,47 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 			byId.put(rowChannelIds[i], new ChannelRow(row.nameCn(), row.nameEn(), selected, setTemp, measured, row.statusCn(), row.statusEn(), row.statusColor()));
 		}
 		return byId;
+	}
+
+	private void createSchematicCard() {
+
+		Composite card = WidgetFactory.createCard(this);
+		schematicTitle = WidgetFactory.createTitle(card, chinese ? "气路示意" : "Flow schematic");
+		schematicCanvas = new InstrumentSchematicCanvas(card);
+		GridData canvasData = new GridData(SWT.FILL, SWT.FILL, true, false);
+		canvasData.heightHint = 210;
+		canvasData.widthHint = 560;
+		schematicCanvas.setLayoutData(canvasData);
+		schematicCanvas.setChinese(chinese);
+		schematicCanvas.setModel(SchematicSamples.from(lastReadiness));
+	}
+
+	private void refreshSchematic(FidReadinessSnapshot snapshot) {
+
+		if(schematicCanvas == null || schematicCanvas.isDisposed()) {
+			return;
+		}
+		schematicCanvas.setChinese(chinese);
+		schematicCanvas.setModel(SchematicSamples.from(snapshot));
+		if(schematicCanvas.getModel().animates() && !schematicTicking) {
+			schematicTicking = true;
+			getDisplay().timerExec(140, schematicTick);
+		}
+	}
+
+	private void tickSchematic() {
+
+		if(isDisposed() || schematicCanvas == null || schematicCanvas.isDisposed()) {
+			schematicTicking = false;
+			return;
+		}
+		if(!schematicCanvas.getModel().animates()) {
+			schematicTicking = false;
+			schematicCanvas.redraw();
+			return;
+		}
+		schematicCanvas.advance();
+		getDisplay().timerExec(140, schematicTick);
 	}
 
 	private void createTable() {
@@ -1008,7 +1057,11 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 
 	private void applyReadiness(FidReadinessSnapshot snapshot) {
 
-		if(readinessTitle == null || readinessTitle.isDisposed() || snapshot == null) {
+		if(snapshot == null) {
+			return;
+		}
+		refreshSchematic(snapshot);
+		if(readinessTitle == null || readinessTitle.isDisposed()) {
 			return;
 		}
 		lastReadiness = snapshot;
@@ -1391,10 +1444,10 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 	private void updateTrendButtons() {
 
 		if(startRecordButton != null && !startRecordButton.isDisposed()) {
-			startRecordButton.setEnabled(!trendRecording && connectionManager.isConnected() && !tempControlRunning);
+			startRecordButton.setEnabled(ConsoleControlPolicy.mainTrendStartEnabled(trendRecording, connectionManager.isConnected(), tempControlRunning));
 		}
 		if(stopRecordButton != null && !stopRecordButton.isDisposed()) {
-			stopRecordButton.setEnabled(trendRecording && !tempControlRunning);
+			stopRecordButton.setEnabled(ConsoleControlPolicy.mainTrendStopEnabled(trendRecording, tempControlRunning));
 		}
 	}
 
@@ -1878,17 +1931,8 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 			updateTrendButtons();
 			return;
 		}
-		if(tempControlBusy) {
-			startTempButton.setEnabled(false);
-			updateTrendButtons();
-			return;
-		}
-		if(tempControlRunning) {
-			startTempButton.setEnabled(true); /* Stop still allowed */
-			updateTrendButtons();
-			return;
-		}
-		startTempButton.setEnabled(!(ovenFaultActive || eventModel.isOvenFaultActive()));
+		boolean ovenFault = ovenFaultActive || eventModel.isOvenFaultActive();
+		startTempButton.setEnabled(ConsoleControlPolicy.mainHeatToggleEnabled(tempControlBusy, tempControlRunning, ovenFault));
 		updateTrendButtons();
 	}
 
@@ -2326,6 +2370,10 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 			applyReadiness(lastReadiness);
 			refreshAcquiringIndicator();
 		}
+		if(schematicTitle != null && !schematicTitle.isDisposed()) {
+			schematicTitle.setText(chinese ? "气路示意" : "Flow schematic");
+		}
+		refreshSchematic(lastReadiness);
 		trendTitleLabel.setText(chinese ? "进样 / 检测器 / 柱箱 实时曲线" : "Inlet / Detector / Oven Trend");
 		startRecordButton.setText(chinese ? "开始记录" : "Start Log");
 		stopRecordButton.setText(chinese ? "停止记录" : "Stop Log");

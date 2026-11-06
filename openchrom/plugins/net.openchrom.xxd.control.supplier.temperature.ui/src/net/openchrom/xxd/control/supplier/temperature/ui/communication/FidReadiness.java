@@ -166,14 +166,14 @@ public final class FidReadiness {
 					? "FID 板离线（RS485 无应答）。请检查检测器电源与 485 接线，再到「检测器」页确认状态。"
 					: "FID board offline (no RS485 reply). Check detector power and 485 wiring, then re-check status on the Detector page.";
 			case IGNITE_FAIL -> chinese
-					? "点火未成功，火焰未着。请到「检测器」页核对氢气/空气压力，确认阀已打开后重新执行点火。"
-					: "Ignition failed; flame is out. On the Detector page, check H₂/Air pressure, confirm valves are open, then ignite again.";
+					? "点火未成功，火焰未着。请到「检测器」页核对氢气/空气压力，确认空气阀已打开后重新执行点火。"
+					: "Ignition failed; flame is out. On the Detector page, check H₂/Air pressure, confirm the air valve is open, then ignite again.";
 			case IGNITING -> chinese
 					? "正在点火，请等待火焰判定后再开始分析。"
 					: "Ignition in progress. Wait for the flame result before starting analysis.";
 			case FLAME_OUT -> chinese
-					? "火焰未着火。请到「检测器」页执行点火；确认氢气/空气已供且阀已打开。"
-					: "Flame is out. Ignite from the Detector page after confirming H₂/Air supply and open valves.";
+					? "火焰未着火。请到「检测器」页执行点火；确认氢气/空气已供且空气阀已打开。"
+					: "Flame is out. Ignite from the Detector page after confirming H₂/Air supply and an open air valve.";
 			case READY -> chinese
 					? "FID 已就绪：已连接、检测器在线、火焰已着。"
 					: "FID ready: connected, detector online, flame on.";

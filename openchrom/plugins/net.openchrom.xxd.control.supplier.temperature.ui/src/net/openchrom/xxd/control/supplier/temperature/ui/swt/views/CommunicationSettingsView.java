@@ -26,6 +26,7 @@ import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Text;
 
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.GcConnectionManager;
+import net.openchrom.xxd.control.supplier.temperature.ui.engineering.ConsoleControlPolicy;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.GcDeviceEndpoint;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.GcDeviceScanner;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.IGcConnectionListener;
@@ -265,9 +266,9 @@ public class CommunicationSettingsView extends Composite implements LanguageList
 
 		boolean connected = connectionManager.isConnected();
 		boolean scanning = connectionManager.isScanning();
-		connectButton.setEnabled(!connected && !scanning);
-		disconnectButton.setEnabled(connected && !scanning);
-		refreshButton.setEnabled(!scanning);
+		connectButton.setEnabled(ConsoleControlPolicy.communicationConnectEnabled(connected, scanning));
+		disconnectButton.setEnabled(ConsoleControlPolicy.communicationDisconnectEnabled(connected, scanning));
+		refreshButton.setEnabled(ConsoleControlPolicy.communicationRefreshEnabled(scanning));
 		ipText.setEditable(!connected);
 		portText.setEditable(!connected);
 	}
@@ -277,9 +278,9 @@ public class CommunicationSettingsView extends Composite implements LanguageList
 		if(message != null) {
 			statusLabel.setText(message);
 		}
-		connectButton.setEnabled(!busy && !connectionManager.isConnected());
-		disconnectButton.setEnabled(!busy && connectionManager.isConnected());
-		refreshButton.setEnabled(!busy);
+		connectButton.setEnabled(ConsoleControlPolicy.communicationConnectEnabledWhenBusy(busy, connectionManager.isConnected()));
+		disconnectButton.setEnabled(ConsoleControlPolicy.communicationDisconnectEnabledWhenBusy(busy, connectionManager.isConnected()));
+		refreshButton.setEnabled(ConsoleControlPolicy.communicationRefreshEnabledWhenBusy(busy));
 	}
 
 	private void updateStatusLabel() {
