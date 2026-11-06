@@ -28,6 +28,7 @@ Files are named `GC-FID_yyyyMMdd_HHmmss.ocb` (ChemClipse OpenChrom binary). If t
 6. Click **白酒分析** (or press Enter): the workstation switches to the **白酒工作台** perspective (E4 workbench, same as **窗口 → 视图 / 插件 → 白酒工作台**) and **reuses** the live chromatogram editor in 谱图/采集 (does not call ChemClipse `openEditor` on the file when that editor is already open). Continue as usual: 推荐积分 → 白酒分析 → GB 2757 / 报告.
 7. Dismissing the dialog with **关闭** leaves Start Analysis unchanged. Re-open later: **File → Open Chromatogram** and choose the `.ocb` (or `.xy`) under the folder above, or **插件 → 白酒工作台**.
 8. Failure: a warning dialog in **Chinese and English**. Acquired points stay in the live editor; do not close it. If an emergency `*.acq.tsv` copy was written, the dialog shows that path. The current sequence row is **失败** until the operator **重试** or **跳过**.
+9. Data integrity: batch gaps, duplicates, invalid samples, a mismatched `ACQ_DONE`, a device `ERROR`, connection loss, or an unacknowledged STOP make the run **failed**, not completed. The workstation attempts to preserve partial points only as an emergency `*.acq.tsv`; it does not emit the normal saved/completed events or advance the sequence for that run. Stop waits for the device ACK before normal processing. Auto-processing and file output run off both the SWT UI thread and the TCP reader thread.
 
 ## Optional auto-open
 
@@ -43,19 +44,19 @@ The JVM property overrides the stored preference. When auto-open succeeds, the s
 
 If the Baijiu feature is not installed or not enabled, reverse-control does **not** crash. A Chinese (+ English) tip asks to install/enable `net.openchrom.xxd.processor.supplier.baijiu.feature`.
 
-## FID current gate (temporary)
+## FID readiness gate
 
-电流判据暂不可用，先不拦开始采集. `FidReadiness.REQUIRE_FID_CURRENT_FOR_START` is `false`.
+`FidReadiness.REQUIRE_FID_CURRENT_FOR_START` is `true` by default.
 
-- Connected Start Analysis is allowed when the flame is out, ignition is in progress or failed, or FID status / current has not been read yet.
-- Current pA and flame stay on the strip. Sensing code is not removed.
-- **Disconnected still blocks.** **FID board offline** (RS485 no reply) still blocks.
+- Start Analysis requires a successful FID status read, an online FID board and flame on.
+- **Disconnected, status read failure, FID board offline, ignition failure / in progress and flame out all block start.**
+- Current pA and flame stay on the strip.
 - Already acquiring still toggles to stop.
-- Set the constant to `true` to require flame-on / current readiness again. Main「启动」, the plant toolbar **开始分析**, and the Baijiu shell start card all use `AcquisitionStartGate`. Android does not start acquisition while the PC is the owner.
+- Main「启动」, the plant toolbar **开始分析**, and the Baijiu shell start card all use `AcquisitionStartGate`. Android does not start acquisition while the PC is the owner.
 
-## Developer-only: skip remaining FID gate
+## Developer-only: skip FID readiness gate
 
-Production and pilot sites must **not** set this. The current/flame bypass above is already the plant default; this flag is only for also ignoring a dead FID board.
+Production and pilot sites must **not** set this. This flag bypasses flame / readiness and board-offline blocks for local verification only.
 
 ```
 -Dnet.openchrom.gcws.skipFidReadinessGate=true

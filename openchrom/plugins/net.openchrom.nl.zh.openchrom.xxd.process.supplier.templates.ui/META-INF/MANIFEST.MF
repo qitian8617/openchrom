@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Laiende Chinese Help Fragment for Templates UI
+Bundle-SymbolicName: net.openchrom.nl.zh.openchrom.xxd.process.supplier.templates.ui;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Vendor: Laiende
+Fragment-Host: net.openchrom.xxd.process.supplier.templates.ui;bundle-version="1.6.20"
+Bundle-RequiredExecutionEnvironment: JavaSE-21
+Automatic-Module-Name: net.openchrom.nl.zh.openchrom.xxd.process.supplier.templates.ui

@@ -77,7 +77,7 @@ public final class BaijiuSequenceResultsEngine {
 		if(integrateIfEmpty && (chromatogram.getPeaks() == null || chromatogram.getPeaks().isEmpty())) {
 			integration = BaijiuRecommendedIntegration.integrate(chromatogram);
 		}
-		BaijiuSampleInfo sample = sampleFor(vial, template);
+		BaijiuSampleInfo sample = sampleFor(vial, chromatogram, file, template);
 		BaijiuAnalysisResult result = BaijiuAnalysisEngine.quantify(chromatogram, sample, settings);
 		String message = result.getMessage();
 		if(!integration.isEmpty()) {
@@ -137,7 +137,7 @@ public final class BaijiuSequenceResultsEngine {
 			if(!BaijiuBatchEngine.includeBatchColumn(settings, compound)) {
 				continue;
 			}
-			csv.append(',').append(settings == null ? compound.getName() : settings.displayName(compound));
+			csv.append(',').append(quote(settings == null ? compound.getName() : settings.displayName(compound)));
 		}
 		csv.append(',').append("GB 2757").append(',').append("备注").append('\n');
 		if(rows == null) {
@@ -187,7 +187,7 @@ public final class BaijiuSequenceResultsEngine {
 		return "共 " + total + " 行，已定量 " + quantified + " 行，未进样/跳过 " + skipped + " 行，定量失败 " + failed + " 行。Incomplete vials stay listed.";
 	}
 
-	static List<BaijiuSequenceResultRow> annotateParallels(List<BaijiuSequenceResultRow> rows) {
+	public static List<BaijiuSequenceResultRow> annotateParallels(List<BaijiuSequenceResultRow> rows) {
 
 		if(rows == null || rows.isEmpty()) {
 			return rows == null ? List.of() : rows;
@@ -206,14 +206,17 @@ public final class BaijiuSequenceResultsEngine {
 		}
 		List<BaijiuSequenceResultRow> annotated = new ArrayList<>(rows);
 		for(List<Integer> indexes : groups.values()) {
-			if(indexes.size() < 2) {
-				continue;
+			for(int i = 0; i < indexes.size(); i += 2) {
+				int first = indexes.get(i);
+				if(i + 1 >= indexes.size()) {
+					annotated.set(first, annotated.get(first).withParallelNote("平行针数量为奇数，此针缺少配对，未纳入两针均值与偏差。"));
+					continue;
+				}
+				int second = indexes.get(i + 1);
+				String note = parallelNote(annotated.get(first), annotated.get(second));
+				annotated.set(first, annotated.get(first).withParallelNote(note));
+				annotated.set(second, annotated.get(second).withParallelNote(note));
 			}
-			int first = indexes.get(0);
-			int second = indexes.get(1);
-			String note = parallelNote(annotated.get(first), annotated.get(second));
-			annotated.set(first, annotated.get(first).withParallelNote(note));
-			annotated.set(second, annotated.get(second).withParallelNote(note));
 		}
 		return annotated;
 	}
@@ -245,18 +248,16 @@ public final class BaijiuSequenceResultsEngine {
 		return "平行针：甲醇均值 " + BaijiuParallelEngine.formatConcentration(methanol.getMean()) + " g/L，相对偏差 " + BaijiuParallelEngine.formatPercent(methanol.getRelativeDeviationPercent()) + "%。" + PARALLEL_SEE_UI;
 	}
 
-	private static BaijiuSampleInfo sampleFor(BaijiuSequenceVial vial, BaijiuSampleInfo template) {
+	private static BaijiuSampleInfo sampleFor(BaijiuSequenceVial vial, IChromatogram chromatogram, File file, BaijiuSampleInfo template) {
 
-		BaijiuSampleInfo sample = new BaijiuSampleInfo();
+		BaijiuSampleInfo sample = BaijiuBatchEngine.sampleOf(chromatogram, file, template);
 		if(template != null) {
-			sample.setAbvPercent(template.getAbvPercent());
-			sample.setAnalyst(template.getAnalyst());
-			sample.setAromaType(template.getAromaType());
-			sample.setRawMaterial(template.getRawMaterial());
-			sample.setBatchNo(template.getBatchNo());
-			sample.setDateText(template.getDateText());
-			sample.setLiquorName(template.getLiquorName());
-			sample.setSampleNo(template.getSampleNo());
+			if(sample.getBatchNo().isEmpty()) {
+				sample.setBatchNo(template.getBatchNo());
+			}
+			if(sample.getDateText().isEmpty()) {
+				sample.setDateText(template.getDateText());
+			}
 		}
 		if(!vial.getSampleId().isBlank()) {
 			sample.setSampleNo(vial.getSampleId());
@@ -280,7 +281,7 @@ public final class BaijiuSequenceResultsEngine {
 
 	private static String quote(String value) {
 
-		String text = value == null ? "" : value;
+		String text = BaijiuFileSupport.safeCsvText(value);
 		if(text.indexOf(',') >= 0 || text.indexOf('"') >= 0 || text.indexOf('\n') >= 0) {
 			return "\"" + text.replace("\"", "\"\"") + "\"";
 		}

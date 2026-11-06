@@ -94,7 +94,22 @@ public final class InjectionSequenceIO {
 		if(parent != null) {
 			Files.createDirectories(parent);
 		}
-		Files.writeString(file, toJson(sequence), StandardCharsets.UTF_8);
+		Path target = file.toAbsolutePath();
+		Path targetParent = target.getParent();
+		if(targetParent != null) {
+			Files.createDirectories(targetParent);
+		}
+		Path temporary = Files.createTempFile(targetParent, ".sequence-", ".tmp");
+		try {
+			Files.writeString(temporary, toJson(sequence), StandardCharsets.UTF_8);
+			try {
+				Files.move(temporary, target, java.nio.file.StandardCopyOption.ATOMIC_MOVE, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+			} catch(java.nio.file.AtomicMoveNotSupportedException e) {
+				Files.move(temporary, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+			}
+		} finally {
+			Files.deleteIfExists(temporary);
+		}
 	}
 
 	public static InjectionSequence load(Path file) throws IOException {
@@ -102,7 +117,15 @@ public final class InjectionSequenceIO {
 		if(file == null || !Files.isRegularFile(file)) {
 			throw new IOException("Sequence file is missing: " + file);
 		}
-		return fromJson(Files.readString(file, StandardCharsets.UTF_8));
+		String json = Files.readString(file, StandardCharsets.UTF_8);
+		if(json.isBlank()) {
+			throw new IOException("Sequence file is empty: " + file);
+		}
+		try {
+			return fromJson(json);
+		} catch(IllegalArgumentException e) {
+			throw new IOException("Sequence file is invalid: " + file, e);
+		}
 	}
 
 	private static InjectionSequenceEntry entryOf(Map<?, ?> map) {

@@ -81,7 +81,7 @@ public final class BaijiuReportShell {
 
 		Composite buttons = BaijiuPlantLayout.buttonRow(body);
 
-		Label status = BaijiuPlantLayout.hint(body, "尚未生成。打开谱图后点「生成报告」。");
+		Label status = BaijiuPlantLayout.hint(body, "尚未生成。打开谱图后点「生成报告」；报告固定使用本次生成时的谱图、方法和样品，输入改变后请重新生成。");
 
 		Browser browser = createBrowser(body);
 		Text fallback = null;
@@ -93,6 +93,7 @@ public final class BaijiuReportShell {
 		}
 		Browser printable = browser;
 		Text fallbackText = fallback;
+		BaijiuPlantButton[] outputs = new BaijiuPlantButton[4];
 
 		BaijiuPlantLayout.primary(buttons, "生成报告", e -> {
 			if(BaijiuLicenseShell.blockQuantify(host)) {
@@ -107,8 +108,15 @@ public final class BaijiuReportShell {
 			sampleRef.set(sample);
 			settingsRef.set(settings);
 			resultRef.set(result);
+			htmlRef.set("");
+			setOutputsEnabled(outputs, false, printable != null);
 			if(!result.isSuccess()) {
-				status.setText(result.getMessage());
+				if(printable != null && !printable.isDisposed()) {
+					printable.setText("");
+				} else if(fallbackText != null && !fallbackText.isDisposed()) {
+					fallbackText.setText("");
+				}
+				status.setText("报告生成失败：" + result.getMessage());
 				warn(host, result.getMessage());
 				return;
 			}
@@ -117,12 +125,13 @@ public final class BaijiuReportShell {
 			String html = BaijiuReportHtml.render(sample, settings, result, generatedAt, header);
 			generatedRef.set(generatedAt);
 			htmlRef.set(html);
-			status.setText("已按当前谱图生成报告。");
+			status.setText("报告已生成，可打印或导出。谱图、方法或样品改变后，请重新生成。生成时间：" + generatedAt);
 			if(printable != null && !printable.isDisposed()) {
 				printable.setText(html);
 			} else if(fallbackText != null && !fallbackText.isDisposed()) {
 				fallbackText.setText(html);
 			}
+			setOutputsEnabled(outputs, true, printable != null);
 		});
 
 		BaijiuPlantButton print = BaijiuPlantLayout.command(buttons, "\u6253\u5370 / \u53e6\u5b58\u4e3a PDF", e -> {
@@ -130,13 +139,14 @@ public final class BaijiuReportShell {
 				printable.execute("window.print();");
 			}
 		});
-		print.setEnabled(printable != null);
-
-		BaijiuPlantLayout.command(buttons, "\u4fdd\u5b58 HTML", e -> save(host, htmlRef.get(), "*.html", "baijiu-report.html", SaveKind.HTML, sampleRef.get(), settingsRef.get(), resultRef.get(), generatedRef.get()));
-
-		BaijiuPlantLayout.command(buttons, "\u5bfc\u51fa CSV", e -> save(host, htmlRef.get(), "*.csv", "baijiu-results.csv", SaveKind.CSV, sampleRef.get(), settingsRef.get(), resultRef.get(), generatedRef.get()));
-
-		BaijiuPlantLayout.command(buttons, "\u5bfc\u51fa Excel(CSV)", e -> save(host, htmlRef.get(), "*.csv", "baijiu-results-excel.csv", SaveKind.EXCEL_CSV, sampleRef.get(), settingsRef.get(), resultRef.get(), generatedRef.get()));
+		BaijiuPlantButton saveHtml = BaijiuPlantLayout.command(buttons, "\u4fdd\u5b58 HTML", e -> save(host, htmlRef.get(), "*.html", "baijiu-report.html", SaveKind.HTML, sampleRef.get(), settingsRef.get(), resultRef.get(), generatedRef.get()));
+		BaijiuPlantButton exportCsv = BaijiuPlantLayout.command(buttons, "\u5bfc\u51fa CSV", e -> save(host, htmlRef.get(), "*.csv", "baijiu-results.csv", SaveKind.CSV, sampleRef.get(), settingsRef.get(), resultRef.get(), generatedRef.get()));
+		BaijiuPlantButton exportExcel = BaijiuPlantLayout.command(buttons, "\u5bfc\u51fa Excel(CSV)", e -> save(host, htmlRef.get(), "*.csv", "baijiu-results-excel.csv", SaveKind.EXCEL_CSV, sampleRef.get(), settingsRef.get(), resultRef.get(), generatedRef.get()));
+		outputs[0] = print;
+		outputs[1] = saveHtml;
+		outputs[2] = exportCsv;
+		outputs[3] = exportExcel;
+		setOutputsEnabled(outputs, false, printable != null);
 
 		if(parent instanceof Shell dialog) {
 			BaijiuPlantLayout.command(buttons, "\u5173\u95ed", e -> dialog.close());
@@ -195,6 +205,16 @@ public final class BaijiuReportShell {
 
 		if(parent instanceof Shell dialog) {
 			BaijiuPlantLayout.command(buttons, "\u5173\u95ed", e -> dialog.close());
+		}
+	}
+
+	private static void setOutputsEnabled(BaijiuPlantButton[] outputs, boolean reportReady, boolean browserAvailable) {
+
+		for(int i = 0; i < outputs.length; i++) {
+			BaijiuPlantButton button = outputs[i];
+			if(button != null && !button.isDisposed()) {
+				button.setEnabled(reportReady && (i != 0 || browserAvailable));
+			}
 		}
 	}
 

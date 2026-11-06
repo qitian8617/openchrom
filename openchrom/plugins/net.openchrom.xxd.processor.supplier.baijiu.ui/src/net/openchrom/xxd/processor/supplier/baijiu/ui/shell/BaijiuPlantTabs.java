@@ -59,7 +59,6 @@ public final class BaijiuPlantTabs {
 		}
 		PlantTabRenderer renderer = new PlantTabRenderer(folder);
 		folder.setRenderer(renderer);
-		folder.setSimple(true);
 		folder.setTabHeight(TAB_PX);
 		folder.setMRUVisible(false);
 		folder.setBorderVisible(false);

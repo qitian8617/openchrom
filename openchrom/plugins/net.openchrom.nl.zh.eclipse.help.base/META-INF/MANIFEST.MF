@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Laiende Chinese Help Fragment for Eclipse Help Base
+Bundle-SymbolicName: net.openchrom.nl.zh.eclipse.help.base;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Vendor: Laiende
+Fragment-Host: org.eclipse.help.base;bundle-version="4.0.0"
+Bundle-RequiredExecutionEnvironment: JavaSE-21
+Automatic-Module-Name: net.openchrom.nl.zh.eclipse.help.base

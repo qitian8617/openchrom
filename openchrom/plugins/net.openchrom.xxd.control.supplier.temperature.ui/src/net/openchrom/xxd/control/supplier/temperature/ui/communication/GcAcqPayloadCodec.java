@@ -63,7 +63,7 @@ public final class GcAcqPayloadCodec {
 		for(int index = 0; index < sampleCount; index++) {
 			int retentionTimeMs = buffer.getInt();
 			float signal = buffer.getFloat();
-			samples.add(new GcAcqSample(Math.max(0, retentionTimeMs), signal));
+			samples.add(new GcAcqSample(retentionTimeMs, signal));
 		}
 		return new GcAcqBatch(batchSequence, samples);
 	}

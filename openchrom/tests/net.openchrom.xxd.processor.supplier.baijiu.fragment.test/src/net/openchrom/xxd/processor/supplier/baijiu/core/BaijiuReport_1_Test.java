@@ -158,6 +158,17 @@ public class BaijiuReport_1_Test {
 	}
 
 	@Test
+	public void unjudgedMethanolDoesNotRenderAsNotDetected() {
+
+		BaijiuQuantRow row = new BaijiuQuantRow(BaijiuCatalog.byId(BaijiuCatalog.METHANOL_ID), null, 2.718d, Double.NaN, 0.0d, 0.4718d, 1.0d, null, "\u672a\u5339\u914d");
+		Gb2757Result gb = Gb2757Judge.judge(null, 52.0d, BaijiuRawMaterial.GRAIN, BaijiuMethodSettings.defaultNongxiangFid());
+		BaijiuAnalysisResult result = new BaijiuAnalysisResult(true, "ok", List.of(row), gb, null, 1.6d, List.of());
+		String html = BaijiuReportHtml.render(demoSample(), BaijiuMethodSettings.defaultNongxiangFid(), result);
+		assertTrue(html.contains(BaijiuTerms.UNJUDGED));
+		assertFalse(html.contains("<td>\u672a\u68c0\u51fa</td>"));
+	}
+
+	@Test
 	public void multipointFitShowsEffectiveRfAndShortNote() {
 
 		BaijiuMethodSettings settings = calibratedSettings();
@@ -200,6 +211,23 @@ public class BaijiuReport_1_Test {
 		String excelText = new String(withBom, StandardCharsets.UTF_8);
 		assertTrue(excelText.charAt(0) == '\uFEFF');
 		assertTrue(excelText.contains(BaijiuReportSupport.ANALYST));
+	}
+
+	@Test
+	public void csvTextCannotBecomeAnExcelFormula() {
+
+		BaijiuSampleInfo sample = demoSample();
+		sample.setSampleNo("=2+2");
+		sample.setLiquorName("\t@SUM(1,2)");
+		String csv = BaijiuReportExport.toCsv(sample, BaijiuMethodSettings.defaultNongxiangFid(), null, "2026-09-16 10:00");
+		String data = csv.split("\\n")[1];
+		assertTrue(data.startsWith("'=2+2,\"'@SUM(1,2)\","), data);
+		assertEquals("'=2+2", BaijiuFileSupport.safeCsvText("=2+2"));
+		assertEquals("'\t@SUM(1,2)", BaijiuFileSupport.safeCsvText("\t@SUM(1,2)"));
+		assertEquals("'+1", BaijiuFileSupport.safeCsvText("+1"));
+		assertEquals("'-1", BaijiuFileSupport.safeCsvText("-1"));
+		assertEquals("'@cmd", BaijiuFileSupport.safeCsvText("@cmd"));
+		assertEquals("normal", BaijiuFileSupport.safeCsvText("normal"));
 	}
 
 	private static BaijiuSampleInfo demoSample() {

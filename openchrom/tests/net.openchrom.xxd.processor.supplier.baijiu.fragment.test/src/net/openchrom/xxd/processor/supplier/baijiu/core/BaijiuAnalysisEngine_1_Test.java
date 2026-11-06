@@ -12,6 +12,7 @@ package net.openchrom.xxd.processor.supplier.baijiu.core;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -96,7 +97,47 @@ public class BaijiuAnalysisEngine_1_Test {
 		settings.getResponseFactors().put("methanol", 1.0d);
 		BaijiuAnalysisResult result = BaijiuAnalysisEngine.quantify(sampleChromatogram(180.0d, 0.0d), demoSample(), settings);
 		assertFalse(result.isSuccess());
-		assertTrue(result.getMessage().contains("\u5185\u6807") && (result.getMessage().contains("0") || result.getMessage().contains("\u79ef\u5206")), result.getMessage());
+		assertTrue(result.getMessage().contains("\u5185\u6807") && (result.getMessage().contains("0") || result.getMessage().contains("\u79ef\u5206") || result.getMessage().contains("\u5339\u914d")), result.getMessage());
+	}
+
+	@Test
+	public void missingMethanolPeakStaysUnjudged() {
+
+		BaijiuMethodSettings settings = BaijiuMethodSettings.defaultNongxiangFid();
+		settings.getResponseFactors().put("methanol", 1.0d);
+		ChromatogramCSD chromatogram = sampleChromatogram(180.0d, 1600.0d);
+		chromatogram.getPeaks().remove(0);
+		assertMethanolUnjudged(BaijiuAnalysisEngine.quantify(chromatogram, demoSample(), settings));
+	}
+
+	@Test
+	public void unintegratedMethanolPeakStaysUnjudged() {
+
+		BaijiuMethodSettings settings = BaijiuMethodSettings.defaultNongxiangFid();
+		settings.getResponseFactors().put("methanol", 1.0d);
+		assertMethanolUnjudged(BaijiuAnalysisEngine.quantify(sampleChromatogram(0.0d, 1600.0d), demoSample(), settings));
+	}
+
+	@Test
+	public void nonFiniteMethanolConcentrationStaysUnjudged() {
+
+		BaijiuMethodSettings settings = BaijiuMethodSettings.defaultNongxiangFid();
+		settings.getResponseFactors().put("methanol", 1.0d);
+		assertMethanolUnjudged(BaijiuAnalysisEngine.quantify(sampleChromatogram(Double.POSITIVE_INFINITY, 1600.0d), demoSample(), settings));
+	}
+
+	private static void assertMethanolUnjudged(BaijiuAnalysisResult result) {
+
+		assertTrue(result.isSuccess(), result.getMessage());
+		assertFalse(result.getRows().isEmpty());
+		BaijiuQuantRow methanol = row(result, "methanol");
+		assertNotNull(methanol);
+		assertNull(methanol.getConcentrationGL());
+		assertNull(methanol.getOverLimit());
+		assertNotNull(result.getGb2757Result());
+		assertFalse(result.getGb2757Result().isJudged());
+		assertFalse(result.getGb2757Result().isPassed());
+		assertEquals(BaijiuTerms.UNJUDGED, result.getGb2757Result().getVerdictLabel());
 	}
 
 	@Test
@@ -109,7 +150,9 @@ public class BaijiuAnalysisEngine_1_Test {
 		assertTrue(BaijiuCalibrationGate.allowsQuantitation(settings), calibrated);
 		BaijiuAnalysisResult result = BaijiuAnalysisEngine.quantify(sampleChromatogram(180.0d, 1600.0d), demoSample(), settings);
 		assertTrue(result.isSuccess(), result.getMessage());
-		assertNotNull(row(result, "methanol").getConcentrationGL());
+		assertEquals(0.29227698237885463d, row(result, "methanol").getConcentrationGL(), 1.0e-12d);
+		assertEquals(0.3632d, settings.getMixIstdGramsPerLiter(), 1.0e-12d);
+		assertEquals(1.6d, settings.injectedIstdGramsPerLiter(), 1.0e-12d);
 		assertTrue(result.getGb2757Result().isJudged());
 	}
 

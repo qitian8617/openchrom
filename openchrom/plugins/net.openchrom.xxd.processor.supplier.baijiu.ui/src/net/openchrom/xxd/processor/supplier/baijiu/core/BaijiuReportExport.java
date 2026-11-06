@@ -10,9 +10,6 @@
 package net.openchrom.xxd.processor.supplier.baijiu.core;
 
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 public final class BaijiuReportExport {
@@ -67,12 +64,7 @@ public final class BaijiuReportExport {
 
 	private static void writeText(Path file, String text, boolean excelBom) throws IOException {
 
-		try(OutputStreamWriter writer = new OutputStreamWriter(Files.newOutputStream(file), StandardCharsets.UTF_8)) {
-			if(excelBom) {
-				writer.write('\uFEFF');
-			}
-			writer.write(text);
-		}
+		BaijiuFileSupport.writeUtf8(file, text, excelBom);
 	}
 
 	private static String toDelimited(BaijiuSampleInfo sample, BaijiuMethodSettings settings, BaijiuAnalysisResult result, String generatedAt, char delimiter) {
@@ -159,8 +151,9 @@ public final class BaijiuReportExport {
 
 	private static String quote(String value, char delimiter) {
 
-		boolean need = value.indexOf(delimiter) >= 0 || value.indexOf('"') >= 0 || value.indexOf('\n') >= 0;
-		String escaped = value.replace("\"", "\"\"");
+		String text = BaijiuFileSupport.safeCsvText(value);
+		boolean need = text.indexOf(delimiter) >= 0 || text.indexOf('"') >= 0 || text.indexOf('\n') >= 0;
+		String escaped = text.replace("\"", "\"\"");
 		return need ? "\"" + escaped + "\"" : escaped;
 	}
 }

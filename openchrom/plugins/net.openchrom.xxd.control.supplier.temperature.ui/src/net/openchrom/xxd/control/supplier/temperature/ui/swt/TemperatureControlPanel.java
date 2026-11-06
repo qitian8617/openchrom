@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import java.io.IOException;
@@ -65,6 +66,19 @@ import net.openchrom.xxd.control.supplier.temperature.ui.swt.views.StopwatchView
  */
 public class TemperatureControlPanel extends Composite implements LanguageListener {
 
+	/**
+	 * Engineer-mode page keys. The plant shell passes these strings and does
+	 * not link this type. {@link #ENGINEER_FID} is the PID debug page, which
+	 * stays off the operator bottom bar.
+	 */
+	public static final String ENGINEER_OVEN = EngineerConsolePages.OVEN;
+	public static final String ENGINEER_GAS = EngineerConsolePages.GAS;
+	public static final String ENGINEER_FID = EngineerConsolePages.FID;
+	public static final String ENGINEER_PARAMETERS = EngineerConsolePages.PARAMETERS;
+
+	private static final AtomicReference<TemperatureControlPanel> LIVE = new AtomicReference<>();
+	private static final AtomicReference<String> PENDING_ENGINEER_PAGE = new AtomicReference<>();
+
 	private final Color backgroundColor;
 	private final NavigationBar navigationBar;
 	private final StatusBar statusBar;
@@ -102,6 +116,7 @@ public class TemperatureControlPanel extends Composite implements LanguageListen
 		registerPage(PanelView.EVENTS, pageParent -> new EventsView(pageParent, SWT.NONE));
 		registerPage(PanelView.STOPWATCH, pageParent -> new StopwatchView(pageParent, SWT.NONE));
 		registerPage(PanelView.SETTINGS, pageParent -> new SettingsView(pageParent, SWT.NONE));
+		registerPage(PanelView.AUX_PID, pageParent -> new AuxPidDebugView(pageParent, SWT.NONE));
 
 		if(pageContents.get(PanelView.MAIN) instanceof MainView mainView) {
 			mainView.setOpenParameterSettingsHandler(this::openParameterSettings);
@@ -112,8 +127,74 @@ public class TemperatureControlPanel extends Composite implements LanguageListen
 		statusBar = new StatusBar(this, this);
 		statusBar.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
-		showView(PanelView.MAIN);
-		navigationBar.select(PanelView.MAIN);
+		LIVE.set(this);
+		addDisposeListener(event -> LIVE.compareAndSet(this, null));
+		String requested = PENDING_ENGINEER_PAGE.getAndSet(null);
+		if(requested != null) {
+			applyEngineerPage(requested);
+		} else {
+			showView(PanelView.MAIN);
+		}
+	}
+
+	/**
+	 * Show an engineer page on the live console, or remember it until the
+	 * console is created. Connection, flame, and acquiring stay visible on
+	 * Main regardless of this call.
+	 *
+	 * @return {@code true} when a live panel applied the page on this thread
+	 */
+	public static boolean showEngineerPage(String page) {
+
+		if(page == null || page.isBlank() || engineerPanel(page) == null) {
+			return false;
+		}
+		TemperatureControlPanel panel = LIVE.get();
+		if(panel == null || panel.isDisposed()) {
+			PENDING_ENGINEER_PAGE.set(page);
+			return false;
+		}
+		Display display = panel.getDisplay();
+		if(display == null || display.isDisposed()) {
+			PENDING_ENGINEER_PAGE.set(page);
+			return false;
+		}
+		Runnable apply = () -> {
+			if(panel.isDisposed()) {
+				return;
+			}
+			panel.applyEngineerPage(page);
+			PENDING_ENGINEER_PAGE.compareAndSet(page, null);
+		};
+		if(display.getThread() == Thread.currentThread()) {
+			apply.run();
+			return true;
+		}
+		PENDING_ENGINEER_PAGE.set(page);
+		display.asyncExec(apply);
+		return true;
+	}
+
+	static PanelView engineerPanel(String page) {
+
+		return EngineerConsolePages.viewFor(page);
+	}
+
+	static boolean engineerOpensParameterTab(String page) {
+
+		return EngineerConsolePages.opensParameterTab(page);
+	}
+
+	private void applyEngineerPage(String page) {
+
+		if(engineerOpensParameterTab(page)) {
+			openParameterSettings();
+			return;
+		}
+		PanelView view = engineerPanel(page);
+		if(view != null) {
+			showView(view);
+		}
 	}
 
 	private void openParameterSettings() {

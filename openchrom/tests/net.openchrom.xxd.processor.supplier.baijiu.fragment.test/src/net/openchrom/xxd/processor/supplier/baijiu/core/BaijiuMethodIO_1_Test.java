@@ -39,6 +39,7 @@ public class BaijiuMethodIO_1_Test {
 
 		BaijiuMethodSettings settings = BaijiuMethodSettings.defaultNongxiangFid();
 		settings.setMethodName("plant-nongxiang-fid");
+		settings.setMixIstdGramsPerLiter(0.4d);
 		settings.getCompoundNames().put("methanol", "MeOH-plant");
 		settings.getInstrumentRtMin().put("methanol", 2.80d);
 		settings.getWindowMin().put("methanol", 0.22d);
@@ -62,6 +63,7 @@ public class BaijiuMethodIO_1_Test {
 		assertEquals("false", BaijiuMethodIO.toProperties(loaded).getProperty("compound.acetaldehyde.quantify"));
 		assertEquals(0.55d, loaded.getGb2757GrainLimit100VolGL(), 1.0e-9d);
 		assertEquals(17.6d, loaded.getIstdStockGramsPerLiter(), 1.0e-9d);
+		assertEquals(0.4d, loaded.getMixIstdGramsPerLiter(), 1.0e-12d);
 		assertEquals("GB 2757", loaded.getGb2757Standard());
 	}
 
@@ -164,6 +166,17 @@ public class BaijiuMethodIO_1_Test {
 	}
 
 	@Test
+	public void legacyMethodWithoutMixIstdUsesShippedConcentration() {
+
+		Properties legacy = BaijiuMethodIO.toProperties(BaijiuMethodSettings.defaultNongxiangFid());
+		legacy.remove("mix.istd.gl");
+		BaijiuMethodSettings loaded = new BaijiuMethodSettings();
+		BaijiuMethodIO.loadProperties(loaded, legacy);
+		assertEquals(0.3632d, loaded.getMixIstdGramsPerLiter(), 1.0e-12d);
+		assertEquals(1.6d, loaded.injectedIstdGramsPerLiter(), 1.0e-12d);
+	}
+
+	@Test
 	public void calibratedMethodExportImportStillQuantifies(@TempDir Path dir) throws Exception {
 
 		BaijiuMethodSettings settings = BaijiuMethodSettings.defaultNongxiangFid();
@@ -262,6 +275,7 @@ public class BaijiuMethodIO_1_Test {
 		assertEquals(expected.getOvenProgram(), actual.getOvenProgram());
 		assertEquals(expected.getIstdName(), actual.getIstdName());
 		assertEquals(expected.getIstdStockGramsPerLiter(), actual.getIstdStockGramsPerLiter(), 1.0e-9d);
+		assertEquals(expected.getMixIstdGramsPerLiter(), actual.getMixIstdGramsPerLiter(), 1.0e-12d);
 		assertEquals(expected.getSampleVolumeMl(), actual.getSampleVolumeMl(), 1.0e-9d);
 		assertEquals(expected.getIstdVolumeMl(), actual.getIstdVolumeMl(), 1.0e-9d);
 		assertEquals(expected.getDefaultWindowMin(), actual.getDefaultWindowMin(), 1.0e-9d);
@@ -343,7 +357,7 @@ public class BaijiuMethodIO_1_Test {
 	private static ChromatogramCSD mixChromatogramWithEsters() {
 
 		ChromatogramCSD chromatogram = new ChromatogramCSD();
-		for(int i = 1; i <= 800; i++) {
+		for(int i = 1; i <= 1100; i++) {
 			ScanCSD scan = new ScanCSD(10.0f);
 			scan.setRetentionTime(i * 1000);
 			chromatogram.addScan(scan);

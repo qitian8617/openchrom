@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Laiende Chinese Language Fragment for ChemClipse First Derivative CSD Detector
+Bundle-SymbolicName: net.openchrom.nl.zh.chemclipse.chromatogram.csd.peak.detector.supplier.firstderivative;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Vendor: Laiende
+Fragment-Host: org.eclipse.chemclipse.chromatogram.csd.peak.detector.supplier.firstderivative;bundle-version="0.9.0"
+Bundle-RequiredExecutionEnvironment: JavaSE-21
+Automatic-Module-Name: net.openchrom.nl.zh.chemclipse.chromatogram.csd.peak.detector.supplier.firstderivative

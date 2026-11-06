@@ -51,7 +51,7 @@ import net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuIconCard.Layout;
 /**
  * Left column of the plant shell. Six fixed workflow cards switch the task
  * stack only. Children of the active parent sit on a branch under that
- * card. Maintenance stays a small control at the bottom.
+ * card. The bottom control stays labeled 维护 and opens 工程师/维护模式.
  */
 public class BaijiuNavHomePart {
 
@@ -80,8 +80,9 @@ public class BaijiuNavHomePart {
 	private final List<Target> shownChildren = new ArrayList<>();
 	private Composite childBlock;
 	private Section expanded;
+	private ScrolledComposite drawerHost;
 	private Composite maintenanceDrawer;
-	private GridData maintenanceData;
+	private GridData drawerData;
 	private Canvas maintenance;
 	private BaijiuCardPalette palette;
 
@@ -124,23 +125,40 @@ public class BaijiuNavHomePart {
 		buildNavCards();
 		applySelection();
 		maintenance = maintenanceControl(parent);
-		maintenanceDrawer = new Composite(parent, SWT.NONE);
-		maintenanceData = new GridData(SWT.CENTER, SWT.TOP, true, false);
-		maintenanceData.exclude = true;
-		maintenanceDrawer.setLayoutData(maintenanceData);
-		maintenanceDrawer.setVisible(false);
+		drawerHost = new ScrolledComposite(parent, SWT.V_SCROLL);
+		drawerData = new GridData(SWT.CENTER, SWT.FILL, true, false);
+		drawerData.exclude = true;
+		drawerData.widthHint = BaijiuWorkflowMetrics.px(parent.getDisplay(), BaijiuWorkflowMetrics.NAV_CARD_WIDTH + 8);
+		drawerData.heightHint = BaijiuWorkflowMetrics.px(parent.getDisplay(), 240);
+		drawerHost.setLayoutData(drawerData);
+		drawerHost.setVisible(false);
+		drawerHost.setExpandHorizontal(true);
+		drawerHost.setExpandVertical(true);
+		maintenanceDrawer = new Composite(drawerHost, SWT.NONE);
+		drawerHost.setContent(maintenanceDrawer);
 		GridLayout drawerLayout = new GridLayout(1, false);
 		drawerLayout.marginHeight = 2;
+		drawerLayout.marginWidth = 0;
 		maintenanceDrawer.setLayout(drawerLayout);
+		Label mode = new Label(maintenanceDrawer, SWT.WRAP | SWT.CENTER);
+		mode.setText(BaijiuPlantNav.ENGINEER_MODE);
+		mode.setForeground(parent.getDisplay().getSystemColor(SWT.COLOR_DARK_GRAY));
+		GridData modeData = new GridData(SWT.CENTER, SWT.CENTER, true, false);
+		modeData.widthHint = BaijiuWorkflowMetrics.px(parent.getDisplay(), BaijiuWorkflowMetrics.CHILD_CARD_WIDTH);
+		mode.setLayoutData(modeData);
+		boolean systemHeading = false;
 		for(Target target : BaijiuPlantNav.targets(Section.MAINTENANCE)) {
-			String label = target.stub() ? target.label() + "（" + BaijiuPlantNav.LATER + "）" : target.label();
-			BaijiuIconCard card = new BaijiuIconCard(maintenanceDrawer, palette, BaijiuGlyphs.WRENCH, Layout.CHILD, label);
-			card.setMuted(target.stub());
-			GridData data = fixed(card);
-			data.horizontalAlignment = SWT.CENTER;
-			card.setLayoutData(data);
-			card.setAction(() -> runTarget(parent, Section.MAINTENANCE, target));
+			if(target.secondary() && !systemHeading) {
+				Label system = new Label(maintenanceDrawer, SWT.CENTER);
+				system.setText("系统");
+				system.setForeground(parent.getDisplay().getSystemColor(SWT.COLOR_DARK_GRAY));
+				system.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, true, false));
+				systemHeading = true;
+			}
+			addMaintenanceCard(parent, target);
 		}
+		drawerHost.addListener(SWT.Resize, event -> fitDrawer());
+		fitDrawer();
 		maintenance.addListener(SWT.MouseUp, event -> toggleMaintenance(parent));
 		scheduleStatus(parent);
 	}
@@ -323,11 +341,35 @@ public class BaijiuNavHomePart {
 		return canvas;
 	}
 
+	private void addMaintenanceCard(Composite parent, Target target) {
+
+		String label = target.stub() ? target.label() + "（" + BaijiuPlantNav.LATER + "）" : target.label();
+		BaijiuIconCard card = new BaijiuIconCard(maintenanceDrawer, palette, BaijiuGlyphs.forTarget(target), Layout.CHILD, label);
+		card.setMuted(target.stub() || target.secondary());
+		GridData data = fixed(card);
+		data.horizontalAlignment = SWT.CENTER;
+		card.setLayoutData(data);
+		card.setAction(() -> runTarget(parent, Section.MAINTENANCE, target));
+	}
+
+	private void fitDrawer() {
+
+		if(drawerHost == null || drawerHost.isDisposed() || maintenanceDrawer == null || maintenanceDrawer.isDisposed()) {
+			return;
+		}
+		int width = drawerHost.getClientArea().width;
+		Point size = maintenanceDrawer.computeSize(width > 0 ? width : SWT.DEFAULT, SWT.DEFAULT);
+		drawerHost.setMinSize(size);
+	}
+
 	private void toggleMaintenance(Composite parent) {
 
-		boolean open = !maintenanceDrawer.getVisible();
-		maintenanceDrawer.setVisible(open);
-		maintenanceData.exclude = !open;
+		boolean open = !drawerHost.getVisible();
+		drawerHost.setVisible(open);
+		drawerData.exclude = !open;
+		if(open) {
+			fitDrawer();
+		}
 		parent.layout(true, true);
 	}
 
@@ -348,11 +390,26 @@ public class BaijiuNavHomePart {
 		BaijiuPlantNav.activate(section, target);
 		if(target.opensPart()) {
 			BaijiuShellParts.showPlantTask(application, modelService, partService, target.partId());
+		} else if(BaijiuPlantNav.opensConsole(target)) {
+			openConsolePage(parent, target.actionKey());
+		} else if(target.stub()) {
+			if(parent != null && !parent.isDisposed()) {
+				BaijiuShellParts.inform(parent.getShell(), target.label() + "：" + BaijiuPlantNav.LATER + "。");
+			}
 		} else if(parent != null && !parent.isDisposed()) {
 			runAction(parent.getShell(), target);
 		}
 		applySelection();
 		refreshStatus();
+	}
+
+	private void openConsolePage(Composite parent, String page) {
+
+		BaijiuHomePanels.showTemperaturePage(page);
+		boolean shown = BaijiuShellParts.showGcConsole(application, modelService, partService);
+		if(!shown && parent != null && !parent.isDisposed()) {
+			BaijiuShellParts.inform(parent.getShell(), "无法打开气相色谱控制台。");
+		}
 	}
 
 	private void runAction(Shell shell, Target target) {

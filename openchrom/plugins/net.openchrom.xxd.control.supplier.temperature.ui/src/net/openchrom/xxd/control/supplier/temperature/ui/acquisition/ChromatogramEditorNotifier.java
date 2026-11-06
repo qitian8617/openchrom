@@ -68,6 +68,11 @@ public final class ChromatogramEditorNotifier {
 		if(chromatogram == null) {
 			return;
 		}
+		org.eclipse.swt.widgets.Display display = org.eclipse.swt.widgets.Display.getDefault();
+		if(display != null && !display.isDisposed() && display.getThread() != Thread.currentThread()) {
+			display.asyncExec(() -> publishFinalUpdate(chromatogram));
+			return;
+		}
 		IChromatogramSelectionCSD selection = findEditorSelection(chromatogram);
 		if(selection != null) {
 			refreshSelectionRange(selection, chromatogram);

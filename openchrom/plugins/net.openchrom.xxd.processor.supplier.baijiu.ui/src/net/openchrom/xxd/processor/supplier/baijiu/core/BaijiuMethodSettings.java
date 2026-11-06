@@ -17,6 +17,7 @@ import java.util.Map;
 public final class BaijiuMethodSettings {
 
 	public static final double DEFAULT_ISTD_STOCK_GL = 17.6d;
+	public static final double DEFAULT_MIX_ISTD_GL = 0.3632d;
 	public static final double DEFAULT_SAMPLE_ML = 1.0d;
 	public static final double DEFAULT_ISTD_ML = 0.10d;
 	public static final double DEFAULT_WINDOW_MIN = 0.15d;
@@ -33,6 +34,7 @@ public final class BaijiuMethodSettings {
 	private String injectorTempC = "";
 	private String detectorTempC = "";
 	private double istdStockGramsPerLiter = DEFAULT_ISTD_STOCK_GL;
+	private double mixIstdGramsPerLiter = DEFAULT_MIX_ISTD_GL;
 	private double sampleVolumeMl = DEFAULT_SAMPLE_ML;
 	private double istdVolumeMl = DEFAULT_ISTD_ML;
 	private double defaultWindowMin = DEFAULT_WINDOW_MIN;
@@ -104,6 +106,7 @@ public final class BaijiuMethodSettings {
 		setInjectorTempC(source.getInjectorTempC());
 		setDetectorTempC(source.getDetectorTempC());
 		setIstdStockGramsPerLiter(source.getIstdStockGramsPerLiter());
+		setMixIstdGramsPerLiter(source.getMixIstdGramsPerLiter());
 		setSampleVolumeMl(source.getSampleVolumeMl());
 		setIstdVolumeMl(source.getIstdVolumeMl());
 		setDefaultWindowMin(source.getDefaultWindowMin());
@@ -251,6 +254,16 @@ public final class BaijiuMethodSettings {
 	public void setIstdStockGramsPerLiter(double istdStockGramsPerLiter) {
 
 		this.istdStockGramsPerLiter = istdStockGramsPerLiter;
+	}
+
+	public double getMixIstdGramsPerLiter() {
+
+		return mixIstdGramsPerLiter;
+	}
+
+	public void setMixIstdGramsPerLiter(double mixIstdGramsPerLiter) {
+
+		this.mixIstdGramsPerLiter = mixIstdGramsPerLiter;
 	}
 
 	public double getSampleVolumeMl() {

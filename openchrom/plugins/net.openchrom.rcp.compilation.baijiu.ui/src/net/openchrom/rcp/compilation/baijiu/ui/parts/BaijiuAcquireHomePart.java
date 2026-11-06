@@ -53,7 +53,9 @@ public class BaijiuAcquireHomePart {
 	private IEclipseContext context;
 
 	private Label instrument;
+	private Label readiness;
 	private BaijiuIconCard acquisition;
+	private final java.util.concurrent.atomic.AtomicBoolean refreshPending = new java.util.concurrent.atomic.AtomicBoolean();
 
 	public BaijiuAcquireHomePart() {
 
@@ -75,9 +77,11 @@ public class BaijiuAcquireHomePart {
 		title.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, true, false));
 		instrument = new Label(parent, SWT.WRAP | SWT.CENTER);
 		instrument.setLayoutData(centeredHint(parent));
+		readiness = new Label(parent, SWT.WRAP | SWT.CENTER);
+		readiness.setLayoutData(centeredHint(parent));
 		refreshInstrument();
 		Label hint = new Label(parent, SWT.WRAP | SWT.CENTER);
-		hint.setText("谱图显示在下方，切换导航不会关闭已打开的谱图。温度反控从这里打开，不再单独占一项导航。");
+		hint.setText("谱图显示在下方，切换导航不会关闭已打开的谱图。温度反控从这里打开。温度程序、气路、FID 调试和系统参数在「维护」的工程师模式里。");
 		hint.setLayoutData(centeredHint(parent));
 		BaijiuCardPalette palette = new BaijiuCardPalette(parent.getDisplay());
 		parent.addDisposeListener(event -> palette.dispose());
@@ -97,6 +101,8 @@ public class BaijiuAcquireHomePart {
 		Label pack = new Label(parent, SWT.NONE);
 		pack.setText("当前方法包：" + BaijiuPlantStatus.WORKING_LABEL);
 		pack.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, true, false));
+		Runnable removeStatusListener = BaijiuPlantStatus.addInstrumentListener(() -> scheduleRefresh(parent));
+		parent.addDisposeListener(event -> removeStatusListener.run());
 	}
 
 	/**
@@ -142,18 +148,33 @@ public class BaijiuAcquireHomePart {
 		refreshInstrument();
 	}
 
-	private void refreshInstrument() {
+	private void scheduleRefresh(Composite parent) {
 
-		if(instrument == null || instrument.isDisposed()) {
+		if(parent.isDisposed() || parent.getDisplay().isDisposed() || !refreshPending.compareAndSet(false, true)) {
 			return;
 		}
-		boolean online = BaijiuPlantStatus.probeOnline();
-		boolean acquiring = BaijiuPlantStatus.probeAcquiring();
-		String run = acquiring ? "采集中" : "未采集";
-		instrument.setText("仪器：" + BaijiuPlantStatus.connectivityLabel(online) + "    " + run);
-		instrument.setForeground(instrument.getDisplay().getSystemColor(online ? SWT.COLOR_DARK_GREEN : SWT.COLOR_DARK_GRAY));
+		parent.getDisplay().asyncExec(() -> {
+			refreshPending.set(false);
+			if(!parent.isDisposed()) {
+				refreshInstrument();
+			}
+		});
+	}
+
+	private void refreshInstrument() {
+
+		if(instrument == null || instrument.isDisposed() || readiness == null || readiness.isDisposed()) {
+			return;
+		}
+		BaijiuPlantStatus.InstrumentStatus status = BaijiuPlantStatus.probeInstrumentStatus();
+		String run = status.acquiring() ? "采集中" : "未采集";
+		instrument.setText("仪器：" + BaijiuPlantStatus.connectivityLabel(status.online()) + "    " + run + "    " + status.readinessTitle());
+		instrument.setForeground(instrument.getDisplay().getSystemColor(status.online() ? SWT.COLOR_DARK_GREEN : SWT.COLOR_DARK_GRAY));
+		readiness.setText("火焰：" + status.flame() + "    FID：" + status.fidPa() + "\nH₂：" + status.h2() + "    空气：" + status.air() + "\n" + status.operatorTip());
+		readiness.setForeground(readiness.getDisplay().getSystemColor(status.ready() ? SWT.COLOR_DARK_GREEN : status.online() ? SWT.COLOR_DARK_RED : SWT.COLOR_DARK_GRAY));
+		readiness.getParent().layout(true, true);
 		if(acquisition != null && !acquisition.isDisposed()) {
-			acquisition.setCardText(acquisitionLabel());
+			acquisition.setCardText(status.acquiring() ? "停止采集" : "开始采集");
 		}
 	}
 

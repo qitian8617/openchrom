@@ -10,6 +10,7 @@
 package net.openchrom.xxd.processor.supplier.baijiu.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -38,13 +39,13 @@ public class PeakMatcher_1_Test {
 		List<IPeak> peaks = new ArrayList<>();
 		peaks.add(peak(2.316d, 1000.0d));
 		peaks.add(peak(2.718d, 1100.0d));
-		peaks.add(peak(8.000d, 500.0d));
+		peaks.add(peak(8.500d, 500.0d));
 		PeakMatchResult result = PeakMatcher.matchDetailed(peaks, settings);
 		assertNotNull(result.get("acetaldehyde"));
 		assertEquals(2.316d, result.get("acetaldehyde").getRetentionTimeMin(), 1.0e-4d);
 		assertNotNull(result.get("methanol"));
 		assertEquals(1, result.getUnmatched().size());
-		assertEquals(8.000d, PeakMatcher.retentionTimeMin(result.getUnmatched().get(0)), 1.0e-4d);
+		assertEquals(8.500d, PeakMatcher.retentionTimeMin(result.getUnmatched().get(0)), 1.0e-4d);
 	}
 
 	@Test
@@ -60,6 +61,35 @@ public class PeakMatcher_1_Test {
 		assertNotNull(result.get("n_propanol"));
 		assertEquals(8.000d, result.get("n_propanol").getRetentionTimeMin(), 1.0e-4d);
 		assertTrue(result.getUnmatched().isEmpty());
+	}
+
+	@Test
+	public void overlappingWindowsUseGlobalOneToOneAssignment() {
+
+		BaijiuMethodSettings settings = BaijiuMethodSettings.defaultNongxiangFid();
+		settings.getInstrumentRtMin().put("acetaldehyde", 2.0d);
+		settings.getWindowMin().put("acetaldehyde", 0.3d);
+		settings.getInstrumentRtMin().put("methanol", 2.05d);
+		settings.getWindowMin().put("methanol", 0.02d);
+		PeakMatchResult result = PeakMatcher.matchDetailed(List.of(peak(2.05d, 1000.0d), peak(2.20d, 900.0d)), settings);
+		assertEquals(2.20d, result.get("acetaldehyde").getRetentionTimeMin(), 1.0e-6d);
+		assertEquals(2.05d, result.get("methanol").getRetentionTimeMin(), 1.0e-6d);
+		assertTrue(result.getUnmatched().isEmpty());
+	}
+
+	@Test
+	public void nonFiniteIntegratedAreaIsRejected() {
+
+		IPeakCSD peak = peak(2.718d, Double.POSITIVE_INFINITY);
+		assertFalse(PeakMatcher.hasIntegratedArea(peak));
+		assertEquals(0.0d, PeakMatcher.area(peak), 0.0d);
+	}
+
+	@Test
+	public void nullSettingsStillUseCatalogDefaults() {
+
+		PeakMatchResult result = PeakMatcher.matchDetailed(List.of(peak(2.718d, 1000.0d)), null);
+		assertNotNull(result.get("methanol"));
 	}
 
 	static IPeakCSD peak(double rtMin, double area) {

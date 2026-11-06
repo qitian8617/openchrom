@@ -64,7 +64,23 @@ public final class BaijiuIconCard extends Canvas {
 		this.width = BaijiuWorkflowMetrics.px(getDisplay(), designW);
 		this.height = BaijiuWorkflowMetrics.px(getDisplay(), designH);
 		addPaintListener(event -> paint(event.gc));
-		addListener(SWT.MouseUp, event -> action.run());
+		addListener(SWT.MouseUp, event -> {
+			if(getEnabled() && event.button == 1 && getClientArea().contains(event.x, event.y)) {
+				action.run();
+			}
+		});
+		addListener(SWT.MouseDown, event -> {
+			if(getEnabled() && event.button == 1) {
+				setFocus();
+			}
+		});
+		addListener(SWT.KeyDown, event -> {
+			if(getEnabled() && (event.keyCode == SWT.CR || event.keyCode == SWT.SPACE || event.character == ' ')) {
+				action.run();
+			}
+		});
+		addListener(SWT.FocusIn, event -> redraw());
+		addListener(SWT.FocusOut, event -> redraw());
 		setCursor(getDisplay().getSystemCursor(SWT.CURSOR_HAND));
 	}
 
@@ -97,6 +113,14 @@ public final class BaijiuIconCard extends Canvas {
 		return selected;
 	}
 
+	@Override
+	public void setEnabled(boolean enabled) {
+
+		super.setEnabled(enabled);
+		setCursor(getDisplay().getSystemCursor(enabled ? SWT.CURSOR_HAND : SWT.CURSOR_ARROW));
+		redraw();
+	}
+
 	public void setMuted(boolean muted) {
 
 		this.muted = muted;
@@ -126,13 +150,13 @@ public final class BaijiuIconCard extends Canvas {
 			return;
 		}
 		Color fill = selected ? palette.selectedFill : palette.fill;
-		Color border = selected ? palette.accent : palette.border;
-		Color ink = muted ? palette.muted : palette.ink;
+		Color border = !getEnabled() ? palette.muted : (selected || isFocusControl()) ? palette.accent : palette.border;
+		Color ink = muted || !getEnabled() ? palette.muted : palette.ink;
 		gc.setAntialias(SWT.ON);
 		gc.setBackground(fill);
 		gc.setForeground(border);
 		gc.fillRoundRectangle(1, 1, width - 2, height - 2, 12, 12);
-		gc.setLineWidth(selected ? 2 : 1);
+		gc.setLineWidth(selected || isFocusControl() ? 2 : 1);
 		gc.drawRoundRectangle(1, 1, width - 3, height - 3, 12, 12);
 		gc.setLineWidth(1);
 		if(layout == Layout.ACTION) {

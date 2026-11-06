@@ -11,6 +11,7 @@ package net.openchrom.xxd.control.supplier.temperature.ui.sequence;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -87,6 +88,17 @@ public class InjectionSequenceIO_1_Test {
 		assertEquals(InjectionStatus.PENDING, parsed.get(0).getStatus());
 		assertEquals("X", parsed.get(0).getSampleId());
 		assertEquals("", parsed.get(0).getParallelGroupId());
+	}
+
+	@Test
+	public void loadRejectsBlankOrInvalidFilesInsteadOfReturningAnEmptyQueue() throws IOException {
+
+		Path blank = tempDir.resolve("blank.json");
+		Files.writeString(blank, "  \n");
+		assertThrows(IOException.class, () -> InjectionSequenceIO.load(blank));
+		Path invalid = tempDir.resolve("invalid.json");
+		Files.writeString(invalid, "{not-json}");
+		assertThrows(IOException.class, () -> InjectionSequenceIO.load(invalid));
 	}
 
 	@Test

@@ -26,15 +26,11 @@ public final class FidReadiness {
 	public static final String SKIP_FID_READINESS_GATE_PROPERTY = "net.openchrom.gcws.skipFidReadinessGate";
 
 	/**
-	 * 电流判据暂不可用，先不拦开始采集.
-	 * <p>
-	 * Flame and FID current (pA) stay classified and shown. Start Analysis does
-	 * not wait for flame-on, an ignite result, or a successful current / FID
-	 * status read. {@link Kind#DISCONNECTED} still blocks. {@link Kind#FID_OFFLINE}
-	 * still blocks (board not answering — not a current threshold). Set this to
-	 * {@code true} when current sensing can judge FID success again.
+	 * Start Analysis requires a fresh, successful FID status read with the board
+	 * online and flame on. Disconnection, read failure, ignition failure and flame
+	 * out all block acquisition.
 	 */
-	public static final boolean REQUIRE_FID_CURRENT_FOR_START = false;
+	public static final boolean REQUIRE_FID_CURRENT_FOR_START = true;
 
 	public enum Kind {
 		DISCONNECTED, READING, STATUS_READ_FAIL, FID_OFFLINE, IGNITE_FAIL, IGNITING, FLAME_OUT, READY
@@ -91,11 +87,9 @@ public final class FidReadiness {
 	}
 
 	/**
-	 * {@link Kind#DISCONNECTED} always blocks. With
-	 * {@link #REQUIRE_FID_CURRENT_FOR_START} {@code false} (current default),
-	 * flame / current / “FID ready from current” kinds do not block — 电流判据暂不可用，先不拦开始采集.
-	 * {@link Kind#FID_OFFLINE} still blocks unless {@link #skipFidReadinessGate()}.
-	 * {@link Kind#READY} always allows start.
+	 * {@link Kind#DISCONNECTED} always blocks. By default only {@link Kind#READY}
+	 * allows start. While TCP is connected, {@link #skipFidReadinessGate()} is the
+	 * explicit development-only bypass for all other readiness kinds.
 	 */
 	public static boolean canStartAnalysis(Kind kind) {
 
@@ -117,8 +111,7 @@ public final class FidReadiness {
 	}
 
 	/**
-	 * Start blocks whose only job is to wait on flame / FID current.
-	 * 电流判据暂不可用，先不拦开始采集.
+	 * Readiness states covered by the legacy explicit test-mode bypass.
 	 */
 	static boolean isCurrentReadinessBlock(Kind kind) {
 

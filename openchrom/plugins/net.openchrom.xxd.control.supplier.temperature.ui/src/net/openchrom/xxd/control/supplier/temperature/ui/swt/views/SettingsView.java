@@ -99,7 +99,8 @@ public class SettingsView extends Composite implements LanguageListener {
 	}
 
 	/**
-	 * Live 显示调试信息 checkbox. Missing settings page stays off.
+	 * Live 显示调试信息 checkbox. Hides FID current and the live trend only.
+	 * Connection, flame, and acquiring stay visible. Missing settings page stays off.
 	 */
 	public boolean showDebugInfo() {
 

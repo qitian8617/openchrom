@@ -13,7 +13,6 @@ import java.io.File;
 import java.util.List;
 import java.util.ConcurrentModificationException;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.chemclipse.chromatogram.csd.peak.detector.supplier.firstderivative.core.PeakDetectorCSD;
 import org.eclipse.chemclipse.chromatogram.csd.peak.detector.supplier.firstderivative.settings.PeakDetectorSettingsCSD;
@@ -45,15 +44,21 @@ public final class RealtimeAcquisitionManager {
 	private static final int EDITOR_REFRESH_INTERVAL_MS = 66;
 	private static final float AUTO_PEAK_MIN_SPAN = 5f;
 
+	private enum RunState {
+		IDLE, STARTING, ACQUIRING, STOPPING, FINISHING
+	}
+
 	private final GcConnectionManager connectionManager = GcConnectionManager.getInstance();
 	private final List<IAcquisitionListener> listeners = new CopyOnWriteArrayList<>();
-	private final AtomicBoolean acquiring = new AtomicBoolean(false);
 	private final IGcFrameListener frameListener = this::handleFrame;
 	private final IGcFrameListener panelAcqListener = this::handlePanelAcqFrame;
 
+	private volatile RunState state = RunState.IDLE;
+	private long runCounter;
+	private long activeRunId;
+	private AcquisitionRunTracker runTracker = new AcquisitionRunTracker();
 	private IChromatogramCSD chromatogram;
 	private int points;
-	private int expectedBatchSequence;
 	private boolean nativeEditorOpened;
 	private volatile boolean editorRefreshActive;
 	private volatile IChromatogramSelectionCSD editorSelection;
@@ -62,6 +67,11 @@ public final class RealtimeAcquisitionManager {
 	private RealtimeAcquisitionManager() {
 
 		connectionManager.addFrameListener(panelAcqListener);
+		connectionManager.addConnectionListener((connected, endpoint) -> {
+			if(!connected) {
+				handleConnectionLost();
+			}
+		});
 	}
 
 	public static RealtimeAcquisitionManager getInstance() {
@@ -71,7 +81,12 @@ public final class RealtimeAcquisitionManager {
 
 	public boolean isAcquiring() {
 
-		return acquiring.get();
+		return isReceivingState(state) || state == RunState.STOPPING;
+	}
+
+	public boolean isRunActive() {
+
+		return state != RunState.IDLE;
 	}
 
 	public IChromatogramCSD getChromatogram() {
@@ -91,7 +106,7 @@ public final class RealtimeAcquisitionManager {
 
 	public synchronized void startAcquisition() {
 
-		if(acquiring.get()) {
+		if(state != RunState.IDLE) {
 			return;
 		}
 		if(!connectionManager.isConnected()) {
@@ -100,67 +115,78 @@ public final class RealtimeAcquisitionManager {
 		}
 		chromatogram = AcquisitionChromatogramStore.createChromatogram();
 		points = 0;
-		expectedBatchSequence = 0;
+		runTracker = new AcquisitionRunTracker();
 		nativeEditorOpened = false;
 		editorSelection = null;
 		editorRefreshTicks = 0;
-		acquiring.set(true);
+		activeRunId = ++runCounter;
+		state = RunState.STARTING;
 		startEditorRefreshLoop();
 		connectionManager.addFrameListener(frameListener);
 		notifyStarted(chromatogram);
+		long runId = activeRunId;
 		Thread.ofVirtual().start(() -> {
 			try {
 				byte[] payload = GcAcqPayloadCodec.encodeStartRequest(DEFAULT_SAMPLE_INTERVAL_MS);
 				connectionManager.sendFrameAndWait(GcCommand.START_ACQ, payload);
+				synchronized(this) {
+					if(activeRunId == runId && state == RunState.STARTING) {
+						state = RunState.ACQUIRING;
+					}
+				}
 			} catch(Exception e) {
 				logger.warn("Failed to send START_ACQ frame", e);
-				stopAcquisitionQuietly();
 				String detail = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
-				notifyFailed(AcquisitionMessages.startFailed(detail, true) + " / " + AcquisitionMessages.startFailed(detail, false), e);
+				failRun(runId, AcquisitionMessages.startFailed(detail, true) + " / " + AcquisitionMessages.startFailed(detail, false), e);
 			}
 		});
 	}
 
-	public synchronized void stopAcquisition() {
+	public void stopAcquisition() {
 
-		if(!acquiring.getAndSet(false)) {
-			return;
+		long runId;
+		synchronized(this) {
+			if(!isReceivingState(state)) {
+				return;
+			}
+			state = RunState.STOPPING;
+			runId = activeRunId;
+			stopEditorRefreshLoop();
+			connectionManager.removeFrameListener(frameListener);
 		}
-		stopEditorRefreshLoop();
-		connectionManager.removeFrameListener(frameListener);
 		Thread.ofVirtual().start(() -> {
 			try {
 				connectionManager.sendFrameAndWait(GcCommand.STOP_ACQ, new byte[0]);
+				finishSuccessfully(runId, false);
 			} catch(Exception e) {
 				logger.warn("Failed to send STOP_ACQ frame", e);
+				String detail = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+				failRun(runId, AcquisitionMessages.stopFailedReason(detail, true) + " / " + AcquisitionMessages.stopFailedReason(detail, false), e);
 			}
 		});
-		finishRun();
-	}
-
-	private synchronized void stopAcquisitionQuietly() {
-
-		acquiring.set(false);
-		stopEditorRefreshLoop();
-		connectionManager.removeFrameListener(frameListener);
 	}
 
 	private void handleFrame(GcFrame frame) {
 
-		if(!acquiring.get()) {
-			return;
+		long runId;
+		synchronized(this) {
+			if(!isReceivingState(state)) {
+				return;
+			}
+			runId = activeRunId;
 		}
 		try {
 			switch(frame.getCommand()) {
-				case GcCommand.ACQ_DATA -> handleDataBatch(frame);
-				case GcCommand.ACQ_DONE -> handleDone(frame);
-				case GcCommand.ERROR -> handleDeviceError(frame);
+				case GcCommand.ACQ_DATA -> handleDataBatch(frame, runId);
+				case GcCommand.ACQ_DONE -> handleDone(frame, runId);
+				case GcCommand.ERROR -> handleDeviceError(frame, runId);
 				default -> {
 					// ignore unrelated frames
 				}
 			}
 		} catch(RuntimeException e) {
 			logger.warn("Failed to handle GC frame " + frame, e);
+			failRun(runId, AcquisitionMessages.dataIntegrityReason(e.getMessage(), true) + " / " + AcquisitionMessages.dataIntegrityReason(e.getMessage(), false), e);
 		}
 	}
 
@@ -192,34 +218,48 @@ public final class RealtimeAcquisitionManager {
 		}
 	}
 
-	private void handleDataBatch(GcFrame frame) {
+	private synchronized void handleDataBatch(GcFrame frame, long runId) {
 
-		GcAcqBatch batch = GcAcqPayloadCodec.decodeDataBatch(frame.getPayload());
-		if(batch.batchSequence() != expectedBatchSequence) {
-			logger.warn("GC batch sequence gap: expected " + expectedBatchSequence + ", got " + batch.batchSequence());
+		if(activeRunId != runId || !isReceivingState(state)) {
+			return;
 		}
-		expectedBatchSequence = batch.batchSequence() + 1;
+		GcAcqBatch batch = GcAcqPayloadCodec.decodeDataBatch(frame.getPayload());
+		runTracker.accept(batch);
 		for(GcAcqSample sample : batch.samples()) {
 			appendPoint(new AcquisitionPoint(sample.retentionTimeMs(), sample.signal()));
 		}
 	}
 
-	private void handleDone(GcFrame frame) {
+	private void handleDone(GcFrame frame, long runId) {
 
-		try {
-			GcAcqDoneInfo doneInfo = GcAcqPayloadCodec.decodeDone(frame.getPayload());
-			logger.info("Acquisition done: totalSamples=" + doneInfo.totalSamples() + ", lastBatch=" + doneInfo.lastBatchSequence());
-		} catch(IllegalArgumentException e) {
-			logger.warn("ACQ_DONE payload invalid", e);
+		GcAcqDoneInfo doneInfo = GcAcqPayloadCodec.decodeDone(frame.getPayload());
+		synchronized(this) {
+			if(activeRunId != runId || !isReceivingState(state)) {
+				return;
+			}
+			runTracker.verifyDone(doneInfo);
 		}
-		stopAcquisition();
+		logger.info("Acquisition done and verified: totalSamples=" + doneInfo.totalSamples() + ", lastBatch=" + doneInfo.lastBatchSequence());
+		finishSuccessfully(runId, true);
 	}
 
-	private void handleDeviceError(GcFrame frame) {
+	private void handleDeviceError(GcFrame frame, long runId) {
 
-		String reason = frame.getPayload().length == 0 ? "Device error" : new String(frame.getPayload());
-		logger.warn("Device error frame: " + reason);
-		stopAcquisition();
+		String detail = frame.getPayload().length == 0 ? "Device error" : new String(frame.getPayload());
+		logger.warn("Device error frame: " + detail);
+		failRun(runId, AcquisitionMessages.deviceErrorReason(detail, true) + " / " + AcquisitionMessages.deviceErrorReason(detail, false), null);
+	}
+
+	private void handleConnectionLost() {
+
+		long runId;
+		synchronized(this) {
+			if(!isReceivingState(state) && state != RunState.STOPPING) {
+				return;
+			}
+			runId = activeRunId;
+		}
+		failRun(runId, AcquisitionMessages.connectionLostReason(true) + " / " + AcquisitionMessages.connectionLostReason(false), null);
 	}
 
 	private synchronized void appendPoint(AcquisitionPoint point) {
@@ -240,17 +280,75 @@ public final class RealtimeAcquisitionManager {
 		}
 	}
 
-	private void finishRun() {
+	private void finishSuccessfully(long runId, boolean deviceDone) {
 
-		IChromatogramCSD current = chromatogram;
-		if(current == null) {
-			notifyFailed(AcquisitionMessages.noDataReason(true) + " / " + AcquisitionMessages.noDataReason(false), null);
-			return;
+		IChromatogramCSD current;
+		synchronized(this) {
+			if(activeRunId != runId || (deviceDone ? !isReceivingState(state) : state != RunState.STOPPING)) {
+				return;
+			}
+			state = RunState.FINISHING;
+			current = chromatogram;
+			stopEditorRefreshLoop();
+			connectionManager.removeFrameListener(frameListener);
 		}
-		if(points > 2) {
-			autoProcess(current);
+		Thread.ofVirtual().start(() -> {
+			try {
+				if(current == null) {
+					notifyFailed(AcquisitionMessages.noDataReason(true) + " / " + AcquisitionMessages.noDataReason(false), null);
+					return;
+				}
+				if(points > 2) {
+					autoProcess(current);
+				}
+				saveOpenAndComplete(current);
+			} finally {
+				clearRun(runId);
+			}
+		});
+	}
+
+	private void failRun(long runId, String reason, Throwable throwable) {
+
+		IChromatogramCSD current;
+		int acquiredPoints;
+		synchronized(this) {
+			if(activeRunId != runId || (!isReceivingState(state) && state != RunState.STOPPING)) {
+				return;
+			}
+			state = RunState.FINISHING;
+			current = chromatogram;
+			acquiredPoints = points;
+			stopEditorRefreshLoop();
+			connectionManager.removeFrameListener(frameListener);
 		}
-		saveOpenAndComplete(current);
+		Thread.ofVirtual().start(() -> {
+			try {
+				if(connectionManager.isConnected()) {
+					try {
+						connectionManager.sendFrameAndWait(GcCommand.STOP_ACQ, new byte[0]);
+					} catch(Exception stopError) {
+						logger.warn("Failed to stop device after acquisition failure", stopError);
+					}
+				}
+				File emergency = AcquisitionChromatogramStore.saveEmergency(current);
+				notifyFailed(AcquisitionMessages.runFailedDialog(reason, acquiredPoints, emergency == null ? "" : emergency.getAbsolutePath()), throwable);
+			} finally {
+				clearRun(runId);
+			}
+		});
+	}
+
+	private synchronized void clearRun(long runId) {
+
+		if(activeRunId == runId && state == RunState.FINISHING) {
+			state = RunState.IDLE;
+		}
+	}
+
+	private static boolean isReceivingState(RunState runState) {
+
+		return runState == RunState.STARTING || runState == RunState.ACQUIRING;
 	}
 
 	private void autoProcess(IChromatogramCSD current) {
@@ -328,28 +426,44 @@ public final class RealtimeAcquisitionManager {
 	private void notifyStarted(IChromatogramCSD csd) {
 
 		for(IAcquisitionListener listener : listeners) {
-			listener.onAcquisitionStarted(csd);
+			try {
+				listener.onAcquisitionStarted(csd);
+			} catch(RuntimeException e) {
+				logger.warn("Acquisition start listener failed", e);
+			}
 		}
 	}
 
 	private void notifyCompleted(IChromatogramCSD csd) {
 
 		for(IAcquisitionListener listener : listeners) {
-			listener.onAcquisitionCompleted(csd);
+			try {
+				listener.onAcquisitionCompleted(csd);
+			} catch(RuntimeException e) {
+				logger.warn("Acquisition completion listener failed", e);
+			}
 		}
 	}
 
 	private void notifySaved(File file, IChromatogramCSD csd, AcquisitionSaveResult result) {
 
 		for(IAcquisitionListener listener : listeners) {
-			listener.onAcquisitionSaved(file, csd, result);
+			try {
+				listener.onAcquisitionSaved(file, csd, result);
+			} catch(RuntimeException e) {
+				logger.warn("Acquisition save listener failed", e);
+			}
 		}
 	}
 
 	private void notifyFailed(String reason, Throwable throwable) {
 
 		for(IAcquisitionListener listener : listeners) {
-			listener.onAcquisitionFailed(reason, throwable);
+			try {
+				listener.onAcquisitionFailed(reason, throwable);
+			} catch(RuntimeException e) {
+				logger.warn("Acquisition failure listener failed", e);
+			}
 		}
 	}
 

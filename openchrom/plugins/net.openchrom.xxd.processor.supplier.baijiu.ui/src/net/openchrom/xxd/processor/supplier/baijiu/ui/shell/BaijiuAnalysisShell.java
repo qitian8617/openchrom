@@ -74,7 +74,6 @@ public final class BaijiuAnalysisShell {
 	private IChromatogramSelection chromatogramSelection;
 	private EPartService partService;
 	private BaijiuMethodSettings settings;
-	private BaijiuAnalysisResult lastResult;
 	private PeakMatchResult lastMatch;
 
 	private Text methodName;
@@ -97,6 +96,7 @@ public final class BaijiuAnalysisShell {
 	private Text dateText;
 	private Combo rawMaterial;
 	private Text istdStock;
+	private Text mixIstd;
 	private Text sampleMl;
 	private Text istdMl;
 	private Text windowMin;
@@ -251,31 +251,6 @@ public final class BaijiuAnalysisShell {
 		chromatogramLabel = BaijiuPlantLayout.hint(root, "");
 		BaijiuPlantLayout.hint(root, BaijiuTerms.GLOSSARY + " \u719f\u7ec3\u64cd\u4f5c\u5458\u53ef\u76f4\u63a5\u7528\u672c\u7a97\uff1b\u65b0\u64cd\u4f5c\u5458\u53ef\u8d70\u300c\u4e09\u6b65\u5411\u5bfc\u300d\u3002");
 
-		Composite methodGroup = BaijiuPlantLayout.group(root, "\u6d53\u9999 FID \u65b9\u6cd5\u6458\u8981", 1);
-		methodName = BaijiuPlantLayout.labeledText(methodGroup, "\u65b9\u6cd5\u540d\u79f0", BaijiuPlantLayout.METHOD);
-		columnSummary = BaijiuPlantLayout.labeledText(methodGroup, "\u8272\u8c31\u67f1", BaijiuPlantLayout.METHOD);
-		ovenProgram = BaijiuPlantLayout.labeledWrap(methodGroup, "\u7a0b\u5e8f\u5347\u6e29", 1, 40);
-		Composite methodShorts = BaijiuPlantLayout.row(methodGroup, 6);
-		samplingHz = BaijiuPlantLayout.labeledText(methodShorts, "\u91c7\u6837 Hz", BaijiuPlantLayout.NUMERIC);
-		runTimeMin = BaijiuPlantLayout.labeledText(methodShorts, "\u8dd1\u6837 min", BaijiuPlantLayout.NUMERIC);
-		windowMin = BaijiuPlantLayout.labeledText(methodShorts, "RT \u7a97\u53e3 min", BaijiuPlantLayout.NUMERIC);
-		Composite methodMeta = BaijiuPlantLayout.row(methodGroup, 4);
-		istdName = BaijiuPlantLayout.labeledText(methodMeta, "\u5185\u6807\u540d\u79f0", BaijiuPlantLayout.ISTD_NAME);
-		aromaTemplate = BaijiuPlantLayout.labeledCombo(methodMeta, "\u9999\u578b\u6a21\u677f", labels(BaijiuAromaType.values()), BaijiuPlantLayout.AROMA);
-
-		Composite gasGroup = BaijiuPlantLayout.group(root, "\u6c14\u8def\uff08\u4ec5\u8bb0\u5f55\uff0c\u4e0d\u63a7\u5236\u4eea\u5668\uff09", 1);
-		Composite gasRow = BaijiuPlantLayout.row(gasGroup, 4);
-		carrierGas = BaijiuPlantLayout.labeledText(gasRow, "\u8f7d\u6c14", BaijiuPlantLayout.GAS);
-		splitRatio = BaijiuPlantLayout.labeledText(gasRow, "\u5206\u6d41", BaijiuPlantLayout.GAS);
-		Composite gasTemps = BaijiuPlantLayout.row(gasGroup, 4);
-		injectorTemp = BaijiuPlantLayout.labeledText(gasTemps, "\u8fdb\u6837\u53e3 \u2103", BaijiuPlantLayout.NUMERIC);
-		detectorTemp = BaijiuPlantLayout.labeledText(gasTemps, "\u68c0\u6d4b\u5668 \u2103", BaijiuPlantLayout.NUMERIC);
-		carrierGas.setEditable(false);
-		splitRatio.setEditable(false);
-		injectorTemp.setEditable(false);
-		detectorTemp.setEditable(false);
-		BaijiuPlantLayout.hint(gasGroup, BaijiuCatalog.GAS_PATH_NOTE);
-
 		Composite sampleGroup = BaijiuPlantLayout.group(root, "\u6837\u54c1\u4fe1\u606f", 1);
 		Composite idRow = BaijiuPlantLayout.row(sampleGroup, 4);
 		sampleNo = BaijiuPlantLayout.labeledText(idRow, "\u6837\u54c1\u7f16\u53f7", BaijiuPlantLayout.SAMPLE_ID);
@@ -291,26 +266,12 @@ public final class BaijiuAnalysisShell {
 		rawMaterial = BaijiuPlantLayout.labeledCombo(rawRow, "\u7532\u9187\u9650\u91cf\u539f\u6599", new String[] {BaijiuRawMaterial.GRAIN.getLabel(), BaijiuRawMaterial.OTHER.getLabel()}, BaijiuPlantLayout.SAMPLE_ID);
 		BaijiuPlantLayout.hint(sampleGroup, "\u539f\u6599\u7c7b\u578b\u4ec5\u7528\u4e8e GB 2757 \u7532\u9187\u9650\u91cf\uff0c\u4e0e\u9999\u578b\u65e0\u5173\u3002\u9152\u7cbe\u5ea6\u4e3a\u624b\u5de5\u5f55\u5165\u3002");
 
-		Composite istdGroup = BaijiuPlantLayout.group(root, "\u5185\u6807\u6cd5\uff08\u4e0e\u6f14\u793a\u6df7\u6807\u7ea6\u5b9a\u4e00\u81f4\uff09", 1);
-		Composite istdRow = BaijiuPlantLayout.row(istdGroup, 4);
-		istdStock = BaijiuPlantLayout.labeledText(istdRow, "\u5185\u6807\u8d2e\u5907\u6db2 g/L", BaijiuPlantLayout.NUMERIC);
-		sampleMl = BaijiuPlantLayout.labeledText(istdRow, "\u6837\u54c1\u4f53\u79ef mL", BaijiuPlantLayout.ABV);
-		Composite istdVol = BaijiuPlantLayout.row(istdGroup, 2);
-		istdMl = BaijiuPlantLayout.labeledText(istdVol, "\u5185\u6807\u4f53\u79ef mL", BaijiuPlantLayout.ABV);
-		injectedIstd = BaijiuPlantLayout.hint(istdGroup, "");
-		istdStock.addModifyListener(e -> updateInjectedLabel());
-		sampleMl.addModifyListener(e -> updateInjectedLabel());
-		istdMl.addModifyListener(e -> updateInjectedLabel());
-
 		button(rail, "\u8bfb\u53d6\u5f53\u524d\u8c31\u56fe", e -> reloadChromatogram());
 		button(rail, "\u63a8\u8350\u79ef\u5206", e -> recommendedIntegrate(parent.getShell()));
 		button(rail, "\u7528\u5f53\u524d\u8c31\u56fe\u505a\u6821\u6b63", e -> calibrate(parent.getShell()));
 		button(rail, "\u5b9a\u91cf\u5e76\u5199\u56de\u5cf0\u8868", e -> quantify(parent.getShell(), true, true));
 		button(rail, "\u9884\u89c8/\u6253\u5370\u62a5\u544a", e -> report(parent.getShell()));
 		button(rail, "\u5bfc\u51fa\u7ed3\u679c CSV", e -> exportCsv(parent.getShell()));
-		button(rail, "\u4fdd\u5b58\u65b9\u6cd5", e -> saveMethod(parent.getShell()));
-		button(rail, "\u53e6\u5b58\u5382\u65b9\u6cd5", e -> savePlantMethod(parent.getShell()));
-		button(rail, "\u52a0\u8f7d\u9ed8\u8ba4\u6d53\u9999\u65b9\u6cd5\u5305", e -> restoreDefaultPackage(parent.getShell()));
 		button(rail, "\u8bb8\u53ef / \u7248\u672c\u2026", e -> {
 			BaijiuLicenseShell.open(parent.getShell());
 			setStatus(BaijiuLicenseGate.statusLine());
@@ -343,9 +304,46 @@ public final class BaijiuAnalysisShell {
 		Composite rail = page.rail();
 		BaijiuPlantLayout.hint(root, "\u5b9a\u7a3f\u6d53\u9999 FID \u65b9\u6cd5\u5305\uff1aXP-\u767d\u9152 C2 + \u4e59\u9178\u6b63\u4e01\u916f + 15 \u6df7\u6807\u3002\u53ef\u7f16\u8f91\u672c\u673a RT\u3001\u7a97\u53e3\u3001\u662f\u5426\u5b9a\u91cf\u3001\u662f\u5426\u7532\u9187\u5224\u5b9a\uff0c\u53e6\u5b58/\u52a0\u8f7d *.bjm\u3002\u4e0d\u5b9a\u91cf\u7684\u7ec4\u5206\u4ecd\u53ef\u5339\u914d\u51fa\u5cf0\uff0c\u4f46\u4e0d\u5199\u542b\u91cf\u3002\u7532\u9187\u5224\u5b9a\u6700\u591a\u52fe\u9009\u4e00\u4e2a\uff0c\u7528\u4e8e GB 2757\u3002\u9650\u91cf\u4e0d\u5199\u6b7b\u5728\u5224\u5b9a\u903b\u8f91\u4e2d\u3002");
 
+		Composite methodGroup = BaijiuPlantLayout.group(root, "FID \u65b9\u6cd5\u53c2\u6570", 1);
+		methodName = BaijiuPlantLayout.labeledText(methodGroup, "\u65b9\u6cd5\u540d\u79f0", BaijiuPlantLayout.METHOD);
+		columnSummary = BaijiuPlantLayout.labeledText(methodGroup, "\u8272\u8c31\u67f1", BaijiuPlantLayout.METHOD);
+		ovenProgram = BaijiuPlantLayout.labeledWrap(methodGroup, "\u7a0b\u5e8f\u5347\u6e29", 1, 40);
+		Composite methodShorts = BaijiuPlantLayout.row(methodGroup, 6);
+		samplingHz = BaijiuPlantLayout.labeledText(methodShorts, "\u91c7\u6837 Hz", BaijiuPlantLayout.NUMERIC);
+		runTimeMin = BaijiuPlantLayout.labeledText(methodShorts, "\u8dd1\u6837 min", BaijiuPlantLayout.NUMERIC);
+		windowMin = BaijiuPlantLayout.labeledText(methodShorts, "RT \u7a97\u53e3 min", BaijiuPlantLayout.NUMERIC);
+		Composite methodMeta = BaijiuPlantLayout.row(methodGroup, 4);
+		istdName = BaijiuPlantLayout.labeledText(methodMeta, "\u5185\u6807\u540d\u79f0", BaijiuPlantLayout.ISTD_NAME);
+		aromaTemplate = BaijiuPlantLayout.labeledCombo(methodMeta, "\u9999\u578b\u6a21\u677f", labels(BaijiuAromaType.values()), BaijiuPlantLayout.AROMA);
+
+		Composite gasGroup = BaijiuPlantLayout.group(root, "\u6c14\u8def\uff08\u4ec5\u8bb0\u5f55\uff0c\u4e0d\u63a7\u5236\u4eea\u5668\uff09", 1);
+		Composite gasRow = BaijiuPlantLayout.row(gasGroup, 4);
+		carrierGas = BaijiuPlantLayout.labeledText(gasRow, "\u8f7d\u6c14", BaijiuPlantLayout.GAS);
+		splitRatio = BaijiuPlantLayout.labeledText(gasRow, "\u5206\u6d41", BaijiuPlantLayout.GAS);
+		Composite gasTemps = BaijiuPlantLayout.row(gasGroup, 4);
+		injectorTemp = BaijiuPlantLayout.labeledText(gasTemps, "\u8fdb\u6837\u53e3 \u2103", BaijiuPlantLayout.NUMERIC);
+		detectorTemp = BaijiuPlantLayout.labeledText(gasTemps, "\u68c0\u6d4b\u5668 \u2103", BaijiuPlantLayout.NUMERIC);
+		carrierGas.setEditable(false);
+		splitRatio.setEditable(false);
+		injectorTemp.setEditable(false);
+		detectorTemp.setEditable(false);
+		BaijiuPlantLayout.hint(gasGroup, BaijiuCatalog.GAS_PATH_NOTE);
+
+		Composite istdGroup = BaijiuPlantLayout.group(root, "\u5185\u6807\u6cd5\uff08\u4e0e\u6f14\u793a\u6df7\u6807\u7ea6\u5b9a\u4e00\u81f4\uff09", 1);
+		Composite istdRow = BaijiuPlantLayout.row(istdGroup, 6);
+		istdStock = BaijiuPlantLayout.labeledText(istdRow, "\u5185\u6807\u8d2e\u5907\u6db2 g/L", BaijiuPlantLayout.NUMERIC);
+		sampleMl = BaijiuPlantLayout.labeledText(istdRow, "\u6837\u54c1\u4f53\u79ef mL", BaijiuPlantLayout.ABV);
+		istdMl = BaijiuPlantLayout.labeledText(istdRow, "\u5185\u6807\u4f53\u79ef mL", BaijiuPlantLayout.ABV);
+		mixIstd = BaijiuPlantLayout.labeledText(istdGroup, "\u6df7\u6807\u5185\u6807\u6d53\u5ea6 g/L", BaijiuPlantLayout.NUMERIC);
+		injectedIstd = BaijiuPlantLayout.hint(istdGroup, "");
+		istdStock.addModifyListener(e -> updateInjectedLabel());
+		sampleMl.addModifyListener(e -> updateInjectedLabel());
+		istdMl.addModifyListener(e -> updateInjectedLabel());
+
 		Composite limits = BaijiuPlantLayout.row(root, 4);
 		grainLimit = BaijiuPlantLayout.labeledText(limits, "\u7cae\u8c37\u7532\u9187\u9650\u91cf g/L\uff08100%vol\uff09", BaijiuPlantLayout.NUMERIC);
 		otherLimit = BaijiuPlantLayout.labeledText(limits, "\u5176\u4ed6\u539f\u6599\u9650\u91cf g/L\uff08100%vol\uff09", BaijiuPlantLayout.NUMERIC);
+		button(rail, "\u4fdd\u5b58\u65b9\u6cd5", e -> saveMethod(parent.getShell()));
 		button(rail, "\u52a0\u8f7d\u5382\u65b9\u6cd5", e -> loadPlantMethod(parent.getShell()));
 		button(rail, "\u53e6\u5b58\u5382\u65b9\u6cd5", e -> savePlantMethod(parent.getShell()));
 		button(rail, "\u52a0\u8f7d\u9ed8\u8ba4\u6d53\u9999\u65b9\u6cd5\u5305", e -> restoreDefaultPackage(parent.getShell()));
@@ -412,7 +410,9 @@ public final class BaijiuAnalysisShell {
 		assignCompound = BaijiuPlantLayout.labeledCombo(assign, "\u6307\u5b9a\u7ed9\u7ec4\u5206", compoundLabels(), BaijiuPlantLayout.SAMPLE_NAME);
 		button(rail, "\u6307\u5b9a\u9009\u4e2d\u672a\u5339\u914d\u5cf0", e -> assignUnmatched(parent.getShell()));
 		button(rail, "\u5237\u65b0\u5339\u914d", e -> {
-			collectAll();
+			if(!collectAll()) {
+			return;
+		}
 			fillMatchTables();
 			recalculateQuiet();
 		});
@@ -474,7 +474,9 @@ public final class BaijiuAnalysisShell {
 		BaijiuPlantLayout.railGap(rail);
 		if(dialogChrome) {
 			button(rail, "\u5173\u95ed", e -> {
-				collectAll();
+				if(!collectAll()) {
+			return;
+		}
 				BaijiuPreferences.saveMethod(settings);
 				BaijiuPreferences.saveSampleDefaults(readSample());
 				rail.getShell().close();
@@ -482,7 +484,9 @@ public final class BaijiuAnalysisShell {
 			return;
 		}
 		button(rail, "\u4fdd\u5b58\u65b9\u6cd5", e -> {
-			collectAll();
+			if(!collectAll()) {
+			return;
+		}
 			BaijiuPreferences.saveMethod(settings);
 			BaijiuPreferences.saveSampleDefaults(readSample());
 			setStatus("\u5df2\u4fdd\u5b58\u65b9\u6cd5\u4e0e\u6837\u54c1\u9ed8\u8ba4\u3002");
@@ -516,6 +520,7 @@ public final class BaijiuAnalysisShell {
 		dateText.setText(sample.getDateText());
 		rawMaterial.select(sample.getRawMaterial().ordinal());
 		istdStock.setText(format(settings.getIstdStockGramsPerLiter(), 2));
+		mixIstd.setText(format(settings.getMixIstdGramsPerLiter(), 4));
 		sampleMl.setText(format(settings.getSampleVolumeMl(), 3));
 		istdMl.setText(format(settings.getIstdVolumeMl(), 3));
 		windowMin.setText(format(settings.getDefaultWindowMin(), 3));
@@ -555,7 +560,9 @@ public final class BaijiuAnalysisShell {
 
 	private void recommendedIntegrate(Shell shell) {
 
-		collectAll();
+		if(!collectAll()) {
+			return;
+		}
 		reloadChromatogram();
 		String message = BaijiuRecommendedIntegration.integrate(chromatogramSelection);
 		BaijiuAnalysisEngine.refreshSelection(chromatogramSelection);
@@ -565,34 +572,38 @@ public final class BaijiuAnalysisShell {
 		if(message.contains("\u5931\u8d25") || message.startsWith("\u6ca1\u6709") || message.startsWith("\u5f53\u524d") || message.startsWith("\u672a\u68c0")) {
 			warn(shell, message);
 		} else {
-			info(shell, message);
+			setStatus(message);
 		}
 		setStatus(message);
 	}
 
 	private void calibrate(Shell shell) {
 
-		collectAll();
+		if(!collectAll()) {
+			return;
+		}
 		String message = BaijiuAnalysisEngine.calibrate(chromatogram(), settings);
 		BaijiuPreferences.saveMethod(settings);
 		fillMethodTable();
 		fillMatchTables();
 		fillMultipointTables();
 		recalculateQuiet();
-		info(shell, message);
+		setStatus(message);
 		setStatus(message);
 	}
 
 	private void addCalibrationPoint(Shell shell) {
 
-		collectAll();
+		if(!collectAll()) {
+			return;
+		}
 		double scale = parse(mixScale.getText(), 1.0d);
 		boolean demoScale = scaleAreas != null && !scaleAreas.isDisposed() && scaleAreas.getSelection();
 		String message = BaijiuMultipointCalibration.addPoint(chromatogram(), settings, scale, BaijiuMultipointCalibration.formatScaleLabel(scale), demoScale);
 		BaijiuPreferences.saveMethod(settings);
 		fillMultipointTables();
 		if(message.contains("\u5df2\u6dfb\u52a0") || message.contains("Added calibration point")) {
-			info(shell, message);
+			setStatus(message);
 		} else {
 			warn(shell, message);
 		}
@@ -601,14 +612,16 @@ public final class BaijiuAnalysisShell {
 
 	private void addDemoCalibrationPoints(Shell shell) {
 
-		collectAll();
+		if(!collectAll()) {
+			return;
+		}
 		String message = BaijiuMultipointCalibration.addDemoPoints(chromatogram(), settings);
 		BaijiuPreferences.saveMethod(settings);
 		fillMethodTable();
 		fillMultipointTables();
 		recalculateQuiet();
 		if(message.contains("\u5df2\u62df\u5408") || message.contains("Fitted")) {
-			info(shell, message);
+			setStatus(message);
 		} else {
 			warn(shell, message);
 		}
@@ -617,7 +630,9 @@ public final class BaijiuAnalysisShell {
 
 	private void updateSelectedPointScale(Shell shell) {
 
-		collectAll();
+		if(!collectAll()) {
+			return;
+		}
 		int index = pointTable == null || pointTable.isDisposed() ? -1 : pointTable.getSelectionIndex();
 		double scale = parse(mixScale.getText(), 1.0d);
 		String message = BaijiuMultipointCalibration.applyMixScale(settings, index, scale);
@@ -626,7 +641,7 @@ public final class BaijiuAnalysisShell {
 		if(index < 0) {
 			warn(shell, message);
 		} else {
-			info(shell, message);
+			setStatus(message);
 		}
 		setStatus(message);
 	}
@@ -648,26 +663,31 @@ public final class BaijiuAnalysisShell {
 
 		MessageBox confirm = new MessageBox(shell, SWT.ICON_WARNING | SWT.OK | SWT.CANCEL);
 		confirm.setText("\u767d\u9152\u5206\u6790");
-		confirm.setMessage("\u6e05\u7a7a\u591a\u70b9\u6821\u6b63\u70b9\u4e0e\u62df\u5408\u7ed3\u679c\uff08\u4e0d\u6e05\u9664\u5df2\u5199\u5165\u7684 RF\uff09\u3002\nClear multi-point rows and fit results (does not clear stored RF).");
+		confirm.setMessage("\u6e05\u7a7a\u591a\u70b9\u6821\u6b63\u70b9\u3001\u62df\u5408\u7ed3\u679c\u4e0e\u5df2\u5199\u5165\u7684 RF\uff0c\u9700\u8981\u91cd\u65b0\u6821\u6b63\u3002\nClear multi-point rows, fit results and stored RF. Calibration is required again.");
 		if(confirm.open() != SWT.OK) {
 			return;
 		}
 		settings.clearCalibrationTable();
+		settings.getResponseFactors().clear();
 		BaijiuPreferences.saveMethod(settings);
+		fillMethodTable();
 		fillMultipointTables();
-		setStatus("\u5df2\u6e05\u7a7a\u591a\u70b9\u6821\u6b63\u70b9\u3002");
+		recalculateQuiet();
+		setStatus("\u5df2\u6e05\u7a7a\u591a\u70b9\u6821\u6b63\u70b9\u4e0e RF\uff0c\u65e7\u6821\u6b63\u5df2\u5931\u6548\u3002");
 	}
 
 	private void fitMultipoint(Shell shell) {
 
-		collectAll();
+		if(!collectAll()) {
+			return;
+		}
 		String message = BaijiuMultipointCalibration.fit(settings);
 		BaijiuPreferences.saveMethod(settings);
 		fillMethodTable();
 		fillMultipointTables();
 		recalculateQuiet();
 		if(message.contains("\u5df2\u62df\u5408") || message.contains("Fitted")) {
-			info(shell, message);
+			setStatus(message);
 		} else {
 			warn(shell, message);
 		}
@@ -751,10 +771,14 @@ public final class BaijiuAnalysisShell {
 		if(mixLevelHint == null || mixLevelHint.isDisposed()) {
 			return;
 		}
-		double scale = parse(mixScale == null || mixScale.isDisposed() ? "1" : mixScale.getText(), 1.0d);
-		BaijiuCompound methanol = BaijiuCatalog.byId(BaijiuCatalog.METHANOL_ID);
-		double grams = settings.mixGramsPerLiter(methanol) * scale;
-		mixLevelHint.setText("\u672c\u9488\u7532\u9187\u7ea6 " + format(grams, 4) + " g/L\uff08\u65b9\u6cd5\u6df7\u6807 \u00d7 \u500d\u6570\uff09");
+		try {
+			double scale = parse(mixScale == null || mixScale.isDisposed() ? "1" : mixScale.getText());
+			BaijiuCompound methanol = BaijiuCatalog.byId(BaijiuCatalog.METHANOL_ID);
+			double grams = settings.mixGramsPerLiter(methanol) * scale;
+			mixLevelHint.setText("\u672c\u9488\u7532\u9187\u7ea6 " + format(grams, 4) + " g/L\uff08\u65b9\u6cd5\u6df7\u6807 \u00d7 \u500d\u6570\uff09");
+		} catch(IllegalArgumentException e) {
+			mixLevelHint.setText("\u672c\u9488\u7532\u9187\uff1a--\uff08\u8bf7\u8f93\u5165\u6709\u6548\u6df7\u6807\u500d\u6570\uff09");
+		}
 	}
 
 	private static String formatFinite(double value, int decimals) {
@@ -767,7 +791,9 @@ public final class BaijiuAnalysisShell {
 
 	private void quantify(Shell shell, boolean dialogOnError, boolean writeBack) {
 
-		collectAll();
+		if(!collectAll()) {
+			return;
+		}
 		String licenseBlock = BaijiuLicenseGate.blockingMessage();
 		if(licenseBlock != null) {
 			if(dialogOnError) {
@@ -786,7 +812,6 @@ public final class BaijiuAnalysisShell {
 			return;
 		}
 		BaijiuAnalysisResult result = BaijiuAnalysisEngine.quantify(chromatogram(), sample, settings);
-		lastResult = result;
 		fillResultTable(result);
 		fillMatchTables();
 		if(!result.isSuccess()) {
@@ -829,16 +854,15 @@ public final class BaijiuAnalysisShell {
 		if(BaijiuLicenseShell.blockQuantify(shell)) {
 			return;
 		}
-		collectAll();
-		BaijiuSampleInfo sample = readSample();
-		BaijiuAnalysisResult result = lastResult;
-		if(result == null || !result.isSuccess()) {
-			result = BaijiuAnalysisEngine.quantify(chromatogram(), sample, settings);
-			lastResult = result;
-			fillResultTable(result);
+		if(!collectAll()) {
+			return;
 		}
-		if(result == null || !result.isSuccess()) {
-			warn(shell, result == null ? "\u65e0\u6cd5\u51fa\u62a5\u544a\u3002" : result.getMessage());
+		BaijiuSampleInfo sample = readSample();
+		BaijiuAnalysisResult result = BaijiuAnalysisEngine.quantify(chromatogram(), sample, settings);
+		fillResultTable(result);
+		showGb(shell, result.getGb2757Result());
+		if(!result.isSuccess()) {
+			warn(shell, result.getMessage());
 			return;
 		}
 		BaijiuReportShell.open(shell, sample, settings, result, reportHeader == null ? BaijiuPreferences.loadReportHeader() : reportHeader.save());
@@ -849,17 +873,15 @@ public final class BaijiuAnalysisShell {
 		if(BaijiuLicenseShell.blockQuantify(shell)) {
 			return;
 		}
-		collectAll();
-		BaijiuSampleInfo sample = readSample();
-		BaijiuAnalysisResult result = lastResult;
-		if(result == null || !result.isSuccess()) {
-			result = BaijiuAnalysisEngine.quantify(chromatogram(), sample, settings);
-			lastResult = result;
-			fillResultTable(result);
-			showGb(shell, result.getGb2757Result());
+		if(!collectAll()) {
+			return;
 		}
-		if(result == null || !result.isSuccess()) {
-			warn(shell, result == null ? "\u65e0\u6cd5\u5bfc\u51fa\u3002" : result.getMessage());
+		BaijiuSampleInfo sample = readSample();
+		BaijiuAnalysisResult result = BaijiuAnalysisEngine.quantify(chromatogram(), sample, settings);
+		fillResultTable(result);
+		showGb(shell, result.getGb2757Result());
+		if(!result.isSuccess()) {
+			warn(shell, result.getMessage());
 			return;
 		}
 		FileDialog dialog = new FileDialog(shell, SWT.SAVE);
@@ -872,7 +894,7 @@ public final class BaijiuAnalysisShell {
 		}
 		try {
 			BaijiuReportExport.writeExcelCsv(Path.of(path), sample, settings, result);
-			info(shell, "\u5df2\u5bfc\u51fa\uff08Excel \u53ef\u76f4\u63a5\u6253\u5f00\uff09\uff1a" + path);
+			setStatus("\u5df2\u5bfc\u51fa\uff08Excel \u53ef\u76f4\u63a5\u6253\u5f00\uff09\uff1a" + path);
 		} catch(Exception e) {
 			warn(shell, "\u5bfc\u51fa\u5931\u8d25\uff1a" + e.getMessage());
 		}
@@ -890,7 +912,7 @@ public final class BaijiuAnalysisShell {
 		gbVerdict.setText(gb.getStandardLabel() + " \u5224\u5b9a\uff1a" + gb.getVerdictLabel() + "    " + gb.getSummary());
 		Color color = shell.getDisplay().getSystemColor(!gb.isJudged() ? SWT.COLOR_DARK_YELLOW : (gb.isPassed() ? SWT.COLOR_DARK_GREEN : SWT.COLOR_RED));
 		gbVerdict.setForeground(color);
-		gbMeasured.setText("\u6d4b\u5f97\u7532\u9187\uff1a" + (gb.isMethanolDetected() ? format(gb.getMethanolMeasuredGL(), 4) + " g/L" : "\u672a\u68c0\u51fa"));
+		gbMeasured.setText("\u6d4b\u5f97\u7532\u9187\uff1a" + (!gb.isJudged() ? "\u2014" : (gb.isMethanolDetected() ? format(gb.getMethanolMeasuredGL(), 4) + " g/L" : "\u672a\u68c0\u51fa")));
 		gbConversion.setText(gb.getConversionExplanation());
 		gbLimit.setText("\u6298\u7b97 100%vol\uff1a" + (gb.isJudged() && gb.isMethanolDetected() ? format(gb.getMethanol100GL(), 4) + " g/L" : "-") + "    \u9650\u91cf\uff1a" + (Double.isNaN(gb.getLimit100GL()) ? "-" : format(gb.getLimit100GL(), 4) + " g/L\uff08100%vol\uff09"));
 		gbSource.setText(gb.getLimitSource());
@@ -910,15 +932,19 @@ public final class BaijiuAnalysisShell {
 
 	private void saveMethod(Shell shell) {
 
-		collectAll();
+		if(!collectAll()) {
+			return;
+		}
 		BaijiuPreferences.saveMethod(settings);
 		BaijiuPreferences.saveSampleDefaults(readSample());
-		info(shell, "\u65b9\u6cd5\u53c2\u6570\u5df2\u4fdd\u5b58\u3002");
+		setStatus("\u65b9\u6cd5\u53c2\u6570\u5df2\u4fdd\u5b58\u3002");
 	}
 
 	private void savePlantMethod(Shell shell) {
 
-		collectAll();
+		if(!collectAll()) {
+			return;
+		}
 		FileDialog dialog = new FileDialog(shell, SWT.SAVE);
 		dialog.setFilterExtensions(new String[] {BaijiuMethodIO.FILE_EXTENSION, "*.properties"});
 		dialog.setFileName(BaijiuMethodIO.BUNDLED_PACKAGE_FILE_NAME);
@@ -930,7 +956,7 @@ public final class BaijiuAnalysisShell {
 		try {
 			BaijiuMethodIO.save(Path.of(path), settings);
 			BaijiuPreferences.saveMethod(settings);
-			info(shell, "\u5df2\u53e6\u5b58\u5382\u65b9\u6cd5\uff1a" + path + "\nSaved plant method: " + path);
+			setStatus("\u5df2\u53e6\u5b58\u5382\u65b9\u6cd5\uff1a" + path + "\nSaved plant method: " + path);
 		} catch(Exception e) {
 			warn(shell, "\u4fdd\u5b58\u5382\u65b9\u6cd5\u5931\u8d25\uff1a" + e.getMessage());
 		}
@@ -951,10 +977,9 @@ public final class BaijiuAnalysisShell {
 		fillMatchTables();
 		fillMultipointTables();
 		updateInjectedLabel();
-		lastResult = null;
 		fillResultTable(null);
 		clearGbPanel();
-		info(shell, "\u5df2\u52a0\u8f7d\u9ed8\u8ba4\u6d53\u9999\u65b9\u6cd5\u5305\uff08XP-\u767d\u9152 C2 + \u4e59\u9178\u6b63\u4e01\u916f + 15 \u6df7\u6807\uff09\u3002\u8bf7\u91cd\u65b0\u505a\u6df7\u6807\u6821\u6b63\u540e\u518d\u5b9a\u91cf\u3002\nLoaded bundled \u6d53\u9999 FID package (XP-C2 + n-butyl acetate + 15-mix). Re-run mix-standard calibration before quantifying.");
+		setStatus("\u5df2\u52a0\u8f7d\u9ed8\u8ba4\u6d53\u9999\u65b9\u6cd5\u5305\uff08XP-\u767d\u9152 C2 + \u4e59\u9178\u6b63\u4e01\u916f + 15 \u6df7\u6807\uff09\u3002\u8bf7\u91cd\u65b0\u505a\u6df7\u6807\u6821\u6b63\u540e\u518d\u5b9a\u91cf\u3002\nLoaded bundled \u6d53\u9999 FID package (XP-C2 + n-butyl acetate + 15-mix). Re-run mix-standard calibration before quantifying.");
 		setStatus("\u5df2\u6062\u590d\u9ed8\u8ba4\u6d53\u9999\u65b9\u6cd5\u5305\u3002" + BaijiuCalibrationGate.OPERATOR_HINT);
 	}
 
@@ -973,10 +998,9 @@ public final class BaijiuAnalysisShell {
 			fillMatchTables();
 			fillMultipointTables();
 			updateInjectedLabel();
-			lastResult = null;
 			fillResultTable(null);
 			clearGbPanel();
-			info(shell, "\u5df2\u52a0\u8f7d\u5382\u65b9\u6cd5\uff1a" + path + "\nLoaded plant method: " + path);
+			setStatus("\u5df2\u52a0\u8f7d\u5382\u65b9\u6cd5\uff1a" + path + "\nLoaded plant method: " + path);
 		} catch(Exception e) {
 			warn(shell, "\u52a0\u8f7d\u5382\u65b9\u6cd5\u5931\u8d25\uff1a" + e.getMessage());
 		}
@@ -1099,26 +1123,42 @@ public final class BaijiuAnalysisShell {
 		if(selectedCompound == null) {
 			return;
 		}
-		String name = editName.getText() == null ? "" : editName.getText().trim();
-		if(!name.isEmpty()) {
-			settings.getCompoundNames().put(selectedCompound.getId(), name);
-		}
-		double rt = parse(editRt.getText(), settings.expectedRtMin(selectedCompound));
-		double window = parse(editWindow.getText(), settings.windowMin(selectedCompound));
-		settings.getInstrumentRtMin().put(selectedCompound.getId(), rt);
-		settings.getWindowMin().put(selectedCompound.getId(), window);
-		if(!selectedCompound.isInternalStandard()) {
-			settings.getMixGramsPerLiter().put(selectedCompound.getId(), parse(editMix.getText(), settings.mixGramsPerLiter(selectedCompound)));
-			double rf = parse(editRf.getText(), Double.NaN);
-			if(BaijiuCalibrationGate.isValidResponseFactor(rf)) {
-				settings.getResponseFactors().put(selectedCompound.getId(), rf);
+		try {
+			String name = editName.getText() == null ? "" : editName.getText().trim();
+			double rt = parse(editRt.getText());
+			double window = parse(editWindow.getText());
+			Double rf = null;
+			double mix = Double.NaN;
+			if(!selectedCompound.isInternalStandard()) {
+				mix = parse(editMix.getText());
+				if(!editRf.getText().isBlank()) {
+					rf = Double.valueOf(parse(editRf.getText()));
+					if(!BaijiuCalibrationGate.isValidResponseFactor(rf.doubleValue())) {
+						throw new IllegalArgumentException("RF 必须是大于 0 的有限数；留空表示清除手工 RF。");
+					}
+				}
 			}
-			settings.setQuantified(selectedCompound.getId(), editQuantify.getSelection());
-			settings.setGb2757Target(selectedCompound.getId(), editGb2757.getSelection());
+			if(!name.isEmpty()) {
+				settings.getCompoundNames().put(selectedCompound.getId(), name);
+			}
+			settings.getInstrumentRtMin().put(selectedCompound.getId(), rt);
+			settings.getWindowMin().put(selectedCompound.getId(), window);
+			if(!selectedCompound.isInternalStandard()) {
+				settings.getMixGramsPerLiter().put(selectedCompound.getId(), mix);
+				if(rf == null) {
+					settings.getResponseFactors().remove(selectedCompound.getId());
+				} else if(BaijiuCalibrationGate.isValidResponseFactor(rf.doubleValue())) {
+					settings.getResponseFactors().put(selectedCompound.getId(), rf);
+				}
+				settings.setQuantified(selectedCompound.getId(), editQuantify.getSelection());
+				settings.setGb2757Target(selectedCompound.getId(), editGb2757.getSelection());
+			}
+			fillMethodTable();
+			fillMatchTables();
+			recalculateQuiet();
+		} catch(IllegalArgumentException e) {
+			setStatus("\u8f93\u5165\u65e0\u6548\uff0c\u7ec4\u5206\u4fee\u6539\u5df2\u53d6\u6d88\uff1a" + e.getMessage());
 		}
-		fillMethodTable();
-		fillMatchTables();
-		recalculateQuiet();
 	}
 
 	private void loadSelectedMatchedPeak() {
@@ -1172,8 +1212,15 @@ public final class BaijiuAnalysisShell {
 			warn(shell, "\u8bf7\u5148\u5728\u5339\u914d\u8868\u4e2d\u9009\u62e9\u4e00\u4e2a\u5df2\u5339\u914d\u7684\u7ec4\u5206\u3002");
 			return;
 		}
-		double start = parse(peakStart.getText(), PeakMatcher.startRetentionTime(selectedMatchedPeak) / 60000.0d);
-		double stop = parse(peakStop.getText(), PeakMatcher.stopRetentionTime(selectedMatchedPeak) / 60000.0d);
+		double start;
+		double stop;
+		try {
+			start = parse(peakStart.getText());
+			stop = parse(peakStop.getText());
+		} catch(IllegalArgumentException e) {
+			setStatus("\u8f93\u5165\u65e0\u6548\uff0c\u5cf0\u8fb9\u754c\u4fee\u6539\u5df2\u53d6\u6d88\uff1a" + e.getMessage());
+			return;
+		}
 		String message = BaijiuPeakBounds.replaceBounds(chromatogram(), selectedMatchedPeak, start, stop);
 		if(!message.isEmpty()) {
 			warn(shell, message);
@@ -1202,26 +1249,46 @@ public final class BaijiuAnalysisShell {
 		return sample;
 	}
 
-	private void collectAll() {
+	private boolean collectAll() {
 
-		settings.setMethodName(methodName.getText());
-		settings.setColumnSummary(columnSummary.getText());
-		settings.setOvenProgram(ovenProgram.getText());
-		settings.setSamplingRateHz(parse(samplingHz.getText(), settings.getSamplingRateHz()));
-		settings.setRunTimeMin(parse(runTimeMin.getText(), settings.getRunTimeMin()));
-		settings.setIstdName(istdName.getText());
-		int templateIndex = aromaTemplate.getSelectionIndex();
-		settings.setAromaTemplate(templateIndex >= 0 ? BaijiuAromaType.values()[templateIndex] : BaijiuAromaType.NONG);
-		settings.setIstdStockGramsPerLiter(parse(istdStock.getText(), settings.getIstdStockGramsPerLiter()));
-		settings.setSampleVolumeMl(parse(sampleMl.getText(), settings.getSampleVolumeMl()));
-		settings.setIstdVolumeMl(parse(istdMl.getText(), settings.getIstdVolumeMl()));
-		settings.setDefaultWindowMin(parse(windowMin.getText(), settings.getDefaultWindowMin()));
-		settings.setGb2757GrainLimit100VolGL(parse(grainLimit.getText(), settings.getGb2757GrainLimit100VolGL()));
-		settings.setGb2757OtherLimit100VolGL(parse(otherLimit.getText(), settings.getGb2757OtherLimit100VolGL()));
+		try {
+			double samplingRateHz = parse(samplingHz.getText());
+			double runtime = parse(runTimeMin.getText());
+			double istdStockGramsPerLiter = parse(istdStock.getText());
+			double mixIstdGramsPerLiter = parse(mixIstd.getText());
+			double sampleVolumeMl = parse(sampleMl.getText());
+			double istdVolumeMl = parse(istdMl.getText());
+			double defaultWindowMin = parse(windowMin.getText());
+			double grainLimitValue = parse(grainLimit.getText());
+			double otherLimitValue = parse(otherLimit.getText());
+			parse(abv.getText());
+			if(mixScale != null && !mixScale.isDisposed()) {
+				parse(mixScale.getText());
+			}
+			settings.setMethodName(methodName.getText());
+			settings.setColumnSummary(columnSummary.getText());
+			settings.setOvenProgram(ovenProgram.getText());
+			settings.setSamplingRateHz(samplingRateHz);
+			settings.setRunTimeMin(runtime);
+			settings.setIstdName(istdName.getText());
+			int templateIndex = aromaTemplate.getSelectionIndex();
+			settings.setAromaTemplate(templateIndex >= 0 ? BaijiuAromaType.values()[templateIndex] : BaijiuAromaType.NONG);
+			settings.setIstdStockGramsPerLiter(istdStockGramsPerLiter);
+			settings.setMixIstdGramsPerLiter(mixIstdGramsPerLiter);
+			settings.setSampleVolumeMl(sampleVolumeMl);
+			settings.setIstdVolumeMl(istdVolumeMl);
+			settings.setDefaultWindowMin(defaultWindowMin);
+			settings.setGb2757GrainLimit100VolGL(grainLimitValue);
+			settings.setGb2757OtherLimit100VolGL(otherLimitValue);
+		} catch(IllegalArgumentException e) {
+			setStatus("\u8f93\u5165\u65e0\u6548\uff0c\u64cd\u4f5c\u5df2\u53d6\u6d88\uff1a" + e.getMessage());
+			return false;
+		}
 		if(reportHeader != null) {
 			reportHeader.save();
 		}
 		updateInjectedLabel();
+		return true;
 	}
 
 	private void updateInjectedLabel() {
@@ -1229,12 +1296,16 @@ public final class BaijiuAnalysisShell {
 		if(injectedIstd == null || injectedIstd.isDisposed()) {
 			return;
 		}
-		double stock = parse(istdStock.getText(), settings.getIstdStockGramsPerLiter());
-		double vs = parse(sampleMl.getText(), settings.getSampleVolumeMl());
-		double vi = parse(istdMl.getText(), settings.getIstdVolumeMl());
-		double injected = net.openchrom.xxd.processor.supplier.baijiu.core.InternalStandardMath.injectedIstdGramsPerLiter(stock, vs, vi);
-		String name = istdName == null || istdName.isDisposed() ? settings.getIstdName() : istdName.getText();
-		injectedIstd.setText("\u8fdb\u6837\u5185\u6807\u6d53\u5ea6 = " + format(injected, 4) + " g/L    \u5185\u6807\uff1a" + name + "    \u9ed8\u8ba4\u52a0\u6807 1.00 mL + 0.10 mL");
+		try {
+			double stock = parse(istdStock.getText());
+			double vs = parse(sampleMl.getText());
+			double vi = parse(istdMl.getText());
+			double injected = net.openchrom.xxd.processor.supplier.baijiu.core.InternalStandardMath.injectedIstdGramsPerLiter(stock, vs, vi);
+			String name = istdName == null || istdName.isDisposed() ? settings.getIstdName() : istdName.getText();
+			injectedIstd.setText("\u8fdb\u6837\u5185\u6807\u6d53\u5ea6 = " + format(injected, 4) + " g/L    \u5185\u6807\uff1a" + name + "    \u9ed8\u8ba4\u52a0\u6807 1.00 mL + 0.10 mL");
+		} catch(IllegalArgumentException e) {
+			injectedIstd.setText("\u8fdb\u6837\u5185\u6807\u6d53\u5ea6 = --    \u8bf7\u8f93\u5165\u6709\u6548\u6570\u503c");
+		}
 	}
 
 	private void syncHostChromatogram() {
@@ -1385,28 +1456,25 @@ public final class BaijiuAnalysisShell {
 		return String.format(Locale.US, "%." + decimals + "f", value);
 	}
 
-	private static double parse(String text, double fallback) {
+	private static double parse(String text) {
 
-		if(text == null) {
-			return fallback;
-		}
-		String trimmed = text.trim().replace(',', '.');
-		if(trimmed.isEmpty()) {
-			return fallback;
+		if(text == null || text.isBlank()) {
+			throw new IllegalArgumentException("\u6570\u503c\u4e0d\u80fd\u4e3a\u7a7a\u3002");
 		}
 		try {
-			return Double.parseDouble(trimmed);
+			double value = Double.parseDouble(text.trim().replace(',', '.'));
+			if(!Double.isFinite(value)) {
+				throw new IllegalArgumentException("\u6570\u503c\u5fc5\u987b\u662f\u6709\u9650\u6570\u3002");
+			}
+			return value;
 		} catch(NumberFormatException e) {
-			return fallback;
+			throw new IllegalArgumentException("\u6570\u503c\u683c\u5f0f\u65e0\u6548\uff1a" + text, e);
 		}
 	}
 
-	private static void info(Shell shell, String message) {
+	private static double parse(String text, double fallback) {
 
-		MessageBox box = new MessageBox(shell, SWT.ICON_INFORMATION);
-		box.setText("\u767d\u9152\u5206\u6790");
-		box.setMessage(message);
-		box.open();
+		return text == null || text.isBlank() ? fallback : parse(text);
 	}
 
 	private static void warn(Shell shell, String message) {

@@ -28,7 +28,7 @@ public class BaijiuWizardResultPage extends WizardPage {
 		super("result");
 		this.wizard = wizard;
 		setTitle("\u2462 \u7ed3\u679c\u4e0e\u62a5\u544a");
-		setDescription("\u5b9a\u91cf\u540e\u67e5\u770b GB 2757 \u5224\u5b9a\uff0c\u5e76\u9884\u89c8/\u5bfc\u51fa\u62a5\u544a\u3002\u70b9\u300c\u5b8c\u6210\u300d\u4f1a\u6253\u5f00\u62a5\u544a\u3002");
+		setDescription("先定量并写回峰表，再查看 GB 2757 判定。预览使用当前有效结果，不会重复定量或写回谱图；点「完成」会保存并打开报告。");
 	}
 
 	@Override
@@ -37,8 +37,11 @@ public class BaijiuWizardResultPage extends WizardPage {
 		Composite root = BaijiuPlantLayout.tabBody(parent);
 		status = BaijiuPlantLayout.hint(root, "");
 		gb = BaijiuPlantLayout.hint(root, "");
-		BaijiuPlantLayout.primary(root, "\u5b9a\u91cf\u5e76\u5199\u56de\u5cf0\u8868", e -> refresh(true));
-		BaijiuPlantLayout.command(root, "\u9884\u89c8\u62a5\u544a", e -> wizard.previewReport(getShell()));
+		BaijiuPlantLayout.primary(root, "定量并写回峰表", e -> refresh(true));
+		BaijiuPlantLayout.command(root, "预览报告（不修改谱图）", e -> {
+			wizard.previewReport(getShell());
+			refresh(false);
+		});
 		setControl(BaijiuPlantLayout.tabControlOf(root));
 	}
 
@@ -60,7 +63,8 @@ public class BaijiuWizardResultPage extends WizardPage {
 		if(status == null || status.isDisposed()) {
 			return;
 		}
-		status.setText(result == null ? "\u5c1a\u672a\u5b9a\u91cf\u3002\u53ef\u70b9\u4e0b\u65b9\u6309\u94ae\uff0c\u6216\u76f4\u63a5\u70b9\u300c\u5b8c\u6210\u300d\u3002" : result.getMessage());
+		String message = result == null ? wizard.getStatus() : result.getMessage();
+		status.setText(message == null || message.isBlank() ? "尚未定量。请先点击「定量并写回峰表」，成功后再预览或完成。" : message);
 		if(result != null && result.getGb2757Result() != null) {
 			Gb2757Result gb2757 = result.getGb2757Result();
 			gb.setText(gb2757.getOperatorBanner());

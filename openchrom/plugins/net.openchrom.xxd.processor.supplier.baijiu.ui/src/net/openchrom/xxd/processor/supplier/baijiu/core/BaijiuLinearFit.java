@@ -22,10 +22,9 @@ package net.openchrom.xxd.processor.supplier.baijiu.core;
  * determination. There is no hard regulatory cutoff; {@link #R2_SOFT_WARN} is a
  * display hint only.
  * <p>
- * Quantify still uses {@code C = RF × C_ISTD × (A_a / A_ISTD)}. The effective RF
- * is evaluated at the method 1× mix concentration (working range):
- * {@code RF = C_work / (C_ISTD × ŷ(C_work))}. When the intercept is 0 this equals
- * {@code 1 / (slope × C_ISTD)}.
+ * Quantify solves {@code C = ((A_a / A_ISTD) - intercept) / slope}. The effective
+ * RF is retained for the calibration gate and reporting, evaluated at the method
+ * 1× mix concentration: {@code RF = C_work / (C_ISTD × ŷ(C_work))}.
  */
 public final class BaijiuLinearFit {
 
@@ -58,7 +57,7 @@ public final class BaijiuLinearFit {
 
 	public static BaijiuLinearFit stored(int n, double slope, double intercept, double rSquared, double effectiveRf) {
 
-		boolean ok = n >= MIN_POINTS && Double.isFinite(slope) && Double.isFinite(intercept) && Double.isFinite(rSquared) && BaijiuCalibrationGate.isValidResponseFactor(effectiveRf);
+		boolean ok = n >= MIN_POINTS && Double.isFinite(slope) && slope > 0.0d && Double.isFinite(intercept) && Double.isFinite(rSquared) && BaijiuCalibrationGate.isValidResponseFactor(effectiveRf);
 		return new BaijiuLinearFit(ok, ok ? "" : "stored fit is incomplete", n, slope, intercept, rSquared, effectiveRf);
 	}
 

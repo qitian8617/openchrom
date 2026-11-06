@@ -54,9 +54,9 @@ public final class BaijiuAnalysisEngine {
 		if(!PeakMatcher.hasIntegratedArea(istd.getPeak())) {
 			return "\u5185\u6807\u5cf0\u9762\u79ef\u4e3a 0\uff0c\u8bf7\u5148\u70b9\u300c\u63a8\u8350\u79ef\u5206\u300d\u6216\u624b\u52a8\u79ef\u5206\u3002";
 		}
-		double cIstd = settings.injectedIstdGramsPerLiter();
-		if(!(cIstd > 0.0d)) {
-			return "\u5185\u6807\u8fdb\u6837\u6d53\u5ea6\u65e0\u6548\uff0c\u8bf7\u68c0\u67e5\u8d2e\u5907\u6db2\u6d53\u5ea6\u548c\u52a0\u5165\u4f53\u79ef\u3002";
+		double cIstd = settings.getMixIstdGramsPerLiter();
+		if(!(cIstd > 0.0d) || !Double.isFinite(cIstd)) {
+			return "\u6df7\u6807\u5185\u6807\u6d53\u5ea6\u65e0\u6548\uff0c\u8bf7\u68c0\u67e5\u6821\u51c6\u7528\u6df7\u6807\u914d\u7f6e\u3002";
 		}
 		int calibrated = 0;
 		List<String> missing = new ArrayList<>();
@@ -81,6 +81,7 @@ public final class BaijiuAnalysisEngine {
 			}
 			double rf = InternalStandardMath.responseFactor(mix, cIstd, istd.getArea(), match.getArea());
 			if(BaijiuCalibrationGate.isValidResponseFactor(rf)) {
+				settings.getCalibrationFits().remove(compound.getId());
 				settings.getResponseFactors().put(compound.getId(), rf);
 				calibrated++;
 			} else {
@@ -111,7 +112,7 @@ public final class BaijiuAnalysisEngine {
 			return BaijiuAnalysisResult.failure("\u5f53\u524d\u8c31\u56fe\u6ca1\u6709\u5cf0\u3002\u8bf7\u5148\u70b9\u300c\u63a8\u8350\u79ef\u5206\u300d\uff0c\u6216\u624b\u52a8\u505a\u5cf0\u68c0\u6d4b\u548c\u79ef\u5206\u3002");
 		}
 		double cIstd = settings.injectedIstdGramsPerLiter();
-		if(!(cIstd > 0.0d)) {
+		if(!(cIstd > 0.0d) || !Double.isFinite(cIstd)) {
 			return BaijiuAnalysisResult.failure("\u5185\u6807\u8fdb\u6837\u6d53\u5ea6\u65e0\u6548\uff0c\u8bf7\u68c0\u67e5\u8d2e\u5907\u6db2\u6d53\u5ea6\u548c\u52a0\u5165\u4f53\u79ef\u3002");
 		}
 		if(sample != null && sample.hasBlockingErrors()) {
@@ -163,8 +164,14 @@ public final class BaijiuAnalysisEngine {
 				remark = "\u672a\u6821\u6b63";
 				warnings.add(settings.displayName(compound) + "\u5c1a\u672a\u6821\u6b63");
 			} else {
-				double value = InternalStandardMath.concentrationGramsPerLiter(rf, cIstd, area, istd.getArea());
-				if(value >= 0.0d) {
+				BaijiuLinearFit fit = settings.getCalibrationFits().get(compound.getId());
+				double value;
+				if(fit != null && fit.isValid()) {
+					value = (area / istd.getArea() - fit.getIntercept()) / fit.getSlope();
+				} else {
+					value = InternalStandardMath.concentrationGramsPerLiter(rf, cIstd, area, istd.getArea());
+				}
+				if(value >= 0.0d && Double.isFinite(value)) {
 					concentration = value;
 					remark = "";
 				} else {

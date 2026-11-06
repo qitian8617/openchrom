@@ -12,7 +12,6 @@ package net.openchrom.xxd.processor.supplier.baijiu.core;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
-import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -87,9 +86,9 @@ public final class BaijiuMethodIO {
 	public static void save(Path file, BaijiuMethodSettings settings) throws IOException {
 
 		Properties properties = toProperties(settings);
-		try(Writer writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-			properties.store(writer, "Baijiu plant method / 白酒厂方法");
-		}
+		java.io.StringWriter writer = new java.io.StringWriter();
+		properties.store(writer, "Baijiu plant method / 白酒厂方法");
+		BaijiuFileSupport.writeUtf8(file, writer.toString(), false);
 	}
 
 	private static void replaceFromProperties(BaijiuMethodSettings settings, Properties properties) {
@@ -129,6 +128,7 @@ public final class BaijiuMethodIO {
 		putDouble(value -> settings.setRunTimeMin(value), properties, "runtime.min", overwriteExisting, settings.getRunTimeMin());
 		putText(settings::setIstdName, properties, "istd.name", overwriteExisting, settings.getIstdName());
 		putDouble(settings::setIstdStockGramsPerLiter, properties, "istd.stock.gl", overwriteExisting, settings.getIstdStockGramsPerLiter());
+		putDouble(settings::setMixIstdGramsPerLiter, properties, "mix.istd.gl", overwriteExisting, settings.getMixIstdGramsPerLiter());
 		putDouble(settings::setSampleVolumeMl, properties, "volume.sample.ml", overwriteExisting, settings.getSampleVolumeMl());
 		putDouble(settings::setIstdVolumeMl, properties, "volume.istd.ml", overwriteExisting, settings.getIstdVolumeMl());
 		putDouble(settings::setDefaultWindowMin, properties, "rt.window.min", overwriteExisting, settings.getDefaultWindowMin());
@@ -182,6 +182,7 @@ public final class BaijiuMethodIO {
 		properties.setProperty("runtime.min", format(settings.getRunTimeMin()));
 		properties.setProperty("istd.name", settings.getIstdName());
 		properties.setProperty("istd.stock.gl", format(settings.getIstdStockGramsPerLiter()));
+		properties.setProperty("mix.istd.gl", format(settings.getMixIstdGramsPerLiter()));
 		properties.setProperty("volume.sample.ml", format(settings.getSampleVolumeMl()));
 		properties.setProperty("volume.istd.ml", format(settings.getIstdVolumeMl()));
 		properties.setProperty("rt.window.min", format(settings.getDefaultWindowMin()));

@@ -17,9 +17,9 @@ import net.openchrom.xxd.control.supplier.temperature.ui.communication.FidReadin
  * Shared Start Analysis toggle for MainView, the plant toolbar, and the
  * Baijiu shell (reflection on {@code toggle}). Same gate everywhere.
  * <p>
- * 电流判据暂不可用，先不拦开始采集 — {@link FidReadiness#REQUIRE_FID_CURRENT_FOR_START}
- * is {@code false}, so flame / FID current does not block. Not connected still
- * blocks. Already acquiring toggles to stop. Current pA stays on the strip.
+ * Start requires connected TCP, an online FID board and flame on. A missing,
+ * stale or failed FID status read blocks. Already acquiring toggles to stop.
+ * Current pA stays on the strip.
  */
 public final class AcquisitionStartGate {
 
@@ -52,8 +52,10 @@ public final class AcquisitionStartGate {
 			manager.stopAcquisition();
 			return Outcome.stopped();
 		}
+		if(manager.isRunActive()) {
+			return Outcome.blocked(chinese ? "采集正在收尾" : "Acquisition is finishing", chinese ? "请等待当前谱图保存或失败处理完成，再开始下一针。" : "Wait until the current run has been saved or its failure handling has finished.");
+		}
 		FidReadinessSnapshot snapshot = FidReadinessMonitor.getInstance().getSnapshot();
-		// 电流判据暂不可用，先不拦开始采集. Disconnected and FID-board-offline still block.
 		if(!snapshot.canStartAnalysis()) {
 			return Outcome.blocked(FidReadiness.startBlockedTitle(chinese), snapshot.operatorTip(chinese));
 		}

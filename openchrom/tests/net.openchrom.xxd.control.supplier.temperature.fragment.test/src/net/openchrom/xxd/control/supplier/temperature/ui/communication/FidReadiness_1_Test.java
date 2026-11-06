@@ -35,12 +35,12 @@ public class FidReadiness_1_Test {
 	}
 
 	@Test
-	public void statusReadFailDoesNotBlockStartWhileCurrentCriterionIsBypassed() {
+	public void statusReadFailBlocksStartByDefault() {
 
 		FidReadiness.Kind kind = FidReadiness.classify(true, Boolean.TRUE, Boolean.TRUE, Boolean.FALSE, "flame", "timeout");
 		assertEquals(FidReadiness.Kind.STATUS_READ_FAIL, kind);
-		assertFalse(FidReadiness.REQUIRE_FID_CURRENT_FOR_START);
-		assertTrue(FidReadiness.canStartAnalysis(kind));
+		assertTrue(FidReadiness.REQUIRE_FID_CURRENT_FOR_START);
+		assertFalse(FidReadiness.canStartAnalysis(kind));
 		assertFalse(FidReadiness.canStartAnalysis(kind, true));
 		assertTrue(FidReadiness.operatorTip(kind, true).contains("读取 FID 状态失败"));
 		assertTrue(FidReadiness.operatorTip(kind, false).toLowerCase().contains("status read failed"));
@@ -57,34 +57,34 @@ public class FidReadiness_1_Test {
 	}
 
 	@Test
-	public void igniteFailDoesNotBlockStartWhileCurrentCriterionIsBypassed() {
+	public void igniteFailBlocksStartByDefault() {
 
 		FidReadiness.Kind kind = FidReadiness.classify(true, Boolean.TRUE, Boolean.FALSE, Boolean.FALSE, "fail", null);
 		assertEquals(FidReadiness.Kind.IGNITE_FAIL, kind);
-		assertTrue(FidReadiness.canStartAnalysis(kind));
+		assertFalse(FidReadiness.canStartAnalysis(kind));
 		assertFalse(FidReadiness.canStartAnalysis(kind, true));
 		assertTrue(FidReadiness.operatorTip(kind, true).contains("点火未成功"));
 		assertTrue(FidReadiness.operatorTip(kind, false).toLowerCase().contains("ignition failed"));
 	}
 
 	@Test
-	public void flameOutDoesNotBlockStartWhileCurrentCriterionIsBypassed() {
+	public void flameOutBlocksStartByDefault() {
 
 		FidReadiness.Kind kind = FidReadiness.classify(true, Boolean.TRUE, Boolean.FALSE, Boolean.FALSE, "idle", null);
 		assertEquals(FidReadiness.Kind.FLAME_OUT, kind);
-		assertTrue(FidReadiness.canStartAnalysis(kind));
+		assertFalse(FidReadiness.canStartAnalysis(kind));
 		assertFalse(FidReadiness.canStartAnalysis(kind, true));
 		assertTrue(FidReadiness.operatorTip(kind, true).contains("火焰未着火"));
 		assertEquals("0", FidReadiness.formatPa(new GcTcpConnection.FidStatus(true, false, false, false, false, false, false, 0, 0, 0.0f, true, "idle")));
 	}
 
 	@Test
-	public void ignitingAndReadingDoNotBlockStartWhileCurrentCriterionIsBypassed() {
+	public void ignitingAndReadingBlockStartByDefault() {
 
 		assertEquals(FidReadiness.Kind.IGNITING, FidReadiness.classify(true, Boolean.TRUE, Boolean.FALSE, Boolean.TRUE, "igniting", null));
 		assertEquals(FidReadiness.Kind.READING, FidReadiness.classify(true, null, null, null, null, null));
-		assertTrue(FidReadiness.canStartAnalysis(FidReadiness.Kind.IGNITING));
-		assertTrue(FidReadiness.canStartAnalysis(FidReadiness.Kind.READING));
+		assertFalse(FidReadiness.canStartAnalysis(FidReadiness.Kind.IGNITING));
+		assertFalse(FidReadiness.canStartAnalysis(FidReadiness.Kind.READING));
 		assertFalse(FidReadiness.canStartAnalysis(FidReadiness.Kind.IGNITING, true));
 		assertFalse(FidReadiness.canStartAnalysis(FidReadiness.Kind.READING, true));
 	}
@@ -130,7 +130,7 @@ public class FidReadiness_1_Test {
 		assertEquals(FidReadiness.Kind.FLAME_OUT, flameOut);
 		assertEquals(FidReadiness.Kind.FID_OFFLINE, offline);
 		assertFalse(FidReadiness.skipFidReadinessGate());
-		assertTrue(FidReadiness.canStartAnalysis(flameOut));
+		assertFalse(FidReadiness.canStartAnalysis(flameOut));
 		assertFalse(FidReadiness.canStartAnalysis(offline));
 		assertFalse(FidReadiness.canStartAnalysis(FidReadiness.Kind.DISCONNECTED));
 
@@ -153,8 +153,8 @@ public class FidReadiness_1_Test {
 
 		System.setProperty(FidReadiness.SKIP_FID_READINESS_GATE_PROPERTY, "false");
 		assertFalse(FidReadiness.skipFidReadinessGate());
-		assertTrue(FidReadiness.canStartAnalysis(flameOut));
-		assertTrue(snapshot.canStartAnalysis());
+		assertFalse(FidReadiness.canStartAnalysis(flameOut));
+		assertFalse(snapshot.canStartAnalysis());
 		assertFalse(FidReadiness.canStartAnalysis(offline));
 	}
 }

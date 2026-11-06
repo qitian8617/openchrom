@@ -30,6 +30,7 @@ import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuPreferences;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuRecommendedIntegration;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuSampleInfo;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.ChromatogramBridge;
+import net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuPlantButton;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuPlantLayout;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuPlantTabs;
 import net.openchrom.xxd.processor.supplier.baijiu.ui.shell.BaijiuReportShell;
@@ -46,6 +47,14 @@ public class BaijiuWorkflowWizard extends Wizard {
 	private final BaijiuWizardMethodPage methodPage;
 	private final BaijiuWizardProcessPage processPage;
 	private final BaijiuWizardResultPage resultPage;
+	private CTabFolder embeddedTabs;
+	private CTabItem[] embeddedItems;
+	private WizardPage currentEmbeddedPage;
+	private int currentEmbeddedIndex = -1;
+	private BaijiuPlantButton previousButton;
+	private BaijiuPlantButton nextButton;
+	private BaijiuPlantButton finishButton;
+	private Shell embeddedShell;
 
 	public BaijiuWorkflowWizard(IChromatogramSelection chromatogramSelection, EPartService partService) {
 
@@ -57,7 +66,7 @@ public class BaijiuWorkflowWizard extends Wizard {
 			this.sample = BaijiuSampleInfo.from(chromatogramSelection.getChromatogram());
 		}
 		BaijiuPreferences.loadSampleDefaults(this.sample);
-		setWindowTitle("\u767d\u9152\u5206\u6790\u4e09\u6b65\u5411\u5bfc");
+		setWindowTitle("白酒分析三步向导");
 		methodPage = new BaijiuWizardMethodPage(this);
 		processPage = new BaijiuWizardProcessPage(this);
 		resultPage = new BaijiuWizardResultPage(this);
@@ -79,18 +88,27 @@ public class BaijiuWorkflowWizard extends Wizard {
 	void createEmbedded(Composite parent) {
 
 		addPages();
+		embeddedShell = parent.getShell();
 		BaijiuPlantLayout.ensureGrid(parent);
 		Composite body = BaijiuPlantLayout.scrollBody(parent);
-		BaijiuPlantLayout.hint(body, getWindowTitle() + " — 页签代替对话框。熟练操作员可直接用「白酒分析」。");
-		CTabFolder tabs = BaijiuPlantTabs.create(body);
-		tabs.setLayoutData(BaijiuPlantLayout.tableFill(360));
-		embed(tabs, methodPage);
-		embed(tabs, processPage);
-		embed(tabs, resultPage);
-		BaijiuPlantLayout.constrainToClient(tabs);
+		BaijiuPlantLayout.hint(body, getWindowTitle() + " — 按步骤完成，也可点击页签检查已有内容。熟练操作员可直接用「白酒分析」。");
+		embeddedTabs = BaijiuPlantTabs.create(body);
+		embeddedTabs.setLayoutData(BaijiuPlantLayout.tableFill(360));
+		WizardPage[] pages = {methodPage, processPage, resultPage};
+		embeddedItems = new CTabItem[pages.length];
+		for(int i = 0; i < pages.length; i++) {
+			embeddedItems[i] = embed(embeddedTabs, pages[i]);
+		}
+		embeddedTabs.addListener(SWT.Selection, e -> showEmbeddedPage(embeddedTabs.getSelectionIndex(), true));
+		Composite buttons = BaijiuPlantLayout.buttonRow(body);
+		previousButton = BaijiuPlantLayout.command(buttons, "上一步", e -> showEmbeddedPage(currentEmbeddedIndex - 1, true));
+		nextButton = BaijiuPlantLayout.primary(buttons, "下一步", e -> showEmbeddedPage(currentEmbeddedIndex + 1, true));
+		finishButton = BaijiuPlantLayout.primary(buttons, "完成并打开报告", e -> performFinish());
+		showEmbeddedPage(0, false);
+		BaijiuPlantLayout.constrainToClient(embeddedTabs);
 	}
 
-	private static void embed(CTabFolder tabs, WizardPage page) {
+	private static CTabItem embed(CTabFolder tabs, WizardPage page) {
 
 		Composite host = new Composite(tabs, SWT.NONE);
 		host.setLayout(new FillLayout());
@@ -99,6 +117,29 @@ public class BaijiuWorkflowWizard extends Wizard {
 		String label = page.getTitle();
 		item.setText(label == null || label.isBlank() ? page.getName() : label);
 		item.setControl(host);
+		return item;
+	}
+
+	private void showEmbeddedPage(int index, boolean validate) {
+
+		if(embeddedTabs == null || embeddedTabs.isDisposed() || index < 0 || index >= embeddedItems.length) {
+			return;
+		}
+		if(validate && currentEmbeddedPage == methodPage && index != currentEmbeddedIndex && !methodPage.collect()) {
+			embeddedTabs.setSelection(currentEmbeddedIndex);
+			return;
+		}
+		if(currentEmbeddedPage != null) {
+			currentEmbeddedPage.setVisible(false);
+		}
+		WizardPage[] pages = {methodPage, processPage, resultPage};
+		currentEmbeddedIndex = index;
+		currentEmbeddedPage = pages[index];
+		embeddedTabs.setSelection(index);
+		currentEmbeddedPage.setVisible(true);
+		previousButton.setEnabled(index > 0);
+		nextButton.setEnabled(index < pages.length - 1);
+		finishButton.setEnabled(index == pages.length - 1);
 	}
 
 	@Override
@@ -113,8 +154,6 @@ public class BaijiuWorkflowWizard extends Wizard {
 	public boolean performFinish() {
 
 		quantify();
-		BaijiuPreferences.saveMethod(settings);
-		BaijiuPreferences.saveSampleDefaults(sample);
 		if(result == null || !result.isSuccess()) {
 			String message = result == null ? BaijiuCalibrationGate.OPERATOR_HINT : result.getMessage();
 			if(getContainer() != null && getContainer().getCurrentPage() instanceof WizardPage wizardPage) {
@@ -122,8 +161,11 @@ public class BaijiuWorkflowWizard extends Wizard {
 			}
 			return false;
 		}
-		if(getShell() != null) {
-			BaijiuReportShell.open(getShell(), sample, settings, result);
+		BaijiuPreferences.saveMethod(settings);
+		BaijiuPreferences.saveSampleDefaults(sample);
+		Shell shell = getContainer() == null ? embeddedShell : getShell();
+		if(shell != null) {
+			BaijiuReportShell.open(shell, sample, settings, result);
 		}
 		return true;
 	}
@@ -155,15 +197,26 @@ public class BaijiuWorkflowWizard extends Wizard {
 
 	public void reloadChromatogram() {
 
+		IChromatogram before = chromatogram();
 		IChromatogramSelection selection = ChromatogramBridge.resolve(partService);
 		if(selection != null) {
 			chromatogramSelection = selection;
+			if(before != chromatogram()) {
+				invalidateResult();
+			}
 		}
+	}
+
+	public void invalidateResult() {
+
+		result = null;
+		status = "";
 	}
 
 	public String integrate() {
 
 		reloadChromatogram();
+		invalidateResult();
 		status = BaijiuRecommendedIntegration.integrate(chromatogramSelection);
 		BaijiuAnalysisEngine.refreshSelection(chromatogramSelection);
 		return status;
@@ -171,7 +224,12 @@ public class BaijiuWorkflowWizard extends Wizard {
 
 	public String quantify() {
 
-		methodPage.collect();
+		if(!methodPage.collect()) {
+			result = BaijiuAnalysisResult.failure(methodPage.getErrorMessage());
+			status = result.getMessage();
+			showEmbeddedPage(0, false);
+			return status;
+		}
 		reloadChromatogram();
 		String licenseBlock = BaijiuLicenseGate.blockingMessage();
 		if(licenseBlock != null) {
@@ -190,9 +248,10 @@ public class BaijiuWorkflowWizard extends Wizard {
 
 	public void previewReport(Shell shell) {
 
-		quantify();
-		if(result != null && result.isSuccess()) {
-			BaijiuReportShell.open(shell, sample, settings, result);
+		if(result == null || !result.isSuccess()) {
+			status = result == null ? "请先成功定量，再预览报告。预览不会重新定量或写回谱图。" : result.getMessage();
+			return;
 		}
+		BaijiuReportShell.open(shell, sample, settings, result);
 	}
 }

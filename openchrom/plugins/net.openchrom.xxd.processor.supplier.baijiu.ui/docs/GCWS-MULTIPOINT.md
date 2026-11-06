@@ -17,19 +17,21 @@ Fit: **`y = intercept + slope · x`**.
 
 R² is the OLS coefficient of determination. **R² < 0.99 is a soft warning only** — there is no hard plant/regulatory cutoff in this pilot.
 
-## Effective RF (quantify + item-6 gate)
+## Curve inverse + effective RF (item-6 gate)
 
-Sample quantify is unchanged:
+With a valid multipoint fit, sample quantify uses the curve directly:
 
-`C = RF × C_ISTD × (A_a / A_ISTD)`
+`C = ((A_a / A_ISTD) - intercept) / slope`
 
-The fit writes one **effective RF** into the existing method RF map, evaluated at the method **1× mix** concentration (working range):
+Negative or non-finite results are rejected. Without a valid fit, single-point fallback uses `C = RF × C_ISTD × (A_a / A_ISTD)`.
+
+The fit still writes one **effective RF** into the existing method RF map for the gate and report, evaluated at the method **1× mix** concentration (working range):
 
 `ŷ(C_work) = intercept + slope · C_work`
 
 `RF = C_work / (C_ISTD × ŷ(C_work))`
 
-When the intercept is 0 this equals `1 / (slope × C_ISTD)`, i.e. the classical ISTD response factor. Methanol still must have a valid RF before quantify (item 6). Multipoint does **not** bypass the gate.
+When the intercept is 0 this equals `1 / (slope × C_ISTD)`, i.e. the classical ISTD response factor. Methanol still must have a valid RF before quantify (item 6). Adding, editing, or deleting a calibration point invalidates previous pilot fits and RF values; the operator must fit again.
 
 ## Operator path (白酒分析 → 多点校正；demo `操作步骤.txt` section I)
 

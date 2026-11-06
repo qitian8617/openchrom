@@ -19,6 +19,7 @@ import org.eclipse.swt.widgets.Composite;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
+import net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuPlantNav;
 
 /**
  * Plant-home host for 白酒分析 (样品→校正→定量→报告). Lives in the branding
@@ -29,6 +30,7 @@ import jakarta.inject.Inject;
 public class BaijiuAnalysisHomePart {
 
 	private boolean created;
+	private Composite body;
 
 	@Inject
 	@Optional
@@ -55,14 +57,25 @@ public class BaijiuAnalysisHomePart {
 		layout.marginWidth = 8;
 		layout.marginHeight = 8;
 		parent.setLayout(layout);
-		Composite body = new Composite(parent, SWT.NONE);
+		body = new Composite(parent, SWT.NONE);
 		body.setLayout(new FillLayout());
 		body.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		try {
 			BaijiuHomePanels.createAnalysisShell(body, partService);
+			selectRequestedTab();
 			parent.layout(true, true);
 		} catch(Throwable t) {
 			BaijiuHomePanels.showError(parent, t);
 		}
+	}
+
+	@org.eclipse.e4.ui.di.Focus
+	public void selectRequestedTab() {
+
+		if(body == null || body.isDisposed()) {
+			return;
+		}
+		int index = BaijiuPlantNav.active() == BaijiuPlantNav.Section.CALIBRATE ? 2 : 0;
+		BaijiuHomePanels.selectAnalysisTab(body, index);
 	}
 }

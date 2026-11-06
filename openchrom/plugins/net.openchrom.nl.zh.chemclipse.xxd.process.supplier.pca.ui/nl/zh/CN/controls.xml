@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?NLS TYPE="org.eclipse.help.toc"?>
+
+<toc label="控件" link_to="/org.eclipse.chemclipse.rcp.app.ui/toc.xml#controls">
+	<topic label="载荷图" href="html/controls/loadings_plot.html">
+	</topic>
+	<topic label="得分图" href="html/controls/score_plot.html">
+	</topic>
+	<topic label="S图" href="html/controls/s_plot.html">
+	</topic>
+</toc>

@@ -522,6 +522,7 @@ public class GcTcpConnection {
 			if(response.getCommand() == GcCommand.NACK) {
 				throw new IOException("Device NACK for " + GcCommand.toString(command));
 			}
+			validateAck(response, command);
 			return response;
 		} catch(TimeoutException e) {
 			throw new IOException("Response timeout for " + GcCommand.toString(command), e);
@@ -535,6 +536,20 @@ public class GcTcpConnection {
 			throw new IOException("Failed to send frame " + GcCommand.toString(command), e);
 		} finally {
 			pendingResponses.remove(sequence & 0xFF, responseFuture);
+		}
+	}
+
+	static void validateAck(GcFrame response, byte expectedCommand) throws IOException {
+
+		if(response == null || response.getCommand() != GcCommand.ACK) {
+			throw new IOException("Expected ACK for " + GcCommand.toString(expectedCommand));
+		}
+		byte[] payload = response.getPayload();
+		if(payload.length < 2 || payload[0] != expectedCommand) {
+			throw new IOException("Mismatched ACK for " + GcCommand.toString(expectedCommand));
+		}
+		if(payload[1] != 0) {
+			throw new IOException("Device ACK error status " + (payload[1] & 0xFF) + " for " + GcCommand.toString(expectedCommand));
 		}
 	}
 
@@ -581,10 +596,11 @@ public class GcTcpConnection {
 
 	private void startReader() {
 
-		readerThread = Thread.ofVirtual().name("gc-tcp-reader").start(() -> {
-			try(InputStream inputStream = socket.getInputStream()) {
+		Socket readerSocket = socket;
+		Thread newReader = Thread.ofVirtual().name("gc-tcp-reader").unstarted(() -> {
+			try(InputStream inputStream = readerSocket.getInputStream()) {
 				byte[] buffer = new byte[READ_BUFFER_BYTES];
-				while(connected.get()) {
+				while(connected.get() && socket == readerSocket) {
 					int read;
 					try {
 						read = inputStream.read(buffer);
@@ -603,7 +619,7 @@ public class GcTcpConnection {
 					dispatchChunk(chunk);
 				}
 			} catch(IOException e) {
-				if(connected.get()) {
+				if(connected.get() && socket == readerSocket) {
 					String msg = e.getMessage() == null ? "" : e.getMessage();
 					/*
 					 * Connection reset / closed are common when F407 reboots, re-flashes,
@@ -619,16 +635,28 @@ public class GcTcpConnection {
 					}
 				}
 			} finally {
-				boolean wasConnected = connected.getAndSet(false);
-				failPendingResponses(new IOException("Connection closed"));
-				failAsciiCapture(new IOException("Connection closed"));
-				closeQuietly(socket);
-				socket = null;
+				boolean wasConnected = false;
+				synchronized(writeLock) {
+					if(socket == readerSocket) {
+						wasConnected = connected.getAndSet(false);
+						socket = null;
+						outputStream = null;
+						if(readerThread == Thread.currentThread()) {
+							readerThread = null;
+						}
+						frameParser.reset();
+						failPendingResponses(new IOException("Connection closed"));
+						failAsciiCapture(new IOException("Connection closed"));
+					}
+				}
+				closeQuietly(readerSocket);
 				if(wasConnected && connectionLostHandler != null) {
 					connectionLostHandler.run();
 				}
 			}
 		});
+		readerThread = newReader;
+		newReader.start();
 	}
 
 	private void dispatchChunk(byte[] chunk) {
@@ -672,6 +700,9 @@ public class GcTcpConnection {
 
 	private void completePendingResponse(GcFrame frame) {
 
+		if(frame.getCommand() != GcCommand.ACK && frame.getCommand() != GcCommand.NACK) {
+			return;
+		}
 		CompletableFuture<GcFrame> responseFuture = pendingResponses.remove(frame.getSequence() & 0xFF);
 		if(responseFuture != null && !responseFuture.isDone()) {
 			responseFuture.complete(frame);
