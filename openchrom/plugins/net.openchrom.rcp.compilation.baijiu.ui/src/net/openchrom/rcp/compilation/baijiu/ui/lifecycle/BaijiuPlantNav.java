@@ -55,6 +55,7 @@ public final class BaijiuPlantNav {
 	private static final AtomicReference<Target> ACTIVE_TARGET = new AtomicReference<>();
 	private static final AtomicReference<TaskOpener> OPENER = new AtomicReference<>();
 	private static final AtomicReference<Runnable> SECTION_WATCH = new AtomicReference<>();
+	private static final AtomicReference<Runnable> MAINTENANCE_EXIT = new AtomicReference<>();
 	private static final Map<Section, List<Target>> TARGETS = targetsBySection();
 	private static final Map<String, Section> LEGACY = legacyLabels();
 
@@ -210,9 +211,29 @@ public final class BaijiuPlantNav {
 		if(section == null) {
 			return;
 		}
+		Section previous = active();
 		ACTIVE.set(section);
 		ACTIVE_TARGET.set(primaryTarget(section));
+		if(previous == Section.MAINTENANCE && section != Section.MAINTENANCE) {
+			Runnable exit = MAINTENANCE_EXIT.get();
+			if(exit != null) {
+				try {
+					exit.run();
+				} catch(RuntimeException ignored) {
+					// Leaving maintenance must still complete the navigation.
+				}
+			}
+		}
 		notifySectionWatch();
+	}
+
+	/**
+	 * Fired when navigation leaves maintenance. The plant shell uses this to
+	 * lock the engineer grant. Closing the drawer also locks.
+	 */
+	public static void setMaintenanceExit(Runnable exit) {
+
+		MAINTENANCE_EXIT.set(exit);
 	}
 
 	public static void activate(Section section, Target target) {

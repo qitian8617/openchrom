@@ -39,8 +39,8 @@ public class WorkstationEngineer_1_Test {
 		assertTrue(ConsoleControlPolicy.detectorIgniteEnabled(true, false, false));
 		assertFalse(ConsoleControlPolicy.detectorIgniteEnabled(false, false, false));
 		assertFalse(ConsoleControlPolicy.detectorIgniteEnabled(true, false, true));
-		assertFalse(ConsoleControlPolicy.detectorValveEnabled(true, false, false));
-		assertTrue(ConsoleControlPolicy.detectorValveEnabled(true, false, true));
+		assertTrue(ConsoleControlPolicy.detectorValveEnabled(true, false));
+		assertFalse(ConsoleControlPolicy.detectorValveEnabled(false, false));
 		assertTrue(ConsoleControlPolicy.communicationConnectEnabled(false, false));
 		assertFalse(ConsoleControlPolicy.communicationConnectEnabled(true, false));
 		assertTrue(ConsoleControlPolicy.communicationDisconnectEnabled(true, false));
@@ -127,28 +127,39 @@ public class WorkstationEngineer_1_Test {
 	}
 
 	@Test
-	public void schematicDropsStaleSignalsAndUsesOneAirValve() {
+	public void schematicDropsStaleSignalsWithoutInventingFanOrValveMap() {
 
-		InstrumentSchematicModel live = InstrumentSchematicModel.evaluate(true, true, true, true, false, true, true, true, true, true, true);
+		InstrumentSchematicModel live = InstrumentSchematicModel.evaluate(true, true, true, true, false, true, Boolean.TRUE, null, null);
 		assertEquals(Signal.ON, live.heat());
 		assertEquals(Signal.ON, live.ignition());
 		assertEquals(Signal.ON, live.airValve());
 		assertEquals(Signal.UNKNOWN, live.particles());
 		assertEquals(Signal.UNKNOWN, live.fan());
-		assertEquals(Signal.UNKNOWN, live.flatVent());
-		InstrumentSchematicModel dropped = InstrumentSchematicModel.evaluate(false, true, true, true, false, true, true, true, true, true, true);
+		assertTrue(live.fanText(true).contains("未知"));
+		assertTrue(live.flatVentText(true).contains("未知"));
+		InstrumentSchematicModel fanOn = InstrumentSchematicModel.evaluate(true, true, true, false, false, Boolean.FALSE, Boolean.FALSE, Boolean.TRUE, Boolean.FALSE);
+		assertEquals(Signal.ON, fanOn.fan());
+		assertEquals(Signal.OFF, fanOn.flatVent());
+		assertEquals(Boolean.TRUE, net.openchrom.xxd.control.supplier.temperature.ui.engineering.OvenSignalSample.fan("{\"fan\":\"1\",\"vent\":\"0\"}"));
+		assertEquals(Boolean.FALSE, net.openchrom.xxd.control.supplier.temperature.ui.engineering.OvenSignalSample.vent("{\"fan\":\"1\",\"vent\":\"0\"}"));
+		assertEquals(null, net.openchrom.xxd.control.supplier.temperature.ui.engineering.OvenSignalSample.fan("{\"setpoint\":\"50\"}"));
+		assertEquals(Boolean.TRUE, net.openchrom.xxd.control.supplier.temperature.ui.engineering.OvenSignalSample.airValveOpen(Boolean.FALSE, Boolean.TRUE));
+		assertEquals(null, net.openchrom.xxd.control.supplier.temperature.ui.engineering.OvenSignalSample.airValveOpen(null, Boolean.TRUE));
+		assertTrue(net.openchrom.xxd.control.supplier.temperature.ui.engineering.OvenSignalSample.fanFallback("升温中"));
+		assertFalse(net.openchrom.xxd.control.supplier.temperature.ui.engineering.OvenSignalSample.fanFallback("停止恒温"));
+		InstrumentSchematicModel dropped = InstrumentSchematicModel.evaluate(false, true, true, true, false, true, Boolean.TRUE, Boolean.TRUE, Boolean.TRUE);
 		assertEquals(Signal.UNKNOWN, dropped.heat());
 		assertEquals(Signal.UNKNOWN, dropped.ignition());
 		assertEquals(Signal.UNKNOWN, dropped.airValve());
+		assertEquals(Signal.UNKNOWN, dropped.fan());
 		assertFalse(dropped.animates());
-		InstrumentSchematicModel disagree = InstrumentSchematicModel.evaluate(true, true, true, false, false, true, true, true, false, false, false);
-		assertEquals(Signal.UNKNOWN, disagree.airValve());
-		assertEquals(Signal.OFF, disagree.ignition());
-		InstrumentSchematicModel badRead = InstrumentSchematicModel.evaluate(true, false, true, true, false, true, true, true, true, false, true);
+		InstrumentSchematicModel eitherFlag = InstrumentSchematicModel.evaluate(true, true, true, false, false, true, Boolean.FALSE, null, null);
+		assertEquals(Signal.ON, eitherFlag.airValve());
+		assertEquals(Signal.OFF, eitherFlag.ignition());
+		InstrumentSchematicModel badRead = InstrumentSchematicModel.evaluate(true, false, true, true, false, true, null, null, null);
 		assertEquals(Signal.UNKNOWN, badRead.ignition());
 		assertEquals(Signal.UNKNOWN, badRead.heat());
-		assertTrue(live.heatText(true).contains("开"));
-		assertTrue(dropped.fanText(true).contains("未知"));
+		assertEquals(Signal.UNKNOWN, badRead.airValve());
 	}
 
 	@Test
@@ -156,7 +167,9 @@ public class WorkstationEngineer_1_Test {
 
 		DeviceColumnProposal proposal = new DeviceColumnProposal("GC-1", "shop", "DB-WAX", "180", "220", "10 min", "240");
 		assertFalse(proposal.deviceApplySupported());
-		assertTrue(proposal.deviceApplyBlockReason().contains("不会下发固件"));
+		assertTrue(proposal.deviceApplyBlockReason().contains("不会同步"));
+		assertTrue(proposal.codeFactSummary(true).contains("可以更低"));
+		assertFalse(proposal.toDocument().contains("enforced=true"));
 		assertTrue(proposal.codeFactSummary(true).contains("450"));
 		assertTrue(proposal.codeFactSummary(true).contains("不是认证额定值"));
 		Path file = dir.resolve("proposal.txt");
@@ -173,5 +186,102 @@ public class WorkstationEngineer_1_Test {
 		assertEquals(450, DeviceColumnProposal.METHOD_MAX_ALSO_USED_AS_TRIP_C);
 		assertEquals(400, DeviceColumnProposal.AUX_DEFAULT_C);
 		assertEquals(500, DeviceColumnProposal.AUX_CONFIGURABLE_UPPER_C);
+	}
+
+	@Test
+	public void casingSmuggleAndRoutineCalibrationStayClassified(@TempDir Path dir) throws Exception {
+
+		assertEquals(Kind.ENGINEERING_WRITE, EngineeringCommandGate.classify("gcws\twrite_oven_pid"));
+		assertEquals(Kind.OPERATOR_WRITE, EngineeringCommandGate.classify("GCWS\tWRITE_INLET_TEMP"));
+		assertEquals(Kind.OPERATOR_WRITE, EngineeringCommandGate.classify("GCWS\tWRITE_DETECTOR_TEMP"));
+		assertEquals(Kind.READ_OR_HANDSHAKE, EngineeringCommandGate.classify("GcWs\tReAd_FiD_StAtUs"));
+		assertEquals(Kind.UNSUPPORTED, EngineeringCommandGate.classify("GCWS\tWRITE_OVEN_PID\nGCWS\tSTOP_OVEN_CONTROL"));
+		assertEquals(Kind.UNSUPPORTED, EngineeringCommandGate.classify("GCWS\tREAD_OVEN_TEMP GCWS\tWRITE_OVEN_PID"));
+		EngineerSession session = new EngineerSession(new FileEngineerCredentialStore(dir.resolve("auth")), 5_000L);
+		assertEquals(Attempt.ENROLLED, session.enroll("correct-horse".toCharArray(), "correct-horse".toCharArray(), 0L));
+		session.lock("exit-lock", 1L);
+		boolean denied = false;
+		try {
+			EngineeringCommandGate.check("gcws\twrite_inlet_pid", session, 2L);
+		} catch(java.io.IOException ex) {
+			denied = true;
+		}
+		assertTrue(denied);
+		EngineeringCommandGate.check("GCWS\tWRITE_INLET_TEMP", session, 2L);
+		EngineeringCommandGate.check("GCWS\tSTOP_FID_VALVES", session, 2L);
+		EngineeringCommandGate.checkBinary(net.openchrom.xxd.control.supplier.temperature.ui.communication.GcCommand.STOP_ACQ);
+		boolean unknownFrame = false;
+		try {
+			EngineeringCommandGate.checkBinary((byte)0x55);
+		} catch(java.io.IOException ex) {
+			unknownFrame = true;
+		}
+		assertTrue(unknownFrame);
+		boolean payload = false;
+		try {
+			EngineeringCommandGate.checkPayload("{\"note\":\"GCWS\\tWRITE_OVEN_PID\"}");
+		} catch(java.io.IOException ex) {
+			payload = true;
+		}
+		assertTrue(payload);
+	}
+
+	@Test
+	public void credentialFileIsAtomicExclusiveAndNotADeviceControl(@TempDir Path dir) throws Exception {
+
+		Path file = dir.resolve("auth");
+		EngineerSession first = new EngineerSession(new FileEngineerCredentialStore(file), 2_000L, 5, 1_000L);
+		assertEquals(Attempt.MISMATCH, first.enroll("correct-horse".toCharArray(), "other-horse".toCharArray(), 0L));
+		assertFalse(java.nio.file.Files.exists(file));
+		java.util.concurrent.ExecutorService pool = java.util.concurrent.Executors.newFixedThreadPool(2);
+		try {
+			var left = pool.submit(() -> new EngineerSession(new FileEngineerCredentialStore(file), 2_000L).enroll("correct-horse".toCharArray(), "correct-horse".toCharArray(), 10L));
+			var right = pool.submit(() -> new EngineerSession(new FileEngineerCredentialStore(file), 2_000L).enroll("correct-horse".toCharArray(), "correct-horse".toCharArray(), 10L));
+			Attempt leftResult = left.get();
+			Attempt rightResult = right.get();
+			int enrolled = (leftResult == Attempt.ENROLLED ? 1 : 0) + (rightResult == Attempt.ENROLLED ? 1 : 0);
+			assertEquals(1, enrolled);
+			assertTrue(leftResult == Attempt.ALREADY_ENROLLED || rightResult == Attempt.ALREADY_ENROLLED);
+		} finally {
+			pool.shutdownNow();
+		}
+		assertFalse(java.nio.file.Files.exists(file.resolveSibling("auth.tmp")));
+		var perms = java.nio.file.Files.getPosixFilePermissions(file);
+		assertTrue(perms.contains(java.nio.file.attribute.PosixFilePermission.OWNER_READ));
+		assertTrue(perms.contains(java.nio.file.attribute.PosixFilePermission.OWNER_WRITE));
+		assertFalse(perms.contains(java.nio.file.attribute.PosixFilePermission.GROUP_READ));
+		assertFalse(perms.contains(java.nio.file.attribute.PosixFilePermission.OTHERS_READ));
+		EngineerSession again = new EngineerSession(new FileEngineerCredentialStore(file), 2_000L);
+		assertEquals(Attempt.ALREADY_ENROLLED, again.enroll("correct-horse".toCharArray(), "correct-horse".toCharArray(), 20L));
+		for(java.lang.reflect.Method method : EngineerSession.class.getMethods()) {
+			String name = method.getName().toLowerCase(java.util.Locale.ROOT);
+			assertFalse(name.equals("reset") || name.equals("clear") || name.equals("delete"), name);
+		}
+		Path blocked = dir.resolve("blocked");
+		java.nio.file.Files.writeString(blocked, "x");
+		EngineerSession io = new EngineerSession(new FileEngineerCredentialStore(blocked.resolve("auth")), 2_000L);
+		assertEquals(Attempt.IO_FAILED, io.enroll("correct-horse".toCharArray(), "correct-horse".toCharArray(), 30L));
+		assertFalse(io.allowsEngineeringWrite(30L));
+	}
+
+	@Test
+	public void lockoutElapsedAndEveryMutationRechecks(@TempDir Path dir) throws Exception {
+
+		EngineerSession session = new EngineerSession(new FileEngineerCredentialStore(dir.resolve("auth")), 1_000L, 1, 1_000L);
+		assertEquals(Attempt.ENROLLED, session.enroll("correct-horse".toCharArray(), "correct-horse".toCharArray(), 0L));
+		session.lock("exit-lock", 1L);
+		assertEquals(Attempt.LOCKED, session.verify("x".toCharArray(), 100L));
+		assertEquals(Attempt.LOCKED, session.verify("correct-horse".toCharArray(), 1_099L));
+		assertEquals(Attempt.VERIFIED, session.verify("correct-horse".toCharArray(), 1_100L));
+		EngineeringCommandGate.check("GCWS\tWRITE_OVEN_PID", session, 1_200L);
+		EngineeringCommandGate.check("gcws\twrite_detector_pid", session, 2_000L);
+		boolean expired = false;
+		try {
+			EngineeringCommandGate.check("GCWS\tWRITE_INLET_PID", session, 3_000L);
+		} catch(java.io.IOException ex) {
+			expired = true;
+		}
+		assertTrue(expired);
+		assertTrue(EngineeringCommandGate.allowedWhenLocked("GCWS\tSTOP_INLET_HEAT"));
 	}
 }

@@ -121,6 +121,7 @@ public final class EngineerSession {
 	public synchronized Attempt enroll(char[] password, char[] confirm, long nowEpochMs) {
 
 		try {
+			record = store.load();
 			if(record.corrupt()) {
 				audit("corrupt");
 				return Attempt.CORRUPT;
@@ -143,10 +144,19 @@ public final class EngineerSession {
 			byte[] hash = pbkdf2(password, salt, PBKDF2_ITERATIONS);
 			CredentialRecord enrolled = CredentialRecord.enrolled(PBKDF2_ITERATIONS, salt, hash);
 			try {
-				store.store(enrolled);
+				store.storeIfAbsent(enrolled);
+			} catch(java.nio.file.FileAlreadyExistsException ex) {
+				record = store.load();
+				if(!record.missing() && !record.corrupt()) {
+					audit("already-enrolled");
+					return Attempt.ALREADY_ENROLLED;
+				}
+				audit("io-failed");
+				return Attempt.IO_FAILED;
 			} catch(IOException ex) {
-				audit("persist-failed");
-				return Attempt.CORRUPT;
+				audit("io-failed");
+				record = store.load();
+				return record.corrupt() ? Attempt.CORRUPT : Attempt.IO_FAILED;
 			}
 			record = enrolled;
 			grant(nowEpochMs);
@@ -161,6 +171,7 @@ public final class EngineerSession {
 	public synchronized Attempt verify(char[] password, long nowEpochMs) {
 
 		try {
+			record = store.load();
 			if(record.corrupt()) {
 				audit("corrupt");
 				return Attempt.CORRUPT;
@@ -326,6 +337,6 @@ public final class EngineerSession {
 	}
 
 	public enum Attempt {
-		ENROLLED, VERIFIED, MISMATCH, TOO_SHORT, EMPTY, WRONG, LOCKED, CORRUPT, ALREADY_ENROLLED
+		ENROLLED, VERIFIED, MISMATCH, TOO_SHORT, EMPTY, WRONG, LOCKED, CORRUPT, ALREADY_ENROLLED, IO_FAILED
 	}
 }

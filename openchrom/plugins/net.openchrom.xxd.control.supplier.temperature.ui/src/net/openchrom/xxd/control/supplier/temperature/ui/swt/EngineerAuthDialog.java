@@ -143,6 +143,7 @@ public final class EngineerAuthDialog {
 			case LOCKED -> "尝试次数过多，请稍后再试。";
 			case CORRUPT -> "授权记录不可用，工程写入保持关闭。";
 			case ALREADY_ENROLLED -> "密码已存在，请改为验证。";
+			case IO_FAILED -> "授权记录无法保存，工程写入保持关闭。";
 			default -> "";
 		};
 		if(attempt == Attempt.MISMATCH || attempt == Attempt.TOO_SHORT || attempt == Attempt.EMPTY || attempt == Attempt.WRONG) {

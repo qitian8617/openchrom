@@ -189,6 +189,8 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 	private InstrumentSchematicCanvas schematicCanvas;
 	private Label schematicTitle;
 	private boolean schematicTicking;
+	private Boolean ovenFan;
+	private Boolean ovenVent;
 	private final Runnable schematicTick = this::tickSchematic;
 	private boolean chinese = true;
 	private final List<ZoneTrendPoint> trendPoints = new ArrayList<>();
@@ -272,6 +274,8 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 			updateTempControlButtonEnabled();
 			updateTrendButtons();
 			if(!connected) {
+				ovenFan = null;
+				ovenVent = null;
 				abandonHeatSessionAfterDisconnect();
 			}
 			if(connected) {
@@ -460,7 +464,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 			return;
 		}
 		schematicCanvas.setChinese(chinese);
-		schematicCanvas.setModel(SchematicSamples.from(snapshot));
+		schematicCanvas.setModel(SchematicSamples.from(snapshot, ovenFan, ovenVent));
 		if(schematicCanvas.getModel().animates() && !schematicTicking) {
 			schematicTicking = true;
 			getDisplay().timerExec(140, schematicTick);
@@ -753,6 +757,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 
 	private void applyOvenLiveTemp(int rowIndex, GcTcpConnection.OvenLiveTemp live) {
 
+		rememberOvenSignals(live);
 		if(isDisposed() || rowIndex < 0 || rowIndex >= table.getItemCount()) {
 			return;
 		}
@@ -772,6 +777,23 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 		}
 		updateTempControlButtonEnabled();
 		updateTrendButtons();
+	}
+
+	private void rememberOvenSignals(GcTcpConnection.OvenLiveTemp live) {
+
+		if(!connectionManager.isConnected() || live == null) {
+			ovenFan = null;
+			ovenVent = null;
+		} else {
+			Boolean fan = live.getFan();
+			if(fan == null) {
+				StatusLabels status = statusFromOven(live);
+				fan = Boolean.valueOf(net.openchrom.xxd.control.supplier.temperature.ui.engineering.OvenSignalSample.fanFallback(chinese ? status.cn() : status.en()));
+			}
+			ovenFan = fan;
+			ovenVent = live.getVent();
+		}
+		refreshSchematic(lastReadiness);
 	}
 
 	private void handleOvenFaultState(GcTcpConnection.OvenLiveTemp live) {
@@ -2055,6 +2077,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 							updateAuxStable("detector", detector);
 						}
 					}
+					rememberOvenSignals(oven);
 					if(ovenRow >= 0) {
 						applyOvenLiveTemp(ovenRow, oven);
 					} else {
@@ -2069,6 +2092,14 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 				});
 			} catch(Exception ex) {
 				logger.warn("Live temp poll skipped: " + ex.getMessage());
+				getDisplay().asyncExec(() -> {
+					if(isDisposed()) {
+						return;
+					}
+					ovenFan = null;
+					ovenVent = null;
+					refreshSchematic(lastReadiness);
+				});
 			} finally {
 				livePollBusy = false;
 			}

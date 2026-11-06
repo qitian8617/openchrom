@@ -57,9 +57,10 @@ public final class ConsoleControlPolicy {
 		return connected && !busy && !ignitionLocked;
 	}
 
-	public static boolean detectorValveEnabled(boolean connected, boolean busy, boolean valveStateKnown) {
+	/** Detector air-valve button. Same rule as before: connected and not busy. */
+	public static boolean detectorValveEnabled(boolean connected, boolean busy) {
 
-		return connected && !busy && valveStateKnown;
+		return connected && !busy;
 	}
 
 	public static boolean detectorAutoIgniteEnabled(boolean connected, boolean busy) {

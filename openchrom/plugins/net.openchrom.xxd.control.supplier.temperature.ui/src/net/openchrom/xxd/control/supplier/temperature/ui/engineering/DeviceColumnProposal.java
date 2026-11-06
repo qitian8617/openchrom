@@ -20,13 +20,14 @@ import java.util.Map;
  * Local workstation notes for a column and for machine limits. These numbers
  * are not certified ratings and are not written to the device.
  * <p>
- * Code facts, kept distinct from any proposal the engineer types:
- * firmware absolute oven ceiling {@value #FIRMWARE_OVEN_ABSOLUTE_CEILING_C} °C;
- * the method max stored in the oven program is also the trip threshold in the
- * current firmware, same {@value #METHOD_MAX_ALSO_USED_AS_TRIP_C} °C figure;
- * auxiliary zones default to {@value #AUX_DEFAULT_C} °C and the workstation
- * field allows up to {@value #AUX_CONFIGURABLE_UPPER_C} °C. This class does
- * not copy a proposal into that trip threshold.
+ * Code facts, kept distinct from any proposal the engineer types. The
+ * firmware absolute oven ceiling in this codebase is
+ * {@value #FIRMWARE_OVEN_ABSOLUTE_CEILING_C} °C. The live trip threshold is
+ * the method maximum stored on the device, which can be lower than that
+ * ceiling. This class does not read or write that value. Auxiliary zones
+ * default to {@value #AUX_DEFAULT_C} °C and the existing field allows up to
+ * {@value #AUX_CONFIGURABLE_UPPER_C} °C. None of the typed proposal numbers
+ * are enforced or synced.
  */
 public final class DeviceColumnProposal {
 
@@ -35,7 +36,7 @@ public final class DeviceColumnProposal {
 	public static final int AUX_DEFAULT_C = 400;
 	public static final int AUX_CONFIGURABLE_UPPER_C = 500;
 
-	public static final String APPLY_BLOCK_REASON = "设备协议没有色谱柱限值或跳闸阈值的读回/写入。本页只保存工作站本地建议，不会下发固件，也不会把工作温度上限接到保护阈值。";
+	public static final String APPLY_BLOCK_REASON = "这些数字只存在于本工作站文件，不会下发、不会同步，设备也不会执行。当前固件把已保存方法的最高温度用作跳闸阈值，该值可以低于代码里的柱箱上限 450℃。本页不读取、不修改那个阈值。";
 
 	private final String model;
 	private final String maker;
@@ -74,9 +75,9 @@ public final class DeviceColumnProposal {
 	public String codeFactSummary(boolean chinese) {
 
 		if(!chinese) {
-			return "Code facts, not certified ratings: firmware oven ceiling " + FIRMWARE_OVEN_ABSOLUTE_CEILING_C + " C; method max is also the trip threshold (" + METHOD_MAX_ALSO_USED_AS_TRIP_C + " C); aux default " + AUX_DEFAULT_C + " C, field allows up to " + AUX_CONFIGURABLE_UPPER_C + " C. No ambient sensor. Proposal is local only.";
+			return "Not enforced and not synced. Code ceiling " + FIRMWARE_OVEN_ABSOLUTE_CEILING_C + " C is not the live trip; the stored method maximum is the trip and can be lower. Aux default " + AUX_DEFAULT_C + " C, field allows up to " + AUX_CONFIGURABLE_UPPER_C + " C. No ambient sensor. Not a certified rating.";
 		}
-		return "以下是当前代码事实，不是认证额定值：固件柱箱绝对上限 " + FIRMWARE_OVEN_ABSOLUTE_CEILING_C + "℃；方法最高温度目前同时用作跳闸阈值（同为 " + METHOD_MAX_ALSO_USED_AS_TRIP_C + "℃）；辅助区默认 " + AUX_DEFAULT_C + "℃，界面可填到 " + AUX_CONFIGURABLE_UPPER_C + "℃。没有环境温度传感器。本页建议值只留在工作站。";
+		return "本页数字不会下发、不会同步，设备也不执行。代码里的柱箱绝对上限是 " + FIRMWARE_OVEN_ABSOLUTE_CEILING_C + "℃，跳闸并不因此总是 450℃：当前固件用已保存方法的最高温度做跳闸，运行中的方法最高温度可以更低。本页不读取、不修改该值。辅助区默认 " + AUX_DEFAULT_C + "℃，现有输入框可填到 " + AUX_CONFIGURABLE_UPPER_C + "℃。没有环境温度传感器。这些是代码事实，不是认证额定值。";
 	}
 
 	public String toDocument() {

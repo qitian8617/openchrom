@@ -168,6 +168,21 @@ public class BaijiuPlantNav_1_Test {
 		assertTrue(running.contains("在线"));
 		assertTrue(running.contains("已着火"));
 		assertFalse(idle.contains("showDebug"));
+		int[] exits = {0};
+		try {
+			BaijiuPlantNav.setMaintenanceExit(() -> exits[0]++);
+			BaijiuPlantNav.activate(Section.MAINTENANCE);
+			assertEquals(0, exits[0]);
+			BaijiuPlantNav.activate(Section.MAINTENANCE);
+			assertEquals(0, exits[0]);
+			BaijiuPlantNav.activate(Section.ACQUIRE);
+			assertEquals(1, exits[0]);
+			BaijiuPlantNav.activate(Section.REPORT);
+			assertEquals(1, exits[0]);
+		} finally {
+			BaijiuPlantNav.setMaintenanceExit(null);
+			BaijiuPlantNav.activate(Section.ACQUIRE);
+		}
 	}
 
 	private static List<String> labels(List<Target> targets) {

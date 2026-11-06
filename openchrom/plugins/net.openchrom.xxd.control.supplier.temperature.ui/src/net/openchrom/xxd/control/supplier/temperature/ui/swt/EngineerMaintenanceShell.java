@@ -212,7 +212,7 @@ public final class EngineerMaintenanceShell {
 		Composite page = new Composite(host, SWT.NONE);
 		page.setLayout(new GridLayout(1, false));
 		Label note = new Label(page, SWT.WRAP);
-		note.setText("日常柱箱程序、温度校准和检测器点火仍在反控窗口。这里只保留 PID 下发和工程升温曲线。风扇、平风门没有协议读回，显示未知，不能下发虚构指令。");
+		note.setText("日常柱箱程序、进样口/检测器温度校准和检测器点火仍在反控窗口，那些下发的是设定温度，不是 PID。这里的 PID 系数和工程升温曲线每次写入都会再检查授权。柱箱风扇和散热口来自本次 READ_OVEN_TEMP 的 fan / vent；缺字段或读失败为未知，不能下发虚构指令。");
 		GridData noteData = new GridData(SWT.FILL, SWT.CENTER, true, false);
 		noteData.widthHint = 640;
 		note.setLayoutData(noteData);

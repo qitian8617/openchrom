@@ -10,11 +10,15 @@
 package net.openchrom.xxd.control.supplier.temperature.ui.engineering;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Base64;
 import java.util.EnumSet;
@@ -63,6 +67,32 @@ public final class FileEngineerCredentialStore {
 
 	public synchronized void store(CredentialRecord record) throws IOException {
 
+		moveIntoPlace(record, true);
+	}
+
+	/**
+	 * First enrollment. Fails if a credential file is already present so two
+	 * creators cannot both believe they set the password.
+	 */
+	public synchronized void storeIfAbsent(CredentialRecord record) throws IOException {
+
+		if(record == null || record.corrupt() || record.missing()) {
+			throw new IOException("Refusing to persist an empty or corrupt engineer credential");
+		}
+		Path parent = path.getParent();
+		if(parent != null) {
+			Files.createDirectories(parent);
+		}
+		byte[] body = render(record).getBytes(StandardCharsets.UTF_8);
+		try(FileChannel channel = FileChannel.open(path, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
+			channel.write(ByteBuffer.wrap(body));
+			channel.force(true);
+		}
+		restrict(path);
+	}
+
+	private void moveIntoPlace(CredentialRecord record, boolean replace) throws IOException {
+
 		if(record == null || record.corrupt() || record.missing()) {
 			throw new IOException("Refusing to persist an empty or corrupt engineer credential");
 		}
@@ -74,11 +104,25 @@ public final class FileEngineerCredentialStore {
 		Files.writeString(temp, render(record), StandardCharsets.UTF_8);
 		restrict(temp);
 		try {
-			Files.move(temp, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-		} catch(AtomicMoveNotSupportedException ex) {
-			Files.move(temp, path, StandardCopyOption.REPLACE_EXISTING);
+			if(replace) {
+				try {
+					Files.move(temp, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+				} catch(AtomicMoveNotSupportedException ex) {
+					Files.move(temp, path, StandardCopyOption.REPLACE_EXISTING);
+				}
+			} else {
+				try {
+					Files.move(temp, path, StandardCopyOption.ATOMIC_MOVE);
+				} catch(AtomicMoveNotSupportedException ex) {
+					Files.move(temp, path);
+				}
+			}
+		} catch(FileAlreadyExistsException ex) {
+			Files.deleteIfExists(temp);
+			throw ex;
 		}
 		restrict(path);
+		Files.deleteIfExists(temp);
 	}
 
 	static CredentialRecord parse(String text) {

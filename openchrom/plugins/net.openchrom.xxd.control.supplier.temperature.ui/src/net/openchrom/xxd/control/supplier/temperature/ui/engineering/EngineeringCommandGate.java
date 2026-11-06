@@ -10,13 +10,21 @@
 package net.openchrom.xxd.control.supplier.temperature.ui.engineering;
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.Set;
 
+import net.openchrom.xxd.control.supplier.temperature.ui.communication.GcCommand;
+
 /**
- * Classifies ASCII commands before they are written to the socket, including
- * {@code sendProtocolLine}. Safety stops and operator commands stay available
- * when engineer mode is locked. PID writes need a live grant. Anything else
- * that looks like a command we do not implement is not sent.
+ * Classifies commands before they are written, including
+ * {@code sendProtocolLine} and binary frames. Case and a second embedded
+ * command do not bypass the check.
+ * <p>
+ * Android routine temperature calibration downloads inlet/detector setpoints
+ * ({@code WRITE_INLET_TEMP} / {@code WRITE_DETECTOR_TEMP}) and stays an
+ * operator command, same as the main-page setpoint. PID coefficient writes
+ * and any command this workstation does not implement are not operator
+ * actions. Safety stops and valve close stay allowed without an engineer grant.
  */
 public final class EngineeringCommandGate {
 
@@ -67,6 +75,9 @@ public final class EngineeringCommandGate {
 
 	public static Kind classify(String line) {
 
+		if(line == null || line.indexOf('\n') >= 0 || line.indexOf('\r') >= 0 || smuggled(line)) {
+			return Kind.UNSUPPORTED;
+		}
 		String verb = verb(line);
 		if(READS.contains(verb)) {
 			return Kind.READ_OR_HANDSHAKE;
@@ -98,6 +109,41 @@ public final class EngineeringCommandGate {
 			}
 			session.touch(nowEpochMs);
 		}
+	}
+
+	/**
+	 * JSON bodies may contain newlines. A body that also carries a GCWS
+	 * command is not sent.
+	 */
+	public static void checkPayload(String payload) throws IOException {
+
+		if(payload != null && payload.toUpperCase(Locale.ROOT).contains("GCWS")) {
+			throw new IOException("Unsupported workstation command was not sent");
+		}
+	}
+
+	/**
+	 * Known acquisition frames stay available without an engineer grant.
+	 * An unlisted opcode is not sent.
+	 */
+	public static void checkBinary(byte command) throws IOException {
+
+		switch(command) {
+			case GcCommand.START_ACQ, GcCommand.STOP_ACQ, GcCommand.HEARTBEAT, GcCommand.ACQ_DATA, GcCommand.ACQ_DONE, GcCommand.STATUS, GcCommand.PANEL_ACQ, GcCommand.ERROR, GcCommand.ACK, GcCommand.NACK -> {
+				return;
+			}
+			default -> throw new IOException("Unsupported binary workstation command was not sent: " + GcCommand.toString(command));
+		}
+	}
+
+	private static boolean smuggled(String text) {
+
+		String upper = text.toUpperCase(Locale.ROOT);
+		int first = upper.indexOf("GCWS");
+		if(first < 0) {
+			return false;
+		}
+		return upper.indexOf("GCWS", first + 4) >= 0;
 	}
 
 	/**

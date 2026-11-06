@@ -14,11 +14,12 @@ package net.openchrom.xxd.control.supplier.temperature.ui.engineering;
  * a failed read, or a missing key is {@link Signal#UNKNOWN} so the canvas
  * cannot keep the previous paint.
  * <p>
- * Carrier gas has no sensor, and the ASCII protocol has no fan or flat-vent
- * readback. Those three stay unknown. They are not inferred from heat or
- * from the air valve. The firmware still reports {@code valve1} and
- * {@code valve2}; the workstation treats them as one physical air valve
- * and only shows on/off when both flags are present and equal.
+ * Carrier flow has no sensor in this workstation (existing FID reminder).
+ * Fan and flat-vent are not decoded from {@code READ_OVEN_TEMP} yet. Unknown
+ * here means the sample was not decoded, not that the device lacks the signal.
+ * {@code valve1} / {@code valve2} are still the firmware flags. This model does
+ * not decide that they are one physical valve. The air-valve mark follows the
+ * existing {@code valve1 || valve2} state when a FID status sample exists.
  */
 public final class InstrumentSchematicModel {
 
@@ -47,29 +48,38 @@ public final class InstrumentSchematicModel {
 
 	public static InstrumentSchematicModel unknown() {
 
-		return evaluate(false, false, false, false, false, false, false, false, false, false, false);
+		return evaluate(false, false, false, false, false, false, null, null, null);
 	}
 
 	/**
-	 * @param fidReadOk
-	 *            {@code false} when the FID status read failed or has not arrived
-	 * @param heatKnown
-	 *            {@code true} only when {@code READ_CONTROL_STATUS} included {@code heat}
+	 * @param fidStatusPresent
+	 *            a parsed FID status from this sample, not a remembered one
+	 * @param airValveOpen
+	 *            existing {@code valve1 || valve2} when {@code fidStatusPresent}
+	 * @param heat
+	 *            {@code null} when {@code heat} was absent from this control read
+	 * @param fan
+	 *            {@code null} when this workstation has not decoded a fan field
+	 * @param flatVent
+	 *            {@code null} when this workstation has not decoded a flat-vent field
 	 */
-	public static InstrumentSchematicModel evaluate(boolean connected, boolean fidReadOk, boolean fidOnline, boolean flame, boolean igniting, boolean valve1Known, boolean valve1, boolean valve2Known, boolean valve2, boolean heatKnown, boolean heatOn) {
+	public static InstrumentSchematicModel evaluate(boolean connected, boolean fidStatusPresent, boolean fidOnline, boolean flame, boolean igniting, Boolean airValveState, Boolean heat, Boolean fan, Boolean flatVent) {
 
 		Signal particles = Signal.UNKNOWN;
-		Signal fan = Signal.UNKNOWN;
-		Signal flatVent = Signal.UNKNOWN;
-		Signal heat = Signal.UNKNOWN;
+		Signal fanSignal = signal(fan);
+		Signal ventSignal = signal(flatVent);
+		Signal heatSignal = Signal.UNKNOWN;
 		Signal ignition = Signal.UNKNOWN;
 		boolean ignitionActive = false;
 		Signal airValve = Signal.UNKNOWN;
-		if(connected && heatKnown) {
-			heat = heatOn ? Signal.ON : Signal.OFF;
+		if(!connected) {
+			return new InstrumentSchematicModel(particles, Signal.UNKNOWN, Signal.UNKNOWN, Signal.UNKNOWN, Signal.UNKNOWN, false, Signal.UNKNOWN);
 		}
-		if(connected && fidReadOk && fidOnline) {
-			airValve = airValve(valve1Known, valve1, valve2Known, valve2);
+		if(heat != null) {
+			heatSignal = heat.booleanValue() ? Signal.ON : Signal.OFF;
+		}
+		if(fidStatusPresent && fidOnline) {
+			airValve = signal(airValveState);
 			if(igniting) {
 				ignitionActive = true;
 			} else if(flame) {
@@ -78,15 +88,15 @@ public final class InstrumentSchematicModel {
 				ignition = Signal.OFF;
 			}
 		}
-		return new InstrumentSchematicModel(particles, fan, flatVent, heat, ignition, ignitionActive, airValve);
+		return new InstrumentSchematicModel(particles, fanSignal, ventSignal, heatSignal, ignition, ignitionActive, airValve);
 	}
 
-	public static Signal airValve(boolean valve1Known, boolean valve1, boolean valve2Known, boolean valve2) {
+	private static Signal signal(Boolean value) {
 
-		if(!valve1Known || !valve2Known || valve1 != valve2) {
+		if(value == null) {
 			return Signal.UNKNOWN;
 		}
-		return valve1 ? Signal.ON : Signal.OFF;
+		return value.booleanValue() ? Signal.ON : Signal.OFF;
 	}
 
 	public Signal particles() {
@@ -131,17 +141,17 @@ public final class InstrumentSchematicModel {
 
 	public String particlesText(boolean chinese) {
 
-		return named(chinese, "气流粒子", "Particles", particles) + (chinese ? "（无流量传感器）" : " (no flow sensor)");
+		return named(chinese, "气流粒子", "Particles", particles);
 	}
 
 	public String fanText(boolean chinese) {
 
-		return named(chinese, "风扇", "Fan", fan) + (chinese ? "（设备未提供读回）" : " (no device readback)");
+		return named(chinese, "柱箱风扇", "Oven fan", fan);
 	}
 
 	public String flatVentText(boolean chinese) {
 
-		return named(chinese, "平风门", "Flat vent", flatVent) + (chinese ? "（设备未提供读回）" : " (no device readback)");
+		return named(chinese, "散热口", "Exhaust vent", flatVent);
 	}
 
 	public String heatText(boolean chinese) {

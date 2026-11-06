@@ -26,17 +26,33 @@ public final class SchematicSamples {
 
 	public static InstrumentSchematicModel from(FidReadinessSnapshot snapshot) {
 
+		return from(snapshot, null, null);
+	}
+
+	/**
+	 * @param fan
+	 *            this oven sample's {@code fan} bit, or the Android status
+	 *            fallback when the key was absent; null when there is no fresh
+	 *            oven sample
+	 * @param vent
+	 *            this oven sample's {@code vent} bit; null when the key is
+	 *            absent or the oven sample failed
+	 */
+	public static InstrumentSchematicModel from(FidReadinessSnapshot snapshot, Boolean fan, Boolean vent) {
+
 		if(snapshot == null || !snapshot.isConnected()) {
 			return InstrumentSchematicModel.unknown();
 		}
-		boolean heatKnown = snapshot.deviceHeat() != null;
-		boolean heatOn = Boolean.TRUE.equals(snapshot.deviceHeat());
 		GcTcpConnection.FidStatus fid = snapshot.getFidStatus();
-		boolean fidOk = snapshot.getFidReadError() == null && fid != null;
-		if(!fidOk) {
-			return InstrumentSchematicModel.evaluate(true, false, false, false, false, false, false, false, false, heatKnown, heatOn);
+		boolean fidPresent = snapshot.getFidReadError() == null && fid != null;
+		boolean online = fidPresent && fid.isOnline();
+		boolean igniting = online && FidReadiness.isIgniting(Boolean.valueOf(fid.isBusy()), fid.getState());
+		Boolean air = null;
+		if(online) {
+			Boolean valve1 = fid.isValve1Known() ? Boolean.valueOf(fid.isValve1()) : null;
+			Boolean valve2 = fid.isValve2Known() ? Boolean.valueOf(fid.isValve2()) : null;
+			air = net.openchrom.xxd.control.supplier.temperature.ui.engineering.OvenSignalSample.airValveOpen(valve1, valve2);
 		}
-		boolean igniting = FidReadiness.isIgniting(Boolean.valueOf(fid.isBusy()), fid.getState());
-		return InstrumentSchematicModel.evaluate(true, true, fid.isOnline(), fid.isFlame(), igniting, fid.isValve1Known(), fid.isValve1(), fid.isValve2Known(), fid.isValve2(), heatKnown, heatOn);
+		return InstrumentSchematicModel.evaluate(true, fidPresent, online, fidPresent && fid.isFlame(), igniting, air, snapshot.deviceHeat(), fan, vent);
 	}
 }

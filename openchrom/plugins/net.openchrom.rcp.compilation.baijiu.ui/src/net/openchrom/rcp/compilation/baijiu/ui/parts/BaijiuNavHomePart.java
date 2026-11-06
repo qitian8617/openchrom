@@ -101,6 +101,8 @@ public class BaijiuNavHomePart {
 		palette = new BaijiuCardPalette(parent.getDisplay());
 		parent.addDisposeListener(event -> palette.dispose());
 		BaijiuPlantNav.setTaskOpener((section, target) -> runTarget(parent, section, target));
+		BaijiuPlantNav.setMaintenanceExit(() -> BaijiuHomePanels.lockEngineer());
+		parent.addDisposeListener(event -> BaijiuPlantNav.setMaintenanceExit(null));
 		GridLayout layout = new GridLayout(1, false);
 		layout.marginWidth = 8;
 		layout.marginHeight = 8;

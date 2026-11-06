@@ -451,6 +451,7 @@ public class GcTcpConnection {
 	private String exchangeAscii(String commandLine, String payloadAfterLine, AsciiCapture.Mode mode, long timeoutMs) throws IOException {
 
 		EngineeringCommandGate.check(commandLine, EngineerSession.shared(), System.currentTimeMillis());
+		EngineeringCommandGate.checkPayload(payloadAfterLine);
 		long waitMs = Math.max(200L, timeoutMs);
 		boolean locked;
 		try {
@@ -503,6 +504,7 @@ public class GcTcpConnection {
 
 	public void sendFrame(byte command, byte[] payload) throws IOException {
 
+		EngineeringCommandGate.checkBinary(command);
 		synchronized(writeLock) {
 			byte sequence = nextSequence();
 			byte[] frame = GcFrameCodec.encode(command, sequence, payload);
@@ -513,6 +515,7 @@ public class GcTcpConnection {
 
 	public GcFrame sendFrameAndWait(byte command, byte[] payload, long timeoutMs) throws IOException {
 
+		EngineeringCommandGate.checkBinary(command);
 		byte sequence;
 		CompletableFuture<GcFrame> responseFuture = new CompletableFuture<>();
 		synchronized(writeLock) {
@@ -864,8 +867,17 @@ public class GcTcpConnection {
 		private final int mode;
 		private final boolean fault;
 		private final String faultReason;
+		/** {@code null} when READ_OVEN_TEMP has no boolean {@code fan} token. */
+		private final Boolean fan;
+		/** {@code null} when READ_OVEN_TEMP has no boolean {@code vent} token. */
+		private final Boolean vent;
 
 		public OvenLiveTemp(float setpoint, float actual, boolean valid, int state, int stage, int duty, int mode, boolean fault, String faultReason) {
+
+			this(setpoint, actual, valid, state, stage, duty, mode, fault, faultReason, null, null);
+		}
+
+		public OvenLiveTemp(float setpoint, float actual, boolean valid, int state, int stage, int duty, int mode, boolean fault, String faultReason, Boolean fan, Boolean vent) {
 
 			this.setpoint = setpoint;
 			this.actual = actual;
@@ -876,6 +888,8 @@ public class GcTcpConnection {
 			this.mode = mode;
 			this.fault = fault;
 			this.faultReason = faultReason == null ? "" : faultReason;
+			this.fan = fan;
+			this.vent = vent;
 		}
 
 		public float getSetpoint() {
@@ -923,6 +937,16 @@ public class GcTcpConnection {
 			return faultReason;
 		}
 
+		public Boolean getFan() {
+
+			return fan;
+		}
+
+		public Boolean getVent() {
+
+			return vent;
+		}
+
 		public static OvenLiveTemp fromDeviceJson(String json) {
 
 			Objects.requireNonNull(json, "json");
@@ -941,7 +965,7 @@ public class GcTcpConnection {
 			if(json.contains("\"faultReason\"")) {
 				faultReason = OvenPid.parseQuotedString(json, "faultReason");
 			}
-			return new OvenLiveTemp(setpoint, actual, valid, state, stage, duty, mode, fault, faultReason);
+			return new OvenLiveTemp(setpoint, actual, valid, state, stage, duty, mode, fault, faultReason, net.openchrom.xxd.control.supplier.temperature.ui.engineering.OvenSignalSample.fan(json), net.openchrom.xxd.control.supplier.temperature.ui.engineering.OvenSignalSample.vent(json));
 		}
 	}
 
