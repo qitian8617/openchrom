@@ -111,7 +111,18 @@ public class BaijiuChromatogramOpenChrome_1_Test {
 
 		Path path = Path.of(relative);
 		if(!Files.isRegularFile(path)) {
-			path = Path.of("plugins/" + relative.substring(relative.indexOf("plugins/") + "plugins/".length()));
+			String tail = relative.substring(relative.indexOf("plugins/"));
+			Path dir = Path.of("").toAbsolutePath();
+			for(int i = 0; i < 8 && dir != null && !Files.isRegularFile(path); i++) {
+				Path nested = dir.resolve(tail);
+				Path prefixed = dir.resolve(relative);
+				if(Files.isRegularFile(nested)) {
+					path = nested;
+				} else if(Files.isRegularFile(prefixed)) {
+					path = prefixed;
+				}
+				dir = dir.getParent();
+			}
 		}
 		assertTrue(Files.isRegularFile(path), relative);
 		return Files.readString(path, StandardCharsets.UTF_8);

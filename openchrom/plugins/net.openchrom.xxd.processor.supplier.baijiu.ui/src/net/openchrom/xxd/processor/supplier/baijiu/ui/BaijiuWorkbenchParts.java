@@ -746,6 +746,9 @@ public final class BaijiuWorkbenchParts {
 
 	static MPart findPart(EModelService modelService, MApplication application, String partId) {
 
+		if(modelService == null || application == null || partId == null) {
+			return null;
+		}
 		MUIElement found = modelService.find(partId, application);
 		if(found instanceof MPart part) {
 			return part;

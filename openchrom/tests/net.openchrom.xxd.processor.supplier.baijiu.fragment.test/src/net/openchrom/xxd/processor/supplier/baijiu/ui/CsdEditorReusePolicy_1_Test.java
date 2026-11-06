@@ -67,6 +67,6 @@ public class CsdEditorReusePolicy_1_Test {
 
 		assertEquals("net.openchrom.gcws.savedFile", CsdEditorReusePolicy.SAVED_FILE_KEY);
 		assertEquals("file", CsdEditorReusePolicy.FILE_KEY);
-		assertFalse(OpenBaijiuChromatogramHandler.reuseOpenEditor(null, null));
+		assertFalse(OpenBaijiuChromatogramHandler.reuseOpenEditor((java.io.File)null, (org.eclipse.e4.core.contexts.IEclipseContext)null));
 	}
 }

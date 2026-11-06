@@ -192,7 +192,16 @@ public class ChromatogramReportWriter {
 		int width = 1080;
 		int height = (int)(width * (CHART_HEIGHT / CHART_WIDTH));
 		ChartExportRunnable chartExportRunnable = new ChartExportRunnable(chromatogram, width, height, reportSettings.getNumberOfImagesPerPage());
-		DisplayUtils.getDisplay().syncExec(chartExportRunnable);
+		try {
+			DisplayUtils.executeInUserInterfaceThread(chartExportRunnable);
+		} catch(InterruptedException e) {
+			Thread.currentThread().interrupt();
+			logger.error(e);
+			throw new IllegalStateException(e);
+		} catch(java.util.concurrent.ExecutionException e) {
+			logger.error(e);
+			throw new IllegalStateException(e);
+		}
 		return chartExportRunnable;
 	}
 

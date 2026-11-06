@@ -195,7 +195,7 @@ public class OpenBaijiuChromatogramHandler {
 	 * Host/activate an already-open live or file CSD editor for {@code file}.
 	 * Returns true when ChemClipse {@code openEditor} must not run.
 	 */
-	static boolean reuseOpenEditor(File file, IEclipseContext context) {
+	public static boolean reuseOpenEditor(File file, IEclipseContext context) {
 
 		if(file == null || context == null) {
 			return false;
@@ -355,10 +355,10 @@ public class OpenBaijiuChromatogramHandler {
 			return workbench;
 		}
 		try {
+			// Do not call Display.getDefault(): that creates a display and
+			// deadlocks a headless test thread. A real click already runs
+			// on the UI thread, where getCurrent() is the workbench display.
 			Display display = Display.getCurrent();
-			if(display == null) {
-				display = Display.getDefault();
-			}
 			if(display == null || display.isDisposed()) {
 				return null;
 			}
