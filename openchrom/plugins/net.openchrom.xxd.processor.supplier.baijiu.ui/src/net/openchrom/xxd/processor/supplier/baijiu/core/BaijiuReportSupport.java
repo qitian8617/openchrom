@@ -61,7 +61,7 @@ public final class BaijiuReportSupport {
 
 	public static final String EMPTY = "\u2014";
 	public static final String MULTIPOINT_RF_NOTE = "\u591a\u70b9\u62df\u5408\u6709\u6548RF";
-	public static final String RF_USED_NOTE = "RF \u5217\u4e3a\u672c\u6b21\u5b9a\u91cf\u5b9e\u9645\u4f7f\u7528\u7684\u54cd\u5e94\u56e0\u5b50\u3002\u5df2\u591a\u70b9\u62df\u5408\u7684\u7ec4\u5206\u4f7f\u7528\u62df\u5408\u5199\u5165\u7684\u6709\u6548 RF\u3002";
+	public static final String RF_USED_NOTE = "RF \u5217\u4e3a\u65b9\u6cd5\u4fdd\u5b58\u7684\u54cd\u5e94\u56e0\u5b50\u3002\u5df2\u591a\u70b9\u62df\u5408\u7684\u7ec4\u5206\u6309\u66f2\u7ebf\u53cd\u7b97\u6d53\u5ea6\uff0c\u5e76\u663e\u793a\u62df\u5408\u7684\u6709\u6548 RF\u3002";
 	public static final String DISCLAIMER_ZH = "\u4e0d\u58f0\u660e\u6267\u884c GB 5009.266\u3002";
 	public static final String DISCLAIMER_EN = "This report does not claim GB 5009.266.";
 	public static final String DISCLAIMER = DISCLAIMER_ZH + " " + DISCLAIMER_EN;

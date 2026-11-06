@@ -36,6 +36,8 @@ import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Text;
 
 import net.openchrom.xxd.control.supplier.temperature.ui.Activator;
+import net.openchrom.xxd.control.supplier.temperature.ui.engineering.ConsoleControlPolicy;
+import net.openchrom.xxd.control.supplier.temperature.ui.engineering.EngineerSession;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.ColumnOvenProgram;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.GcConnectionManager;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.GcDeviceEndpoint;
@@ -64,6 +66,16 @@ import net.openchrom.xxd.control.supplier.temperature.ui.swt.views.StopwatchView
  * {@link StackLayout}, so visiting Settings cannot leak widgets onto Main.
  */
 public class TemperatureControlPanel extends Composite implements LanguageListener {
+
+	/**
+	 * Engineer-mode page keys. The plant shell passes these strings and does
+	 * not link this type. {@link #ENGINEER_FID} is the PID debug page, which
+	 * stays off the operator bottom bar.
+	 */
+	public static final String ENGINEER_OVEN = EngineerConsolePages.OVEN;
+	public static final String ENGINEER_GAS = EngineerConsolePages.GAS;
+	public static final String ENGINEER_FID = EngineerConsolePages.FID;
+	public static final String ENGINEER_PARAMETERS = EngineerConsolePages.PARAMETERS;
 
 	private final Color backgroundColor;
 	private final NavigationBar navigationBar;
@@ -111,9 +123,18 @@ public class TemperatureControlPanel extends Composite implements LanguageListen
 
 		statusBar = new StatusBar(this, this);
 		statusBar.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-
 		showView(PanelView.MAIN);
-		navigationBar.select(PanelView.MAIN);
+	}
+
+	/**
+	 * Engineer tools no longer reopen this operator panel. The plant shell
+	 * opens {@code EngineerMaintenanceShell} after a password check.
+	 *
+	 * @return always {@code false}
+	 */
+	public static boolean showEngineerPage(String page) {
+
+		return false;
 	}
 
 	private void openParameterSettings() {
@@ -560,6 +581,10 @@ class AuxPidDebugView extends Composite implements LanguageListener {
 		if(busy || heating || recording) {
 			return;
 		}
+		if(!EngineerSession.shared().allowsEngineeringWrite(System.currentTimeMillis())) {
+			showInfo(chinese ? "工程师模式已锁定" : "Engineer mode is locked", chinese ? "请重新验证后再启动 PID 调试。停止加热不受影响。" : "Verify engineer mode again before starting PID debug. Heat stop stays available.");
+			return;
+		}
 		if(!connectionManager.isConnected()) {
 			showInfo(chinese ? "未连接" : "Not connected", chinese ? "请先在「设置 / 通信」连接设备" : "Connect on Settings / Communication first");
 			return;
@@ -917,10 +942,10 @@ class AuxPidDebugView extends Composite implements LanguageListener {
 		boolean connected = connectionManager.isConnected();
 		boolean idle = !busy && !heating && !recording && !pidDebugRunning;
 		if(startDebugButton != null && !startDebugButton.isDisposed()) {
-			startDebugButton.setEnabled(connected && idle);
+			startDebugButton.setEnabled(ConsoleControlPolicy.pidDebugStartEnabled(connected, busy, heating, recording, pidDebugRunning));
 		}
 		if(stopHeatButton != null && !stopHeatButton.isDisposed()) {
-			stopHeatButton.setEnabled(connected && (heating || pidDebugRunning) && !busy);
+			stopHeatButton.setEnabled(ConsoleControlPolicy.pidDebugStopHeatEnabled(connected, busy, heating, pidDebugRunning));
 		}
 		if(startLogButton != null && !startLogButton.isDisposed()) {
 			startLogButton.setEnabled(connected && !recording && !busy);

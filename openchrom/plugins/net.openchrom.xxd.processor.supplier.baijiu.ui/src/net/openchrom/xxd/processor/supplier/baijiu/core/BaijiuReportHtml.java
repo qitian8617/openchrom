@@ -124,7 +124,7 @@ public final class BaijiuReportHtml {
 			html.append("<div class=\"verdict-box\"><p class=\"").append(css).append("\">").append(escape(gb.getVerdictLabel())).append("</p>");
 			html.append("<p class=\"note\">").append(escape(BaijiuTerms.PASS + " / " + BaijiuTerms.FAIL + " / " + BaijiuTerms.UNJUDGED)).append("</p>");
 			html.append("<table class=\"meta\">");
-			html.append(metaRow("\u6d4b\u5f97\u7532\u9187 g/L", gb.isMethanolDetected() ? BaijiuReportSupport.format(gb.getMethanolMeasuredGL(), 4) : "\u672a\u68c0\u51fa", "\u6298\u7b97 100%vol g/L", gb.isJudged() && gb.isMethanolDetected() ? BaijiuReportSupport.format(gb.getMethanol100GL(), 4) : BaijiuReportSupport.EMPTY, "\u9650\u91cf 100%vol g/L", Double.isNaN(gb.getLimit100GL()) ? BaijiuReportSupport.EMPTY : BaijiuReportSupport.format(gb.getLimit100GL(), 4), "", ""));
+			html.append(metaRow("\u6d4b\u5f97\u7532\u9187 g/L", !gb.isJudged() ? BaijiuReportSupport.EMPTY : (gb.isMethanolDetected() ? BaijiuReportSupport.format(gb.getMethanolMeasuredGL(), 4) : "\u672a\u68c0\u51fa"), "\u6298\u7b97 100%vol g/L", gb.isJudged() && gb.isMethanolDetected() ? BaijiuReportSupport.format(gb.getMethanol100GL(), 4) : BaijiuReportSupport.EMPTY, "\u9650\u91cf 100%vol g/L", Double.isNaN(gb.getLimit100GL()) ? BaijiuReportSupport.EMPTY : BaijiuReportSupport.format(gb.getLimit100GL(), 4), "", ""));
 			html.append("</table>");
 			html.append("<p class=\"note\">").append(escape(gb.getConversionExplanation())).append("</p>");
 			html.append("<p class=\"note\">").append(escape(gb.getLimitSource())).append("</p>");

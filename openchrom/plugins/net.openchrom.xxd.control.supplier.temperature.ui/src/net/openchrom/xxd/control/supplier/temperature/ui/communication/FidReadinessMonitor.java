@@ -156,11 +156,20 @@ public final class FidReadinessMonitor {
 					pressureError = ex.getMessage();
 					logger.warn("Gas pressure poll failed", ex);
 				}
+				Boolean deviceHeat = null;
+				try {
+					GcTcpConnection.ControlStatus control = connectionManager.readControlStatus(IO_TIMEOUT_MS);
+					if(control != null && control.isHeatKnown()) {
+						deviceHeat = Boolean.valueOf(control.isHeatRunning());
+					}
+				} catch(Exception ex) {
+					logger.warn("Control status poll failed", ex);
+				}
 				if(!connectionManager.isConnected()) {
 					publish(FidReadinessSnapshot.DISCONNECTED);
 					return;
 				}
-				publish(new FidReadinessSnapshot(true, status, pressure, fidError, pressureError));
+				publish(new FidReadinessSnapshot(true, status, pressure, fidError, pressureError, deviceHeat));
 			} finally {
 				pollBusy.set(false);
 			}

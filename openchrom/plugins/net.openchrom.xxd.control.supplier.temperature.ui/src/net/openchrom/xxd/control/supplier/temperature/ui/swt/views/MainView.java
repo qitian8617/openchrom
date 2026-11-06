@@ -66,8 +66,12 @@ import net.openchrom.xxd.control.supplier.temperature.ui.communication.GcDeviceE
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.GcTcpConnection;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.IFidReadinessListener;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.IGcConnectionListener;
+import net.openchrom.xxd.control.supplier.temperature.ui.engineering.ConsoleControlPolicy;
 import net.openchrom.xxd.control.supplier.temperature.ui.events.GcEventListModel;
+import net.openchrom.xxd.control.supplier.temperature.ui.swt.InstrumentSchematicCanvas;
+import net.openchrom.xxd.control.supplier.temperature.ui.swt.SchematicSamples;
 import net.openchrom.xxd.control.supplier.temperature.ui.sequence.InjectionSequenceManager;
+import net.openchrom.xxd.control.supplier.temperature.ui.swt.InstrumentIndicatorPolicy;
 import net.openchrom.xxd.control.supplier.temperature.ui.swt.LanguageListener;
 import net.openchrom.xxd.control.supplier.temperature.ui.swt.UiColors;
 import net.openchrom.xxd.control.supplier.temperature.ui.swt.UiStyles;
@@ -119,7 +123,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 	private Runnable openParameterSettingsHandler;
 	private Supplier<String[]> channelIdReader;
 	private BooleanSupplier showDebugInfoReader;
-	private Composite readinessCard;
+	private Composite debugReadinessCard;
 	private Composite trendCard;
 	private boolean tempControlRunning;
 	private boolean tempControlBusy;
@@ -169,6 +173,9 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 	private Label airValueLabel;
 	private Label flameNameLabel;
 	private Label flameValueLabel;
+	private Label acquiringNameLabel;
+	private Label acquiringValueLabel;
+	private Label debugTitleLabel;
 	private Label fidNameLabel;
 	private Label fidValueLabel;
 	private Label readinessTipLabel;
@@ -179,6 +186,12 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 	private Label trendTitleLabel;
 	private Label trendStatusLabel;
 	private Canvas trendCanvas;
+	private InstrumentSchematicCanvas schematicCanvas;
+	private Label schematicTitle;
+	private boolean schematicTicking;
+	private Boolean ovenFan;
+	private Boolean ovenVent;
+	private final Runnable schematicTick = this::tickSchematic;
 	private boolean chinese = true;
 	private final List<ZoneTrendPoint> trendPoints = new ArrayList<>();
 	private boolean trendRecording;
@@ -196,6 +209,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 		layout.verticalSpacing = 8;
 		setLayout(layout);
 
+		createSchematicCard();
 		createTable();
 		createTableButtons();
 		createReadinessCard();
@@ -260,6 +274,8 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 			updateTempControlButtonEnabled();
 			updateTrendButtons();
 			if(!connected) {
+				ovenFan = null;
+				ovenVent = null;
 				abandonHeatSessionAfterDisconnect();
 			}
 			if(connected) {
@@ -378,13 +394,19 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 	}
 
 	/**
-	 * Hide FID readiness and the realtime trend. The Start Analysis gate still
-	 * reads {@link FidReadinessMonitor}; this only changes widgets.
+	 * Debug display may hide FID current and the live trend. Connection,
+	 * flame, and acquiring stay on the always-visible readiness card. The Start Analysis
+	 * gate still reads {@link FidReadinessMonitor}.
 	 */
 	private void applyDebugChrome(boolean show) {
 
-		boolean changed = setChromeVisible(readinessCard, show);
-		changed = setChromeVisible(trendCard, show) || changed;
+		boolean changed = false;
+		if(InstrumentIndicatorPolicy.debugDisplayMayHide(InstrumentIndicatorPolicy.FID_CURRENT)) {
+			changed = setChromeVisible(debugReadinessCard, show);
+		}
+		if(InstrumentIndicatorPolicy.debugDisplayMayHide(InstrumentIndicatorPolicy.TREND)) {
+			changed = setChromeVisible(trendCard, show) || changed;
+		}
 		if(changed && !isDisposed()) {
 			layout();
 		}
@@ -421,6 +443,47 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 			byId.put(rowChannelIds[i], new ChannelRow(row.nameCn(), row.nameEn(), selected, setTemp, measured, row.statusCn(), row.statusEn(), row.statusColor()));
 		}
 		return byId;
+	}
+
+	private void createSchematicCard() {
+
+		Composite card = WidgetFactory.createCard(this);
+		schematicTitle = WidgetFactory.createTitle(card, chinese ? "气路示意" : "Flow schematic");
+		schematicCanvas = new InstrumentSchematicCanvas(card);
+		GridData canvasData = new GridData(SWT.FILL, SWT.FILL, true, false);
+		canvasData.heightHint = 210;
+		canvasData.widthHint = 560;
+		schematicCanvas.setLayoutData(canvasData);
+		schematicCanvas.setChinese(chinese);
+		schematicCanvas.setModel(SchematicSamples.from(lastReadiness));
+	}
+
+	private void refreshSchematic(FidReadinessSnapshot snapshot) {
+
+		if(schematicCanvas == null || schematicCanvas.isDisposed()) {
+			return;
+		}
+		schematicCanvas.setChinese(chinese);
+		schematicCanvas.setModel(SchematicSamples.from(snapshot, ovenFan, ovenVent));
+		if(schematicCanvas.getModel().animates() && !schematicTicking) {
+			schematicTicking = true;
+			getDisplay().timerExec(140, schematicTick);
+		}
+	}
+
+	private void tickSchematic() {
+
+		if(isDisposed() || schematicCanvas == null || schematicCanvas.isDisposed()) {
+			schematicTicking = false;
+			return;
+		}
+		if(!schematicCanvas.getModel().animates()) {
+			schematicTicking = false;
+			schematicCanvas.redraw();
+			return;
+		}
+		schematicCanvas.advance();
+		getDisplay().timerExec(140, schematicTick);
 	}
 
 	private void createTable() {
@@ -694,6 +757,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 
 	private void applyOvenLiveTemp(int rowIndex, GcTcpConnection.OvenLiveTemp live) {
 
+		rememberOvenSignals(live);
 		if(isDisposed() || rowIndex < 0 || rowIndex >= table.getItemCount()) {
 			return;
 		}
@@ -713,6 +777,23 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 		}
 		updateTempControlButtonEnabled();
 		updateTrendButtons();
+	}
+
+	private void rememberOvenSignals(GcTcpConnection.OvenLiveTemp live) {
+
+		if(!connectionManager.isConnected() || live == null) {
+			ovenFan = null;
+			ovenVent = null;
+		} else {
+			Boolean fan = live.getFan();
+			if(fan == null) {
+				StatusLabels status = statusFromOven(live);
+				fan = Boolean.valueOf(net.openchrom.xxd.control.supplier.temperature.ui.engineering.OvenSignalSample.fanFallback(chinese ? status.cn() : status.en()));
+			}
+			ovenFan = fan;
+			ovenVent = live.getVent();
+		}
+		refreshSchematic(lastReadiness);
 	}
 
 	private void handleOvenFaultState(GcTcpConnection.OvenLiveTemp live) {
@@ -883,7 +964,6 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 	private void createReadinessCard() {
 
 		Composite card = WidgetFactory.createCard(this);
-		readinessCard = card;
 		readinessTitle = WidgetFactory.createTitle(card, FidReadiness.title(FidReadiness.Kind.DISCONNECTED, chinese));
 		readinessValueFont = UiStyles.createBoldFont(card, 11);
 
@@ -897,7 +977,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 
 		Composite metrics = new Composite(card, SWT.NONE);
 		metrics.setBackground(card.getBackground());
-		GridLayout metricsLayout = new GridLayout(5, true);
+		GridLayout metricsLayout = new GridLayout(3, true);
 		metricsLayout.marginWidth = 0;
 		metricsLayout.marginHeight = 0;
 		metricsLayout.horizontalSpacing = 8;
@@ -905,16 +985,13 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 		metrics.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
 		connectionNameLabel = metricHeader(metrics, chinese ? "连接" : "Link");
-		h2NameLabel = metricHeader(metrics, "H₂");
-		airNameLabel = metricHeader(metrics, chinese ? "空气" : "Air");
 		flameNameLabel = metricHeader(metrics, chinese ? "火焰" : "Flame");
-		fidNameLabel = metricHeader(metrics, "FID pA");
+		acquiringNameLabel = metricHeader(metrics, chinese ? "采集" : "Run");
 
 		connectionValueLabel = metricValue(metrics);
-		h2ValueLabel = metricValue(metrics);
-		airValueLabel = metricValue(metrics);
 		flameValueLabel = metricValue(metrics);
-		fidValueLabel = metricValue(metrics);
+		acquiringValueLabel = metricValue(metrics);
+		refreshAcquiringIndicator();
 
 		readinessTipLabel = new Label(card, SWT.WRAP);
 		readinessTipLabel.setBackground(card.getBackground());
@@ -930,7 +1007,43 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 		carrierReminderLabel.setLayoutData(reminderLayout);
 		carrierReminderLabel.setText(FidReadiness.carrierReminder(chinese) + " " + FidReadiness.pressureHint(chinese));
 
+		Composite debug = WidgetFactory.createCard(this);
+		debugReadinessCard = debug;
+		debugTitleLabel = WidgetFactory.createTitle(debug, chinese ? "调试读数" : "Debug readings");
+		Composite debugMetrics = new Composite(debug, SWT.NONE);
+		debugMetrics.setBackground(debug.getBackground());
+		GridLayout debugLayout = new GridLayout(3, true);
+		debugLayout.marginWidth = 0;
+		debugLayout.marginHeight = 0;
+		debugLayout.horizontalSpacing = 8;
+		debugMetrics.setLayout(debugLayout);
+		debugMetrics.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		h2NameLabel = metricHeader(debugMetrics, "H₂");
+		airNameLabel = metricHeader(debugMetrics, chinese ? "空气" : "Air");
+		fidNameLabel = metricHeader(debugMetrics, "FID pA");
+		h2ValueLabel = metricValue(debugMetrics);
+		airValueLabel = metricValue(debugMetrics);
+		fidValueLabel = metricValue(debugMetrics);
+
 		applyReadiness(lastReadiness);
+	}
+
+	private void refreshAcquiringIndicator() {
+
+		if(acquiringValueLabel == null || acquiringValueLabel.isDisposed()) {
+			return;
+		}
+		boolean running = acquisitionManager.isAcquiring();
+		acquiringValueLabel.setText(running ? (chinese ? "采集中" : "Running") : (chinese ? "未采集" : "Idle"));
+		acquiringValueLabel.setForeground(UiStyles.color(getDisplay(), running ? UiColors.STATUS_GREEN : UiColors.TEXT_SECONDARY));
+	}
+
+	private void setAcquisitionStatus(String text) {
+
+		if(acquisitionStatusLabel != null && !acquisitionStatusLabel.isDisposed()) {
+			acquisitionStatusLabel.setText(text == null ? "" : text);
+		}
+		refreshAcquiringIndicator();
 	}
 
 	private Label metricHeader(Composite parent, String text) {
@@ -966,7 +1079,11 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 
 	private void applyReadiness(FidReadinessSnapshot snapshot) {
 
-		if(readinessTitle == null || readinessTitle.isDisposed() || snapshot == null) {
+		if(snapshot == null) {
+			return;
+		}
+		refreshSchematic(snapshot);
+		if(readinessTitle == null || readinessTitle.isDisposed()) {
 			return;
 		}
 		lastReadiness = snapshot;
@@ -1026,7 +1143,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 		acquisitionStatusLabel = new Label(this, SWT.WRAP);
 		acquisitionStatusLabel.setBackground(getBackground());
 		acquisitionStatusLabel.setForeground(UiStyles.color(getDisplay(), UiColors.TEXT_SECONDARY));
-		acquisitionStatusLabel.setText(idleStatusText());
+		setAcquisitionStatus(idleStatusText());
 		acquisitionStatusLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 	}
 
@@ -1349,10 +1466,10 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 	private void updateTrendButtons() {
 
 		if(startRecordButton != null && !startRecordButton.isDisposed()) {
-			startRecordButton.setEnabled(!trendRecording && connectionManager.isConnected() && !tempControlRunning);
+			startRecordButton.setEnabled(ConsoleControlPolicy.mainTrendStartEnabled(trendRecording, connectionManager.isConnected(), tempControlRunning));
 		}
 		if(stopRecordButton != null && !stopRecordButton.isDisposed()) {
-			stopRecordButton.setEnabled(trendRecording && !tempControlRunning);
+			stopRecordButton.setEnabled(ConsoleControlPolicy.mainTrendStopEnabled(trendRecording, tempControlRunning));
 		}
 	}
 
@@ -1836,17 +1953,8 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 			updateTrendButtons();
 			return;
 		}
-		if(tempControlBusy) {
-			startTempButton.setEnabled(false);
-			updateTrendButtons();
-			return;
-		}
-		if(tempControlRunning) {
-			startTempButton.setEnabled(true); /* Stop still allowed */
-			updateTrendButtons();
-			return;
-		}
-		startTempButton.setEnabled(!(ovenFaultActive || eventModel.isOvenFaultActive()));
+		boolean ovenFault = ovenFaultActive || eventModel.isOvenFaultActive();
+		startTempButton.setEnabled(ConsoleControlPolicy.mainHeatToggleEnabled(tempControlBusy, tempControlRunning, ovenFault));
 		updateTrendButtons();
 	}
 
@@ -1969,6 +2077,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 							updateAuxStable("detector", detector);
 						}
 					}
+					rememberOvenSignals(oven);
 					if(ovenRow >= 0) {
 						applyOvenLiveTemp(ovenRow, oven);
 					} else {
@@ -1983,6 +2092,14 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 				});
 			} catch(Exception ex) {
 				logger.warn("Live temp poll skipped: " + ex.getMessage());
+				getDisplay().asyncExec(() -> {
+					if(isDisposed()) {
+						return;
+					}
+					ovenFan = null;
+					ovenVent = null;
+					refreshSchematic(lastReadiness);
+				});
 			} finally {
 				livePollBusy = false;
 			}
@@ -2193,7 +2310,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 			if(!isDisposed()) {
 				lastSavedChromatogramPath = null;
 				lastSavedHandedToBaijiu = false;
-				acquisitionStatusLabel.setText(chinese ? "\u91C7\u96C6\u72B6\u6001: \u91C7\u96C6\u4E2D..." : "Acquisition: Running");
+				setAcquisitionStatus(chinese ? "\u91C7\u96C6\u72B6\u6001: \u91C7\u96C6\u4E2D..." : "Acquisition: Running");
 				updateAcquisitionButtonLabel();
 			}
 		});
@@ -2210,7 +2327,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 		getDisplay().asyncExec(() -> {
 			if(!isDisposed()) {
 				if(lastSavedChromatogramPath == null) {
-					acquisitionStatusLabel.setText(chinese ? "\u91C7\u96C6\u72B6\u6001: \u5B8C\u6210" : "Acquisition: Completed");
+					setAcquisitionStatus(chinese ? "\u91C7\u96C6\u72B6\u6001: \u5B8C\u6210" : "Acquisition: Completed");
 				}
 				updateAcquisitionButtonLabel();
 			}
@@ -2227,14 +2344,14 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 			String path = file == null ? "" : file.getAbsolutePath();
 			lastSavedChromatogramPath = path;
 			lastSavedHandedToBaijiu = false;
-			acquisitionStatusLabel.setText(AcquisitionMessages.saveSuccessStatus(path, chinese));
+			setAcquisitionStatus(AcquisitionMessages.saveSuccessStatus(path, chinese));
 			updateAcquisitionButtonLabel();
 			boolean editorOpened = getDisplay() != null && !getDisplay().isDisposed();
 			boolean xyFallback = result != null && result.getFormat() == AcquisitionSaveResult.Format.XY;
 			BaijiuHandoffOutcome outcome = AcquisitionHandoffUi.offer(getShell(), file, chinese, editorOpened, xyFallback);
 			if(outcome != null && outcome.isOpened()) {
 				lastSavedHandedToBaijiu = true;
-				acquisitionStatusLabel.setText(AcquisitionMessages.saveSuccessStatus(path, chinese, true));
+				setAcquisitionStatus(AcquisitionMessages.saveSuccessStatus(path, chinese, true));
 			}
 		});
 	}
@@ -2248,7 +2365,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 			}
 			lastSavedChromatogramPath = null;
 			lastSavedHandedToBaijiu = false;
-			acquisitionStatusLabel.setText(AcquisitionMessages.failedStatus(reason, chinese));
+			setAcquisitionStatus(AcquisitionMessages.failedStatus(reason, chinese));
 			updateAcquisitionButtonLabel();
 			showWarning(reason != null && reason.contains("保存失败") ? AcquisitionMessages.saveFailedTitle(chinese) : AcquisitionMessages.failedTitle(chinese), reason == null || reason.isBlank() ? AcquisitionMessages.saveFailedDialog(null, 0, null) : reason);
 		});
@@ -2273,21 +2390,32 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 			h2NameLabel.setText("H₂");
 			airNameLabel.setText(chinese ? "空气" : "Air");
 			flameNameLabel.setText(chinese ? "火焰" : "Flame");
+			if(acquiringNameLabel != null && !acquiringNameLabel.isDisposed()) {
+				acquiringNameLabel.setText(chinese ? "采集" : "Run");
+			}
 			fidNameLabel.setText("FID pA");
+			if(debugTitleLabel != null && !debugTitleLabel.isDisposed()) {
+				debugTitleLabel.setText(chinese ? "调试读数" : "Debug readings");
+			}
 			carrierReminderLabel.setText(FidReadiness.carrierReminder(chinese) + " " + FidReadiness.pressureHint(chinese));
 			applyReadiness(lastReadiness);
+			refreshAcquiringIndicator();
 		}
+		if(schematicTitle != null && !schematicTitle.isDisposed()) {
+			schematicTitle.setText(chinese ? "气路示意" : "Flow schematic");
+		}
+		refreshSchematic(lastReadiness);
 		trendTitleLabel.setText(chinese ? "进样 / 检测器 / 柱箱 实时曲线" : "Inlet / Detector / Oven Trend");
 		startRecordButton.setText(chinese ? "开始记录" : "Start Log");
 		stopRecordButton.setText(chinese ? "停止记录" : "Stop Log");
 		updateTempControlButtonLabel();
 		updateTempControlButtonEnabled();
 		if(acquisitionManager.isAcquiring()) {
-			acquisitionStatusLabel.setText(chinese ? "\u91C7\u96C6\u72B6\u6001: \u91C7\u96C6\u4E2D..." : "Acquisition: Running");
+			setAcquisitionStatus(chinese ? "\u91C7\u96C6\u72B6\u6001: \u91C7\u96C6\u4E2D..." : "Acquisition: Running");
 		} else if(lastSavedChromatogramPath != null) {
-			acquisitionStatusLabel.setText(AcquisitionMessages.saveSuccessStatus(lastSavedChromatogramPath, chinese, lastSavedHandedToBaijiu));
+			setAcquisitionStatus(AcquisitionMessages.saveSuccessStatus(lastSavedChromatogramPath, chinese, lastSavedHandedToBaijiu));
 		} else {
-			acquisitionStatusLabel.setText(idleStatusText());
+			setAcquisitionStatus(idleStatusText());
 		}
 		if(!trendRecording) {
 			updateTrendStatus(null);

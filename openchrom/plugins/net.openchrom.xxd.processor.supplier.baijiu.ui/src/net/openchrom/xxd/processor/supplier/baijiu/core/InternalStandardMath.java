@@ -17,7 +17,7 @@ public final class InternalStandardMath {
 	public static double injectedIstdGramsPerLiter(double stockGramsPerLiter, double sampleVolumeMl, double istdVolumeMl) {
 
 		double total = sampleVolumeMl + istdVolumeMl;
-		if(total <= 0.0d || istdVolumeMl < 0.0d || stockGramsPerLiter < 0.0d) {
+		if(!Double.isFinite(total) || total <= 0.0d || !Double.isFinite(istdVolumeMl) || istdVolumeMl < 0.0d || !Double.isFinite(stockGramsPerLiter) || stockGramsPerLiter < 0.0d) {
 			return Double.NaN;
 		}
 		return stockGramsPerLiter * istdVolumeMl / total;
@@ -25,7 +25,7 @@ public final class InternalStandardMath {
 
 	public static double responseFactor(double analyteStdGramsPerLiter, double istdInjectedGramsPerLiter, double istdArea, double analyteArea) {
 
-		if(analyteStdGramsPerLiter <= 0.0d || istdInjectedGramsPerLiter <= 0.0d || analyteArea <= 0.0d || istdArea <= 0.0d) {
+		if(!Double.isFinite(analyteStdGramsPerLiter) || !Double.isFinite(istdInjectedGramsPerLiter) || !Double.isFinite(analyteArea) || !Double.isFinite(istdArea) || analyteStdGramsPerLiter <= 0.0d || istdInjectedGramsPerLiter <= 0.0d || analyteArea <= 0.0d || istdArea <= 0.0d) {
 			return Double.NaN;
 		}
 		return (analyteStdGramsPerLiter / istdInjectedGramsPerLiter) * (istdArea / analyteArea);
@@ -33,7 +33,7 @@ public final class InternalStandardMath {
 
 	public static double concentrationGramsPerLiter(double responseFactor, double istdInjectedGramsPerLiter, double analyteArea, double istdArea) {
 
-		if(responseFactor <= 0.0d || istdInjectedGramsPerLiter <= 0.0d || analyteArea < 0.0d || istdArea <= 0.0d) {
+		if(!Double.isFinite(responseFactor) || !Double.isFinite(istdInjectedGramsPerLiter) || !Double.isFinite(analyteArea) || !Double.isFinite(istdArea) || responseFactor <= 0.0d || istdInjectedGramsPerLiter <= 0.0d || analyteArea < 0.0d || istdArea <= 0.0d) {
 			return Double.NaN;
 		}
 		return responseFactor * istdInjectedGramsPerLiter * (analyteArea / istdArea);

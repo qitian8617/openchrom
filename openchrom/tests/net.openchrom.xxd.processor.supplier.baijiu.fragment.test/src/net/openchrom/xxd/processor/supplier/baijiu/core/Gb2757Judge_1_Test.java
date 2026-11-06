@@ -64,6 +64,30 @@ public class Gb2757Judge_1_Test {
 	}
 
 	@Test
+	public void missingMethanolStaysUnjudgedInsteadOfPassing() {
+
+		Gb2757Result result = Gb2757Judge.judge(null, 52.0d, BaijiuRawMaterial.GRAIN, BaijiuMethodSettings.defaultNongxiangFid());
+		assertFalse(result.isJudged());
+		assertFalse(result.isPassed());
+		assertFalse(result.isMethanolDetected());
+		assertTrue(Double.isNaN(result.getMethanolMeasuredGL()));
+		assertTrue(Double.isNaN(result.getMethanol100GL()));
+		assertEquals(BaijiuTerms.UNJUDGED, result.getVerdictLabel());
+		assertFalse(result.getSummary().contains("\u6309 GB 2757 \u5408\u683c\u5904\u7406"));
+		assertFalse(result.getSummary().contains("\u672a\u68c0\u51fa\u7532\u9187\uff0c\u6309"));
+	}
+
+	@Test
+	public void nonFiniteLimitAndAbvStayUnjudged() {
+
+		BaijiuMethodSettings settings = BaijiuMethodSettings.defaultNongxiangFid();
+		settings.setGb2757GrainLimit100VolGL(Double.POSITIVE_INFINITY);
+		assertFalse(Gb2757Judge.judge(0.18d, 52.0d, BaijiuRawMaterial.GRAIN, settings).isJudged());
+		settings.setGb2757GrainLimit100VolGL(0.6d);
+		assertFalse(Gb2757Judge.judge(0.18d, Double.NaN, BaijiuRawMaterial.GRAIN, settings).isJudged());
+	}
+
+	@Test
 	public void missingLimitStaysUnjudged() {
 
 		BaijiuMethodSettings settings = new BaijiuMethodSettings();

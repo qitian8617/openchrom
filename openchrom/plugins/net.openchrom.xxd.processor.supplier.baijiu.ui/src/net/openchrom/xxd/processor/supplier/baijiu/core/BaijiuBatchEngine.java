@@ -60,7 +60,7 @@ public final class BaijiuBatchEngine {
 			if(!includeBatchColumn(settings, compound)) {
 				continue;
 			}
-			csv.append(',').append(settings == null ? compound.getName() : settings.displayName(compound));
+			csv.append(',').append(quote(settings == null ? compound.getName() : settings.displayName(compound)));
 		}
 		csv.append(',').append("GB 2757").append(',').append("\u8bf4\u660e").append('\n');
 		if(rows == null) {
@@ -92,7 +92,7 @@ public final class BaijiuBatchEngine {
 		return settings == null || settings.isQuantified(compound);
 	}
 
-	private static BaijiuSampleInfo sampleOf(IChromatogram chromatogram, File file, BaijiuSampleInfo template) {
+	static BaijiuSampleInfo sampleOf(IChromatogram chromatogram, File file, BaijiuSampleInfo template) {
 
 		BaijiuSampleInfo sample = BaijiuSampleInfo.from(chromatogram);
 		if(template != null) {
@@ -102,10 +102,12 @@ public final class BaijiuBatchEngine {
 			if(sample.getAnalyst().isEmpty()) {
 				sample.setAnalyst(template.getAnalyst());
 			}
-			if(sample.getAromaType() == BaijiuAromaType.NONG && template.getAromaType() != null) {
+			if(!sample.hasExplicitAromaType() && template.getAromaType() != null) {
 				sample.setAromaType(template.getAromaType());
 			}
-			sample.setRawMaterial(template.getRawMaterial());
+			if(!sample.hasExplicitRawMaterial() && template.getRawMaterial() != null) {
+				sample.setRawMaterial(template.getRawMaterial());
+			}
 			if(sample.getLiquorName().isEmpty()) {
 				sample.setLiquorName(template.getLiquorName());
 			}
@@ -145,7 +147,7 @@ public final class BaijiuBatchEngine {
 
 	private static String quote(String value) {
 
-		String text = value == null ? "" : value;
+		String text = BaijiuFileSupport.safeCsvText(value);
 		if(text.indexOf(',') >= 0 || text.indexOf('"') >= 0 || text.indexOf('\n') >= 0) {
 			return "\"" + text.replace("\"", "\"\"") + "\"";
 		}

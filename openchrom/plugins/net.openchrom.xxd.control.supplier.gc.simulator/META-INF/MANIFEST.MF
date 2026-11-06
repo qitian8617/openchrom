@@ -1,0 +1,21 @@
+Manifest-Version: 1.0
+Automatic-Module-Name: net.openchrom.xxd.control.supplier.gc.simulator
+Bundle-ManifestVersion: 2
+Bundle-Name: Virtual GC Device Simulator
+Bundle-SymbolicName: net.openchrom.xxd.control.supplier.gc.simulator;singleton:=true
+Bundle-Version: 1.6.20.qualifier
+Bundle-Activator: net.openchrom.xxd.control.supplier.gc.simulator.Activator
+Bundle-Vendor: OpenChrom
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ org.eclipse.chemclipse.logging;bundle-version="0.8.0",
+ org.eclipse.chemclipse.support.ui;bundle-version="0.8.0",
+ org.eclipse.e4.core.di;bundle-version="1.2.0",
+ org.eclipse.e4.core.contexts;bundle-version="1.2.0",
+ org.eclipse.e4.ui.workbench;bundle-version="0.10.100",
+ org.eclipse.swt;bundle-version="3.123.0",
+ net.openchrom.xxd.control.supplier.temperature.ui;bundle-version="1.6.20"
+Bundle-RequiredExecutionEnvironment: JavaSE-21
+Import-Package: jakarta.annotation;version="2.1.1",
+ jakarta.inject;version="2.0.1"
+Bundle-ActivationPolicy: lazy

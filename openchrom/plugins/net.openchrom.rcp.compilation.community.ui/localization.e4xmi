@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fragment:ModelFragments xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:application="http://www.eclipse.org/ui/2010/UIModel/application" xmlns:basic="http://www.eclipse.org/ui/2010/UIModel/application/ui/basic" xmlns:commands="http://www.eclipse.org/ui/2010/UIModel/application/commands" xmlns:fragment="http://www.eclipse.org/ui/2010/UIModel/fragment" xmlns:menu="http://www.eclipse.org/ui/2010/UIModel/application/ui/menu" xmi:id="_laiendeLocalizationFragments">
+  <fragments xsi:type="fragment:StringModelFragment" xmi:id="_laiendeLocalizationAddonFragment" featurename="addons" parentElementId="org.eclipse.chemclipse.rcp.ide.application">
+    <elements xsi:type="application:Addon" xmi:id="_laiendeLocalizationAddon" elementId="net.openchrom.rcp.compilation.community.ui.localization.addon" contributionURI="bundleclass://net.openchrom.rcp.compilation.community.ui/net.openchrom.rcp.compilation.community.ui.localization.ModelLabelLocalizationAddon"/>
+    <elements xsi:type="application:Addon" xmi:id="_laiendeViewMenuPopulationAddon" elementId="net.openchrom.rcp.compilation.community.ui.localization.viewMenuPopulation.addon" contributionURI="bundleclass://net.openchrom.rcp.compilation.community.ui/net.openchrom.rcp.compilation.community.ui.localization.ViewMenuPopulationSupport"/>
+  </fragments>
+  <fragments xsi:type="fragment:StringModelFragment" xmi:id="_laiendeViewMenuGroupsFragment" featurename="children" parentElementId="org.eclipse.chemclipse.rcp.app.ui.menu.view" positionInParent="after:org.eclipse.chemclipse.rcp.app.ui.menuseparator.view">
+    <elements xsi:type="menu:Menu" xmi:id="_laiendeViewOverview" elementId="org.eclipse.chemclipse.ux.extension.xxd.ui.view.overview" label="概览" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/chromatogramOverview.gif"/>
+    <elements xsi:type="menu:Menu" xmi:id="_laiendeViewOverlay" elementId="org.eclipse.chemclipse.ux.extension.xxd.ui.view.overlay" label="叠加" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/chromatogramOverlay.gif"/>
+    <elements xsi:type="menu:Menu" xmi:id="_laiendeViewScans" elementId="org.eclipse.chemclipse.ux.extension.xxd.ui.view.scans" label="扫描" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/selectedScan.gif"/>
+    <elements xsi:type="menu:Menu" xmi:id="_laiendeViewPeaks" elementId="org.eclipse.chemclipse.ux.extension.xxd.ui.view.peaks" label="峰" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/selectedPeak.gif"/>
+    <elements xsi:type="menu:Menu" xmi:id="_laiendeViewTargets" elementId="org.eclipse.chemclipse.ux.extension.xxd.ui.view.targets" label="目标" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/target.png"/>
+    <elements xsi:type="menu:Menu" xmi:id="_laiendeViewChromatogram" elementId="org.eclipse.chemclipse.ux.extension.xxd.ui.view.chromatogram" label="色谱图" iconURI="platform:/plugin/org.eclipse.chemclipse.ux.extension.xxd.ui/icons/16x16/chromatogram.gif"/>
+    <elements xsi:type="menu:Menu" xmi:id="_laiendeViewIstd" elementId="org.eclipse.chemclipse.ux.extension.xxd.ui.view.istd" label="内标" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/16x16/internalStandardsDefault.gif"/>
+    <elements xsi:type="menu:Menu" xmi:id="_laiendeViewMisc" elementId="org.eclipse.chemclipse.ux.extension.xxd.ui.view.misc" label="其他" iconURI="platform:/plugin/org.eclipse.chemclipse.rcp.ui.icons/icons/scalable/measurementResults.svg"/>
+  </fragments>
+  <fragments xsi:type="fragment:StringModelFragment" xmi:id="_laiendeHideTutorialsFragment" featurename="children" parentElementId="org.eclipse.chemclipse.rcp.app.ui.menu.help">
+    <elements xsi:type="menu:HandledMenuItem" elementId="org.eclipse.chemclipse.rcp.app.ui.handledmenuitem.tutorials" visible="false" toBeRendered="false" enabled="false"/>
+  </fragments>
+</fragment:ModelFragments>

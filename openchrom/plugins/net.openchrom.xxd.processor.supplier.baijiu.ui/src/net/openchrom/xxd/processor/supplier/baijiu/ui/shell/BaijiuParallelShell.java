@@ -36,7 +36,6 @@ import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuParallelCompoundSt
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuParallelEngine;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuParallelResult;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuPreferences;
-import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuRawMaterial;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuSampleInfo;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuTerms;
 
@@ -131,14 +130,14 @@ public final class BaijiuParallelShell {
 
 		Label status = BaijiuPlantLayout.hint(body, "选择两针后点「计算均值与偏差」。");
 
-		BaijiuPlantLayout.railCommand(rail, "选择针 A .ocb", e -> {
+		BaijiuPlantButton chooseA = BaijiuPlantLayout.railCommand(rail, "选择针 A .ocb", e -> {
 			File chosen = chooseFile(host, "选择针 A 色谱图");
 			if(chosen != null) {
 				files[0] = chosen;
 				fileALabel.setText("针 A：" + chosen.getName());
 			}
 		});
-		BaijiuPlantLayout.railCommand(rail, "选择针 B .ocb", e -> {
+		BaijiuPlantButton chooseB = BaijiuPlantLayout.railCommand(rail, "选择针 B .ocb", e -> {
 			File chosen = chooseFile(host, "选择针 B 色谱图");
 			if(chosen != null) {
 				files[1] = chosen;
@@ -146,7 +145,10 @@ public final class BaijiuParallelShell {
 			}
 		});
 
-		BaijiuPlantLayout.railPrimary(rail, "计算均值与偏差", e -> {
+		java.util.concurrent.atomic.AtomicBoolean running = new java.util.concurrent.atomic.AtomicBoolean();
+		Display display = host.getDisplay();
+		BaijiuPlantButton[] calculateRef = new BaijiuPlantButton[1];
+		BaijiuPlantButton calculate = BaijiuPlantLayout.railPrimary(rail, "计算均值与偏差", e -> {
 			if(files[0] == null || files[1] == null) {
 				warn(host, "请先为针 A 和针 B 各选一个 .ocb（演示可两次选择 sample-nongxiang.ocb）。\nChoose a chromatogram for needle A and needle B (the demo file may be used twice).");
 				return;
@@ -159,30 +161,78 @@ public final class BaijiuParallelShell {
 				warn(host, calibrationBlock);
 				return;
 			}
+			final double allowed;
 			try {
 				template.setSampleNo(sampleNo.getText());
-				template.setAbvPercent(parse(abv.getText(), template.getAbvPercent()));
-				template.setRawMaterial(BaijiuRawMaterial.GRAIN);
-				double allowed = parse(allowedRsd.getText(), BaijiuPreferences.DEFAULT_ALLOWED_RSD_PERCENT);
-				BaijiuPreferences.saveAllowedRsdPercent(allowed);
-				IChromatogram chromatogramA = BaijiuChromatogramFiles.loadCsd(files[0], null);
-				IChromatogram chromatogramB = BaijiuChromatogramFiles.loadCsd(files[1], null);
-				if(chromatogramA == null || chromatogramB == null) {
-					warn(host, "没有读入色谱图。请确认文件为工作站 .ocb。\nCould not load chromatograms. Confirm workstation .ocb files.");
-					return;
-				}
-				BaijiuBatchRow rowA = BaijiuBatchEngine.analyze(chromatogramA, files[0], settings, template, true);
-				BaijiuBatchRow rowB = BaijiuBatchEngine.analyze(chromatogramB, files[1], settings, template, true);
-				BaijiuParallelResult result = BaijiuParallelEngine.compare(rowA, rowB);
-				fill(table, result, settings, allowed);
-				status.setText(result.getMessage());
-				if(!result.isSuccess()) {
-					warn(host, result.getMessage());
-				}
+				template.setAbvPercent(parse(abv.getText()));
+				allowed = parse(allowedRsd.getText());
 			} catch(RuntimeException ex) {
 				warn(host, "平行样计算失败：" + (ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage()));
+				return;
 			}
+			if(!running.compareAndSet(false, true)) {
+				return;
+			}
+			BaijiuPreferences.saveAllowedRsdPercent(allowed);
+			File needleAFile = files[0];
+			File needleBFile = files[1];
+			chooseA.setEnabled(false);
+			chooseB.setEnabled(false);
+			calculateRef[0].setEnabled(false);
+			sampleNo.setEnabled(false);
+			abv.setEnabled(false);
+			allowedRsd.setEnabled(false);
+			calculateRef[0].setText("正在计算…");
+			status.setText("正在后台读取两针谱图并定量，界面可继续操作。");
+			Thread worker = new Thread(() -> {
+				BaijiuParallelResult calculated = null;
+				String failure = null;
+				try {
+					IChromatogram chromatogramA = BaijiuChromatogramFiles.loadCsd(needleAFile, null);
+					IChromatogram chromatogramB = BaijiuChromatogramFiles.loadCsd(needleBFile, null);
+					if(chromatogramA == null || chromatogramB == null) {
+						failure = "没有读入色谱图。请确认文件为工作站 .ocb。";
+					} else {
+						BaijiuBatchRow rowA = BaijiuBatchEngine.analyze(chromatogramA, needleAFile, settings, template, true);
+						BaijiuBatchRow rowB = BaijiuBatchEngine.analyze(chromatogramB, needleBFile, settings, template, true);
+						calculated = BaijiuParallelEngine.compare(rowA, rowB);
+					}
+				} catch(RuntimeException ex) {
+					failure = ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage();
+				}
+				BaijiuParallelResult completedResult = calculated;
+				String completedFailure = failure;
+				running.set(false);
+				if(display.isDisposed()) {
+					return;
+				}
+				display.asyncExec(() -> {
+					if(host.isDisposed()) {
+						return;
+					}
+					chooseA.setEnabled(true);
+					chooseB.setEnabled(true);
+					calculateRef[0].setEnabled(true);
+					calculateRef[0].setText("计算均值与偏差");
+					sampleNo.setEnabled(true);
+					abv.setEnabled(true);
+					allowedRsd.setEnabled(true);
+					if(completedFailure != null) {
+						status.setText("平行样计算失败，未改写当前结果。");
+						warn(host, "平行样计算失败：" + completedFailure);
+						return;
+					}
+					fill(table, completedResult, settings, allowed);
+					status.setText(completedResult.getMessage());
+					if(!completedResult.isSuccess()) {
+						warn(host, completedResult.getMessage());
+					}
+				});
+			}, "baijiu-parallel-analysis");
+			worker.setDaemon(true);
+			worker.start();
 		});
+		calculateRef[0] = calculate;
 
 		if(parent instanceof Shell dialog) {
 			BaijiuPlantLayout.railGap(rail);
@@ -301,12 +351,16 @@ public final class BaijiuParallelShell {
 		column.setWidth(width);
 	}
 
-	private static double parse(String text, double fallback) {
+	private static double parse(String text) {
 
 		try {
-			return Double.parseDouble(text.trim().replace(',', '.'));
-		} catch(RuntimeException e) {
-			return fallback;
+			double value = Double.parseDouble(text.trim().replace(',', '.'));
+			if(!Double.isFinite(value)) {
+				throw new IllegalArgumentException("\u6570\u503c\u5fc5\u987b\u662f\u6709\u9650\u6570\u3002");
+			}
+			return value;
+		} catch(NumberFormatException | NullPointerException e) {
+			throw new IllegalArgumentException("\u6570\u503c\u683c\u5f0f\u65e0\u6548\uff1a" + text, e);
 		}
 	}
 

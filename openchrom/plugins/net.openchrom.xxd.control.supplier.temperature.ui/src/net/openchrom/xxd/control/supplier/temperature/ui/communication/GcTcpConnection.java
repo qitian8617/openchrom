@@ -34,6 +34,9 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.eclipse.chemclipse.logging.core.Logger;
 
+import net.openchrom.xxd.control.supplier.temperature.ui.engineering.EngineerSession;
+import net.openchrom.xxd.control.supplier.temperature.ui.engineering.EngineeringCommandGate;
+
 public class GcTcpConnection {
 
 	private static final Logger logger = Logger.getLogger(GcTcpConnection.class);
@@ -113,6 +116,7 @@ public class GcTcpConnection {
 	public void sendProtocolLine(String lineWithoutCrLf) throws IOException {
 
 		Objects.requireNonNull(lineWithoutCrLf, "lineWithoutCrLf");
+		EngineeringCommandGate.check(lineWithoutCrLf, EngineerSession.shared(), System.currentTimeMillis());
 		synchronized(writeLock) {
 			if(!connected.get() || outputStream == null) {
 				throw new IOException("Not connected to GC device");
@@ -446,6 +450,8 @@ public class GcTcpConnection {
 
 	private String exchangeAscii(String commandLine, String payloadAfterLine, AsciiCapture.Mode mode, long timeoutMs) throws IOException {
 
+		EngineeringCommandGate.check(commandLine, EngineerSession.shared(), System.currentTimeMillis());
+		EngineeringCommandGate.checkPayload(payloadAfterLine);
 		long waitMs = Math.max(200L, timeoutMs);
 		boolean locked;
 		try {
@@ -498,6 +504,7 @@ public class GcTcpConnection {
 
 	public void sendFrame(byte command, byte[] payload) throws IOException {
 
+		EngineeringCommandGate.checkBinary(command);
 		synchronized(writeLock) {
 			byte sequence = nextSequence();
 			byte[] frame = GcFrameCodec.encode(command, sequence, payload);
@@ -508,6 +515,7 @@ public class GcTcpConnection {
 
 	public GcFrame sendFrameAndWait(byte command, byte[] payload, long timeoutMs) throws IOException {
 
+		EngineeringCommandGate.checkBinary(command);
 		byte sequence;
 		CompletableFuture<GcFrame> responseFuture = new CompletableFuture<>();
 		synchronized(writeLock) {
@@ -522,6 +530,7 @@ public class GcTcpConnection {
 			if(response.getCommand() == GcCommand.NACK) {
 				throw new IOException("Device NACK for " + GcCommand.toString(command));
 			}
+			validateAck(response, command);
 			return response;
 		} catch(TimeoutException e) {
 			throw new IOException("Response timeout for " + GcCommand.toString(command), e);
@@ -535,6 +544,20 @@ public class GcTcpConnection {
 			throw new IOException("Failed to send frame " + GcCommand.toString(command), e);
 		} finally {
 			pendingResponses.remove(sequence & 0xFF, responseFuture);
+		}
+	}
+
+	static void validateAck(GcFrame response, byte expectedCommand) throws IOException {
+
+		if(response == null || response.getCommand() != GcCommand.ACK) {
+			throw new IOException("Expected ACK for " + GcCommand.toString(expectedCommand));
+		}
+		byte[] payload = response.getPayload();
+		if(payload.length < 2 || payload[0] != expectedCommand) {
+			throw new IOException("Mismatched ACK for " + GcCommand.toString(expectedCommand));
+		}
+		if(payload[1] != 0) {
+			throw new IOException("Device ACK error status " + (payload[1] & 0xFF) + " for " + GcCommand.toString(expectedCommand));
 		}
 	}
 
@@ -581,10 +604,11 @@ public class GcTcpConnection {
 
 	private void startReader() {
 
-		readerThread = Thread.ofVirtual().name("gc-tcp-reader").start(() -> {
-			try(InputStream inputStream = socket.getInputStream()) {
+		Socket readerSocket = socket;
+		Thread newReader = Thread.ofVirtual().name("gc-tcp-reader").unstarted(() -> {
+			try(InputStream inputStream = readerSocket.getInputStream()) {
 				byte[] buffer = new byte[READ_BUFFER_BYTES];
-				while(connected.get()) {
+				while(connected.get() && socket == readerSocket) {
 					int read;
 					try {
 						read = inputStream.read(buffer);
@@ -603,7 +627,7 @@ public class GcTcpConnection {
 					dispatchChunk(chunk);
 				}
 			} catch(IOException e) {
-				if(connected.get()) {
+				if(connected.get() && socket == readerSocket) {
 					String msg = e.getMessage() == null ? "" : e.getMessage();
 					/*
 					 * Connection reset / closed are common when F407 reboots, re-flashes,
@@ -619,16 +643,28 @@ public class GcTcpConnection {
 					}
 				}
 			} finally {
-				boolean wasConnected = connected.getAndSet(false);
-				failPendingResponses(new IOException("Connection closed"));
-				failAsciiCapture(new IOException("Connection closed"));
-				closeQuietly(socket);
-				socket = null;
+				boolean wasConnected = false;
+				synchronized(writeLock) {
+					if(socket == readerSocket) {
+						wasConnected = connected.getAndSet(false);
+						socket = null;
+						outputStream = null;
+						if(readerThread == Thread.currentThread()) {
+							readerThread = null;
+						}
+						frameParser.reset();
+						failPendingResponses(new IOException("Connection closed"));
+						failAsciiCapture(new IOException("Connection closed"));
+					}
+				}
+				closeQuietly(readerSocket);
 				if(wasConnected && connectionLostHandler != null) {
 					connectionLostHandler.run();
 				}
 			}
 		});
+		readerThread = newReader;
+		newReader.start();
 	}
 
 	private void dispatchChunk(byte[] chunk) {
@@ -672,6 +708,9 @@ public class GcTcpConnection {
 
 	private void completePendingResponse(GcFrame frame) {
 
+		if(frame.getCommand() != GcCommand.ACK && frame.getCommand() != GcCommand.NACK) {
+			return;
+		}
 		CompletableFuture<GcFrame> responseFuture = pendingResponses.remove(frame.getSequence() & 0xFF);
 		if(responseFuture != null && !responseFuture.isDone()) {
 			responseFuture.complete(frame);
@@ -828,8 +867,17 @@ public class GcTcpConnection {
 		private final int mode;
 		private final boolean fault;
 		private final String faultReason;
+		/** {@code null} when READ_OVEN_TEMP has no boolean {@code fan} token. */
+		private final Boolean fan;
+		/** {@code null} when READ_OVEN_TEMP has no boolean {@code vent} token. */
+		private final Boolean vent;
 
 		public OvenLiveTemp(float setpoint, float actual, boolean valid, int state, int stage, int duty, int mode, boolean fault, String faultReason) {
+
+			this(setpoint, actual, valid, state, stage, duty, mode, fault, faultReason, null, null);
+		}
+
+		public OvenLiveTemp(float setpoint, float actual, boolean valid, int state, int stage, int duty, int mode, boolean fault, String faultReason, Boolean fan, Boolean vent) {
 
 			this.setpoint = setpoint;
 			this.actual = actual;
@@ -840,6 +888,8 @@ public class GcTcpConnection {
 			this.mode = mode;
 			this.fault = fault;
 			this.faultReason = faultReason == null ? "" : faultReason;
+			this.fan = fan;
+			this.vent = vent;
 		}
 
 		public float getSetpoint() {
@@ -887,6 +937,16 @@ public class GcTcpConnection {
 			return faultReason;
 		}
 
+		public Boolean getFan() {
+
+			return fan;
+		}
+
+		public Boolean getVent() {
+
+			return vent;
+		}
+
 		public static OvenLiveTemp fromDeviceJson(String json) {
 
 			Objects.requireNonNull(json, "json");
@@ -905,7 +965,7 @@ public class GcTcpConnection {
 			if(json.contains("\"faultReason\"")) {
 				faultReason = OvenPid.parseQuotedString(json, "faultReason");
 			}
-			return new OvenLiveTemp(setpoint, actual, valid, state, stage, duty, mode, fault, faultReason);
+			return new OvenLiveTemp(setpoint, actual, valid, state, stage, duty, mode, fault, faultReason, net.openchrom.xxd.control.supplier.temperature.ui.engineering.OvenSignalSample.fan(json), net.openchrom.xxd.control.supplier.temperature.ui.engineering.OvenSignalSample.vent(json));
 		}
 	}
 
@@ -975,6 +1035,8 @@ public class GcTcpConnection {
 		private final boolean fire1;
 		private final boolean valve1;
 		private final boolean valve2;
+		private final boolean valve1Known;
+		private final boolean valve2Known;
 		private final int vlogUv;
 		private final int currentPa;
 		private final float detectorC;
@@ -983,6 +1045,11 @@ public class GcTcpConnection {
 
 		public FidStatus(boolean online, boolean autoIgnite, boolean busy, boolean flame, boolean fire1, boolean valve1, boolean valve2, int vlogUv, int currentPa, float detectorC, boolean detectorValid, String state) {
 
+			this(online, autoIgnite, busy, flame, fire1, valve1, valve2, true, true, vlogUv, currentPa, detectorC, detectorValid, state);
+		}
+
+		public FidStatus(boolean online, boolean autoIgnite, boolean busy, boolean flame, boolean fire1, boolean valve1, boolean valve2, boolean valve1Known, boolean valve2Known, int vlogUv, int currentPa, float detectorC, boolean detectorValid, String state) {
+
 			this.online = online;
 			this.autoIgnite = autoIgnite;
 			this.busy = busy;
@@ -990,6 +1057,8 @@ public class GcTcpConnection {
 			this.fire1 = fire1;
 			this.valve1 = valve1;
 			this.valve2 = valve2;
+			this.valve1Known = valve1Known;
+			this.valve2Known = valve2Known;
 			this.vlogUv = vlogUv;
 			this.currentPa = currentPa;
 			this.detectorC = detectorC;
@@ -1030,6 +1099,16 @@ public class GcTcpConnection {
 		public boolean isValve2() {
 
 			return valve2;
+		}
+
+		public boolean isValve1Known() {
+
+			return valve1Known;
+		}
+
+		public boolean isValve2Known() {
+
+			return valve2Known;
 		}
 
 		public boolean areValvesOpen() {
@@ -1073,6 +1152,8 @@ public class GcTcpConnection {
 					quotedFlag(json, "fire1"),
 					quotedFlag(json, "valve1"),
 					quotedFlag(json, "valve2"),
+					json.contains("\"valve1\""),
+					json.contains("\"valve2\""),
 					quotedInt(json, "vlogUv"),
 					quotedInt(json, "currentPa"),
 					json.contains("\"detectorC\"") ? OvenPid.parseQuotedFloat(json, "detectorC") : 0.0f,
@@ -1130,23 +1211,30 @@ public class GcTcpConnection {
 		private final String owner;
 		private final boolean acquiring;
 		private final boolean heatRunning;
+		private final boolean heatKnown;
 		private final int selMask;
 
 		public ControlStatus(String owner, boolean acquiring) {
 
-			this(owner, acquiring, false);
+			this(owner, acquiring, false, -1, false);
 		}
 
 		public ControlStatus(String owner, boolean acquiring, boolean heatRunning) {
 
-			this(owner, acquiring, heatRunning, -1);
+			this(owner, acquiring, heatRunning, -1, true);
 		}
 
 		public ControlStatus(String owner, boolean acquiring, boolean heatRunning, int selMask) {
 
+			this(owner, acquiring, heatRunning, selMask, false);
+		}
+
+		public ControlStatus(String owner, boolean acquiring, boolean heatRunning, int selMask, boolean heatKnown) {
+
 			this.owner = owner == null || owner.isBlank() ? "NONE" : owner;
 			this.acquiring = acquiring;
 			this.heatRunning = heatRunning;
+			this.heatKnown = heatKnown;
 			this.selMask = selMask;
 		}
 
@@ -1170,6 +1258,12 @@ public class GcTcpConnection {
 			return heatRunning;
 		}
 
+		/** {@code false} when the status JSON had no {@code heat} key. */
+		public boolean isHeatKnown() {
+
+			return heatKnown;
+		}
+
 		/** Bitmask from F407 {@code sel}, or {@code -1} if the key is missing. */
 		public int getSelMask() {
 
@@ -1184,7 +1278,8 @@ public class GcTcpConnection {
 		public static ControlStatus fromDeviceJson(String json) {
 
 			Objects.requireNonNull(json, "json");
-			return new ControlStatus(extractQuoted(json, "owner"), quotedTruthy(json, "acq"), quotedTruthy(json, "heat"), parseSelMask(json));
+			boolean heatKnown = json.indexOf("\"heat\"") >= 0;
+			return new ControlStatus(extractQuoted(json, "owner"), quotedTruthy(json, "acq"), quotedTruthy(json, "heat"), parseSelMask(json), heatKnown);
 		}
 
 		private static int parseSelMask(String json) {

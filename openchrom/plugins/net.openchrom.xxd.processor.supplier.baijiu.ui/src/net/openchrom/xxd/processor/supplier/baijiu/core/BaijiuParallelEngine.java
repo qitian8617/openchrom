@@ -109,8 +109,8 @@ public final class BaijiuParallelEngine {
 	}
 
 	/**
-	 * Pair batch rows that share a sample label. First two rows of each label
-	 * become needle A / needle B. Different samples are not forced into a pair.
+	 * Pair batch rows that share a sample label in groups of two, in input order.
+	 * Different samples are not forced into a pair; comparePairs reports odd tails.
 	 */
 	public static List<BaijiuBatchRow[]> pairBatchRows(List<BaijiuBatchRow> rows) {
 
@@ -130,8 +130,8 @@ public final class BaijiuParallelEngine {
 			byLabel.computeIfAbsent(key, ignored -> new ArrayList<>()).add(row);
 		}
 		for(List<BaijiuBatchRow> group : byLabel.values()) {
-			if(group.size() >= 2) {
-				pairs.add(new BaijiuBatchRow[]{group.get(0), group.get(1)});
+			for(int i = 0; i + 1 < group.size(); i += 2) {
+				pairs.add(new BaijiuBatchRow[]{group.get(i), group.get(i + 1)});
 			}
 		}
 		return pairs;
@@ -140,8 +140,25 @@ public final class BaijiuParallelEngine {
 	public static List<BaijiuParallelResult> comparePairs(List<BaijiuBatchRow> rows) {
 
 		List<BaijiuParallelResult> results = new ArrayList<>();
-		for(BaijiuBatchRow[] pair : pairBatchRows(rows)) {
-			results.add(compare(pair[0], pair[1]));
+		Map<String, List<BaijiuBatchRow>> byLabel = new LinkedHashMap<>();
+		if(rows != null) {
+			for(BaijiuBatchRow row : rows) {
+				if(row == null || row.getSampleLabel() == null || row.getSampleLabel().isBlank()) {
+					continue;
+				}
+				byLabel.computeIfAbsent(row.getSampleLabel().trim(), ignored -> new ArrayList<>()).add(row);
+			}
+		}
+		for(List<BaijiuBatchRow> group : byLabel.values()) {
+			for(int i = 0; i < group.size(); i += 2) {
+				BaijiuBatchRow first = group.get(i);
+				if(i + 1 < group.size()) {
+					results.add(compare(first, group.get(i + 1)));
+				} else {
+					String label = first.getSampleLabel();
+					results.add(new BaijiuParallelResult(false, "样品 " + label + " 有奇数针，最后一针缺少配对，未纳入两针均值与偏差。\nOdd needle count for " + label + "; the last needle has no pair.", label, "未配对针", "", List.of()));
+				}
+			}
 		}
 		return results;
 	}

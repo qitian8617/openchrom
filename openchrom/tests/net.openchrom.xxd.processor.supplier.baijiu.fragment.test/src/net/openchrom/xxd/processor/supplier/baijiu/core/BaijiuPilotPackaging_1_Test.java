@@ -253,7 +253,7 @@ public class BaijiuPilotPackaging_1_Test {
 		assertTrue(acquireIdx > pagesIdx && acquireIdx < analysisHomeIdx, "连接与采集 is the first task page");
 		assertTrue(analysisHomeIdx > pagesIdx && analysisHomeIdx < chromStackIdx, "白酒分析 stays in the task stack");
 		assertTrue(sequenceHomeIdx > pagesIdx && sequenceHomeIdx < chromStackIdx, "进样序列 stays in the task stack");
-		assertTrue(workbenchHomeIdx > pagesIdx && workbenchHomeIdx < chromStackIdx, "高级处理 lives in the task stack, not a right sidebar");
+		assertTrue(workbenchHomeIdx > pagesIdx && workbenchHomeIdx < chromStackIdx, "plant workbench home lives in the task stack, not a right sidebar");
 		assertTrue(gcWindowIdx > 0 && gcWindowIdx < plantSashAt, "GC console is a TrimmedWindow, not a plant sash child");
 		assertTrue(shellFrag.contains("horizontal=\"true\""), shellFrag);
 		assertTrue(shellFrag.contains("%part.workbenchHome"), shellFrag);

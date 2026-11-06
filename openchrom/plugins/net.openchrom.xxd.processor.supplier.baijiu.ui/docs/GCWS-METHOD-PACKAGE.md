@@ -29,7 +29,7 @@ The frozen template does **not** include response factors or multi-point calibra
 | `demo/nongxiang-fid-default.bjm` | Operator-facing copy (also `demo/浓香FID默认方法.bjm`) |
 | `BaijiuCatalog` | Structural library: ids, Chinese names, vendor RT, mix g/L |
 
-`BaijiuMethodSettings.defaultNongxiangFid()` loads the bundled package, then fills any omitted compound name / mix / window / RT / quantify / GB 2757 flags from the catalog.
+`BaijiuMethodSettings.defaultNongxiangFid()` loads the bundled package, then fills any omitted compound name / mix / window / RT / quantify / GB 2757 flags from the catalog. `mix.istd.gl` is the mix-standard ISTD concentration used for calibration; `istd.stock.gl`, `volume.sample.ml`, and `volume.istd.ml` independently determine the sample ISTD concentration. Older method files without `mix.istd.gl` use **0.3632 g/L**.
 
 ## Operator path
 

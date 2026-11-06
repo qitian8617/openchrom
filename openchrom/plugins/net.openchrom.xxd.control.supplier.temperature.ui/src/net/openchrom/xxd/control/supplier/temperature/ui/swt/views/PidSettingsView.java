@@ -34,6 +34,7 @@ import org.eclipse.swt.widgets.Text;
 
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.ColumnOvenProgram;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.GcConnectionManager;
+import net.openchrom.xxd.control.supplier.temperature.ui.engineering.EngineerSession;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.GcDeviceEndpoint;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.GcTcpConnection;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.IGcConnectionListener;
@@ -215,6 +216,10 @@ public class PidSettingsView extends Composite implements LanguageListener {
 
 	private void downloadPid() {
 
+		if(!EngineerSession.shared().allowsEngineeringWrite(System.currentTimeMillis())) {
+			showError(chinese ? "工程师模式已锁定" : "Engineer mode is locked", chinese ? "PID 下发需要有效的工程师授权。" : "PID download requires a live engineer grant.");
+			return;
+		}
 		if(!connectionManager.isConnected()) {
 			showError(chinese ? "\u672A\u8FDE\u63A5" : "Not connected", chinese ? "\u8BF7\u5148\u5728\u901A\u8BAF\u9875\u8FDE\u63A5\u8BBE\u5907" : "Connect the device on the Communication page first");
 			return;

@@ -49,6 +49,17 @@ public class GcAcqPayloadCodec_1_Test {
 	}
 
 	@Test
+	public void decodeDoesNotHideNegativeRetentionTime() {
+
+		byte[] payload = GcAcqPayloadCodec.encodeDataBatch(0, List.of(new GcAcqSample(0, 1f)));
+		payload[6] = (byte)0xFF;
+		payload[7] = (byte)0xFF;
+		payload[8] = (byte)0xFF;
+		payload[9] = (byte)0xFF;
+		assertEquals(-1, GcAcqPayloadCodec.decodeDataBatch(payload).samples().get(0).retentionTimeMs());
+	}
+
+	@Test
 	public void truncatedBatchIsRejected() {
 
 		try {

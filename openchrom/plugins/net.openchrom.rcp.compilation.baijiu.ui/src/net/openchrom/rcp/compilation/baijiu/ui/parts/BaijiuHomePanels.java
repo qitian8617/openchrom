@@ -67,6 +67,67 @@ public final class BaijiuHomePanels {
 		}
 	}
 
+	/**
+	 * Ask the live GC console to show an engineer page
+	 * ({@code COLUMN_OVEN}, {@code DETECTOR}, {@code AUX_PID}, {@code PARAMETERS}).
+	 * If the panel is not built yet, the request is kept and applied when the
+	 * console is created. Returns false when the temperature bundle is missing.
+	 */
+	/**
+	 * Password gate for engineer mode. Cancel and a missing temperature
+	 * bundle are denied. This does not open the remote-control panel.
+	 */
+	public static boolean grantEngineerEntry(org.eclipse.swt.widgets.Shell shell) {
+
+		return Boolean.TRUE.equals(invokeEngineer("grantEntry", shell));
+	}
+
+	public static void lockEngineer() {
+
+		invokeEngineer("lockForExit", null);
+	}
+
+	public static boolean openEngineerPage(org.eclipse.swt.widgets.Shell shell, String page) {
+
+		try {
+			Class<?> type = loadBundleClass(TEMPERATURE_BUNDLE_ID, "net.openchrom.xxd.control.supplier.temperature.ui.engineering.WorkstationEngineerAuth");
+			Method open = type.getMethod("openPage", org.eclipse.swt.widgets.Shell.class, String.class);
+			return Boolean.TRUE.equals(open.invoke(null, shell, page));
+		} catch(Throwable t) {
+			return false;
+		}
+	}
+
+	private static Object invokeEngineer(String method, org.eclipse.swt.widgets.Shell shell) {
+
+		try {
+			Class<?> type = loadBundleClass(TEMPERATURE_BUNDLE_ID, "net.openchrom.xxd.control.supplier.temperature.ui.engineering.WorkstationEngineerAuth");
+			if(shell == null && "lockForExit".equals(method)) {
+				type.getMethod(method).invoke(null);
+				return Boolean.TRUE;
+			}
+			Method grant = type.getMethod(method, org.eclipse.swt.widgets.Shell.class);
+			return grant.invoke(null, shell);
+		} catch(Throwable t) {
+			return Boolean.FALSE;
+		}
+	}
+
+	public static boolean showTemperaturePage(String page) {
+
+		if(page == null || page.isBlank()) {
+			return false;
+		}
+		try {
+			Class<?> type = loadBundleClass(TEMPERATURE_BUNDLE_ID, TEMPERATURE_PANEL_TYPE);
+			Method show = type.getMethod("showEngineerPage", String.class);
+			Object result = show.invoke(null, page);
+			return Boolean.TRUE.equals(result);
+		} catch(Throwable t) {
+			return false;
+		}
+	}
+
 	public static void createSequenceComposite(Composite parent) {
 
 		try {
@@ -98,6 +159,36 @@ public final class BaijiuHomePanels {
 		} catch(Throwable t) {
 			showError(parent, t);
 		}
+	}
+
+	public static void selectAnalysisTab(Composite parent, int index) {
+
+		if(parent == null || parent.isDisposed()) {
+			return;
+		}
+		selectTab(parent, Math.max(0, index));
+	}
+
+	private static boolean selectTab(Control control, int index) {
+
+		if(control == null || control.isDisposed()) {
+			return false;
+		}
+		if(control instanceof org.eclipse.swt.custom.CTabFolder tabs) {
+			int count = tabs.getItemCount();
+			if(count > 0) {
+				tabs.setSelection(Math.min(index, count - 1));
+				return true;
+			}
+		}
+		if(control instanceof Composite composite) {
+			for(Control child : composite.getChildren()) {
+				if(selectTab(child, index)) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	public static void createWorkbenchPanel(Composite parent, Object partService, Object modelService, Object application, Object context) {

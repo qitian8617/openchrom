@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.eclipse.chemclipse.csd.model.implementation.ChromatogramCSD;
 import org.junit.jupiter.api.Test;
 
 public class BaijiuSampleInfo_1_Test {
@@ -40,5 +41,57 @@ public class BaijiuSampleInfo_1_Test {
 		sample.setBatchNo("demo-batch");
 		assertTrue(sample.validate().isEmpty());
 		assertEquals("demo-batch", sample.getBatchNo());
+	}
+
+	@Test
+	public void nonFiniteAbvIsBlocked() {
+
+		BaijiuSampleInfo sample = new BaijiuSampleInfo();
+		sample.setAbvPercent(Double.NaN);
+		assertTrue(sample.hasBlockingErrors());
+		assertFalse(sample.validate().isEmpty());
+		sample.setAbvPercent(Double.POSITIVE_INFINITY);
+		assertTrue(sample.hasBlockingErrors());
+	}
+
+	@Test
+	public void chromatogramMetadataRoundTripRetainsRawMaterialAndAroma() {
+
+		BaijiuSampleInfo sample = new BaijiuSampleInfo();
+		sample.setRawMaterial(BaijiuRawMaterial.OTHER);
+		sample.setAromaType(BaijiuAromaType.JIANG);
+		ChromatogramCSD chromatogram = new ChromatogramCSD();
+		sample.writeTo(chromatogram);
+		BaijiuSampleInfo restored = BaijiuSampleInfo.from(chromatogram);
+		assertEquals(BaijiuRawMaterial.OTHER, restored.getRawMaterial());
+		assertEquals(BaijiuAromaType.JIANG, restored.getAromaType());
+		assertTrue(restored.hasExplicitRawMaterial());
+		assertTrue(restored.hasExplicitAromaType());
+	}
+
+	@Test
+	public void missingChromatogramMetadataCanStillUsePreferenceDefaults() {
+
+		BaijiuSampleInfo restored = BaijiuSampleInfo.from(new ChromatogramCSD());
+		assertFalse(restored.hasExplicitRawMaterial());
+		assertFalse(restored.hasExplicitAromaType());
+		assertEquals(BaijiuRawMaterial.GRAIN, restored.getRawMaterial());
+		assertEquals(BaijiuAromaType.NONG, restored.getAromaType());
+	}
+
+	@Test
+	public void batchTemplateDoesNotOverrideExplicitChromatogramMetadata() {
+
+		BaijiuSampleInfo stored = new BaijiuSampleInfo();
+		stored.setRawMaterial(BaijiuRawMaterial.OTHER);
+		stored.setAromaType(BaijiuAromaType.JIANG);
+		ChromatogramCSD chromatogram = new ChromatogramCSD();
+		stored.writeTo(chromatogram);
+		BaijiuSampleInfo template = new BaijiuSampleInfo();
+		template.setRawMaterial(BaijiuRawMaterial.GRAIN);
+		template.setAromaType(BaijiuAromaType.NONG);
+		BaijiuSampleInfo resolved = BaijiuBatchEngine.sampleOf(chromatogram, null, template);
+		assertEquals(BaijiuRawMaterial.OTHER, resolved.getRawMaterial());
+		assertEquals(BaijiuAromaType.JIANG, resolved.getAromaType());
 	}
 }

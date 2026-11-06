@@ -17,7 +17,7 @@ Stored on the method after **用当前谱图做校正**, **多点校正 → 拟�
 
 Other mix analytes without RF stay **未校正** on the result table and do not by themselves block GB 2757.
 
-**Multi-point / R² (item 11):** 白酒分析 → **多点校正** records ≥ 3 mix needles (methanol + 乙酸乙酯 / 乳酸乙酯 / 己酸乙酯), fits `y = A_a/A_ISTD` vs `x = g/L`, shows slope / intercept / R², and writes an **effective RF** into the same RF map so this gate and quantify stay unchanged. Single-point **用当前谱图做校正** remains the 1-needle fallback. See `GCWS-MULTIPOINT.md`.
+**Multi-point / R² (item 11):** 白酒分析 → **多点校正** records ≥ 3 mix needles (methanol + 乙酸乙酯 / 乳酸乙酯 / 己酸乙酯), fits `y = A_a/A_ISTD` vs `x = g/L`, shows slope / intercept / R², and writes an **effective RF** for the gate and report. Sample concentration is calculated by the curve inverse `C = (y - intercept) / slope`. Single-point **用当前谱图做校正** remains the 1-needle RF fallback. See `GCWS-MULTIPOINT.md`.
 
 ## Operator paths
 

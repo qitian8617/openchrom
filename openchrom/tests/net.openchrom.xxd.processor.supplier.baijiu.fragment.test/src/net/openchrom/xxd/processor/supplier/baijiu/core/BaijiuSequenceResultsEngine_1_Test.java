@@ -156,6 +156,30 @@ public class BaijiuSequenceResultsEngine_1_Test {
 	}
 
 	@Test
+	public void sequenceUsesExplicitChromatogramRawMaterial() {
+
+		ChromatogramCSD chromatogram = chromatogram("LD-BJ-001", 180.0d);
+		chromatogram.putHeaderData(BaijiuHeaderKeys.RAW_MATERIAL, BaijiuRawMaterial.OTHER.getLabel());
+		BaijiuSequenceVial vial = BaijiuSequenceVial.of(1, BaijiuSequenceVial.TYPE_SAMPLE, "LD-BJ-001", "样品", BaijiuSequenceVial.STATUS_DONE, "/tmp/sample.ocb", chromatogram);
+		BaijiuSequenceResultRow row = BaijiuSequenceResultsEngine.run(List.of(vial), calibrated(), sample("LD-BJ-001"), false, file -> null).get(0);
+		assertTrue(row.isSuccess(), row.getRemark());
+		assertEquals(BaijiuRawMaterial.OTHER.getLabel(), row.getBatchRow().getResult().getGb2757Result().getRawMaterialLabel());
+	}
+
+	@Test
+	public void sequencePairsEveryTwoNeedlesAndMarksOddTail() {
+
+		BaijiuSequenceVial a = new BaijiuSequenceVial(1, BaijiuSequenceVial.TYPE_SAMPLE, "样品", "S-01", "样品", BaijiuSequenceVial.STATUS_DONE, "已完成", "/tmp/a.ocb", "", "g-1", "A", chromatogram("S-01", 180.0d));
+		BaijiuSequenceVial b = new BaijiuSequenceVial(2, BaijiuSequenceVial.TYPE_SAMPLE, "样品", "S-01", "样品", BaijiuSequenceVial.STATUS_DONE, "已完成", "/tmp/b.ocb", "", "g-1", "B", chromatogram("S-01", 200.0d));
+		BaijiuSequenceVial c = new BaijiuSequenceVial(3, BaijiuSequenceVial.TYPE_SAMPLE, "样品", "S-01", "样品", BaijiuSequenceVial.STATUS_DONE, "已完成", "/tmp/c.ocb", "", "g-1", "C", chromatogram("S-01", 220.0d));
+		List<BaijiuSequenceResultRow> rows = BaijiuSequenceResultsEngine.run(List.of(a, b, c), calibrated(), sample("S-01"), false, file -> null);
+		assertTrue(rows.get(0).getRemark().contains("0.1900"));
+		assertTrue(rows.get(1).getRemark().contains("0.1900"));
+		assertTrue(rows.get(2).getRemark().contains("奇数"), rows.get(2).getRemark());
+		assertFalse(rows.get(2).getRemark().contains("甲醇均值"));
+	}
+
+	@Test
 	public void summaryCountsSkippedAndQuantified() {
 
 		List<BaijiuSequenceVial> vials = List.of( //

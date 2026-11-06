@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?NLS TYPE="org.eclipse.help.toc"?>
+
+<toc label="控件" link_to="/org.eclipse.chemclipse.rcp.app.ui/toc.xml#controls">
+	<topic label="色谱编辑器" href="html/controls/chromatogram_editor.html">
+	</topic>
+	<topic href="html/controls/peak_detector.html" label="峰检测器">
+	</topic>
+	<topic label="峰/扫描列表" href="html/controls/peak_scan_list.html">
+	</topic>
+	<topic label="色谱叠加" href="html/controls/chromatogram_overlay.html">
+	</topic>
+	<topic href="html/controls/targets.html" label="目标物">
+	</topic>
+</toc>

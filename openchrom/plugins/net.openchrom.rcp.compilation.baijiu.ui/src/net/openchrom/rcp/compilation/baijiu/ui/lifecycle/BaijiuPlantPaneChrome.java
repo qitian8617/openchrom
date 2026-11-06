@@ -131,7 +131,6 @@ public final class BaijiuPlantPaneChrome {
 			if(!(folder.getRenderer() instanceof BaijiuPlantStackRenderer)) {
 				folder.setRenderer(new BaijiuPlantStackRenderer(folder));
 			}
-			folder.setSimple(true);
 			folder.setBorderVisible(true);
 			folder.setMRUVisible(false);
 			folder.setMinimizeVisible(false);

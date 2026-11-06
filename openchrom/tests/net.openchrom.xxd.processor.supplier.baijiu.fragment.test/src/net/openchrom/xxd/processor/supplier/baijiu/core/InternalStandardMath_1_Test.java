@@ -31,4 +31,21 @@ public class InternalStandardMath_1_Test {
 		assertEquals(0.4718d, concentration, 1.0e-9d);
 		assertTrue(rf > 0.0d);
 	}
+
+	@Test
+	public void mixAndSampleUseTheirOwnIstdConcentrations() {
+
+		double mixArea = 1000.0d * 0.4718d / 0.3632d;
+		double rf = InternalStandardMath.responseFactor(0.4718d, 0.3632d, 1000.0d, mixArea);
+		double concentration = InternalStandardMath.concentrationGramsPerLiter(rf, 1.6d, 180.0d, 1600.0d);
+		assertEquals(0.180d, concentration, 1.0e-9d);
+	}
+
+	@Test
+	public void nonFiniteInputsReturnNaN() {
+
+		assertTrue(Double.isNaN(InternalStandardMath.injectedIstdGramsPerLiter(Double.POSITIVE_INFINITY, 1.0d, 0.1d)));
+		assertTrue(Double.isNaN(InternalStandardMath.responseFactor(0.4718d, 0.3632d, Double.NaN, 800.0d)));
+		assertTrue(Double.isNaN(InternalStandardMath.concentrationGramsPerLiter(1.0d, 1.6d, 180.0d, Double.POSITIVE_INFINITY)));
+	}
 }

@@ -98,6 +98,24 @@ public class BaijiuParallelEngine_1_Test {
 	}
 
 	@Test
+	public void additionalPairsAndOddTailAreReported() {
+
+		BaijiuMethodSettings settings = calibrated();
+		BaijiuBatchRow a = BaijiuBatchEngine.analyze(chromatogram("LD-BJ-001", 180.0d), null, settings, sample("LD-BJ-001"), false);
+		BaijiuBatchRow b = BaijiuBatchEngine.analyze(chromatogram("LD-BJ-001", 200.0d), null, settings, sample("LD-BJ-001"), false);
+		BaijiuBatchRow c = BaijiuBatchEngine.analyze(chromatogram("LD-BJ-001", 220.0d), null, settings, sample("LD-BJ-001"), false);
+		List<BaijiuParallelResult> odd = BaijiuParallelEngine.comparePairs(List.of(a, b, c));
+		assertEquals(2, odd.size());
+		assertFalse(odd.get(1).isSuccess());
+		assertEquals("LD-BJ-001", odd.get(1).getSampleLabel());
+		assertTrue(odd.get(1).getMessage().contains("奇数针"));
+		BaijiuBatchRow d = BaijiuBatchEngine.analyze(chromatogram("LD-BJ-001", 240.0d), null, settings, sample("LD-BJ-001"), false);
+		List<BaijiuParallelResult> even = BaijiuParallelEngine.comparePairs(List.of(a, b, c, d));
+		assertEquals(2, even.size());
+		assertEquals(0.230d, even.get(1).methanol().getMean(), 1.0e-6d);
+	}
+
+	@Test
 	public void istdIsNotListedAndFormulaIsDocumented() {
 
 		assertTrue(BaijiuParallelEngine.FORMULA_ZH.contains("|针A"));

@@ -86,6 +86,31 @@ public class AcquisitionChromatogramStore_1_Test {
 	}
 
 	@Test
+	public void failedRunCanBePreservedAsEmergencyCopy() throws IOException {
+
+		IChromatogramCSD chromatogram = (IChromatogramCSD)java.lang.reflect.Proxy.newProxyInstance(IChromatogramCSD.class.getClassLoader(), new Class<?>[] {IChromatogramCSD.class}, (proxy, method, args) -> switch(method.getName()) {
+			case "getNumberOfScans" -> 2;
+			case "getDataName" -> "failed-run";
+			case "getScan" -> scanProxy((Integer)args[0] == 1 ? 0 : 100, (Integer)args[0] == 1 ? 2f : 3f);
+			default -> throw new UnsupportedOperationException(method.getName());
+		});
+		java.io.File emergency = AcquisitionChromatogramStore.saveEmergency(chromatogram, tempDir);
+		assertNotNull(emergency);
+		assertTrue(emergency.getName().endsWith(".acq.tsv"));
+		assertEquals(2, ChemclipseXyCsdFiles.read(emergency.toPath()).size());
+		assertEquals(3f, ChemclipseXyCsdFiles.read(emergency.toPath()).get(1).signal(), 0.001f);
+	}
+
+	private static org.eclipse.chemclipse.csd.model.core.IScanCSD scanProxy(int retentionTime, float signal) {
+
+		return (org.eclipse.chemclipse.csd.model.core.IScanCSD)java.lang.reflect.Proxy.newProxyInstance(org.eclipse.chemclipse.csd.model.core.IScanCSD.class.getClassLoader(), new Class<?>[] {org.eclipse.chemclipse.csd.model.core.IScanCSD.class}, (proxy, method, args) -> switch(method.getName()) {
+			case "getRetentionTime" -> retentionTime;
+			case "getTotalSignal" -> signal;
+			default -> throw new UnsupportedOperationException(method.getName());
+		});
+	}
+
+	@Test
 	public void sanitizeRemovesPathSeparators() {
 
 		assertEquals("run_a_b", AcquisitionChromatogramStore.sanitizeFileName("run/a\\b"));

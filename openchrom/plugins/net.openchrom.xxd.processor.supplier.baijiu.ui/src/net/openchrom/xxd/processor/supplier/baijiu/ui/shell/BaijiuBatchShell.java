@@ -10,13 +10,11 @@
 package net.openchrom.xxd.processor.supplier.baijiu.ui.shell;
 
 import java.io.File;
-import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.chemclipse.model.core.IChromatogram;
 import org.eclipse.swt.SWT;
@@ -43,7 +41,6 @@ import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuMethodSettings;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuParallelEngine;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuParallelResult;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuPreferences;
-import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuRawMaterial;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuSampleInfo;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuTerms;
 
@@ -137,6 +134,13 @@ public final class BaijiuBatchShell {
 		BaijiuPlantLayout.inRail(fromSequence);
 		fromSequence.addListener(SWT.Selection, e -> BaijiuSequenceResultsShell.open(host));
 
+		AtomicBoolean cancelled = new AtomicBoolean();
+		Button cancel = new Button(rail, SWT.PUSH);
+		cancel.setText("\u53d6\u6d88\u6279\u91cf");
+		cancel.setEnabled(false);
+		BaijiuPlantLayout.inRail(cancel);
+		cancel.addListener(SWT.Selection, e -> cancelled.set(true));
+		host.addDisposeListener(e -> cancelled.set(true));
 		Button run = new Button(rail, SWT.PUSH);
 		run.setText("\u6309\u540c\u4e00\u65b9\u6cd5\u6279\u91cf\u5b9a\u91cf");
 		BaijiuPlantLayout.inRail(run);
@@ -154,26 +158,64 @@ public final class BaijiuBatchShell {
 				return;
 			}
 			try {
-				template.setAbvPercent(parse(abv.getText(), template.getAbvPercent()));
-				template.setRawMaterial(BaijiuRawMaterial.GRAIN);
-				List<IChromatogram> chromatograms = BaijiuChromatogramFiles.loadAll(files, null);
-				if(chromatograms.isEmpty()) {
-					warn(host, "\u6ca1\u6709\u8bfb\u5165\u8272\u8c31\u56fe\u3002\u8bf7\u786e\u8ba4\u6587\u4ef6\u4e3a\u5de5\u4f5c\u7ad9 .ocb\uff0c\u6216\u5148\u5728\u4e3b\u7a97\u4f53\u5355\u4e2a\u6253\u5f00\u786e\u8ba4\u8f6c\u6362\u5668\u53ef\u7528\u3002");
-					return;
-				}
-				rows.clear();
-				rows.addAll(BaijiuBatchEngine.run(chromatograms, settings, template, true));
-				fill(table, rows, settings);
-				List<BaijiuParallelResult> parallels = BaijiuParallelEngine.comparePairs(rows);
-				BaijiuParallelShell.fillBatchPairs(parallelTable, parallels, settings);
-				if(parallels.isEmpty()) {
-					parallelHint.setText("\u672a\u8bc6\u522b\u5e73\u884c\u5bf9\uff1a\u76f8\u540c\u6837\u54c1\u7f16\u53f7\u7684\u4e24\u884c\u624d\u4f1a\u6210\u5bf9\u3002\u6f14\u793a\u53ef\u590d\u5236 sample-nongxiang.ocb\uff0c\u6216\u6253\u5f00\u5de5\u4f5c\u53f0\u300c" + BaijiuTerms.PARALLEL + "\u300d\u5404\u9009\u9488 A/B\u3002");
-				} else {
-					parallelHint.setText("\u5df2\u6309\u6837\u54c1\u7f16\u53f7\u914d\u5bf9 " + parallels.size() + " \u7ec4" + BaijiuTerms.PARALLEL + "\u3002\u7532\u9187\u6807\u4e3a\u300c\u91cd\u70b9\u300d\u3002" + BaijiuParallelEngine.FORMULA_ZH);
-				}
-			} catch(RuntimeException ex) {
-				warn(host, "\u6279\u91cf\u5931\u8d25\uff1a" + (ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage()));
+				template.setAbvPercent(parse(abv.getText()));
+			} catch(IllegalArgumentException ex) {
+				warn(host, ex.getMessage());
+				return;
 			}
+			List<File> selected = new ArrayList<>(files);
+			cancelled.set(false);
+			run.setEnabled(false);
+			pick.setEnabled(false);
+			cancel.setEnabled(true);
+			Display display = host.getDisplay();
+			Thread worker = new Thread(() -> {
+				List<BaijiuBatchRow> calculated = new ArrayList<>();
+				String[] failure = new String[1];
+				try {
+					for(int i = 0; i < selected.size() && !cancelled.get(); i++) {
+						File file = selected.get(i);
+						IChromatogram chromatogram = BaijiuChromatogramFiles.loadCsd(file, null);
+						calculated.add(BaijiuBatchEngine.analyze(chromatogram, file, settings, template, true));
+						int completed = i + 1;
+						display.asyncExec(() -> {
+							if(!filesLabel.isDisposed()) {
+								filesLabel.setText("\u5df2\u5904\u7406 " + completed + " / " + selected.size() + " \u4e2a\u6587\u4ef6");
+							}
+						});
+					}
+				} catch(RuntimeException ex) {
+					failure[0] = ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage();
+				}
+				display.asyncExec(() -> {
+					if(host.isDisposed()) {
+						return;
+					}
+					run.setEnabled(true);
+					pick.setEnabled(true);
+					cancel.setEnabled(false);
+					if(cancelled.get()) {
+						filesLabel.setText("\u6279\u91cf\u5df2\u53d6\u6d88\uff0c\u672a\u6539\u5199\u5f53\u524d\u7ed3\u679c\u3002");
+						return;
+					}
+					if(failure[0] != null) {
+						warn(host, "\u6279\u91cf\u5931\u8d25\uff1a" + failure[0]);
+						return;
+					}
+					rows.clear();
+					rows.addAll(calculated);
+					fill(table, rows, settings);
+					List<BaijiuParallelResult> parallels = BaijiuParallelEngine.comparePairs(rows);
+					BaijiuParallelShell.fillBatchPairs(parallelTable, parallels, settings);
+					if(parallels.isEmpty()) {
+						parallelHint.setText("\u672a\u8bc6\u522b\u5e73\u884c\u5bf9\uff1b\u5355\u9488\u4f1a\u4fdd\u7559\u5728\u4e3b\u7ed3\u679c\u8868\u3002");
+					} else {
+						parallelHint.setText("\u5df2\u6309\u6837\u54c1\u7f16\u53f7\u914d\u5bf9 " + parallels.size() + " \u7ec4" + BaijiuTerms.PARALLEL + "\uff08\u542b\u5947\u6570\u5c3e\u9488\u63d0\u793a\uff09\u3002" + BaijiuParallelEngine.FORMULA_ZH);
+					}
+				});
+			}, "baijiu-batch-analysis");
+			worker.setDaemon(true);
+			worker.start();
 		});
 
 		Button export = new Button(rail, SWT.PUSH);
@@ -192,9 +234,8 @@ public final class BaijiuBatchShell {
 			if(path == null || path.isEmpty()) {
 				return;
 			}
-			try(OutputStreamWriter writer = new OutputStreamWriter(Files.newOutputStream(Path.of(path)), StandardCharsets.UTF_8)) {
-				writer.write('\uFEFF');
-				writer.write(BaijiuBatchEngine.toMatrixCsv(rows, settings));
+			try {
+				net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuFileSupport.writeUtf8(Path.of(path), BaijiuBatchEngine.toMatrixCsv(rows, settings), true);
 			} catch(Exception ex) {
 				warn(host, "\u5bfc\u51fa\u5931\u8d25\uff1a" + ex.getMessage());
 			}
@@ -235,12 +276,16 @@ public final class BaijiuBatchShell {
 		column.setWidth(width);
 	}
 
-	private static double parse(String text, double fallback) {
+	private static double parse(String text) {
 
 		try {
-			return Double.parseDouble(text.trim().replace(',', '.'));
-		} catch(RuntimeException e) {
-			return fallback;
+			double value = Double.parseDouble(text.trim().replace(',', '.'));
+			if(!Double.isFinite(value)) {
+				throw new IllegalArgumentException("\u6570\u503c\u5fc5\u987b\u662f\u6709\u9650\u6570\u3002");
+			}
+			return value;
+		} catch(NumberFormatException | NullPointerException e) {
+			throw new IllegalArgumentException("\u6570\u503c\u683c\u5f0f\u65e0\u6548\uff1a" + text, e);
 		}
 	}
 

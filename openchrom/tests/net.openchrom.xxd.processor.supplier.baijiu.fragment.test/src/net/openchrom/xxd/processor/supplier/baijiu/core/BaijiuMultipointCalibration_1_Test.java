@@ -55,7 +55,7 @@ public class BaijiuMultipointCalibration_1_Test {
 			assertTrue(settings.hasResponseFactor(id), id);
 		}
 
-		double singleRf = InternalStandardMath.responseFactor(settings.mixGramsPerLiter(BaijiuCatalog.byId("methanol")), settings.injectedIstdGramsPerLiter(), 1000.0d, 800.0d);
+		double singleRf = InternalStandardMath.responseFactor(settings.mixGramsPerLiter(BaijiuCatalog.byId("methanol")), settings.getMixIstdGramsPerLiter(), 1000.0d, 800.0d);
 		assertEquals(singleRf, methanol.getEffectiveRf(), 1.0e-9d);
 
 		BaijiuAnalysisResult result = BaijiuAnalysisEngine.quantify(sampleChromatogram(), demoSample(), settings);
@@ -103,6 +103,81 @@ public class BaijiuMultipointCalibration_1_Test {
 		assertEquals(0.5d * methanolMix, settings.getCalibrationPoints().get(0).concentrationGL(BaijiuCatalog.METHANOL_ID), 1.0e-12d);
 	}
 
+	@Test
+	public void quantifyUsesCurveInverseWithNonZeroIntercept() {
+
+		BaijiuMethodSettings settings = BaijiuMethodSettings.defaultNongxiangFid();
+		BaijiuLinearFit fit = BaijiuLinearFit.stored(3, 2.0d, 0.2d, 1.0d, 1.0d);
+		settings.getCalibrationFits().put(BaijiuCatalog.METHANOL_ID, fit);
+		settings.getResponseFactors().put(BaijiuCatalog.METHANOL_ID, fit.getEffectiveRf());
+		BaijiuAnalysisResult result = BaijiuAnalysisEngine.quantify(chromatogram(800.0d, 400.0d, 500.0d, 600.0d, 1000.0d), demoSample(), settings);
+		assertTrue(result.isSuccess(), result.getMessage());
+		assertEquals(0.3d, row(result, BaijiuCatalog.METHANOL_ID).getConcentrationGL(), 1.0e-12d);
+
+		BaijiuAnalysisResult negative = BaijiuAnalysisEngine.quantify(chromatogram(100.0d, 400.0d, 500.0d, 600.0d, 1000.0d), demoSample(), settings);
+		assertTrue(negative.isSuccess(), negative.getMessage());
+		assertTrue(row(negative, BaijiuCatalog.METHANOL_ID).getConcentrationGL() == null);
+		assertFalse(negative.getGb2757Result().isJudged());
+	}
+
+	@Test
+	public void changingPointsInvalidatesFitsAndPilotResponseFactors() {
+
+		BaijiuMethodSettings settings = BaijiuMethodSettings.defaultNongxiangFid();
+		ChromatogramCSD mix = mixChromatogram();
+		BaijiuMultipointCalibration.addDemoPoints(mix, settings);
+		assertTrue(BaijiuCalibrationGate.allowsQuantitation(settings));
+
+		BaijiuMultipointCalibration.addPoint(mix, settings, 2.0d, "2x", true);
+		assertPilotCalibrationInvalid(settings);
+		BaijiuMultipointCalibration.fit(settings);
+		assertTrue(BaijiuCalibrationGate.allowsQuantitation(settings));
+
+		BaijiuMultipointCalibration.applyMixScale(settings, 0, 0.75d);
+		assertPilotCalibrationInvalid(settings);
+		BaijiuMultipointCalibration.fit(settings);
+		assertTrue(BaijiuCalibrationGate.allowsQuantitation(settings));
+
+		BaijiuMultipointCalibration.removePoint(settings, 0);
+		assertPilotCalibrationInvalid(settings);
+	}
+
+	@Test
+	public void failedCompoundDoesNotKeepPreviousFitOrResponseFactor() {
+
+		BaijiuMethodSettings settings = BaijiuMethodSettings.defaultNongxiangFid();
+		BaijiuMultipointCalibration.addDemoPoints(mixChromatogram(), settings);
+		for(BaijiuCalibrationPoint point : settings.getCalibrationPoints()) {
+			point.getArea().remove("ethyl_acetate");
+		}
+		String message = BaijiuMultipointCalibration.fit(settings);
+		assertTrue(message.contains("Fitted"), message);
+		assertNotNull(settings.getCalibrationFits().get(BaijiuCatalog.METHANOL_ID));
+		assertTrue(settings.hasResponseFactor(BaijiuCatalog.METHANOL_ID));
+		assertFalse(settings.getCalibrationFits().containsKey("ethyl_acetate"));
+		assertFalse(settings.hasResponseFactor("ethyl_acetate"));
+	}
+
+	@Test
+	public void singlePointCalibrationRemovesPreviousMultipointFit() {
+
+		BaijiuMethodSettings settings = BaijiuMethodSettings.defaultNongxiangFid();
+		settings.getCalibrationFits().put(BaijiuCatalog.METHANOL_ID, BaijiuLinearFit.stored(3, 2.0d, 0.2d, 1.0d, 1.0d));
+		String message = BaijiuAnalysisEngine.calibrate(mixChromatogram(), settings);
+		assertTrue(message.contains("RF"), message);
+		assertFalse(settings.getCalibrationFits().containsKey(BaijiuCatalog.METHANOL_ID));
+		assertTrue(BaijiuCalibrationGate.allowsQuantitation(settings));
+	}
+
+	private static void assertPilotCalibrationInvalid(BaijiuMethodSettings settings) {
+
+		for(String id : BaijiuMultipointCalibration.PILOT_IDS) {
+			assertFalse(settings.getCalibrationFits().containsKey(id), id);
+			assertFalse(settings.hasResponseFactor(id), id);
+		}
+		assertFalse(BaijiuCalibrationGate.allowsQuantitation(settings));
+	}
+
 	private static BaijiuSampleInfo demoSample() {
 
 		BaijiuSampleInfo sample = new BaijiuSampleInfo();
@@ -135,7 +210,7 @@ public class BaijiuMultipointCalibration_1_Test {
 	private static ChromatogramCSD chromatogram(double methanolArea, double ethylAcetateArea, double ethylLactateArea, double ethylHexanoateArea, double istdArea) {
 
 		ChromatogramCSD chromatogram = new ChromatogramCSD();
-		for(int i = 1; i <= 800; i++) {
+		for(int i = 1; i <= 1100; i++) {
 			ScanCSD scan = new ScanCSD(10.0f);
 			scan.setRetentionTime(i * 1000);
 			chromatogram.addScan(scan);

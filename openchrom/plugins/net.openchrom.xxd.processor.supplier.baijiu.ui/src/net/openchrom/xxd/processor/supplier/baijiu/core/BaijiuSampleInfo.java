@@ -25,10 +25,12 @@ public final class BaijiuSampleInfo {
 	private String liquorName = "";
 	private String batchNo = "";
 	private BaijiuAromaType aromaType = BaijiuAromaType.NONG;
+	private boolean aromaTypeExplicit;
 	private double abvPercent = 0.0d;
 	private String analyst = "";
 	private String dateText = LocalDate.now().format(DATE_FORMAT);
 	private BaijiuRawMaterial rawMaterial = BaijiuRawMaterial.GRAIN;
+	private boolean rawMaterialExplicit;
 
 	public String getSampleNo() {
 
@@ -68,6 +70,12 @@ public final class BaijiuSampleInfo {
 	public void setAromaType(BaijiuAromaType aromaType) {
 
 		this.aromaType = aromaType == null ? BaijiuAromaType.NONG : aromaType;
+		aromaTypeExplicit = true;
+	}
+
+	public boolean hasExplicitAromaType() {
+
+		return aromaTypeExplicit;
 	}
 
 	public double getAbvPercent() {
@@ -108,6 +116,12 @@ public final class BaijiuSampleInfo {
 	public void setRawMaterial(BaijiuRawMaterial rawMaterial) {
 
 		this.rawMaterial = rawMaterial == null ? BaijiuRawMaterial.GRAIN : rawMaterial;
+		rawMaterialExplicit = true;
+	}
+
+	public boolean hasExplicitRawMaterial() {
+
+		return rawMaterialExplicit;
 	}
 
 	public java.util.List<String> validate() {
@@ -116,7 +130,7 @@ public final class BaijiuSampleInfo {
 		if(sampleNo.isEmpty()) {
 			messages.add("\u8bf7\u586b\u5199\u6837\u54c1\u7f16\u53f7\u3002");
 		}
-		if(abvPercent < 0.0d || abvPercent > 100.0d) {
+		if(!Double.isFinite(abvPercent) || abvPercent < 0.0d || abvPercent > 100.0d) {
 			messages.add("\u9152\u7cbe\u5ea6\u5e94\u5728 0\u2013100 %vol\u3002");
 		} else if(abvPercent <= 0.0d) {
 			messages.add("\u8bf7\u586b\u5199\u9152\u7cbe\u5ea6\uff0c\u5426\u5219\u65e0\u6cd5\u6309 GB 2757 \u6298\u7b97\u7532\u9187\u3002");
@@ -126,7 +140,7 @@ public final class BaijiuSampleInfo {
 
 	public boolean hasBlockingErrors() {
 
-		return abvPercent < 0.0d || abvPercent > 100.0d;
+		return !Double.isFinite(abvPercent) || abvPercent < 0.0d || abvPercent > 100.0d;
 	}
 
 	public void applyMethodDefaults(BaijiuMethodSettings settings) {
@@ -173,7 +187,10 @@ public final class BaijiuSampleInfo {
 		info.setSampleNo(value(chromatogram, BaijiuHeaderKeys.SAMPLE_NO, ""));
 		info.setLiquorName(value(chromatogram, BaijiuHeaderKeys.LIQUOR_NAME, chromatogram.getSampleName()));
 		info.setBatchNo(value(chromatogram, BaijiuHeaderKeys.BATCH, ""));
-		info.setAromaType(BaijiuAromaType.fromId(value(chromatogram, BaijiuHeaderKeys.AROMA, "")));
+		String aroma = value(chromatogram, BaijiuHeaderKeys.AROMA, "");
+		if(!aroma.isBlank()) {
+			info.setAromaType(BaijiuAromaType.fromId(aroma));
+		}
 		info.setAbvPercent(parseDouble(value(chromatogram, BaijiuHeaderKeys.ABV, "0"), 0.0d));
 		String analyst = value(chromatogram, BaijiuHeaderKeys.ANALYST, chromatogram.getOperator());
 		info.setAnalyst(analyst);
@@ -184,7 +201,10 @@ public final class BaijiuSampleInfo {
 		if(!dateText.isEmpty()) {
 			info.setDateText(dateText);
 		}
-		info.setRawMaterial(BaijiuRawMaterial.fromId(value(chromatogram, BaijiuHeaderKeys.RAW_MATERIAL, "")));
+		String rawMaterial = value(chromatogram, BaijiuHeaderKeys.RAW_MATERIAL, "");
+		if(!rawMaterial.isBlank()) {
+			info.setRawMaterial(BaijiuRawMaterial.fromId(rawMaterial));
+		}
 		return info;
 	}
 

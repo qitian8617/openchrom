@@ -110,6 +110,47 @@ public final class AcquisitionMessages {
 		return text.toString().trim();
 	}
 
+	public static String dataIntegrityReason(String detail, boolean chinese) {
+
+		String text = detail == null || detail.isBlank() ? "" : detail;
+		return chinese ? "采集数据不完整或无效: " + text : "Acquisition data is incomplete or invalid: " + text;
+	}
+
+	public static String deviceErrorReason(String detail, boolean chinese) {
+
+		String text = detail == null || detail.isBlank() ? "" : detail;
+		return chinese ? "设备报告采集错误: " + text : "The device reported an acquisition error: " + text;
+	}
+
+	public static String connectionLostReason(boolean chinese) {
+
+		return chinese ? "采集期间连接断开，本针数据无效。" : "The connection was lost during acquisition; this run is invalid.";
+	}
+
+	public static String stopFailedReason(String detail, boolean chinese) {
+
+		String text = detail == null || detail.isBlank() ? "" : detail;
+		return chinese ? "设备未确认停止采集，本针数据无效: " + text : "The device did not confirm STOP_ACQ; this run is invalid: " + text;
+	}
+
+	public static String runFailedDialog(String reason, int points, String emergencyPath) {
+
+		StringBuilder text = new StringBuilder();
+		text.append("采集失败，本针不能作为正常结果使用。\n");
+		text.append("Acquisition failed; this run must not be used as a normal result.\n");
+		if(reason != null && !reason.isBlank()) {
+			text.append(reason).append('\n');
+		}
+		if(emergencyPath != null && !emergencyPath.isBlank()) {
+			text.append("已保留 ").append(points).append(" 个点的应急副本：").append(emergencyPath).append('\n');
+			text.append("Emergency copy with ").append(points).append(" point(s): ").append(emergencyPath);
+		} else if(points > 0) {
+			text.append("已采集 ").append(points).append(" 个点，但应急副本写入失败；数据仍保留在当前色谱图编辑器中。\n");
+			text.append(points).append(" point(s) were acquired, but the emergency copy could not be written; data remains in the live editor.");
+		}
+		return text.toString().trim();
+	}
+
 	public static String noDataReason(boolean chinese) {
 
 		return chinese ? "没有采集数据，未写入文件。" : "No acquisition data; nothing was written.";

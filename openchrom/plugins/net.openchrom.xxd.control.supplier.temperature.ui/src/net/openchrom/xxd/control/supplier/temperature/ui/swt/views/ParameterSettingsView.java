@@ -172,7 +172,7 @@ public class ParameterSettingsView extends Composite implements LanguageListener
 
 	private String showDebugLabel() {
 
-		return chinese ? "\u663E\u793A\u8C03\u8BD5\u4FE1\u606F\uFF08FID \u4E0E\u5B9E\u65F6\u66F2\u7EBF\uFF09" : "Show debug info (FID and live trend)";
+		return chinese ? "\u663E\u793A\u8C03\u8BD5\u4FE1\u606F\uFF08FID \u7535\u6D41\u4E0E\u5B9E\u65F6\u66F2\u7EBF\uFF09" : "Show debug info (FID current and live trend)";
 	}
 
 	private void saveConfiguration() {

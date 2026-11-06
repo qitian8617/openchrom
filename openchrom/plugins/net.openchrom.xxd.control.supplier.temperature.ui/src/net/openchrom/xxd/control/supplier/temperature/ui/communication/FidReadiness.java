@@ -26,15 +26,11 @@ public final class FidReadiness {
 	public static final String SKIP_FID_READINESS_GATE_PROPERTY = "net.openchrom.gcws.skipFidReadinessGate";
 
 	/**
-	 * 电流判据暂不可用，先不拦开始采集.
-	 * <p>
-	 * Flame and FID current (pA) stay classified and shown. Start Analysis does
-	 * not wait for flame-on, an ignite result, or a successful current / FID
-	 * status read. {@link Kind#DISCONNECTED} still blocks. {@link Kind#FID_OFFLINE}
-	 * still blocks (board not answering — not a current threshold). Set this to
-	 * {@code true} when current sensing can judge FID success again.
+	 * Start Analysis requires a fresh, successful FID status read with the board
+	 * online and flame on. Disconnection, read failure, ignition failure and flame
+	 * out all block acquisition.
 	 */
-	public static final boolean REQUIRE_FID_CURRENT_FOR_START = false;
+	public static final boolean REQUIRE_FID_CURRENT_FOR_START = true;
 
 	public enum Kind {
 		DISCONNECTED, READING, STATUS_READ_FAIL, FID_OFFLINE, IGNITE_FAIL, IGNITING, FLAME_OUT, READY
@@ -91,11 +87,9 @@ public final class FidReadiness {
 	}
 
 	/**
-	 * {@link Kind#DISCONNECTED} always blocks. With
-	 * {@link #REQUIRE_FID_CURRENT_FOR_START} {@code false} (current default),
-	 * flame / current / “FID ready from current” kinds do not block — 电流判据暂不可用，先不拦开始采集.
-	 * {@link Kind#FID_OFFLINE} still blocks unless {@link #skipFidReadinessGate()}.
-	 * {@link Kind#READY} always allows start.
+	 * {@link Kind#DISCONNECTED} always blocks. By default only {@link Kind#READY}
+	 * allows start. While TCP is connected, {@link #skipFidReadinessGate()} is the
+	 * explicit development-only bypass for all other readiness kinds.
 	 */
 	public static boolean canStartAnalysis(Kind kind) {
 
@@ -117,8 +111,7 @@ public final class FidReadiness {
 	}
 
 	/**
-	 * Start blocks whose only job is to wait on flame / FID current.
-	 * 电流判据暂不可用，先不拦开始采集.
+	 * Readiness states covered by the legacy explicit test-mode bypass.
 	 */
 	static boolean isCurrentReadinessBlock(Kind kind) {
 
@@ -173,14 +166,14 @@ public final class FidReadiness {
 					? "FID 板离线（RS485 无应答）。请检查检测器电源与 485 接线，再到「检测器」页确认状态。"
 					: "FID board offline (no RS485 reply). Check detector power and 485 wiring, then re-check status on the Detector page.";
 			case IGNITE_FAIL -> chinese
-					? "点火未成功，火焰未着。请到「检测器」页核对氢气/空气压力，确认阀已打开后重新执行点火。"
-					: "Ignition failed; flame is out. On the Detector page, check H₂/Air pressure, confirm valves are open, then ignite again.";
+					? "点火未成功，火焰未着。请到「检测器」页核对氢气/空气压力，确认空气阀已打开后重新执行点火。"
+					: "Ignition failed; flame is out. On the Detector page, check H₂/Air pressure, confirm the air valve is open, then ignite again.";
 			case IGNITING -> chinese
 					? "正在点火，请等待火焰判定后再开始分析。"
 					: "Ignition in progress. Wait for the flame result before starting analysis.";
 			case FLAME_OUT -> chinese
-					? "火焰未着火。请到「检测器」页执行点火；确认氢气/空气已供且阀已打开。"
-					: "Flame is out. Ignite from the Detector page after confirming H₂/Air supply and open valves.";
+					? "火焰未着火。请到「检测器」页执行点火；确认氢气/空气已供且空气阀已打开。"
+					: "Flame is out. Ignite from the Detector page after confirming H₂/Air supply and an open air valve.";
 			case READY -> chinese
 					? "FID 已就绪：已连接、检测器在线、火焰已着。"
 					: "FID ready: connected, detector online, flame on.";

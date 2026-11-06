@@ -25,6 +25,7 @@ public final class BaijiuPreferences {
 	private static final String RUNTIME = "method.runtime.min";
 	private static final String ISTD_NAME = "istd.name";
 	private static final String ISTD_STOCK = "istd.stock.gl";
+	private static final String MIX_ISTD = "mix.istd.gl";
 	private static final String SAMPLE_ML = "volume.sample.ml";
 	private static final String ISTD_ML = "volume.istd.ml";
 	private static final String WINDOW = "rt.window.min";
@@ -80,6 +81,9 @@ public final class BaijiuPreferences {
 		overlayText(prefs, ISTD_NAME, settings::setIstdName);
 		if(contains(prefs, ISTD_STOCK)) {
 			settings.setIstdStockGramsPerLiter(prefs.getDouble(ISTD_STOCK, settings.getIstdStockGramsPerLiter()));
+		}
+		if(contains(prefs, MIX_ISTD)) {
+			settings.setMixIstdGramsPerLiter(prefs.getDouble(MIX_ISTD, settings.getMixIstdGramsPerLiter()));
 		}
 		if(contains(prefs, SAMPLE_ML)) {
 			settings.setSampleVolumeMl(prefs.getDouble(SAMPLE_ML, settings.getSampleVolumeMl()));
@@ -152,6 +156,7 @@ public final class BaijiuPreferences {
 		prefs.putDouble(RUNTIME, settings.getRunTimeMin());
 		prefs.put(ISTD_NAME, settings.getIstdName());
 		prefs.putDouble(ISTD_STOCK, settings.getIstdStockGramsPerLiter());
+		prefs.putDouble(MIX_ISTD, settings.getMixIstdGramsPerLiter());
 		prefs.putDouble(SAMPLE_ML, settings.getSampleVolumeMl());
 		prefs.putDouble(ISTD_ML, settings.getIstdVolumeMl());
 		prefs.putDouble(WINDOW, settings.getDefaultWindowMin());
@@ -200,14 +205,18 @@ public final class BaijiuPreferences {
 		if(sample.getBatchNo().isEmpty()) {
 			sample.setBatchNo(prefs.get(BATCH, ""));
 		}
-		sample.setAromaType(BaijiuAromaType.fromId(prefs.get(AROMA, BaijiuAromaType.NONG.getId())));
+		if(!sample.hasExplicitAromaType()) {
+			sample.setAromaType(BaijiuAromaType.fromId(prefs.get(AROMA, BaijiuAromaType.NONG.getId())));
+		}
 		if(sample.getAbvPercent() <= 0.0d) {
 			sample.setAbvPercent(prefs.getDouble(ABV, 0.0d));
 		}
 		if(sample.getAnalyst().isEmpty()) {
 			sample.setAnalyst(prefs.get(ANALYST, ""));
 		}
-		sample.setRawMaterial(BaijiuRawMaterial.fromId(prefs.get(RAW, BaijiuRawMaterial.GRAIN.getId())));
+		if(!sample.hasExplicitRawMaterial()) {
+			sample.setRawMaterial(BaijiuRawMaterial.fromId(prefs.get(RAW, BaijiuRawMaterial.GRAIN.getId())));
+		}
 	}
 
 	public static void saveSampleDefaults(BaijiuSampleInfo sample) {

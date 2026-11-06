@@ -41,14 +41,15 @@ public final class Gb2757Judge {
 		String source = settings == null ? "" : settings.getGb2757LimitSource();
 		double limit = settings == null ? Double.NaN : settings.gb2757Limit100VolGL(material);
 		String limitSource = formatLimitSource(standard, source, material, limit);
-		if(!(limit > 0.0d) || Double.isNaN(limit)) {
+		if(!(limit > 0.0d) || !Double.isFinite(limit)) {
 			return new Gb2757Result(false, false, methanolGramsPerLiter != null, methanolGramsPerLiter == null ? 0.0d : methanolGramsPerLiter, Double.NaN, Double.NaN, abvPercent, material.getLabel(), standard, limitSource, "\u672a\u914d\u7f6e\u9650\u91cf\uff0c\u65e0\u6cd5\u6298\u7b97\u3002\u6298\u7b97\u516c\u5f0f\uff1a\u6d4b\u5f97\u7532\u9187(g/L) \u00d7 100 / \u9152\u7cbe\u5ea6(%vol)\u3002", "\u672a\u914d\u7f6e GB 2757 \u7532\u9187\u9650\u91cf\uff0c\u8bf7\u5728\u65b9\u6cd5\u6216\u504f\u597d\u8bbe\u7f6e\u4e2d\u586b\u5199\u3002");
 		}
-		if(abvPercent <= 0.0d) {
+		if(!(abvPercent > 0.0d) || !Double.isFinite(abvPercent)) {
 			return new Gb2757Result(false, false, methanolGramsPerLiter != null, methanolGramsPerLiter == null ? 0.0d : methanolGramsPerLiter, Double.NaN, limit, abvPercent, material.getLabel(), standard, limitSource, "\u7f3a\u5c11\u9152\u7cbe\u5ea6\uff0c\u65e0\u6cd5\u6298\u7b97\u3002\u6298\u7b97\u516c\u5f0f\uff1a\u6d4b\u5f97\u7532\u9187(g/L) \u00d7 100 / \u9152\u7cbe\u5ea6(%vol)\u3002", "\u7f3a\u5c11\u9152\u7cbe\u5ea6\uff0c\u65e0\u6cd5\u6309 GB 2757 \u6298\u7b97\u5224\u5b9a\u3002");
 		}
-		if(methanolGramsPerLiter == null) {
-			return new Gb2757Result(true, true, false, 0.0d, 0.0d, limit, abvPercent, material.getLabel(), standard, limitSource, "\u672a\u68c0\u51fa\u7532\u9187\uff0c\u6309 " + standard + " \u5408\u683c\u5904\u7406\uff0c\u65e0\u9700\u6298\u7b97\u3002", "\u672a\u68c0\u51fa\u7532\u9187\uff0c\u6309 GB 2757 \u5408\u683c\u5904\u7406\u3002");
+		if(methanolGramsPerLiter == null || !Double.isFinite(methanolGramsPerLiter) || methanolGramsPerLiter < 0.0d) {
+			String reason = "\u7532\u9187\u5cf0\u7f3a\u5931\u3001\u672a\u79ef\u5206\u6216\u5b9a\u91cf\u5931\u8d25\uff0c\u4e0d\u80fd\u6309\u672a\u68c0\u51fa\u5408\u683c\u5904\u7406\u3002";
+			return new Gb2757Result(false, false, false, Double.NaN, Double.NaN, limit, abvPercent, material.getLabel(), standard, limitSource, reason, reason);
 		}
 		double converted = convertTo100Vol(methanolGramsPerLiter, abvPercent);
 		boolean passed = converted <= limit;

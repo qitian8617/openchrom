@@ -12,7 +12,9 @@ package net.openchrom.xxd.processor.supplier.baijiu.core;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.chemclipse.model.core.IChromatogram;
 import org.eclipse.chemclipse.model.core.IPeak;
@@ -147,6 +149,7 @@ public final class BaijiuMultipointCalibration {
 			return bilingual("没有可记录的混标峰。", "No usable mix-standard peaks to record.");
 		}
 		settings.getCalibrationPoints().add(point);
+		invalidatePilotCalibration(settings);
 		settings.getInstrumentRtMin().put(BaijiuCatalog.ISTD_ID, istd.getRetentionTimeMin());
 		StringBuilder message = new StringBuilder();
 		message.append("已添加校正点 ").append(point.getLabel()).append("（倍数 ").append(trimNumber(mixScale)).append("，").append(recorded).append(" 个组分）");
@@ -212,7 +215,8 @@ public final class BaijiuMultipointCalibration {
 				point.getConcentrationGL().put(id, mix * mixScale);
 			}
 		}
-		return bilingual("已把选中点更新为倍数 " + trimNumber(mixScale) + "（面积未改）。", "Updated selected point to scale " + trimNumber(mixScale) + " (areas unchanged).");
+		invalidatePilotCalibration(settings);
+		return bilingual("已把选中点更新为倍数 " + trimNumber(mixScale) + "（面积未改）。旧拟合已失效，请重新拟合。", "Updated selected point to scale " + trimNumber(mixScale) + " (areas unchanged). Previous fits are invalid; fit again.");
 	}
 
 	public static String removePoint(BaijiuMethodSettings settings, int index) {
@@ -221,7 +225,8 @@ public final class BaijiuMultipointCalibration {
 			return bilingual("请先选中一个校正点。", "Select a calibration point first.");
 		}
 		BaijiuCalibrationPoint removed = settings.getCalibrationPoints().remove(index);
-		return bilingual("已删除校正点 " + removed.getLabel() + "。", "Removed calibration point " + removed.getLabel() + ".");
+		invalidatePilotCalibration(settings);
+		return bilingual("已删除校正点 " + removed.getLabel() + "。旧拟合已失效，请重新拟合。", "Removed calibration point " + removed.getLabel() + ". Previous fits are invalid; fit again.");
 	}
 
 	/**
@@ -234,11 +239,13 @@ public final class BaijiuMultipointCalibration {
 		if(settings == null) {
 			return bilingual("方法缺失。", "Method is missing.");
 		}
-		double cIstd = settings.injectedIstdGramsPerLiter();
-		if(!(cIstd > 0.0d)) {
-			return bilingual("内标进样浓度无效。", "Injected ISTD concentration is invalid.");
+		double cIstd = settings.getMixIstdGramsPerLiter();
+		if(!(cIstd > 0.0d) || !Double.isFinite(cIstd)) {
+			invalidatePilotCalibration(settings);
+			return bilingual("混标内标浓度无效。", "Mix-standard ISTD concentration is invalid.");
 		}
-		settings.getCalibrationFits().clear();
+		Map<String, BaijiuLinearFit> newFits = new LinkedHashMap<>();
+		Map<String, Double> newResponseFactors = new LinkedHashMap<>();
 		int fitted = 0;
 		List<String> skipped = new ArrayList<>();
 		List<String> soft = new ArrayList<>();
@@ -248,13 +255,16 @@ public final class BaijiuMultipointCalibration {
 				skipped.add(settings.displayName(compound) + (result == null || result.getMessage().isEmpty() ? "" : " (" + result.getMessage() + ")"));
 				continue;
 			}
-			settings.getCalibrationFits().put(compound.getId(), result);
-			settings.getResponseFactors().put(compound.getId(), result.getEffectiveRf());
+			newFits.put(compound.getId(), result);
+			newResponseFactors.put(compound.getId(), result.getEffectiveRf());
 			fitted++;
 			if(result.isR2SoftWarn()) {
 				soft.add(settings.displayName(compound) + " R²=" + trimNumber(result.getRSquared()));
 			}
 		}
+		invalidatePilotCalibration(settings);
+		settings.getCalibrationFits().putAll(newFits);
+		settings.getResponseFactors().putAll(newResponseFactors);
 		if(fitted == 0) {
 			String detail = skipped.isEmpty() ? "" : " " + String.join("；", skipped);
 			return bilingual("拟合失败：甲醇与主酯均不足 " + MIN_POINTS + " 个有效点。" + detail, "Fit failed: methanol and main esters need at least " + MIN_POINTS + " valid points." + detail);
@@ -294,7 +304,15 @@ public final class BaijiuMultipointCalibration {
 		}
 		double[] x = toArray(xs);
 		double[] y = toArray(ys);
-		return BaijiuLinearFit.ordinaryLeastSquares(x, y, settings.mixGramsPerLiter(compound), settings.injectedIstdGramsPerLiter());
+		return BaijiuLinearFit.ordinaryLeastSquares(x, y, settings.mixGramsPerLiter(compound), settings.getMixIstdGramsPerLiter());
+	}
+
+	private static void invalidatePilotCalibration(BaijiuMethodSettings settings) {
+
+		for(String id : PILOT_IDS) {
+			settings.getCalibrationFits().remove(id);
+			settings.getResponseFactors().remove(id);
+		}
 	}
 
 	private static double[] toArray(List<Double> values) {

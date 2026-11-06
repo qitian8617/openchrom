@@ -9,13 +9,11 @@
  *******************************************************************************/
 package net.openchrom.xxd.processor.supplier.baijiu.ui.shell;
 
-import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridLayout;
@@ -38,7 +36,6 @@ import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuCompound;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuLicenseGate;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuMethodSettings;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuPreferences;
-import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuRawMaterial;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuSampleInfo;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuSequenceResultRow;
 import net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuSequenceResultsEngine;
@@ -132,9 +129,26 @@ public final class BaijiuSequenceResultsShell {
 		addColumn(table, "GB 2757", 72);
 		addColumn(table, "备注", 160);
 
+		AtomicBoolean running = new AtomicBoolean();
+		AtomicBoolean cancelled = new AtomicBoolean();
+		Button cancel = new Button(rail, SWT.PUSH);
+		cancel.setText("取消汇总");
+		cancel.setEnabled(false);
+		BaijiuPlantLayout.inRail(cancel);
+		cancel.addListener(SWT.Selection, e -> cancelled.set(true));
+		host.addDisposeListener(e -> cancelled.set(true));
+
 		Button fromCurrent = new Button(rail, SWT.PUSH);
 		fromCurrent.setText("从当前序列生成结果表");
 		BaijiuPlantLayout.inRail(fromCurrent);
+		Button fromJson = new Button(rail, SWT.PUSH);
+		fromJson.setText("打开序列 JSON…");
+		BaijiuPlantLayout.inRail(fromJson);
+		Button export = new Button(rail, SWT.PUSH);
+		export.setText("导出汇总表");
+		export.setEnabled(false);
+		BaijiuPlantLayout.inRail(export);
+		export.addListener(SWT.Selection, e -> exportCsv(host, rows, settings));
 		fromCurrent.addListener(SWT.Selection, e -> {
 			List<BaijiuSequenceVial> loaded = loadCurrent(host);
 			if(loaded == null) {
@@ -142,12 +156,9 @@ public final class BaijiuSequenceResultsShell {
 			}
 			source.clear();
 			source.addAll(loaded);
-			runTable(host, source, settings, template, abv, rows, table, summary);
+			runTable(host, source, settings, template, abv, rows, table, summary, fromCurrent, fromJson, cancel, export, running, cancelled);
 		});
 
-		Button fromJson = new Button(rail, SWT.PUSH);
-		fromJson.setText("打开序列 JSON…");
-		BaijiuPlantLayout.inRail(fromJson);
 		fromJson.addListener(SWT.Selection, e -> {
 			List<BaijiuSequenceVial> loaded = loadJson(host);
 			if(loaded == null) {
@@ -155,13 +166,8 @@ public final class BaijiuSequenceResultsShell {
 			}
 			source.clear();
 			source.addAll(loaded);
-			runTable(host, source, settings, template, abv, rows, table, summary);
+			runTable(host, source, settings, template, abv, rows, table, summary, fromCurrent, fromJson, cancel, export, running, cancelled);
 		});
-
-		Button export = new Button(rail, SWT.PUSH);
-		export.setText("导出汇总表");
-		BaijiuPlantLayout.inRail(export);
-		export.addListener(SWT.Selection, e -> exportCsv(host, rows, settings));
 
 		Button parallel = new Button(rail, SWT.PUSH);
 		parallel.setText(BaijiuTerms.PARALLEL + "…");
@@ -179,11 +185,11 @@ public final class BaijiuSequenceResultsShell {
 		BaijiuPlantLayout.packLeading(table, 6);
 		BaijiuPlantLayout.fillTrailingColumn(table);
 		if(runImmediately && !source.isEmpty() && BaijiuLicenseGate.allowsQuantifyAndReport()) {
-			runTable(host, source, settings, template, abv, rows, table, summary);
+			runTable(host, source, settings, template, abv, rows, table, summary, fromCurrent, fromJson, cancel, export, running, cancelled);
 		}
 	}
 
-	private static void runTable(Shell shell, List<BaijiuSequenceVial> source, BaijiuMethodSettings settings, BaijiuSampleInfo template, Text abv, List<BaijiuSequenceResultRow> rows, Table table, Label summary) {
+	private static void runTable(Shell shell, List<BaijiuSequenceVial> source, BaijiuMethodSettings settings, BaijiuSampleInfo template, Text abv, List<BaijiuSequenceResultRow> rows, Table table, Label summary, Button fromCurrent, Button fromJson, Button cancel, Button export, AtomicBoolean running, AtomicBoolean cancelled) {
 
 		if(source.isEmpty()) {
 			warn(shell, "当前序列为空。请先在进样序列中编排，或打开带谱图路径的序列 JSON。\nThe injection sequence is empty. Build it on the workbench, or open a sequence JSON with chromatogram paths.");
@@ -193,15 +199,66 @@ public final class BaijiuSequenceResultsShell {
 			return;
 		}
 		try {
-			template.setAbvPercent(parse(abv.getText(), template.getAbvPercent()));
-			template.setRawMaterial(BaijiuRawMaterial.GRAIN);
-			rows.clear();
-			rows.addAll(BaijiuSequenceResultsEngine.run(source, settings, template, true));
-			fill(table, rows, settings);
-			summary.setText(BaijiuSequenceResultsEngine.summary(rows));
-		} catch(RuntimeException ex) {
-			warn(shell, "生成结果表失败：" + (ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage()));
+			template.setAbvPercent(parse(abv.getText()));
+		} catch(IllegalArgumentException ex) {
+			warn(shell, ex.getMessage());
+			return;
 		}
+		if(!running.compareAndSet(false, true)) {
+			return;
+		}
+		List<BaijiuSequenceVial> selected = new ArrayList<>(source);
+		cancelled.set(false);
+		fromCurrent.setEnabled(false);
+		fromJson.setEnabled(false);
+		abv.setEnabled(false);
+		export.setEnabled(false);
+		cancel.setEnabled(true);
+		Display display = shell.getDisplay();
+		Thread worker = new Thread(() -> {
+			List<BaijiuSequenceResultRow> calculated = new ArrayList<>();
+			String[] failure = new String[1];
+			try {
+				for(int i = 0; i < selected.size() && !cancelled.get(); i++) {
+					calculated.add(BaijiuSequenceResultsEngine.analyze(selected.get(i), settings, template, true, null));
+					int completed = i + 1;
+					display.asyncExec(() -> {
+						if(!summary.isDisposed()) {
+							summary.setText("已处理 " + completed + " / " + selected.size() + " 行序列。");
+						}
+					});
+				}
+			} catch(RuntimeException ex) {
+				failure[0] = ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage();
+			}
+			display.asyncExec(() -> {
+				if(shell.isDisposed()) {
+					running.set(false);
+					return;
+				}
+				running.set(false);
+				fromCurrent.setEnabled(true);
+				fromJson.setEnabled(true);
+				abv.setEnabled(true);
+				cancel.setEnabled(false);
+				export.setEnabled(!rows.isEmpty());
+				if(cancelled.get()) {
+					summary.setText("序列汇总已取消，未改写当前结果。");
+					return;
+				}
+				if(failure[0] != null) {
+					warn(shell, "生成结果表失败：" + failure[0]);
+					return;
+				}
+				rows.clear();
+				rows.addAll(BaijiuSequenceResultsEngine.annotateParallels(calculated));
+				fill(table, rows, settings);
+				export.setEnabled(!rows.isEmpty());
+				summary.setText(BaijiuSequenceResultsEngine.summary(rows));
+			});
+		}, "baijiu-sequence-results");
+		worker.setDaemon(true);
+		worker.start();
 	}
 
 	private static void fill(Table table, List<BaijiuSequenceResultRow> rows, BaijiuMethodSettings settings) {
@@ -243,9 +300,8 @@ public final class BaijiuSequenceResultsShell {
 		if(path == null || path.isEmpty()) {
 			return;
 		}
-		try(OutputStreamWriter writer = new OutputStreamWriter(Files.newOutputStream(Path.of(path)), StandardCharsets.UTF_8)) {
-			writer.write('\uFEFF');
-			writer.write(BaijiuSequenceResultsEngine.toCsv(rows, settings));
+		try {
+			net.openchrom.xxd.processor.supplier.baijiu.core.BaijiuFileSupport.writeUtf8(Path.of(path), BaijiuSequenceResultsEngine.toCsv(rows, settings), true);
 		} catch(Exception ex) {
 			warn(shell, "导出失败：" + ex.getMessage());
 		}
@@ -311,12 +367,16 @@ public final class BaijiuSequenceResultsShell {
 		column.setWidth(width);
 	}
 
-	private static double parse(String text, double fallback) {
+	private static double parse(String text) {
 
 		try {
-			return Double.parseDouble(text.trim().replace(',', '.'));
-		} catch(RuntimeException e) {
-			return fallback;
+			double value = Double.parseDouble(text.trim().replace(',', '.'));
+			if(!Double.isFinite(value)) {
+				throw new IllegalArgumentException("\u6570\u503c\u5fc5\u987b\u662f\u6709\u9650\u6570\u3002");
+			}
+			return value;
+		} catch(NumberFormatException | NullPointerException e) {
+			throw new IllegalArgumentException("\u6570\u503c\u683c\u5f0f\u65e0\u6548\uff1a" + text, e);
 		}
 	}
 

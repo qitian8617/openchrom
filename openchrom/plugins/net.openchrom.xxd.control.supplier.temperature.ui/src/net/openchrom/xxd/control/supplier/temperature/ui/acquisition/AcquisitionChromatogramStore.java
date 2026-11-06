@@ -133,6 +133,27 @@ public final class AcquisitionChromatogramStore {
 		}
 	}
 
+	public static File saveEmergency(IChromatogramCSD chromatogram) {
+
+		return saveEmergency(chromatogram, resolveDirectory());
+	}
+
+	public static File saveEmergency(IChromatogramCSD chromatogram, Path directory) {
+
+		int points = countScans(chromatogram);
+		if(chromatogram == null || points < 1) {
+			return null;
+		}
+		Path targetDirectory = directory == null ? resolveDirectory() : directory;
+		try {
+			Files.createDirectories(targetDirectory);
+			return writeEmergencyCopy(targetDirectory, chromatogram, points);
+		} catch(IOException e) {
+			logger.warn("Cannot create acquisition directory for emergency copy " + targetDirectory, e);
+			return null;
+		}
+	}
+
 	private static String writeOcb(IChromatogramCSD chromatogram, File file) {
 
 		try {

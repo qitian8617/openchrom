@@ -34,7 +34,7 @@ Print-to-PDF via the Browser is acceptable for this pilot.
 | **甲醇 GB 2757 判定** | 合格 / 不合格 / 无法判定, measured g/L, 折算 100%vol, limit, conversion explanation, limit source |
 | **操作者与时间** | 检测人、检测日期、报告生成时间 (`yyyy-MM-dd HH:mm`) |
 
-RF in the results table is the value **actually used** for quantify (the method RF map). Multipoint (item 11) writes an **effective RF** into that same map — the report does not re-fit. If a valid multipoint fit is present, a short note **多点拟合有效RF** is appended to 备注 and a one-line explanation appears under the method summary.
+RF in the results table is the method RF; for a valid multipoint fit it is the fit's **effective RF**. Multipoint sample concentration is calculated by the curve inverse, while single-point fallback uses the RF directly — the report does not re-fit. If a valid multipoint fit is present, a short note **多点拟合有效RF** is appended to 备注 and a one-line explanation appears under the method summary.
 
 ## Operator / timestamp fill-in
 
