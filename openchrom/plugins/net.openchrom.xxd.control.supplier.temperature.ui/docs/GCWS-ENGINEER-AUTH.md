@@ -6,7 +6,7 @@ The record is PBKDF2-HMAC-SHA256, 600000 iterations, random 16-byte salt, 32-byt
 
 Idle expiry and exit do **not** stop acquisition and do **not** block heat stop, inlet/detector/oven stop, closing the air valve (`STOP_FID_VALVES`), or `STOP_ACQ`. Keyboard and mouse activity inside the engineer shell refresh the idle window. Idle expiry immediately disables the local-configuration and PID write buttons; **重新验证** opens the password prompt again, and **锁定并关闭** locks and closes the shell.
 
-The engineer shell registers with the existing shared FID monitor and connection/acquisition state. It never starts a second TCP polling connection. A fixed safety line above all five pages always shows connection, flame, FID current, and acquisition/finishing state, including when the shell is opened without the operator remote-control window. The gas/FID page contains the complete readiness card, flow schematic and H₂/air/FID-current diagnostic readings; the separate temperature-trend page contains the three-zone live chart and CSV controls. These diagnostics are not duplicated on the operator main page, and the old operator debug-display checkbox is removed. Temperature polling and automatic three-zone CSV recording remain shared, so closing the maintenance shell does not clear the chart or stop a recording started by temperature control.
+The engineer shell registers with the existing shared FID monitor and connection/acquisition state. It never starts a second TCP polling connection. A fixed safety line above all four pages always shows connection, flame, FID current, and acquisition/finishing state, including when the shell is opened without the operator remote-control window. The gas/FID page contains the complete readiness card, flow schematic and H₂/air/FID-current diagnostic readings; the separate temperature-trend page contains the three-zone live chart and CSV controls. These diagnostics are not duplicated on the operator main page, and the old operator debug-display checkbox is removed. Temperature polling and automatic three-zone CSV recording remain shared, so closing the maintenance shell does not clear the chart or stop a recording started by temperature control.
 
 ## Command matrix
 
@@ -22,7 +22,7 @@ The engineer shell registers with the existing shared FID monitor and connection
 
 Letter case does not change the class. `sendProtocolLine` uses the same check as the typed write methods.
 
-The operator Settings tab **温度校准** is the Android routine setpoint table. PID coefficients are available both on the reverse-control **设置 / PID参数** tab and on the engineer temperature page, using the same `PidSettingsView` implementation, shared device connection, and engineering-write authorization. The three-zone live temperature curve and CSV recording are on the separate engineer trend page; the legacy duplicate PID-debug trend card is no longer inserted into the temperature page.
+The operator Settings tab **温度校准** is the Android routine setpoint table. PID coefficients stay on the reverse-control **设置 / PID参数** tab, with the same `PidSettingsView`, shared connection, and engineering-write check on every download. Maintenance does not host a second PID table. An old `ENGINEER_TEMP` selection opens **设备配置** instead. The three-zone live temperature curve and CSV recording stay on the engineer trend page.
 
 ## Column proposal
 

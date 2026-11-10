@@ -44,6 +44,7 @@ public final class BaijiuPlantNav {
 	/** Dedicated engineer page. Does not reopen the operator remote panel. */
 	public static final String PAGE_DEVICE = "ENGINEER_DEVICE";
 	public static final String PAGE_TEMP = "ENGINEER_TEMP";
+	public static final String PAGE_TREND = "ENGINEER_TREND";
 	public static final String PAGE_GAS_ENG = "ENGINEER_GAS";
 	public static final String PAGE_LINK = "ENGINEER_LINK";
 	public static final String ACTION_ABOUT = "about";
@@ -175,7 +176,7 @@ public final class BaijiuPlantNav {
 			return false;
 		}
 		String key = target.actionKey();
-		return PAGE_DEVICE.equals(key) || PAGE_TEMP.equals(key) || PAGE_GAS_ENG.equals(key) || PAGE_LINK.equals(key);
+		return PAGE_DEVICE.equals(key) || PAGE_TEMP.equals(key) || PAGE_GAS_ENG.equals(key) || PAGE_LINK.equals(key) || PAGE_TREND.equals(key);
 	}
 
 	private static List<Target> filterMaintenance(boolean secondary) {
@@ -456,8 +457,8 @@ public final class BaijiuPlantNav {
 		 */
 		map.put(Section.MAINTENANCE, List.of( //
 				action(PAGE_DEVICE, "设备配置"), //
-				action(PAGE_TEMP, "温度标定/整定"), //
 				action(PAGE_GAS_ENG, "气路与FID"), //
+				action(PAGE_TREND, "实时温度曲线"), //
 				action(PAGE_LINK, "通信与采集"), //
 				action(ACTION_ABOUT, "关于"), //
 				action(ACTION_RESET, "重置窗口布局")));

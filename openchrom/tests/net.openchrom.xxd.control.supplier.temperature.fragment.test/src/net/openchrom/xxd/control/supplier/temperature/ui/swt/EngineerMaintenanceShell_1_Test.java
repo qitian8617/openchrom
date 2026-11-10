@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
 
+import org.eclipse.swt.custom.StackLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import net.openchrom.xxd.control.supplier.temperature.ui.engineering.EngineerPages;
+import net.openchrom.xxd.control.supplier.temperature.ui.swt.views.PidSettingsView;
 import net.openchrom.xxd.control.supplier.temperature.ui.engineering.EngineerSession;
 import net.openchrom.xxd.control.supplier.temperature.ui.engineering.EngineerSession.Attempt;
 import net.openchrom.xxd.control.supplier.temperature.ui.engineering.FileEngineerCredentialStore;
@@ -39,7 +41,13 @@ public class EngineerMaintenanceShell_1_Test {
 		try {
 			EngineerMaintenanceShell.open(parent, EngineerPages.TEMPERATURE);
 			Shell maintenance = maintenanceShell(display);
-			assertFalse(containsPage(maintenance.getData("temperature"), AuxPidDebugView.class));
+			assertFalse(containsPage(maintenance, PidSettingsView.class));
+			assertTrue(maintenance.getData("devicePage") instanceof DeviceConfigPage);
+			StackLayout stack = (StackLayout)maintenance.getData("stack");
+			assertTrue(stack.topControl == maintenance.getData("device"));
+			assertFalse(containsText(maintenance, "温度标定与整定"));
+			assertFalse(containsText(maintenance, "读取PID参数"));
+			assertFalse(containsText(maintenance, "下载PID参数"));
 			EngineerMaintenanceShell.open(parent, EngineerPages.GAS);
 			assertTrue(containsPage(maintenance.getData("gas"), FidDiagnosticsView.class));
 			EngineerMaintenanceShell.open(parent, EngineerPages.TREND);
@@ -94,6 +102,24 @@ public class EngineerMaintenanceShell_1_Test {
 			}
 		}
 		throw new AssertionError("Engineer shell not found");
+	}
+
+	private static boolean containsText(Object object, String text) {
+
+		if(object instanceof Button button && button.getText() != null && button.getText().contains(text)) {
+			return true;
+		}
+		if(object instanceof Label label && label.getText() != null && label.getText().contains(text)) {
+			return true;
+		}
+		if(object instanceof Composite composite) {
+			for(Control child : composite.getChildren()) {
+				if(containsText(child, text)) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	private static boolean containsPage(Object object, Class<?> type) {

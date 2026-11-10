@@ -49,8 +49,10 @@ public class WorkstationEngineer_1_Test {
 		assertTrue(ConsoleControlPolicy.pidDebugStopHeatEnabled(true, false, true, false));
 		assertFalse(ConsoleControlPolicy.pidDebugStartEnabled(false, false, false, false, false));
 		assertTrue(ConsoleControlPolicy.columnProgramEditEnabled(false));
+		assertTrue(EngineerPages.isEngineerPage(EngineerPages.TEMPERATURE));
+		assertEquals(EngineerPages.DEVICE, EngineerPages.visiblePage(EngineerPages.TEMPERATURE));
+		assertEquals("设备配置", EngineerPages.title(EngineerPages.TEMPERATURE));
 		assertFalse(EngineerPages.reopensOperatorRemotePanel(EngineerPages.TEMPERATURE));
-		assertEquals("温度标定与整定", EngineerPages.title(EngineerPages.TEMPERATURE));
 	}
 
 	@Test

@@ -32,12 +32,11 @@ import net.openchrom.xxd.control.supplier.temperature.ui.engineering.EngineerPag
 import net.openchrom.xxd.control.supplier.temperature.ui.engineering.EngineerSession;
 import net.openchrom.xxd.control.supplier.temperature.ui.engineering.InstrumentSchematicModel;
 import net.openchrom.xxd.control.supplier.temperature.ui.engineering.LiveTemperatureTrace;
-import net.openchrom.xxd.control.supplier.temperature.ui.swt.views.PidSettingsView;
 
 /**
- * Engineer content. It does not embed {@code TemperatureControlPanel}.
- * PID editing shares its implementation with the reverse-control PID page. The shell uses
- * the shared connection manager and the shared FID poller.
+ * Engineer content. It does not embed {@code TemperatureControlPanel} and
+ * does not host a second PID editor. PID stays on the operator settings tab.
+ * The shell uses the shared connection manager and the shared FID poller.
  */
 public final class EngineerMaintenanceShell {
 
@@ -73,7 +72,7 @@ public final class EngineerMaintenanceShell {
 
 	public static void open(Shell parent, String pageId) {
 
-		String page = EngineerPages.isEngineerPage(pageId) ? pageId : EngineerPages.DEVICE;
+		String page = EngineerPages.visiblePage(pageId);
 		Display display = parent != null ? parent.getDisplay() : Display.getCurrent();
 		if(display == null) {
 			return;
@@ -113,25 +112,22 @@ public final class EngineerMaintenanceShell {
 		lock.addListener(SWT.Selection, event -> shell.close());
 		Composite tabs = new Composite(shell, SWT.NONE);
 		tabs.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		tabs.setLayout(new GridLayout(5, true));
+		tabs.setLayout(new GridLayout(4, true));
 		Composite stackHost = new Composite(shell, SWT.NONE);
 		stackHost.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		StackLayout stack = new StackLayout();
 		stackHost.setLayout(stack);
 		Composite device = scroll(stackHost, scrolled -> new DeviceConfigPage(scrolled, proposalPath()));
-		Composite temperature = temperaturePage(stackHost);
 		Composite gas = gasPage(stackHost);
 		Composite trend = trendPage(stackHost);
 		Composite link = linkPage(stackHost);
 		Button deviceButton = tab(tabs, EngineerPages.title(EngineerPages.DEVICE), () -> show(stackHost, stack, device, EngineerPages.DEVICE));
-		Button tempButton = tab(tabs, EngineerPages.title(EngineerPages.TEMPERATURE), () -> show(stackHost, stack, temperature, EngineerPages.TEMPERATURE));
 		Button gasButton = tab(tabs, EngineerPages.title(EngineerPages.GAS), () -> show(stackHost, stack, gas, EngineerPages.GAS));
 		Button trendButton = tab(tabs, EngineerPages.title(EngineerPages.TREND), () -> show(stackHost, stack, trend, EngineerPages.TREND));
 		Button linkButton = tab(tabs, EngineerPages.title(EngineerPages.LINK), () -> show(stackHost, stack, link, EngineerPages.LINK));
 		shell.setData("host", stackHost);
 		shell.setData("device", device);
 		shell.setData("devicePage", ((ScrolledComposite)device).getContent());
-		shell.setData("temperature", temperature);
 		shell.setData("gas", gas);
 		shell.setData("trend", trend);
 		shell.setData("trendPage", ((ScrolledComposite)trend).getContent());
@@ -140,7 +136,6 @@ public final class EngineerMaintenanceShell {
 		shell.setData("safety", safety);
 		shell.setData("banner", banner);
 		shell.setData("deviceButton", deviceButton);
-		shell.setData("tempButton", tempButton);
 		shell.setData("gasButton", gasButton);
 		shell.setData("trendButton", trendButton);
 		shell.setData("linkButton", linkButton);
@@ -193,13 +188,6 @@ public final class EngineerMaintenanceShell {
 		if(device != null && !device.isDisposed()) {
 			device.setEngineeringUnlocked(unlocked);
 		}
-		Composite temperature = (Composite)shell.getData("temperature");
-		if(temperature != null && !temperature.isDisposed()) {
-			PidSettingsView pid = (PidSettingsView)temperature.getData("pid");
-			if(pid != null && !pid.isDisposed()) {
-				pid.setEngineeringUnlocked(unlocked);
-			}
-		}
 	}
 
 	private static void refreshOnUi(Shell shell) {
@@ -228,13 +216,6 @@ public final class EngineerMaintenanceShell {
 		if(safety != null && !safety.isDisposed()) {
 			safety.setText(safetyText());
 		}
-		Composite temperature = (Composite)shell.getData("temperature");
-		if(temperature != null && !temperature.isDisposed()) {
-			Label diag = (Label)temperature.getData("diag");
-			if(diag != null && !diag.isDisposed()) {
-				diag.setText(diagnostics());
-			}
-		}
 		for(String key : new String[]{"gas", "trend", "link"}) {
 			Composite page = (Composite)shell.getData(key);
 			if(page != null && !page.isDisposed()) {
@@ -261,9 +242,6 @@ public final class EngineerMaintenanceShell {
 
 	private static String dataKey(String page) {
 
-		if(EngineerPages.TEMPERATURE.equals(page)) {
-			return "temperature";
-		}
 		if(EngineerPages.GAS.equals(page)) {
 			return "gas";
 		}
@@ -281,16 +259,6 @@ public final class EngineerMaintenanceShell {
 		showing = pageId;
 		stack.topControl = page;
 		host.layout();
-		if(EngineerPages.TEMPERATURE.equals(pageId)) {
-			PidSettingsView pid = (PidSettingsView)page.getData("pid");
-			if(pid != null && !pid.isDisposed()) {
-				pid.onShown();
-			}
-			Label diag = (Label)page.getData("diag");
-			if(diag != null && !diag.isDisposed()) {
-				diag.setText(diagnostics());
-			}
-		}
 		if(EngineerPages.GAS.equals(pageId) || EngineerPages.TREND.equals(pageId) || EngineerPages.LINK.equals(pageId)) {
 			Runnable refresh = (Runnable)page.getData("refresh");
 			if(refresh != null) {
@@ -309,25 +277,6 @@ public final class EngineerMaintenanceShell {
 		content.addListener(SWT.Resize, event -> scrolled.setMinSize(content.computeSize(SWT.DEFAULT, SWT.DEFAULT)));
 		scrolled.setMinSize(content.computeSize(SWT.DEFAULT, SWT.DEFAULT));
 		return scrolled;
-	}
-
-	private static Composite temperaturePage(Composite host) {
-
-		Composite page = new Composite(host, SWT.NONE);
-		page.setLayout(new GridLayout(1, false));
-		Label note = new Label(page, SWT.WRAP);
-		note.setText("日常柱箱程序、进样口/检测器温度校准和检测器点火仍在反控窗口，那些下发的是设定温度，不是 PID。这里的 PID 系数每次写入都会再检查授权；实时曲线和 CSV 记录请使用独立的「实时温度曲线」页。柱箱风扇和散热口来自本次 READ_OVEN_TEMP 的 fan / vent；缺字段或读失败为未知，不能下发虚构指令。");
-		GridData noteData = new GridData(SWT.FILL, SWT.CENTER, true, false);
-		noteData.widthHint = 640;
-		note.setLayoutData(noteData);
-		Label diag = new Label(page, SWT.WRAP);
-		diag.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		diag.setText(diagnostics());
-		PidSettingsView pid = new PidSettingsView(page, SWT.NONE);
-		pid.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
-		page.setData("pid", pid);
-		page.setData("diag", diag);
-		return page;
 	}
 
 	private static Composite gasPage(Composite host) {

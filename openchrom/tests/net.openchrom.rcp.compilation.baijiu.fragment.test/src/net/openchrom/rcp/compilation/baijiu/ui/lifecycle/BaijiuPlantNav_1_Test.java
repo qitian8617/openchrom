@@ -138,10 +138,14 @@ public class BaijiuPlantNav_1_Test {
 
 		assertEquals("维护", BaijiuPlantNav.maintenanceSection().label());
 		assertEquals("工程师/维护模式", BaijiuPlantNav.ENGINEER_MODE);
-		assertEquals(List.of("设备配置", "温度标定/整定", "气路与FID", "通信与采集"), labels(BaijiuPlantNav.engineerTargets()));
+		assertEquals(List.of("设备配置", "气路与FID", "实时温度曲线", "通信与采集"), labels(BaijiuPlantNav.engineerTargets()));
 		assertEquals(List.of("关于", "重置窗口布局"), labels(BaijiuPlantNav.systemTargets()));
 		List<Target> tools = BaijiuPlantNav.engineerTargets();
-		assertEquals(List.of(BaijiuPlantNav.PAGE_DEVICE, BaijiuPlantNav.PAGE_TEMP, BaijiuPlantNav.PAGE_GAS_ENG, BaijiuPlantNav.PAGE_LINK), tools.stream().map(Target::actionKey).toList());
+		assertEquals(List.of(BaijiuPlantNav.PAGE_DEVICE, BaijiuPlantNav.PAGE_GAS_ENG, BaijiuPlantNav.PAGE_TREND, BaijiuPlantNav.PAGE_LINK), tools.stream().map(Target::actionKey).toList());
+		assertFalse(labels(BaijiuPlantNav.targets(Section.MAINTENANCE)).contains("温度标定/整定"));
+		Target retired = new Target(null, "温度标定/整定", false, BaijiuPlantNav.PAGE_TEMP);
+		assertTrue(BaijiuPlantNav.opensEngineerPage(retired));
+		assertFalse(BaijiuPlantNav.opensConsole(retired));
 		for(Target target : tools) {
 			assertFalse(target.stub());
 			assertFalse(target.opensPart());

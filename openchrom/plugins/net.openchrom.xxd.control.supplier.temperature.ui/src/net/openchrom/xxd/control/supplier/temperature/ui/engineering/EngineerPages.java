@@ -30,6 +30,19 @@ public final class EngineerPages {
 		return DEVICE.equals(pageId) || TEMPERATURE.equals(pageId) || GAS.equals(pageId) || TREND.equals(pageId) || LINK.equals(pageId);
 	}
 
+	/**
+	 * Page actually shown. {@link #TEMPERATURE} remains a recognized id so an
+	 * old menu or persisted selection still opens maintenance, on 设备配置.
+	 * PID editing stays on the operator settings tab.
+	 */
+	public static String visiblePage(String pageId) {
+
+		if(GAS.equals(pageId) || TREND.equals(pageId) || LINK.equals(pageId) || DEVICE.equals(pageId)) {
+			return pageId;
+		}
+		return DEVICE;
+	}
+
 	public static boolean reopensOperatorRemotePanel(String pageId) {
 
 		return false;
@@ -37,11 +50,8 @@ public final class EngineerPages {
 
 	public static String title(String pageId) {
 
-		if(DEVICE.equals(pageId)) {
+		if(DEVICE.equals(pageId) || TEMPERATURE.equals(pageId)) {
 			return "设备配置";
-		}
-		if(TEMPERATURE.equals(pageId)) {
-			return "温度标定与整定";
 		}
 		if(GAS.equals(pageId)) {
 			return "气路与 FID 工程";
