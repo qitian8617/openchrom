@@ -33,6 +33,7 @@ import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService.PartState;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 
@@ -62,7 +63,10 @@ public final class CsdNativeEditorSupport {
 			logger.warn("Cannot open CSD editor: no SWT display");
 			return;
 		}
-		display.asyncExec(() -> openEditor(chromatogram));
+		display.asyncExec(() -> {
+			boolean shown = openEditor(chromatogram);
+			RealtimeAcquisitionManager.getInstance().noteLiveEditorShown(chromatogram, shown);
+		});
 	}
 
 	public static void replaceWithFileEditorAsync(IChromatogramCSD chromatogram, File file) {
@@ -130,10 +134,10 @@ public final class CsdNativeEditorSupport {
 		return replaceWithFileEditorOnUi(chromatogram, file);
 	}
 
-	public static void openEditor(IChromatogramCSD chromatogram) {
+	public static boolean openEditor(IChromatogramCSD chromatogram) {
 
 		if(chromatogram == null || chromatogram.getNumberOfScans() < MIN_SCANS_TO_OPEN) {
-			return;
+			return false;
 		}
 		try {
 			EModelService modelService = ContextAddon.getModelService();
@@ -143,13 +147,13 @@ public final class CsdNativeEditorSupport {
 				logger.warn("Cannot open CSD editor: E4 services unavailable (modelService="
 						+ (modelService != null) + ", application=" + (application != null)
 						+ ", partService=" + (partService != null) + ")");
-				return;
+				return false;
 			}
 			MPart existing = findOpenedPart(chromatogram);
 			if(existing != null) {
 				partService.showPart(existing, PartState.ACTIVATE);
 				ChromatogramEditorNotifier.publishFinalUpdate(chromatogram);
-				return;
+				return existing.getWidget() instanceof Control control && !control.isDisposed();
 			}
 			try {
 				net.openchrom.xxd.control.supplier.temperature.ui.TemperatureControlWorkbench.showAcquisitionSurface(application, modelService, partService);
@@ -159,7 +163,7 @@ public final class CsdNativeEditorSupport {
 			MPartStack partStack = resolveEditorStack(modelService, application);
 			if(partStack == null) {
 				logger.warn("Cannot open CSD editor: editor part stack not found");
-				return;
+				return false;
 			}
 			MWindow window = application.getChildren().isEmpty() ? null : application.getChildren().get(0);
 			MPart part = modelService.createModelElement(MPart.class);
@@ -180,9 +184,16 @@ public final class CsdNativeEditorSupport {
 			}
 			refreshEditorLayout(window, part);
 			schedulePostOpenRefresh(Display.getDefault(), chromatogram, window);
+			boolean ready = part.getWidget() instanceof Control control && !control.isDisposed();
+			if(!ready) {
+				logger.warn("CSD editor part has no widget after showPart for " + chromatogram.getName());
+				return false;
+			}
 			logger.info("Opened native CSD editor for " + chromatogram.getName());
+			return true;
 		} catch(Exception e) {
 			logger.warn("Failed to open native CSD editor", e);
+			return false;
 		}
 	}
 

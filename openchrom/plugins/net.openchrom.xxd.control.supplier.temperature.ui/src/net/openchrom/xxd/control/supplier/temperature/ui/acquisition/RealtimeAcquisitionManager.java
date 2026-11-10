@@ -60,6 +60,7 @@ public final class RealtimeAcquisitionManager {
 	private IChromatogramCSD chromatogram;
 	private int points;
 	private boolean nativeEditorOpened;
+	private boolean editorOpenAttempted;
 	private volatile boolean editorRefreshActive;
 	private volatile IChromatogramSelectionCSD editorSelection;
 	private int editorRefreshTicks;
@@ -117,6 +118,7 @@ public final class RealtimeAcquisitionManager {
 		points = 0;
 		runTracker = new AcquisitionRunTracker();
 		nativeEditorOpened = false;
+		editorOpenAttempted = false;
 		editorSelection = null;
 		editorRefreshTicks = 0;
 		activeRunId = ++runCounter;
@@ -271,8 +273,8 @@ public final class RealtimeAcquisitionManager {
 			AcquisitionChromatogramStore.appendPoint(chromatogram, point);
 			points++;
 		}
-		if(!nativeEditorOpened && points >= 2) {
-			nativeEditorOpened = true;
+		if(!editorOpenAttempted && points >= 2) {
+			editorOpenAttempted = true;
 			CsdNativeEditorSupport.openEditorAsync(chromatogram);
 		}
 		for(IAcquisitionListener listener : listeners) {
@@ -414,13 +416,20 @@ public final class RealtimeAcquisitionManager {
 			return;
 		}
 		ChromatogramEditorNotifier.publishFinalUpdate(current);
-		if(points >= 2 && !nativeEditorOpened) {
-			nativeEditorOpened = true;
+		if(points >= 2 && !nativeEditorOpened && !editorOpenAttempted) {
+			editorOpenAttempted = true;
 			CsdNativeEditorSupport.openEditorAsync(current);
 		}
 		String reason = AcquisitionMessages.saveFailedDialog(result.getReason(), result.getPoints(), result.emergencyPath());
 		logger.warn("Failed to save acquisition data: " + result.getReason());
 		notifyFailed(reason, null);
+	}
+
+	synchronized void noteLiveEditorShown(IChromatogramCSD shownChromatogram, boolean shown) {
+
+		if(shownChromatogram != null && shownChromatogram == chromatogram) {
+			nativeEditorOpened = shown;
+		}
 	}
 
 	private void notifyStarted(IChromatogramCSD csd) {

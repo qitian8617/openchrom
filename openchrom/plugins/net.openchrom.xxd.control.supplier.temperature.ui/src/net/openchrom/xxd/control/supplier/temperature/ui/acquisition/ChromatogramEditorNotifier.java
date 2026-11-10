@@ -36,12 +36,11 @@ import org.eclipse.swtchart.extensions.core.IExtendedChart;
 public final class ChromatogramEditorNotifier {
 
 	/**
-	 * A constant baseline auto-scaled 1:1 fills the plot (red block at 100%).
-	 * Keep Y max well above the DC floor so an unlit no-gas trace is a thin
-	 * line near zero, not a saturated band.
+	 * ChemClipse's default chromatogram series is red ({@code 255,0,0}) and
+	 * area-filled down to 0. A flat baseline then paints a red block. The
+	 * axis only brackets the stored signals; it does not scale them.
 	 */
-	private static final float QUIET_BASELINE_MAX = 20f;
-	private static final float QUIET_Y_MAX = 10f;
+	static final String CHROMATOGRAM_SERIES_ID = "Chromatogram";
 
 	private ChromatogramEditorNotifier() {
 	}
@@ -279,6 +278,7 @@ public final class ChromatogramEditorNotifier {
 		Runnable update = () -> {
 			if(!editor.isDisposed()) {
 				editor.update();
+				applyTraceStyle(editor);
 				applyChartRange(editor, selection != null ? selection : editor.getChromatogramSelection());
 			}
 		};
@@ -287,6 +287,22 @@ public final class ChromatogramEditorNotifier {
 			update.run();
 		} else {
 			display.asyncExec(update);
+		}
+	}
+
+	/**
+	 * The chromatogram series is the red area-filled trace. Leave peak and
+	 * baseline series alone. Line width stays 1; stored signals are not edited.
+	 */
+	static void applyTraceStyle(ExtendedChromatogramUI editor) {
+
+		if(editor == null || editor.isDisposed() || editor.getChromatogramChart() == null) {
+			return;
+		}
+		org.eclipse.swtchart.ISeries<?> series = editor.getChromatogramChart().getBaseChart().getSeriesSet().getSeries(CHROMATOGRAM_SERIES_ID);
+		if(series instanceof org.eclipse.swtchart.ILineSeries<?> line) {
+			line.enableArea(false);
+			line.setLineWidth(1);
 		}
 	}
 
@@ -349,18 +365,9 @@ public final class ChromatogramEditorNotifier {
 			}
 			startRetentionTime = chromatogram.getStartRetentionTime();
 			stopRetentionTime = chromatogram.getStopRetentionTime();
-			float dataMin = chromatogram.getMinSignal();
-			float dataMax = chromatogram.getMaxSignal();
-			if(dataMax <= QUIET_BASELINE_MAX) {
-				minSignal = 0f;
-				maxSignal = Math.max(QUIET_Y_MAX, dataMax * 20f);
-			} else {
-				minSignal = Math.min(0f, dataMin);
-				maxSignal = Math.max(dataMax * 1.25f, dataMax + 10f);
-			}
-			if(maxSignal <= minSignal) {
-				maxSignal = minSignal + QUIET_Y_MAX;
-			}
+			AcquisitionTraceGeometry.SignalAxis axis = AcquisitionTraceGeometry.signalAxis(chromatogram.getMinSignal(), chromatogram.getMaxSignal());
+			minSignal = axis.min();
+			maxSignal = axis.max();
 			if(selection instanceof IChromatogramSelectionCSD && chromatogram instanceof IChromatogramCSD chromatogramCSD) {
 				latestScan = chromatogramCSD.getScan(scans);
 			}

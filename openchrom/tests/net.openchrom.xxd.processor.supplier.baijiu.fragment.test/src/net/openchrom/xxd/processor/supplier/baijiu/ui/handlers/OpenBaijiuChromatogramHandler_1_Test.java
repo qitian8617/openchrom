@@ -72,6 +72,7 @@ public class OpenBaijiuChromatogramHandler_1_Test {
 		assertEquals("Could not find satisfiable constructor in org.eclipse.chemclipse.ux.extension.xxd.ui.editors.ChromatogramEditorCSD", OpenBaijiuChromatogramHandler.CREATEGUI_DI_REASON);
 		assertTrue(OpenBaijiuChromatogramHandler.HOST_FAILED_REASON.contains(OpenBaijiuChromatogramHandler.CREATEGUI_DI_REASON));
 		assertTrue(OpenBaijiuChromatogramHandler.HOST_FAILED_REASON.contains("\u8c31\u56fe/\u91c7\u96c6"));
+		assertFalse(OpenBaijiuChromatogramHandler.EDITOR_NOT_CREATED_REASON.contains("satisfiable constructor"));
 	}
 
 	@Test

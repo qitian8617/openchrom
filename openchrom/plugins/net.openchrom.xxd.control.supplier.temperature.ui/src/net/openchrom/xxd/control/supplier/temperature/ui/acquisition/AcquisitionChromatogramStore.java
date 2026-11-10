@@ -83,6 +83,14 @@ public final class AcquisitionChromatogramStore {
 		IScanCSD scan = new ScanCSD(normalizeSignal(point.signal()));
 		scan.setRetentionTime(Math.max(0, point.retentionTimeMs()));
 		chromatogram.addScan(scan);
+		/*
+		 * ChemClipse builds the chart series with getScanNumber, which returns
+		 * 0 while the scan interval is still 0. Two real retention times are
+		 * enough to derive the interval. This is not a display zoom.
+		 */
+		if(chromatogram.getNumberOfScans() >= 2) {
+			ChromatogramSupport.calculateScanIntervalAndDelay(chromatogram);
+		}
 	}
 
 	public static float normalizeSignal(float signal) {
