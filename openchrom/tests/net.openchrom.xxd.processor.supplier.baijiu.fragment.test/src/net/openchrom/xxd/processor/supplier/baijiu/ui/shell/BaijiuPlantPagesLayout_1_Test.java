@@ -32,6 +32,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
+import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 import org.junit.jupiter.api.Test;
 
@@ -80,6 +81,46 @@ public class BaijiuPlantPagesLayout_1_Test {
 					}
 				}
 			}
+		} finally {
+			display.dispose();
+		}
+	}
+
+	@Test
+	public void draggedColumnWiderThanTheDefaultCapSurvivesShellResize() {
+
+		Display display = new Display();
+		try {
+			Shell shell = new Shell(display);
+			shell.setLayout(new org.eclipse.swt.layout.FillLayout());
+			shell.setSize(1000, 360);
+			Table table = BaijiuPlantLayout.table(shell, 140);
+			TableColumn path = BaijiuPlantLayout.column(table, "谱图", 120);
+			BaijiuPlantLayout.column(table, "状态", 72);
+			BaijiuPlantLayout.fillTrailingColumn(table);
+			TableItem row = new TableItem(table, SWT.NONE);
+			row.setText(0, "SIMULATED/long/path/that/exceeds/the/default/column.ocb");
+			row.setText(1, "已完成");
+			shell.open();
+			pump(display);
+			path.setWidth(420);
+			assertTrue(path.getWidth() >= 400, "drag did not stick: " + path.getWidth());
+			shell.setSize(1600, 480);
+			pump(display);
+			shell.setSize(1000, 360);
+			pump(display);
+			assertTrue(path.getWidth() >= 400, "window resize reset the dragged column to " + path.getWidth());
+			Files.createDirectories(Path.of("/tmp/plant-layout"));
+			for(TableColumn column : table.getColumns()) {
+				if(column == path || column.getText() == null || column.getText().isBlank()) {
+					continue;
+				}
+				assertTrue(column.getWidth() <= BaijiuPlantLayout.COLUMN_MAX, column.getText() + " " + column.getWidth());
+			}
+			save(display, shell, Path.of("/tmp/plant-layout/dragged-column-after-resize.png"));
+			shell.dispose();
+		} catch(Exception ex) {
+			throw new AssertionError(ex);
 		} finally {
 			display.dispose();
 		}

@@ -633,7 +633,6 @@ public final class BaijiuPlantLayout {
 		column.setText(label);
 		int capped = Math.min(Math.max(36, width), COLUMN_MAX);
 		column.setWidth(capped);
-		column.setData("baijiu.pref", Integer.valueOf(capped));
 		column.setToolTipText(label);
 		return column;
 	}
@@ -654,10 +653,11 @@ public final class BaijiuPlantLayout {
 	}
 
 	/**
-	 * Keep the semantic column widths. Do not grow the last column into leftover
-	 * client space. A wide matrix scrolls horizontally; a cell tooltip shows
-	 * text that does not fit. A window resize restores the semantic width after GTK
-	 * stretches a column; a drag holds until that next window resize.
+	 * Initial column widths stay at the semantic size, capped at
+	 * {@link #COLUMN_MAX}. That cap is not reapplied after the user drags a
+	 * column. GTK grows the last column to the table allocation; a blank
+	 * spacer absorbs that. This method does not listen for resize and does
+	 * not write real column widths again.
 	 */
 	public static void fillTrailingColumn(Table table) {
 
@@ -685,10 +685,8 @@ public final class BaijiuPlantLayout {
 			if(Boolean.TRUE.equals(column.getData("baijiu.spacer"))) {
 				continue;
 			}
-			if(!(column.getData("baijiu.pref") instanceof Integer)) {
-				int capped = Math.min(Math.max(36, column.getWidth()), COLUMN_MAX);
-				column.setWidth(capped);
-				column.setData("baijiu.pref", Integer.valueOf(capped));
+			if(column.getWidth() > COLUMN_MAX) {
+				column.setWidth(COLUMN_MAX);
 			}
 			if(column.getToolTipText() == null || column.getToolTipText().isBlank()) {
 				column.setToolTipText(column.getText());
@@ -708,38 +706,6 @@ public final class BaijiuPlantLayout {
 			table.setData("baijiu.spacer", Boolean.TRUE);
 		}
 		installCellTip(table);
-		if(!Boolean.TRUE.equals(table.getData("baijiu.snap"))) {
-			table.setData("baijiu.snap", Boolean.TRUE);
-			Listener snap = event -> {
-				snapColumns(table);
-				if(!table.isDisposed()) {
-					table.getDisplay().asyncExec(() -> snapColumns(table));
-				}
-			};
-			table.addListener(SWT.Resize, snap);
-			table.addListener(SWT.Dispose, event -> table.removeListener(SWT.Resize, snap));
-		}
-		snapColumns(table);
-	}
-
-	private static void snapColumns(Table table) {
-
-		if(table == null || table.isDisposed() || Boolean.TRUE.equals(table.getData("baijiu.snapping"))) {
-			return;
-		}
-		table.setData("baijiu.snapping", Boolean.TRUE);
-		try {
-			for(TableColumn column : table.getColumns()) {
-				if(Boolean.TRUE.equals(column.getData("baijiu.spacer"))) {
-					continue;
-				}
-				if(column.getData("baijiu.pref") instanceof Integer preferred && column.getWidth() != preferred.intValue()) {
-					column.setWidth(preferred.intValue());
-				}
-			}
-		} finally {
-			table.setData("baijiu.snapping", Boolean.FALSE);
-		}
 	}
 
 	public static void ensureGrid(Composite parent) {
