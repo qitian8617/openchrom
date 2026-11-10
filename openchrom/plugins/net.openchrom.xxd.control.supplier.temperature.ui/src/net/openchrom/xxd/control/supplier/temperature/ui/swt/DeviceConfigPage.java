@@ -63,13 +63,13 @@ public final class DeviceConfigPage extends Composite {
 		factData.horizontalSpan = 2;
 		factData.widthHint = 520;
 		facts.setLayoutData(factData);
-		model = field("仪器型号");
-		maker = field("制造商");
-		column = field("色谱柱");
-		isothermal = field("恒温上限 ℃（本地建议）");
-		program = field("程序升温上限 ℃（本地建议）");
-		dwell = field("高温停留约束（本地建议）");
-		machine = field("已核对的机器限值（本地建议）");
+		model = field("仪器型号", 220);
+		maker = field("制造商", 220);
+		column = field("色谱柱", 360);
+		isothermal = field("恒温上限 ℃（本地建议）", 96);
+		program = field("程序升温上限 ℃（本地建议）", 96);
+		dwell = field("高温停留约束（本地建议）", 220);
+		machine = field("已核对的机器限值（本地建议）", 220);
 		show(DeviceColumnProposal.empty());
 		try {
 			show(DeviceColumnProposal.read(storePath));
@@ -102,13 +102,15 @@ public final class DeviceConfigPage extends Composite {
 		restore.setEnabled(unlocked);
 	}
 
-	private Text field(String label) {
+	private Text field(String label, int widthHint) {
 
 		Label name = new Label(this, SWT.NONE);
 		name.setBackground(getBackground());
 		name.setText(label);
 		Text text = new Text(this, SWT.BORDER);
-		text.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		GridData data = new GridData(SWT.LEFT, SWT.CENTER, false, false);
+		data.widthHint = widthHint;
+		text.setLayoutData(data);
 		return text;
 	}
 

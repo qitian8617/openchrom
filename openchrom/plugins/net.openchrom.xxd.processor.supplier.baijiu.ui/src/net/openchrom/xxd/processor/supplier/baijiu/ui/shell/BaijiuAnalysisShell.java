@@ -306,7 +306,7 @@ public final class BaijiuAnalysisShell {
 
 		Composite methodGroup = BaijiuPlantLayout.group(root, "FID \u65b9\u6cd5\u53c2\u6570", 1);
 		methodName = BaijiuPlantLayout.labeledText(methodGroup, "\u65b9\u6cd5\u540d\u79f0", BaijiuPlantLayout.METHOD);
-		columnSummary = BaijiuPlantLayout.labeledText(methodGroup, "\u8272\u8c31\u67f1", BaijiuPlantLayout.METHOD);
+		columnSummary = BaijiuPlantLayout.labeledText(methodGroup, "\u8272\u8c31\u67f1", BaijiuPlantLayout.COLUMN_TEXT);
 		ovenProgram = BaijiuPlantLayout.labeledWrap(methodGroup, "\u7a0b\u5e8f\u5347\u6e29", 1, 40);
 		Composite methodShorts = BaijiuPlantLayout.row(methodGroup, 6);
 		samplingHz = BaijiuPlantLayout.labeledText(methodShorts, "\u91c7\u6837 Hz", BaijiuPlantLayout.NUMERIC);

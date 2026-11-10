@@ -68,7 +68,9 @@ public class ParameterSettingsView extends Composite implements LanguageListener
 		spliceLabel.setText(chinese ? "\u91C7\u6837\u65F6\u95F4(\u79D2):" : "Sampling Time (sec):");
 		spliceText = new Text(spliceCard, SWT.BORDER);
 		spliceText.setText("0");
-		spliceText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		GridData spliceData = new GridData(SWT.LEFT, SWT.CENTER, false, false);
+		spliceData.widthHint = 84;
+		spliceText.setLayoutData(spliceData);
 		spliceSaveButton = WidgetFactory.createPrimaryButton(spliceCard, chinese ? "\u4FDD\u5B58" : "Save");
 
 		Composite channelCard = WidgetFactory.createCard(this);
@@ -80,7 +82,9 @@ public class ParameterSettingsView extends Composite implements LanguageListener
 			channelLabels[i].setText(channelLabelText(i));
 
 			Combo combo = new Combo(channelCard, SWT.READ_ONLY | SWT.DROP_DOWN);
-			combo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+			GridData comboData = new GridData(SWT.LEFT, SWT.CENTER, false, false);
+			comboData.widthHint = 200;
+			combo.setLayoutData(comboData);
 			combo.setData("laiende.skip.localize", Boolean.TRUE);
 			fillComboItems(combo);
 			combo.select(ParameterSettingsStore.indexOfOptionId(ParameterSettingsStore.DEFAULT_CHANNEL_IDS[i]));
