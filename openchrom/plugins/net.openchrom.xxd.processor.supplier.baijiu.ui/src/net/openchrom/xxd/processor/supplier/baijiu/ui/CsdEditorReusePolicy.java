@@ -24,10 +24,12 @@ import org.eclipse.chemclipse.ux.extension.ui.editors.IChromatogramEditor;
 public final class CsdEditorReusePolicy {
 
 	/**
-	 * ChemClipse {@code EditorSupport.MAP_FILE}. Also used on MPart persisted
-	 * state after Stop rebinds the live editor to the saved path.
+	 * Local persisted path. ChemClipse {@code EditorSupport.MAP_FILE} is the
+	 * separate key {@code "File"} (capital F); {@link #fileOf} accepts both.
 	 */
 	public static final String FILE_KEY = "file";
+	/** {@code org.eclipse.chemclipse.support.ui.workbench.EditorSupport#MAP_FILE}. */
+	public static final String CHEMCLIPSE_FILE_KEY = "File";
 	/**
 	 * Written on the live acquisition part after a successful save so handoff
 	 * can match by path even if {@code part.getObject()} is the editor POJO.
@@ -126,6 +128,10 @@ public final class CsdEditorReusePolicy {
 			return null;
 		}
 		if(object instanceof Map<?, ?> map) {
+			File chemclipse = asFile(map.get(CHEMCLIPSE_FILE_KEY));
+			if(chemclipse != null) {
+				return chemclipse;
+			}
 			return asFile(map.get(FILE_KEY));
 		}
 		if(object instanceof IChromatogram chromatogram) {

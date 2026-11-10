@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -67,6 +68,38 @@ public class CsdEditorReusePolicy_1_Test {
 
 		assertEquals("net.openchrom.gcws.savedFile", CsdEditorReusePolicy.SAVED_FILE_KEY);
 		assertEquals("file", CsdEditorReusePolicy.FILE_KEY);
+		assertEquals("File", CsdEditorReusePolicy.CHEMCLIPSE_FILE_KEY);
 		assertFalse(OpenBaijiuChromatogramHandler.reuseOpenEditor((java.io.File)null, (org.eclipse.e4.core.contexts.IEclipseContext)null));
+	}
+
+	@Test
+	public void chemclipseEditorMapUsesCapitalFileKey() {
+
+		Map<String, Object> input = new HashMap<>();
+		input.put(CsdEditorReusePolicy.CHEMCLIPSE_FILE_KEY, "/tmp/QC_20261109_112826.ocb");
+		input.put("Batch", Boolean.FALSE);
+		File found = CsdEditorReusePolicy.fileOf(input);
+		assertEquals(new File("/tmp/QC_20261109_112826.ocb").getAbsolutePath(), found.getAbsolutePath());
+		assertTrue(BaijiuWorkbenchParts.hasCsdInput(stub(input, "QC_20261109_112826.ocb")));
+		assertTrue(CsdEditorReusePolicy.partMatchesSavedFile("QC_20261109_112826.ocb", input, null, found));
+	}
+
+	private static org.eclipse.e4.ui.model.application.ui.basic.MPart stub(Object object, String label) {
+
+		return (org.eclipse.e4.ui.model.application.ui.basic.MPart)java.lang.reflect.Proxy.newProxyInstance(org.eclipse.e4.ui.model.application.ui.basic.MPart.class.getClassLoader(), new Class<?>[] {org.eclipse.e4.ui.model.application.ui.basic.MPart.class}, (proxy, method, args) -> {
+			if("getObject".equals(method.getName())) {
+				return object;
+			}
+			if("getLabel".equals(method.getName())) {
+				return label;
+			}
+			if(method.getReturnType() == boolean.class || method.getReturnType() == Boolean.class) {
+				return Boolean.FALSE;
+			}
+			if(method.getReturnType() == void.class) {
+				return null;
+			}
+			return null;
+		});
 	}
 }

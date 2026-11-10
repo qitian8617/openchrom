@@ -107,8 +107,17 @@ public class OpenBaijiuChromatogramHandler {
 			if(reuseOpenEditor(file, live)) {
 				return true;
 			}
-			chemclipse = openViaChemClipseSupport(file, live);
-			hosted = hostExistingEditors(live);
+			if(isPlantProduct(live)) {
+				/*
+				 * Do not call ChemClipse openEditor first. It showPart's the
+				 * editor on the unrendered primary stack and the constructor
+				 * fails before this method can move the part.
+				 */
+				hosted = BaijiuWorkbenchParts.openSavedCsdInPlantStack(file, live);
+			} else {
+				chemclipse = openViaChemClipseSupport(file, live);
+				hosted = hostExistingEditors(live);
+			}
 		} catch(RuntimeException | LinkageError e) {
 			logger.warn("ChemClipse CSD open failed for " + file.getAbsolutePath(), e);
 			recordOpenFailure(e);
