@@ -299,7 +299,11 @@ public class OpenBaijiuChromatogramHandler {
 	private static void showPlantChromatogramInBranding(MApplication application, EModelService modelService, EPartService partService) {
 
 		try {
-			Class<?> type = Class.forName("net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuShellParts");
+			org.osgi.framework.Bundle bundle = org.eclipse.core.runtime.Platform.getBundle("net.openchrom.rcp.compilation.baijiu.ui");
+			if(bundle == null) {
+				return;
+			}
+			Class<?> type = bundle.loadClass("net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuShellParts");
 			type.getMethod("showChromatogram", MApplication.class, EModelService.class, EPartService.class).invoke(null, application, modelService, partService);
 		} catch(ClassNotFoundException | LinkageError e) {
 			// community product

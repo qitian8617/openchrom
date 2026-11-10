@@ -5,7 +5,8 @@ Bundle-Name: Temperature Control Panel (UI)
 Bundle-SymbolicName: net.openchrom.xxd.control.supplier.temperature.ui;singleton:=true
 Bundle-Version: 1.6.32.qualifier
 Bundle-Vendor: OpenChrom
-Export-Package: net.openchrom.xxd.control.supplier.temperature.ui.communication,
+Export-Package: net.openchrom.xxd.control.supplier.temperature.ui.acquisition,
+ net.openchrom.xxd.control.supplier.temperature.ui.communication,
  net.openchrom.xxd.control.supplier.temperature.ui.sequence
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
@@ -18,6 +19,8 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.e4.ui.workbench;bundle-version="0.10.100",
  org.eclipse.e4.core.commands;bundle-version="0.10.2",
  org.eclipse.swt;bundle-version="3.123.0",
+ org.eclipse.swtchart.extensions;bundle-version="1.1.0",
+ org.eclipse.swtchart;bundle-version="1.1.0",
  org.eclipse.chemclipse.csd.model;bundle-version="0.8.0",
  org.eclipse.chemclipse.csd.converter;bundle-version="0.8.0",
  org.eclipse.chemclipse.converter;bundle-version="0.8.0",

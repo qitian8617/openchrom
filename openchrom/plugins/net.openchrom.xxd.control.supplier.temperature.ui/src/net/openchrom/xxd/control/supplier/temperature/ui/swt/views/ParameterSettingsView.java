@@ -46,7 +46,6 @@ public class ParameterSettingsView extends Composite implements LanguageListener
 	private Label spliceLabel;
 	private Text spliceText;
 	private Button spliceSaveButton;
-	private Button showDebugButton;
 	private Button channelSaveButton;
 	private Label statusLabel;
 	private final Label[] channelLabels = new Label[ParameterSettingsStore.CHANNEL_COUNT];
@@ -71,13 +70,6 @@ public class ParameterSettingsView extends Composite implements LanguageListener
 		spliceText.setText("0");
 		spliceText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		spliceSaveButton = WidgetFactory.createPrimaryButton(spliceCard, chinese ? "\u4FDD\u5B58" : "Save");
-
-		showDebugButton = new Button(this, SWT.CHECK);
-		showDebugButton.setBackground(getBackground());
-		showDebugButton.setText(showDebugLabel());
-		showDebugButton.setSelection(false);
-		showDebugButton.setData("laiende.skip.localize", Boolean.TRUE);
-		showDebugButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
 		Composite channelCard = WidgetFactory.createCard(this);
 		channelCard.setLayout(new GridLayout(2, false));
@@ -131,21 +123,12 @@ public class ParameterSettingsView extends Composite implements LanguageListener
 		return ids;
 	}
 
-	/**
-	 * Live checkbox, including unsaved edits. Default is off.
-	 */
-	boolean isShowDebugInfo() {
-
-		return showDebugButton != null && !showDebugButton.isDisposed() && showDebugButton.getSelection();
-	}
-
 	@Override
 	public void onLanguageChanged(boolean chinese) {
 
 		this.chinese = chinese;
 		spliceLabel.setText(chinese ? "\u91C7\u6837\u65F6\u95F4(\u79D2):" : "Sampling Time (sec):");
 		spliceSaveButton.setText(chinese ? "\u4FDD\u5B58" : "Save");
-		showDebugButton.setText(showDebugLabel());
 		channelSaveButton.setText(chinese ? "\u4FDD\u5B58" : "Save");
 		for(int i = 0; i < ParameterSettingsStore.CHANNEL_COUNT; i++) {
 			channelLabels[i].setText(channelLabelText(i));
@@ -170,11 +153,6 @@ public class ParameterSettingsView extends Composite implements LanguageListener
 		return chinese ? "\u901A\u9053" + (index + 1) : "Channel " + (index + 1);
 	}
 
-	private String showDebugLabel() {
-
-		return chinese ? "\u663E\u793A\u8C03\u8BD5\u4FE1\u606F\uFF08FID \u7535\u6D41\u4E0E\u5B9E\u65F6\u66F2\u7EBF\uFF09" : "Show debug info (FID current and live trend)";
-	}
-
 	private void saveConfiguration() {
 
 		float samplingTime;
@@ -197,7 +175,7 @@ public class ParameterSettingsView extends Composite implements LanguageListener
 
 		Path file = ParameterSettingsStore.resolveConfigFile();
 		try {
-			ParameterSettingsStore.save(samplingTime, channelIds, showDebugButton.getSelection());
+			ParameterSettingsStore.save(samplingTime, channelIds);
 			statusLabel.setText((chinese ? "\u5DF2\u4FDD\u5B58: " : "Saved: ") + file.toAbsolutePath());
 			showMessage(SWT.ICON_INFORMATION, chinese ? "\u4FDD\u5B58\u6210\u529F" : "Saved", (chinese ? "\u914D\u7F6E\u5DF2\u5199\u5165:\n" : "Configuration written to:\n") + file.toAbsolutePath());
 		} catch(IOException e) {
@@ -208,7 +186,6 @@ public class ParameterSettingsView extends Composite implements LanguageListener
 
 	private void loadConfiguration() {
 
-		showDebugButton.setSelection(ParameterSettingsStore.loadShowDebugInfo());
 		Path file = ParameterSettingsStore.resolveConfigFile();
 		if(!Files.isRegularFile(file)) {
 			statusLabel.setText(chinese ? "\u5C1A\u672A\u4FDD\u5B58\u914D\u7F6E\u6587\u4EF6" : "No saved configuration yet");
@@ -277,7 +254,6 @@ final class ParameterSettingsStore {
 	static final int CHANNEL_COUNT = 7;
 	/** Not installed. Blank ids load as this option and are written back as this id. */
 	static final String EMPTY_CHANNEL_ID = "none";
-	static final String SHOW_DEBUG_INFO_KEY = "showDebugInfo";
 
 	static final ParameterSettingsStore.ChannelOption[] CHANNEL_OPTIONS = {
 			new ChannelOption(EMPTY_CHANNEL_ID, "\u7A7A / \uFF08\u672A\u63A5\uFF09", "Empty / (not installed)"),
@@ -337,28 +313,12 @@ final class ParameterSettingsStore {
 		return result;
 	}
 
-	static void save(float samplingTimeSec, List<String> channelIds, boolean showDebugInfo) throws IOException {
+	static void save(float samplingTimeSec, List<String> channelIds) throws IOException {
 		Objects.requireNonNull(channelIds, "channelIds");
 		Path file = resolveConfigFile();
 		Files.createDirectories(file.getParent());
-		Files.writeString(file, toJson(samplingTimeSec, channelIds, showDebugInfo), StandardCharsets.UTF_8);
+		Files.writeString(file, toJson(samplingTimeSec, channelIds), StandardCharsets.UTF_8);
 		STORE_LOGGER.info("Parameter settings saved to " + file.toAbsolutePath());
-	}
-
-	/**
-	 * @return {@code false} when the file or the flag is missing
-	 */
-	static boolean loadShowDebugInfo() {
-		Path file = resolveConfigFile();
-		if(!Files.isRegularFile(file)) {
-			return false;
-		}
-		try {
-			return parseJsonBoolean(Files.readString(file, StandardCharsets.UTF_8), SHOW_DEBUG_INFO_KEY, false);
-		} catch(IOException | RuntimeException e) {
-			STORE_LOGGER.warn("Failed to read debug visibility from " + file, e);
-			return false;
-		}
 	}
 
 	static boolean isEmptyChannel(String id) {
@@ -433,11 +393,10 @@ final class ParameterSettingsStore {
 		return ids;
 	}
 
-	private static String toJson(float samplingTimeSec, List<String> channelIds, boolean showDebugInfo) {
+	private static String toJson(float samplingTimeSec, List<String> channelIds) {
 		StringBuilder json = new StringBuilder(512);
 		json.append("{\n");
 		json.append("  \"samplingTimeSec\": ").append(formatNumber(samplingTimeSec)).append(",\n");
-		json.append("  \"").append(SHOW_DEBUG_INFO_KEY).append("\": ").append(showDebugInfo ? "true" : "false").append(",\n");
 		json.append("  \"channels\": [\n");
 		for(int i = 0; i < channelIds.size(); i++) {
 			ParameterSettingsStore.ChannelOption option = optionById(channelIds.get(i));
@@ -454,32 +413,6 @@ final class ParameterSettingsStore {
 		json.append("\n  ]\n");
 		json.append("}\n");
 		return json.toString();
-	}
-
-	private static boolean parseJsonBoolean(String json, String key, boolean fallback) {
-		if(json == null) {
-			return fallback;
-		}
-		String pattern = "\"" + key + "\"";
-		int keyIdx = json.indexOf(pattern);
-		if(keyIdx < 0) {
-			return fallback;
-		}
-		int colon = json.indexOf(':', keyIdx + pattern.length());
-		if(colon < 0) {
-			return fallback;
-		}
-		int start = colon + 1;
-		while(start < json.length() && Character.isWhitespace(json.charAt(start))) {
-			start++;
-		}
-		if(json.regionMatches(true, start, "true", 0, 4)) {
-			return true;
-		}
-		if(json.regionMatches(true, start, "false", 0, 5)) {
-			return false;
-		}
-		return fallback;
 	}
 
 	private static Float parseJsonFloat(String json, String key) {

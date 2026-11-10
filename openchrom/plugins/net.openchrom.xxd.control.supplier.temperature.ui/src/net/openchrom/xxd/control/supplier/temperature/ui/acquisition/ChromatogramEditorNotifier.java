@@ -23,11 +23,15 @@ import org.eclipse.chemclipse.model.selection.IChromatogramSelection;
 import org.eclipse.chemclipse.support.ui.activator.ContextAddon;
 import org.eclipse.chemclipse.ux.extension.ui.editors.IChromatogramEditor;
 import org.eclipse.chemclipse.ux.extension.xxd.ui.editors.ChromatogramEditorCSD;
+import org.eclipse.chemclipse.ux.extension.xxd.ui.swt.editors.ExtendedChromatogramUI;
 import org.eclipse.e4.core.contexts.IEclipseContext;
 import org.eclipse.e4.ui.model.application.MApplication;
 import org.eclipse.e4.ui.model.application.ui.basic.MPart;
 import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
+import org.eclipse.swtchart.extensions.core.IExtendedChart;
 
 public final class ChromatogramEditorNotifier {
 
@@ -61,6 +65,7 @@ public final class ChromatogramEditorNotifier {
 		}
 		refreshSelectionRange(activeSelection, chromatogram);
 		activeSelection.fireUpdateChange(true);
+		updateEditor(findOpenedPart(chromatogram));
 	}
 
 	public static void publishFinalUpdate(IChromatogramCSD chromatogram) {
@@ -77,11 +82,20 @@ public final class ChromatogramEditorNotifier {
 		if(selection != null) {
 			refreshSelectionRange(selection, chromatogram);
 			selection.fireUpdateChange(true);
+			updateEditor(findOpenedPart(chromatogram));
 		}
 	}
 
 	public static void applyDisplayRange(MPart part) {
 
+		if(part == null) {
+			return;
+		}
+		org.eclipse.swt.widgets.Display display = org.eclipse.swt.widgets.Display.getDefault();
+		if(!display.isDisposed() && display.getThread() != Thread.currentThread()) {
+			display.asyncExec(() -> applyDisplayRange(part));
+			return;
+		}
 		IChromatogramSelectionCSD selection = extractCsdSelection(part);
 		if(selection == null) {
 			return;
@@ -92,6 +106,7 @@ public final class ChromatogramEditorNotifier {
 		}
 		refreshSelectionRange(selection, chromatogram);
 		selection.fireUpdateChange(true);
+		updateEditor(part, selection);
 	}
 
 	public static IChromatogramSelectionCSD findEditorSelection(IChromatogramCSD chromatogram) {
@@ -222,6 +237,86 @@ public final class ChromatogramEditorNotifier {
 			}
 			if(editor != null && editor.getChromatogramSelection() instanceof IChromatogramSelectionCSD selection) {
 				return selection;
+			}
+		}
+		try {
+			return extractCsdSelectionFromWidget(part.getWidget());
+		} catch(RuntimeException | LinkageError e) {
+			return null;
+		}
+	}
+
+	private static IChromatogramSelectionCSD extractCsdSelectionFromWidget(Object widget) {
+
+		if(widget instanceof ExtendedChromatogramUI editor && !editor.isDisposed() && editor.getChromatogramSelection() instanceof IChromatogramSelectionCSD selection) {
+			return selection;
+		}
+		if(widget instanceof Composite composite && !composite.isDisposed()) {
+			for(Control child : composite.getChildren()) {
+				IChromatogramSelectionCSD selection = extractCsdSelectionFromWidget(child);
+				if(selection != null) {
+					return selection;
+				}
+			}
+		}
+		return null;
+	}
+
+	private static void updateEditor(MPart part) {
+
+		updateEditor(part, null);
+	}
+
+	private static void updateEditor(MPart part, IChromatogramSelection selection) {
+
+		if(part == null) {
+			return;
+		}
+		ExtendedChromatogramUI editor = findExtendedEditor(part.getWidget());
+		if(editor == null || editor.isDisposed()) {
+			return;
+		}
+		Runnable update = () -> {
+			if(!editor.isDisposed()) {
+				editor.update();
+				applyChartRange(editor, selection != null ? selection : editor.getChromatogramSelection());
+			}
+		};
+		org.eclipse.swt.widgets.Display display = editor.getDisplay();
+		if(display.getThread() == Thread.currentThread()) {
+			update.run();
+		} else {
+			display.asyncExec(update);
+		}
+	}
+
+	private static void applyChartRange(ExtendedChromatogramUI editor, IChromatogramSelection selection) {
+
+		if(selection == null) {
+			return;
+		}
+		IExtendedChart chart = editor.getChromatogramChart();
+		if(chart == null) {
+			return;
+		}
+		org.eclipse.swtchart.IAxis xAxis = editor.getChromatogramChart().getBaseChart().getAxisSet().getXAxis(0);
+		org.eclipse.swtchart.IAxis yAxis = editor.getChromatogramChart().getBaseChart().getAxisSet().getYAxis(0);
+		xAxis.setRange(new org.eclipse.swtchart.Range(selection.getStartRetentionTime(), selection.getStopRetentionTime()));
+		yAxis.setRange(new org.eclipse.swtchart.Range(selection.getStartAbundance(), selection.getStopAbundance()));
+		editor.getChromatogramChart().getBaseChart().redraw();
+	}
+
+	private static ExtendedChromatogramUI findExtendedEditor(Object widget) {
+
+		if(widget instanceof ExtendedChromatogramUI editor) {
+			return editor;
+		}
+		if(widget instanceof Composite composite && !composite.isDisposed()) {
+			for(Control child : composite.getChildren()) {
+				ExtendedChromatogramUI editor = findExtendedEditor(child);
+				if(editor != null) {
+					return editor;
+				}
 			}
 		}
 		return null;

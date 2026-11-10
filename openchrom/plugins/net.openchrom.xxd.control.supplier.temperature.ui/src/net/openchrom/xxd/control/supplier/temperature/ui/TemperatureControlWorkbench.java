@@ -82,8 +82,9 @@ public final class TemperatureControlWorkbench {
 	/**
 	 * After Start Analysis / open CSD: stay on plant home and show the
 	 * lower-left 谱图/采集 stack so live acquisition draws there. Does not
-	 * steal the right sidebar tab or the upper workflow page.
-	 * No-op on the community product.
+	 * steal the right sidebar tab or the upper workflow page. On the dedicated
+	 * product, BaijiuShellParts.showChromatogram owns editor hosting and hides
+	 * the empty state. No-op on the community product.
 	 */
 	public static boolean showAcquisitionSurface() {
 
@@ -100,6 +101,18 @@ public final class TemperatureControlWorkbench {
 			return false;
 		}
 		switchPerspective(application, modelService, partService, TemperatureControlIds.PLANT_HOME_PERSPECTIVE_ID);
+		if(modelService.find(TemperatureControlIds.PLANT_CHROMATOGRAM_STACK_ID, application) != null) {
+			try {
+				org.osgi.framework.Bundle bundle = org.eclipse.core.runtime.Platform.getBundle("net.openchrom.rcp.compilation.baijiu.ui");
+				if(bundle != null) {
+					Class<?> type = bundle.loadClass("net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuShellParts");
+					Object result = type.getMethod("showChromatogram", MApplication.class, EModelService.class, EPartService.class).invoke(null, application, modelService, partService);
+					return !(result instanceof Boolean) || ((Boolean)result).booleanValue();
+				}
+			} catch(ReflectiveOperationException | LinkageError e) {
+				// community fallback below
+			}
+		}
 		MUIElement placeholder = findUnder(modelService, application, TemperatureControlIds.CHROMATOGRAM_PLACEHOLDER_ID, TemperatureControlIds.PLANT_HOME_PERSPECTIVE_ID);
 		if(placeholder == null) {
 			placeholder = modelService.find(TemperatureControlIds.CHROMATOGRAM_PLACEHOLDER_ID, application);
@@ -617,7 +630,11 @@ public final class TemperatureControlWorkbench {
 	static boolean showPlantGcOsWindow() {
 
 		try {
-			Class<?> type = Class.forName("net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuGcConsoleShell");
+			org.osgi.framework.Bundle bundle = org.eclipse.core.runtime.Platform.getBundle("net.openchrom.rcp.compilation.baijiu.ui");
+			if(bundle == null) {
+				return false;
+			}
+			Class<?> type = bundle.loadClass("net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuGcConsoleShell");
 			Object result = type.getMethod("show").invoke(null);
 			return !(result instanceof Boolean) || ((Boolean)result).booleanValue();
 		} catch(ClassNotFoundException | LinkageError e) {

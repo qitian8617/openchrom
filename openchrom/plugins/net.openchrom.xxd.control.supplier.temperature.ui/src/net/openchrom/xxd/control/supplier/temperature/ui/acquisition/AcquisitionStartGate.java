@@ -17,9 +17,8 @@ import net.openchrom.xxd.control.supplier.temperature.ui.communication.FidReadin
  * Shared Start Analysis toggle for MainView, the plant toolbar, and the
  * Baijiu shell (reflection on {@code toggle}). Same gate everywhere.
  * <p>
- * Start requires connected TCP, an online FID board and flame on. A missing,
- * stale or failed FID status read blocks. Already acquiring toggles to stop.
- * Current pA stays on the strip.
+ * Start requires connected TCP. FID flame and current are status information,
+ * not acquisition prerequisites. Already acquiring toggles to stop.
  */
 public final class AcquisitionStartGate {
 
@@ -56,10 +55,15 @@ public final class AcquisitionStartGate {
 			return Outcome.blocked(chinese ? "采集正在收尾" : "Acquisition is finishing", chinese ? "请等待当前谱图保存或失败处理完成，再开始下一针。" : "Wait until the current run has been saved or its failure handling has finished.");
 		}
 		FidReadinessSnapshot snapshot = FidReadinessMonitor.getInstance().getSnapshot();
-		if(!snapshot.canStartAnalysis()) {
+		if(isConnectionBlocked(snapshot)) {
 			return Outcome.blocked(FidReadiness.startBlockedTitle(chinese), snapshot.operatorTip(chinese));
 		}
 		manager.startAcquisition();
 		return Outcome.started();
+	}
+
+	static boolean isConnectionBlocked(FidReadinessSnapshot snapshot) {
+
+		return !snapshot.isConnected();
 	}
 }

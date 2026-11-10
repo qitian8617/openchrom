@@ -473,7 +473,11 @@ public final class BaijiuWorkbenchParts {
 			return;
 		}
 		try {
-			Class<?> type = Class.forName("net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuHomePanels");
+			org.osgi.framework.Bundle bundle = org.eclipse.core.runtime.Platform.getBundle("net.openchrom.rcp.compilation.baijiu.ui");
+			if(bundle == null) {
+				return;
+			}
+			Class<?> type = bundle.loadClass("net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuHomePanels");
 			type.getMethod("createChromatogramEmptyState", Composite.class).invoke(null, host);
 		} catch(ClassNotFoundException | LinkageError e) {
 			// community product

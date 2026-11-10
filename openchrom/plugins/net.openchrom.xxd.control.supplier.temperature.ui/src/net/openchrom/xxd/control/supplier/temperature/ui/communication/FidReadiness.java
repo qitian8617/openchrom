@@ -18,17 +18,15 @@ import java.util.Locale;
 public final class FidReadiness {
 
 	/**
-	 * Developer-only JVM flag. When {@code true}, Start Analysis also skips the
-	 * FID-board-offline block and still requires TCP connected. Not a substitute
-	 * for {@link #REQUIRE_FID_CURRENT_FOR_START}. Not for production or pilot
-	 * sites. Example: {@code -Dnet.openchrom.gcws.skipFidReadinessGate=true}
+	 * Legacy development flag for the readiness predicates below and their debug
+	 * banner. AcquisitionStartGate does not consult this flag; it requires only
+	 * TCP connected. Example: {@code -Dnet.openchrom.gcws.skipFidReadinessGate=true}
 	 */
 	public static final String SKIP_FID_READINESS_GATE_PROPERTY = "net.openchrom.gcws.skipFidReadinessGate";
 
 	/**
-	 * Start Analysis requires a fresh, successful FID status read with the board
-	 * online and flame on. Disconnection, read failure, ignition failure and flame
-	 * out all block acquisition.
+	 * Legacy readiness policy retained for status classification and compatibility
+	 * tests. Flame and current are not acquisition prerequisites.
 	 */
 	public static final boolean REQUIRE_FID_CURRENT_FOR_START = true;
 

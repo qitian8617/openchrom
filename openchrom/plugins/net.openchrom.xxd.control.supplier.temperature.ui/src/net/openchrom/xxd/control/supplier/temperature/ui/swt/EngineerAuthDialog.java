@@ -78,6 +78,7 @@ public final class EngineerAuthDialog {
 		final boolean enroll = session.needsEnrollment();
 		final Text confirmField = second;
 		confirm.addListener(SWT.Selection, event -> submit(dialog, session, enroll, first, confirmField, status, result));
+		dialog.setDefaultButton(confirm);
 		dialog.addListener(SWT.Close, event -> {
 			if(result[0] == Result.CANCELLED) {
 				session.noteCancelled();
@@ -86,6 +87,7 @@ public final class EngineerAuthDialog {
 		dialog.pack();
 		dialog.setMinimumSize(460, dialog.getSize().y);
 		dialog.open();
+		first.setFocus();
 		while(!dialog.isDisposed()) {
 			if(!display.readAndDispatch()) {
 				display.sleep();
@@ -96,6 +98,9 @@ public final class EngineerAuthDialog {
 
 	private static void submit(Shell dialog, EngineerSession session, boolean enroll, Text first, Text second, Label status, Result[] result) {
 
+		if(!first.isEnabled()) {
+			return;
+		}
 		char[] password = chars(first);
 		char[] confirm = second == null ? null : chars(second);
 		first.setText("");
@@ -110,8 +115,13 @@ public final class EngineerAuthDialog {
 		Display display = dialog.getDisplay();
 		Thread.ofVirtual().name("gc-engineer-auth").start(() -> {
 			Attempt attempt = enroll ? session.enroll(password, confirm, System.currentTimeMillis()) : session.verify(password, System.currentTimeMillis());
+			if(display.isDisposed()) {
+				session.lock("cancelled-during-auth", System.currentTimeMillis());
+				return;
+			}
 			display.asyncExec(() -> {
-				if(dialog.isDisposed()) {
+				if(display.isDisposed() || dialog.isDisposed()) {
+					session.lock("cancelled-during-auth", System.currentTimeMillis());
 					return;
 				}
 				apply(dialog, session, status, result, attempt);

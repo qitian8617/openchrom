@@ -4,7 +4,9 @@ This password gates **this OpenChrom workstation** before maintenance opens, and
 
 The record is PBKDF2-HMAC-SHA256, 600000 iterations, random 16-byte salt, 32-byte hash. The password is not stored or logged. Comparison uses `MessageDigest.isEqual`. The file is written to a temporary sibling and moved into place; the first enrollment does not replace an existing file. On POSIX volumes the mode is owner read/write. Five failed verifies start a lockout (30 seconds, doubling, capped at 15 minutes). Idle lock defaults to 15 minutes (`-Dnet.openchrom.gcws.engineerIdleMinutes`, clamped 1..240). Closing the maintenance drawer, leaving that section, or closing the engineer shell locks the grant. The hash runs off the SWT thread.
 
-Idle expiry and exit do **not** stop acquisition and do **not** block heat stop, inlet/detector/oven stop, closing the air valve (`STOP_FID_VALVES`), or `STOP_ACQ`.
+Idle expiry and exit do **not** stop acquisition and do **not** block heat stop, inlet/detector/oven stop, closing the air valve (`STOP_FID_VALVES`), or `STOP_ACQ`. Keyboard and mouse activity inside the engineer shell refresh the idle window. Idle expiry immediately disables the local-configuration and PID write buttons; **重新验证** opens the password prompt again, and **锁定并关闭** locks and closes the shell.
+
+The engineer shell registers with the existing shared FID monitor and connection/acquisition state. It never starts a second TCP polling connection. A fixed safety line above all five pages always shows connection, flame, FID current, and acquisition/finishing state, including when the shell is opened without the operator remote-control window. The gas/FID page contains the complete readiness card, flow schematic and H₂/air/FID-current diagnostic readings; the separate temperature-trend page contains the three-zone live chart and CSV controls. These diagnostics are not duplicated on the operator main page, and the old operator debug-display checkbox is removed. Temperature polling and automatic three-zone CSV recording remain shared, so closing the maintenance shell does not clear the chart or stop a recording started by temperature control.
 
 ## Command matrix
 
@@ -20,11 +22,13 @@ Idle expiry and exit do **not** stop acquisition and do **not** block heat stop,
 
 Letter case does not change the class. `sendProtocolLine` uses the same check as the typed write methods.
 
-The operator Settings tab **温度校准** is the Android routine setpoint table. PID coefficients and the engineering temperature curve live only on the engineer temperature page.
+The operator Settings tab **温度校准** is the Android routine setpoint table. PID coefficients are available both on the reverse-control **设置 / PID参数** tab and on the engineer temperature page, using the same `PidSettingsView` implementation, shared device connection, and engineering-write authorization. The three-zone live temperature curve and CSV recording are on the separate engineer trend page; the legacy duplicate PID-debug trend card is no longer inserted into the temperature page.
 
 ## Column proposal
 
-The device-configuration numbers are a local note. They are not enforced and not synced. The code ceiling of 450 °C is not “the trip is always 450”. Current firmware uses the **stored method maximum** as the trip, and that maximum can be lower. This page does not read or write it.
+The device-configuration numbers are a local note. They are not enforced and not synced. Saving, exporting a `.txt` backup, and importing a backup all require a live engineer grant. Import only fills the fields for review; the operator must explicitly save afterwards. Neither path writes the instrument. The code ceiling of 450 °C is not “the trip is always 450”. Current firmware uses the **stored method maximum** as the trip, and that maximum can be lower. This page does not read or write it.
+
+The gas/FID page is read-only because the current protocol has no gas calibration, independent valve test, ignition-timing, or flame-threshold write commands. The communication page reports the existing shared FID/gas readings, raw `currentPa`/`vlogUv`, read errors, and acquisition state; it does not claim to provide an unimplemented command-log recorder.
 
 ## Schematic
 

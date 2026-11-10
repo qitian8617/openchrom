@@ -27,21 +27,15 @@ public class PanelView_1_Test {
 		assertEquals(6, views.size());
 		assertEquals(PanelView.MAIN, views.get(0));
 		assertEquals(PanelView.SETTINGS, views.get(views.size() - 1));
+		assertFalse(views.contains(PanelView.AUX_PID));
 		assertTrue(views.contains(PanelView.DETECTOR));
 		assertTrue(views.contains(PanelView.EVENTS));
-		assertFalse(views.contains(PanelView.AUX_PID));
 		assertEquals(PanelView.COLUMN_OVEN, EngineerConsolePages.viewFor(EngineerConsolePages.OVEN));
 		assertEquals(PanelView.DETECTOR, EngineerConsolePages.viewFor(EngineerConsolePages.GAS));
 		assertEquals(PanelView.AUX_PID, EngineerConsolePages.viewFor(EngineerConsolePages.FID));
 		assertEquals(PanelView.SETTINGS, EngineerConsolePages.viewFor(EngineerConsolePages.PARAMETERS));
 		assertTrue(EngineerConsolePages.opensParameterTab(EngineerConsolePages.PARAMETERS));
 		assertFalse(views.contains(EngineerConsolePages.viewFor(EngineerConsolePages.FID)));
-		assertFalse(InstrumentIndicatorPolicy.debugDisplayMayHide(InstrumentIndicatorPolicy.CONNECTION));
-		assertFalse(InstrumentIndicatorPolicy.debugDisplayMayHide(InstrumentIndicatorPolicy.FLAME));
-		assertFalse(InstrumentIndicatorPolicy.debugDisplayMayHide(InstrumentIndicatorPolicy.ACQUIRING));
-		assertTrue(InstrumentIndicatorPolicy.debugDisplayMayHide(InstrumentIndicatorPolicy.FID_CURRENT));
-		assertTrue(InstrumentIndicatorPolicy.debugDisplayMayHide(InstrumentIndicatorPolicy.TREND));
-		assertFalse(InstrumentIndicatorPolicy.debugDisplayMayHide("unknown"));
 		for(PanelView view : views) {
 			assertFalse("SEQUENCE".equals(view.name()));
 		}

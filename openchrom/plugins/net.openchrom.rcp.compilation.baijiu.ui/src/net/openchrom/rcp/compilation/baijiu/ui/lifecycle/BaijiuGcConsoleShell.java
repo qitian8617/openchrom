@@ -136,7 +136,7 @@ public final class BaijiuGcConsoleShell {
 
 	private static Shell create(Display display) {
 
-		Shell created = new Shell(display, SWT.SHELL_TRIM);
+		Shell created = new Shell(display, SWT.SHELL_TRIM | SWT.ON_TOP);
 		created.setData("laiende.skip.localization", Boolean.TRUE);
 		created.setText("气相色谱控制台");
 		BaijiuWindowIcons.applyToShell(created);

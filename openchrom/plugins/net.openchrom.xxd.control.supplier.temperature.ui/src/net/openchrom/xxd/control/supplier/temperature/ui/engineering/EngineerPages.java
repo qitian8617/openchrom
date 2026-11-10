@@ -18,6 +18,7 @@ public final class EngineerPages {
 	public static final String DEVICE = "ENGINEER_DEVICE";
 	public static final String TEMPERATURE = "ENGINEER_TEMP";
 	public static final String GAS = "ENGINEER_GAS";
+	public static final String TREND = "ENGINEER_TREND";
 	public static final String LINK = "ENGINEER_LINK";
 
 	private EngineerPages() {
@@ -26,7 +27,7 @@ public final class EngineerPages {
 
 	public static boolean isEngineerPage(String pageId) {
 
-		return DEVICE.equals(pageId) || TEMPERATURE.equals(pageId) || GAS.equals(pageId) || LINK.equals(pageId);
+		return DEVICE.equals(pageId) || TEMPERATURE.equals(pageId) || GAS.equals(pageId) || TREND.equals(pageId) || LINK.equals(pageId);
 	}
 
 	public static boolean reopensOperatorRemotePanel(String pageId) {
@@ -44,6 +45,9 @@ public final class EngineerPages {
 		}
 		if(GAS.equals(pageId)) {
 			return "气路与 FID 工程";
+		}
+		if(TREND.equals(pageId)) {
+			return "实时温度曲线";
 		}
 		if(LINK.equals(pageId)) {
 			return "通信与采集诊断";

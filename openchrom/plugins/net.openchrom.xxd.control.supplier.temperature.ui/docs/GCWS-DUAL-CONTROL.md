@@ -42,7 +42,7 @@ Reply is always `HELLO_OK`. A second `HELLO` / `HELLO PC` must not steal an exis
 
 `READ_OVEN_TEMP` / `READ_INLET_TEMP` / `READ_DETECTOR_TEMP` / `READ_FID_STATUS` / `READ_GAS_PRESSURE` / `READ_OVEN_PROGRAM` / `READ_*_PID` / `READ_CONTROL_STATUS`
 
-OpenChrom **Main** shows a read-only FID strip (connection, H₂/Air MPa, flame/ignite, FID pA) from one shared poll of `READ_FID_STATUS` / `READ_GAS_PRESSURE`. Carrier gas has no sensor — reminder only. Start Analysis requires TCP connected, a successful current FID status read, the FID board online and flame on (`FidReadiness.REQUIRE_FID_CURRENT_FOR_START` is `true`). Missing / failed status, ignition failure / in progress and flame out block start. Stop is always allowed. Developer-only (not for production/pilot): `-Dnet.openchrom.gcws.skipFidReadinessGate=true` bypasses readiness while TCP is connected — see `GCWS-ACQUISITION-SAVE.md`.
+OpenChrom **Main** shows a read-only FID strip (connection, H₂/Air MPa, flame/ignite, FID pA) from one shared poll of `READ_FID_STATUS` / `READ_GAS_PRESSURE`. Carrier gas has no sensor — reminder only. Start Analysis requires TCP connected. FID flame, ignition state, board status and current are operator information only; missing / failed status, ignition failure / in progress and flame out do not block acquisition. Stop is always allowed.
 
 `READ_CONTROL_STATUS` reply:
 
