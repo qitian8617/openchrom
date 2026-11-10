@@ -249,6 +249,7 @@ public final class BaijiuParallelShell {
 
 		table.removeAll();
 		if(result == null || !result.isSuccess()) {
+			BaijiuPlantLayout.fitColumns(table);
 			return;
 		}
 		Display display = table.getDisplay();
@@ -271,6 +272,7 @@ public final class BaijiuParallelShell {
 				item.setForeground(display.getSystemColor(SWT.COLOR_DARK_RED));
 			}
 		}
+		BaijiuPlantLayout.fitColumns(table);
 	}
 
 	public static void addBatchColumns(Table table) {
@@ -315,6 +317,7 @@ public final class BaijiuParallelShell {
 				item.setText(6, annotateRemark(row.getRemark(), row.getRelativeDeviationPercent(), BaijiuPreferences.loadAllowedRsdPercent()));
 			}
 		}
+		BaijiuPlantLayout.fitColumns(table);
 	}
 
 	private static String annotateRemark(String remark, Double relativeDeviationPercent, double allowedRsdPercent) {

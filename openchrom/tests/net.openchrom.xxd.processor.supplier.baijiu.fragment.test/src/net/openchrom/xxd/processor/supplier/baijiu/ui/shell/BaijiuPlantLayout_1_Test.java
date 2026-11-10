@@ -73,7 +73,7 @@ public class BaijiuPlantLayout_1_Test {
 
 		GridData band = BaijiuPlantLayout.tableBand(148);
 		assertEquals(1, band.widthHint);
-		assertTrue(band.grabExcessHorizontalSpace);
+		assertFalse(band.grabExcessHorizontalSpace);
 		assertFalse(band.grabExcessVerticalSpace);
 		assertEquals(148, band.heightHint);
 		GridData fallback = BaijiuPlantLayout.tableBand(0);

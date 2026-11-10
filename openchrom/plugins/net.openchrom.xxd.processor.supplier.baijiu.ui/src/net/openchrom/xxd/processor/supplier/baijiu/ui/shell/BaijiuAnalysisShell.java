@@ -753,6 +753,8 @@ public final class BaijiuAnalysisShell {
 			multipointStatus.setText(head);
 		}
 		updateMixLevelHint();
+		BaijiuPlantLayout.fitColumns(pointTable);
+		BaijiuPlantLayout.fitColumns(fitTable);
 	}
 
 	private int countPointRatios(String compoundId) {
@@ -1010,6 +1012,7 @@ public final class BaijiuAnalysisShell {
 
 		resultTable.removeAll();
 		if(result == null) {
+			BaijiuPlantLayout.fitColumns(resultTable);
 			return;
 		}
 		for(BaijiuQuantRow row : result.getRows()) {
@@ -1029,6 +1032,7 @@ public final class BaijiuAnalysisShell {
 			item.setText(7, row.getOverLimitLabel());
 			item.setText(8, row.getRemark());
 		}
+		BaijiuPlantLayout.fitColumns(resultTable);
 	}
 
 	private void fillMethodTable() {
@@ -1048,6 +1052,7 @@ public final class BaijiuAnalysisShell {
 			item.setText(7, rf == null ? "-" : format(rf, 4));
 			item.setText(8, compound.getNote());
 		}
+		BaijiuPlantLayout.fitColumns(methodTable);
 	}
 
 	private void fillMatchTables() {
@@ -1084,6 +1089,8 @@ public final class BaijiuAnalysisShell {
 			item.setText(0, format(PeakMatcher.retentionTimeMin(peak), 3));
 			item.setText(1, format(PeakMatcher.area(peak), 1));
 		}
+		BaijiuPlantLayout.fitColumns(matchTable);
+		BaijiuPlantLayout.fitColumns(unmatchedTable);
 		if(assignCompound != null && !assignCompound.isDisposed()) {
 			int selected = assignCompound.getSelectionIndex();
 			assignCompound.setItems(compoundLabels());

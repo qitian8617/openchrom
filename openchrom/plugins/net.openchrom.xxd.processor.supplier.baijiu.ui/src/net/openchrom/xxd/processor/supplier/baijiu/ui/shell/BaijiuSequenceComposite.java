@@ -410,6 +410,7 @@ public class BaijiuSequenceComposite extends Composite implements InjectionSeque
 		if(!entries.isEmpty() && nextSelection >= 0 && nextSelection < entries.size()) {
 			table.setSelection(nextSelection);
 		}
+		BaijiuPlantLayout.fitColumns(table);
 		rebuilding = false;
 		fillEditorFromSelection();
 	}

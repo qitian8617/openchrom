@@ -74,7 +74,7 @@ public class PidSettingsView extends Composite implements LanguageListener {
 		setBackground(UiStyles.color(getDisplay(), UiColors.BACKGROUND));
 		setLayout(new GridLayout(1, false));
 
-		table = new Table(this, SWT.BORDER | SWT.FULL_SELECTION | SWT.DOUBLE_BUFFERED);
+		table = new Table(this, SWT.BORDER | SWT.FULL_SELECTION | SWT.H_SCROLL | SWT.DOUBLE_BUFFERED);
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
 		table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
@@ -86,6 +86,7 @@ public class PidSettingsView extends Composite implements LanguageListener {
 			column.setText(chinese ? headersCn[i] : headersEn[i]);
 			column.setWidth(i == 0 ? 100 : 90);
 		}
+		net.openchrom.xxd.control.supplier.temperature.ui.swt.TableBounds.fit(table);
 
 		for(int i = 0; i < CHANNEL_COUNT; i++) {
 			TableItem item = new TableItem(table, SWT.NONE);

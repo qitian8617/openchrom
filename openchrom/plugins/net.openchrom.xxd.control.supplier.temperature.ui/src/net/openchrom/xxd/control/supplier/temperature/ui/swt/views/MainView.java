@@ -328,7 +328,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 
 	private void createTable() {
 
-		table = new Table(this, SWT.BORDER | SWT.FULL_SELECTION | SWT.CHECK | SWT.DOUBLE_BUFFERED);
+		table = new Table(this, SWT.BORDER | SWT.FULL_SELECTION | SWT.CHECK | SWT.H_SCROLL | SWT.DOUBLE_BUFFERED);
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
 		{
@@ -348,6 +348,7 @@ public class MainView extends Composite implements LanguageListener, IAcquisitio
 			column.setText(chinese ? headersCn[i] : headersEn[i]);
 			column.setWidth(i == 0 ? 100 : 80);
 		}
+		net.openchrom.xxd.control.supplier.temperature.ui.swt.TableBounds.fit(table);
 		populateTable();
 		table.addListener(SWT.Selection, e -> {
 			if(e.detail != SWT.CHECK || !(e.item instanceof TableItem item)) {

@@ -70,10 +70,7 @@ public class BaijiuPlantPagesLayout_1_Test {
 						for(int i = 0; i < before.length; i++) {
 							assertTrue(before[i] == after[i], page + " column " + i + " moved on resize " + before[i] + "->" + after[i]);
 						}
-						if(width == 1366) {
-							save(display, shell, dir.resolve(page + "-1366.png"));
-						}
-						if("calibration".equals(page) && (width == 1000 || width == 1920)) {
+						if(width == 1366 || "sample".equals(page) || "calibration".equals(page) || "batch".equals(page) || "method".equals(page)) {
 							save(display, shell, dir.resolve(page + "-" + width + ".png"));
 						}
 					} finally {
@@ -92,7 +89,7 @@ public class BaijiuPlantPagesLayout_1_Test {
 		Display display = new Display();
 		try {
 			Shell shell = new Shell(display);
-			shell.setLayout(new org.eclipse.swt.layout.FillLayout());
+			shell.setLayout(new org.eclipse.swt.layout.GridLayout(1, false));
 			shell.setSize(1000, 360);
 			Table table = BaijiuPlantLayout.table(shell, 140);
 			TableColumn path = BaijiuPlantLayout.column(table, "谱图", 120);
@@ -104,19 +101,31 @@ public class BaijiuPlantPagesLayout_1_Test {
 			shell.open();
 			pump(display);
 			path.setWidth(420);
+			path.setData("baijiu.explicitWidth", Integer.valueOf(420));
+			org.eclipse.swt.widgets.Event drag = new org.eclipse.swt.widgets.Event();
+			drag.type = SWT.Resize;
+			drag.widget = path;
+			drag.stateMask = SWT.BUTTON1;
+			path.notifyListeners(SWT.Resize, drag);
 			assertTrue(path.getWidth() >= 400, "drag did not stick: " + path.getWidth());
 			shell.setSize(1600, 480);
 			pump(display);
 			shell.setSize(1000, 360);
 			pump(display);
 			assertTrue(path.getWidth() >= 400, "window resize reset the dragged column to " + path.getWidth());
-			Files.createDirectories(Path.of("/tmp/plant-layout"));
+			int explicitSum = 0;
 			for(TableColumn column : table.getColumns()) {
-				if(column == path || column.getText() == null || column.getText().isBlank()) {
-					continue;
+				assertTrue(column.getText() != null && !column.getText().isBlank(), "placeholder column");
+				Object explicit = column.getData("baijiu.explicitWidth");
+				int width = explicit instanceof Integer value ? value.intValue() : column.getWidth();
+				explicitSum += width;
+				if(column != path) {
+					assertTrue(width <= BaijiuPlantLayout.COLUMN_MAX, column.getText() + " explicit " + width + " reported " + column.getWidth());
 				}
-				assertTrue(column.getWidth() <= BaijiuPlantLayout.COLUMN_MAX, column.getText() + " " + column.getWidth());
 			}
+			int widget = table.getParent().getSize().x;
+			assertTrue(widget <= explicitSum + 56 && widget < shell.getClientArea().width - 120, "table widget " + widget + " explicit " + explicitSum + " shell " + shell.getClientArea().width);
+			Files.createDirectories(Path.of("/tmp/plant-layout"));
 			save(display, shell, Path.of("/tmp/plant-layout/dragged-column-after-resize.png"));
 			shell.dispose();
 		} catch(Exception ex) {
@@ -168,12 +177,19 @@ public class BaijiuPlantPagesLayout_1_Test {
 	private static void assertLayout(Composite root, String label) {
 
 		collect(root, control -> {
-			if(control instanceof Table table) {
+			if(control instanceof Table table && table.getColumnCount() > 0 && table.isVisible()) {
+				int explicitSum = 0;
 				for(TableColumn column : table.getColumns()) {
-					if(column.getText() == null || column.getText().isBlank()) {
-						continue;
-					}
-					assertTrue(column.getWidth() > 0 && column.getWidth() <= BaijiuPlantLayout.COLUMN_MAX, label + " " + column.getText() + " " + column.getWidth());
+					assertTrue(column.getText() != null && !column.getText().isBlank(), label + " placeholder column");
+					assertTrue(column.getWidth() > 0, label + " " + column.getText());
+					Object explicit = column.getData("baijiu.explicitWidth");
+					explicitSum += explicit instanceof Integer value ? value.intValue() : column.getWidth();
+				}
+				Composite host = table.getParent();
+				int widget = host == null ? table.getSize().x : host.getSize().x;
+				int shellWidth = table.getShell().getClientArea().width;
+				if(shellWidth > explicitSum + 180 && widget > 0) {
+					assertTrue(widget <= explicitSum + 56, label + " table widget " + widget + " still covers past explicit columns " + explicitSum + " shell " + shellWidth);
 				}
 			}
 			if(control instanceof Text text && (text.getStyle() & SWT.MULTI) == 0) {
