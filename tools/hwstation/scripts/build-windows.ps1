@@ -25,40 +25,50 @@ if (-not $cmake) {
 	throw "cmake.exe was not found. Visual Studio's CMake component is required."
 }
 
-function Invoke-Logged {
+$LogDir = Join-Path $Root "msvc-logs"
+if (Test-Path $LogDir) { Remove-Item -Recurse -Force $LogDir }
+New-Item -ItemType Directory -Path $LogDir | Out-Null
+[System.IO.File]::WriteAllText((Join-Path $LogDir "started.txt"), "hwstation msvc log capture`r`n", [System.Text.Encoding]::ASCII)
+
+function ConvertTo-CmdArg([string]$Text) {
+	if ([string]::IsNullOrEmpty($Text)) { return '""' }
+	return '"' + ($Text -replace '"', '""') + '"'
+}
+
+function Invoke-CmdLogged {
 	param(
 		[Parameter(Mandatory = $true)][string]$File,
-		[Parameter(Mandatory = $true)][string[]]$ArgumentList
+		[Parameter(Mandatory = $true)][string[]]$ArgumentList,
+		[Parameter(Mandatory = $true)][string]$LogPath
 	)
-	$parts = foreach ($arg in $ArgumentList) {
-		if ($arg -match '[\s"]') { '"' + ($arg -replace '"', '\"') + '"' } else { $arg }
-	}
-	$info = New-Object System.Diagnostics.ProcessStartInfo
-	$info.FileName = $File
-	$info.Arguments = ($parts -join ' ')
-	$info.UseShellExecute = $false
-	$info.RedirectStandardOutput = $true
-	$info.RedirectStandardError = $true
-	$info.CreateNoWindow = $true
-	$proc = New-Object System.Diagnostics.Process
-	$proc.StartInfo = $info
-	[void]$proc.Start()
-	$stdout = $proc.StandardOutput.ReadToEndAsync()
-	$stderr = $proc.StandardError.ReadToEndAsync()
-	$proc.WaitForExit()
-	if ($stdout.Result) { Write-Host $stdout.Result }
-	if ($stderr.Result) { Write-Host $stderr.Result }
-	return $proc.ExitCode
+	$argText = ($ArgumentList | ForEach-Object { ConvertTo-CmdArg $_ }) -join ' '
+	$wrapper = [System.IO.Path]::ChangeExtension($LogPath, ".cmd")
+	$body = @"
+@echo off
+chcp 65001 >nul
+$(ConvertTo-CmdArg $File) $argText > $(ConvertTo-CmdArg $LogPath) 2>&1
+set RC=%ERRORLEVEL%
+echo EXITCODE:%RC% >> $(ConvertTo-CmdArg $LogPath)
+exit /b %RC%
+"@
+	[System.IO.File]::WriteAllText($wrapper, $body.Replace("`n", "`r`n"), [System.Text.Encoding]::ASCII)
+	cmd.exe /d /c $(ConvertTo-CmdArg $wrapper)
+	return $LASTEXITCODE
 }
 
 function Build-One([string]$Generator, [string]$Arch, [string]$BuildDir) {
+	$safe = ($Generator -replace '[^A-Za-z0-9]+', '-').Trim('-')
 	if (Test-Path $BuildDir) { Remove-Item -Recurse -Force $BuildDir }
+	$cfg = Join-Path $LogDir "$Arch-$safe-configure.log"
 	Write-Host "configure $Generator $Arch"
-	$code = Invoke-Logged -File $cmake -ArgumentList @('-S', $Root, '-B', $BuildDir, '-G', $Generator, '-A', $Arch)
+	$code = Invoke-CmdLogged -File $cmake -ArgumentList @('-S', $Root, '-B', $BuildDir, '-G', $Generator, '-A', $Arch) -LogPath $cfg
+	Write-Host "configure exit $code log $cfg"
 	if ($code -ne 0) { return $false }
+	$bld = Join-Path $LogDir "$Arch-$safe-build.log"
 	Write-Host "build $Generator $Arch"
-	$code = Invoke-Logged -File $cmake -ArgumentList @('--build', $BuildDir, '--config', 'Release', '--', '/verbosity:minimal')
-	if ($code -ne 0) { throw "cmake build failed for $Arch" }
+	$code = Invoke-CmdLogged -File $cmake -ArgumentList @('--build', $BuildDir, '--config', 'Release', '--', '/verbosity:minimal') -LogPath $bld
+	Write-Host "build exit $code log $bld"
+	if ($code -ne 0) { exit $code }
 	return $true
 }
 
@@ -76,13 +86,13 @@ foreach ($gen in $generators) {
 	Write-Host "Trying $gen x64"
 	if (Build-One $gen "x64" $x64) { $ok64 = $true; break }
 }
-if (-not $ok64) { throw "Could not configure the x64 build." }
+if (-not $ok64) { exit 1 }
 $ok86 = $false
 foreach ($gen in $generators) {
 	Write-Host "Trying $gen Win32"
 	if (Build-One $gen "Win32" $x86) { $ok86 = $true; break }
 }
-if (-not $ok86) { throw "Could not configure the x86 bridge build." }
+if (-not $ok86) { exit 1 }
 
 $dist = Join-Path $Root "dist-msvc"
 if (Test-Path $dist) { Remove-Item -Recurse -Force $dist }
