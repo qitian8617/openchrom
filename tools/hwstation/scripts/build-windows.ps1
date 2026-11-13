@@ -25,33 +25,14 @@ if (-not $cmake) {
 	throw "cmake.exe was not found. Visual Studio's CMake component is required."
 }
 
-function Invoke-Native([string]$File, [string[]]$ArgumentList, [string]$Log) {
-	$out = "$Log.stdout"
-	$err = "$Log.stderr"
-	if (Test-Path $out) { Remove-Item -Force $out }
-	if (Test-Path $err) { Remove-Item -Force $err }
-	$proc = Start-Process -FilePath $File -ArgumentList $ArgumentList -Wait -PassThru -RedirectStandardOutput $out -RedirectStandardError $err
-	foreach ($path in @($out, $err)) {
-		if (Test-Path $path) {
-			Get-Content -LiteralPath $path | ForEach-Object { Write-Output $_ }
-			Get-Content -LiteralPath $path | Add-Content -LiteralPath $Log
-		}
-	}
-	return $proc.ExitCode
-}
-
 function Build-One([string]$Generator, [string]$Arch, [string]$BuildDir) {
-	$log = Join-Path $Root "build-$Arch.log"
-	if (Test-Path $log) { Remove-Item -Force $log }
 	if (Test-Path $BuildDir) { Remove-Item -Recurse -Force $BuildDir }
-	$code = Invoke-Native $cmake @('-S', $Root, '-B', $BuildDir, '-G', $Generator, '-A', $Arch) $log
-	if ($code -ne 0) { return $false }
-	$code = Invoke-Native $cmake @('--build', $BuildDir, '--config', 'Release', '--', '/verbosity:minimal') $log
-	if ($code -ne 0) {
-		Write-Output "---- last 200 lines of $log ----"
-		if (Test-Path $log) { Get-Content -LiteralPath $log -Tail 200 | ForEach-Object { Write-Output $_ } }
-		throw "cmake build failed for $Arch"
-	}
+	Write-Host "configure $Generator $Arch"
+	& $cmake -S $Root -B $BuildDir -G $Generator -A $Arch
+	if ($LASTEXITCODE -ne 0) { return $false }
+	Write-Host "build $Generator $Arch"
+	& $cmake --build $BuildDir --config Release -- /verbosity:minimal
+	if ($LASTEXITCODE -ne 0) { throw "cmake build failed for $Arch" }
 	return $true
 }
 
