@@ -80,6 +80,11 @@ public final class RealtimeAcquisitionManager {
 		return INSTANCE;
 	}
 
+	public boolean isReceiving() {
+
+		return isReceivingState(state);
+	}
+
 	public boolean isAcquiring() {
 
 		return isReceivingState(state) || state == RunState.STOPPING;
@@ -504,9 +509,7 @@ public final class RealtimeAcquisitionManager {
 					hasEnoughScans = current.getNumberOfScans() >= 2;
 				}
 				if(hasEnoughScans) {
-					if(editorSelection == null) {
-						editorSelection = ChromatogramEditorNotifier.findEditorSelection(current);
-					}
+					editorSelection = ChromatogramEditorNotifier.selectionForOpenEditor(current);
 					try {
 						ChromatogramEditorNotifier.publishLiveUpdate(current, editorSelection);
 					} catch(ConcurrentModificationException e) {

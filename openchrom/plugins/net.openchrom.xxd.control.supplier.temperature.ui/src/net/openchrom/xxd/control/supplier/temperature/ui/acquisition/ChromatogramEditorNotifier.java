@@ -41,6 +41,7 @@ public final class ChromatogramEditorNotifier {
 	 * axis only brackets the stored signals; it does not scale them.
 	 */
 	static final String CHROMATOGRAM_SERIES_ID = "Chromatogram";
+	private static final String DISPLAY_CHROMATOGRAM_KEY = "net.openchrom.gcws.displayChromatogram";
 
 	private ChromatogramEditorNotifier() {
 	}
@@ -55,6 +56,10 @@ public final class ChromatogramEditorNotifier {
 				return;
 			}
 		}
+		if(!RealtimeAcquisitionManager.getInstance().isReceiving()) {
+			publishFinalUpdate(chromatogram);
+			return;
+		}
 		IChromatogramSelectionCSD activeSelection = selection;
 		if(activeSelection == null) {
 			activeSelection = findEditorSelection(chromatogram);
@@ -62,9 +67,7 @@ public final class ChromatogramEditorNotifier {
 		if(activeSelection == null) {
 			return;
 		}
-		refreshSelectionRange(activeSelection, chromatogram);
-		activeSelection.fireUpdateChange(true);
-		updateEditor(findOpenedPart(chromatogram));
+		updateEditor(findOpenedPart(chromatogram), activeSelection, false);
 	}
 
 	public static void publishFinalUpdate(IChromatogramCSD chromatogram) {
@@ -79,9 +82,7 @@ public final class ChromatogramEditorNotifier {
 		}
 		IChromatogramSelectionCSD selection = findEditorSelection(chromatogram);
 		if(selection != null) {
-			refreshSelectionRange(selection, chromatogram);
-			selection.fireUpdateChange(true);
-			updateEditor(findOpenedPart(chromatogram));
+			updateEditor(findOpenedPart(chromatogram), selection, true);
 		}
 	}
 
@@ -95,17 +96,27 @@ public final class ChromatogramEditorNotifier {
 			display.asyncExec(() -> applyDisplayRange(part));
 			return;
 		}
-		IChromatogramSelectionCSD selection = extractCsdSelection(part);
-		if(selection == null) {
-			return;
+		bindEditorViewport(part);
+	}
+
+	/**
+	 * Selection owned by the editor that is currently showing this chromatogram.
+	 * A selection captured when the editor first opened is not reused after the
+	 * part is replaced.
+	 */
+	public static IChromatogramSelectionCSD selectionForOpenEditor(IChromatogramCSD chromatogram) {
+
+		MPart part = findOpenedPart(chromatogram);
+		IChromatogramSelectionCSD fromPart = matchSelection(extractCsdSelection(part), chromatogram);
+		if(fromPart != null) {
+			return fromPart;
 		}
-		IChromatogram chromatogram = selection.getChromatogram();
-		if(chromatogram == null) {
-			return;
-		}
-		refreshSelectionRange(selection, chromatogram);
-		selection.fireUpdateChange(true);
-		updateEditor(part, selection);
+		return findEditorSelection(chromatogram);
+	}
+
+	static IChromatogramSelection visibleSelection(IChromatogramSelection editorSelection, IChromatogramSelection cached, IChromatogram chromatogram) {
+
+		return LiveTraceSelection.visible(editorSelection, cached, chromatogram);
 	}
 
 	public static IChromatogramSelectionCSD findEditorSelection(IChromatogramCSD chromatogram) {
@@ -261,12 +272,38 @@ public final class ChromatogramEditorNotifier {
 		return null;
 	}
 
-	private static void updateEditor(MPart part) {
+	static void bindEditorViewport(MPart part) {
 
-		updateEditor(part, null);
+		ExtendedChromatogramUI editor = part == null ? null : findExtendedEditor(part.getWidget());
+		if(editor == null || editor.isDisposed()) {
+			return;
+		}
+		Runnable bind = () -> {
+			if(editor.isDisposed()) {
+				return;
+			}
+			IChromatogramSelection selection = extractCsdSelection(part);
+			if(selection == null || selection.getChromatogram() == null) {
+				return;
+			}
+			IChromatogram chromatogram = selection.getChromatogram();
+			Viewport viewport = readViewport(editor);
+			if(viewport == null) {
+				refreshSelectionRange(selection, chromatogram);
+				editor.update();
+				applyChartRange(editor, selection);
+				viewport = readViewport(editor);
+			}
+			DisplayState previous = displayState(editor);
+			boolean same = previous != null && previous.chromatogram() == chromatogram;
+			DataSignature rendered = same ? previous.dataSignature() : readDataSignature(chromatogram);
+			boolean followLive = same && previous.followLive();
+			editor.setData(DISPLAY_CHROMATOGRAM_KEY, new DisplayState(chromatogram, rendered, viewport, followLive));
+		};
+		runOnDisplay(editor, bind);
 	}
 
-	private static void updateEditor(MPart part, IChromatogramSelection selection) {
+	static void updateEditor(MPart part, IChromatogramSelection selection, boolean preserveViewport) {
 
 		if(part == null) {
 			return;
@@ -276,33 +313,142 @@ public final class ChromatogramEditorNotifier {
 			return;
 		}
 		Runnable update = () -> {
-			if(!editor.isDisposed()) {
-				editor.update();
-				applyTraceStyle(editor);
-				applyChartRange(editor, selection != null ? selection : editor.getChromatogramSelection());
+			if(editor.isDisposed()) {
+				return;
 			}
+			IChromatogram hinted = selection != null ? selection.getChromatogram() : null;
+			if(hinted == null && editor.getChromatogramSelection() != null) {
+				hinted = editor.getChromatogramSelection().getChromatogram();
+			}
+			IChromatogramSelection current = visibleSelection(editor.getChromatogramSelection(), selection, hinted);
+			if(current == null || current.getChromatogram() == null) {
+				return;
+			}
+			IChromatogram chromatogram = current.getChromatogram();
+			DisplayState previous = displayState(editor);
+			boolean same = previous != null && previous.chromatogram() == chromatogram;
+			Viewport actual = readViewport(editor);
+			DataSignature latest = readDataSignature(chromatogram);
+			boolean followLive = !preserveViewport;
+			if(same && actual != null && latest.equals(previous.dataSignature()) && seriesReachesStop(editor, chromatogram)) {
+				editor.setData(DISPLAY_CHROMATOGRAM_KEY, new DisplayState(chromatogram, previous.dataSignature(), actual, followLive));
+				return;
+			}
+			Viewport latestViewport = followLive && same ? latestViewport(actual, chromatogram) : null;
+			if(latestViewport != null) {
+				current.setRanges((int)Math.round(latestViewport.xMin()), (int)Math.round(latestViewport.xMax()), (float)latestViewport.yMin(), (float)latestViewport.yMax(), false);
+			} else if(followLive || !same || actual == null) {
+				refreshSelectionRange(current, chromatogram);
+			} else {
+				current.setRanges((int)Math.round(actual.xMin()), (int)Math.round(actual.xMax()), (float)actual.yMin(), (float)actual.yMax(), false);
+			}
+			editor.update();
+			applyTraceStyle(editor);
+			applyChartRange(editor, current);
+			if(!seriesReachesStop(editor, chromatogram)) {
+				return;
+			}
+			Viewport renderedViewport = readViewport(editor);
+			if(renderedViewport == null) {
+				renderedViewport = new Viewport(current.getStartRetentionTime(), current.getStopRetentionTime(), current.getStartAbundance(), current.getStopAbundance());
+			}
+			editor.setData(DISPLAY_CHROMATOGRAM_KEY, new DisplayState(chromatogram, latest, renderedViewport, followLive));
 		};
+		runOnDisplay(editor, update);
+	}
+
+	private static void runOnDisplay(ExtendedChromatogramUI editor, Runnable runnable) {
+
 		org.eclipse.swt.widgets.Display display = editor.getDisplay();
 		if(display.getThread() == Thread.currentThread()) {
-			update.run();
+			runnable.run();
 		} else {
-			display.asyncExec(update);
+			display.asyncExec(runnable);
 		}
 	}
 
-	/**
-	 * The chromatogram series is the red area-filled trace. Leave peak and
-	 * baseline series alone. Line width stays 1; stored signals are not edited.
-	 */
-	static void applyTraceStyle(ExtendedChromatogramUI editor) {
+	private static DisplayState displayState(ExtendedChromatogramUI editor) {
 
-		if(editor == null || editor.isDisposed() || editor.getChromatogramChart() == null) {
-			return;
+		return editor.getData(DISPLAY_CHROMATOGRAM_KEY) instanceof DisplayState state ? state : null;
+	}
+
+	private static DataSignature readDataSignature(IChromatogram chromatogram) {
+
+		synchronized(chromatogram) {
+			return new DataSignature(chromatogram.getNumberOfScans(), chromatogram.getPeaks().size(), System.identityHashCode(chromatogram.getBaselineModel()));
 		}
-		org.eclipse.swtchart.ISeries<?> series = editor.getChromatogramChart().getBaseChart().getSeriesSet().getSeries(CHROMATOGRAM_SERIES_ID);
-		if(series instanceof org.eclipse.swtchart.ILineSeries<?> line) {
-			line.enableArea(false);
-			line.setLineWidth(1);
+	}
+
+	private static Viewport readViewport(ExtendedChromatogramUI editor) {
+
+		if(editor.getChromatogramChart() == null) {
+			return null;
+		}
+		org.eclipse.swtchart.IAxis xAxis = editor.getChromatogramChart().getBaseChart().getAxisSet().getXAxis(0);
+		org.eclipse.swtchart.IAxis yAxis = editor.getChromatogramChart().getBaseChart().getAxisSet().getYAxis(0);
+		if(xAxis == null || yAxis == null) {
+			return null;
+		}
+		org.eclipse.swtchart.Range x = xAxis.getRange();
+		org.eclipse.swtchart.Range y = yAxis.getRange();
+		if(x == null || y == null || !Double.isFinite(x.lower) || !Double.isFinite(x.upper) || !Double.isFinite(y.lower) || !Double.isFinite(y.upper) || x.upper <= x.lower || y.upper <= y.lower) {
+			return null;
+		}
+		return new Viewport(x.lower, x.upper, y.lower, y.upper);
+	}
+
+	private static boolean isFullViewport(Viewport actual, IChromatogram chromatogram) {
+
+		AcquisitionTraceGeometry.SignalAxis axis;
+		int start;
+		int stop;
+		synchronized(chromatogram) {
+			start = chromatogram.getStartRetentionTime();
+			stop = chromatogram.getStopRetentionTime();
+			axis = AcquisitionTraceGeometry.signalAxis(chromatogram.getMinSignal(), chromatogram.getMaxSignal());
+		}
+		return actual.nearlyEquals(new Viewport(start, stop, axis.min(), axis.max()));
+	}
+
+	private static Viewport latestViewport(Viewport actual, IChromatogram chromatogram) {
+
+		if(actual == null || isFullViewport(actual, chromatogram)) {
+			return null;
+		}
+		int start;
+		int stop;
+		synchronized(chromatogram) {
+			start = chromatogram.getStartRetentionTime();
+			stop = chromatogram.getStopRetentionTime();
+		}
+		double fullSpan = stop - start;
+		double window = actual.xMax() - actual.xMin();
+		if(fullSpan <= 0d || window <= 0d) {
+			return null;
+		}
+		if(window >= fullSpan) {
+			return new Viewport(start, stop, actual.yMin(), actual.yMax());
+		}
+		return new Viewport(Math.max(start, stop - window), stop, actual.yMin(), actual.yMax());
+	}
+
+	private record DisplayState(IChromatogram chromatogram, DataSignature dataSignature, Viewport viewport, boolean followLive) {
+	}
+
+	private record DataSignature(int scans, int peaks, int baselineIdentity) {
+	}
+
+	private record Viewport(double xMin, double xMax, double yMin, double yMax) {
+
+		private boolean nearlyEquals(Viewport other) {
+
+			return other != null && close(xMin, other.xMin()) && close(xMax, other.xMax()) && close(yMin, other.yMin()) && close(yMax, other.yMax());
+		}
+
+		private static boolean close(double a, double b) {
+
+			double scale = Math.max(1d, Math.max(Math.abs(a), Math.abs(b)));
+			return Math.abs(a - b) <= scale * 1.0e-7d;
 		}
 	}
 
@@ -317,9 +463,71 @@ public final class ChromatogramEditorNotifier {
 		}
 		org.eclipse.swtchart.IAxis xAxis = editor.getChromatogramChart().getBaseChart().getAxisSet().getXAxis(0);
 		org.eclipse.swtchart.IAxis yAxis = editor.getChromatogramChart().getBaseChart().getAxisSet().getYAxis(0);
-		xAxis.setRange(new org.eclipse.swtchart.Range(selection.getStartRetentionTime(), selection.getStopRetentionTime()));
-		yAxis.setRange(new org.eclipse.swtchart.Range(selection.getStartAbundance(), selection.getStopAbundance()));
-		editor.getChromatogramChart().getBaseChart().redraw();
+		boolean changed = false;
+		if(xAxis != null) {
+			org.eclipse.swtchart.Range desired = new org.eclipse.swtchart.Range(selection.getStartRetentionTime(), selection.getStopRetentionTime());
+			org.eclipse.swtchart.Range range = xAxis.getRange();
+			if(range == null || range.lower != desired.lower || range.upper != desired.upper) {
+				xAxis.setRange(desired);
+				changed = true;
+			}
+		}
+		if(yAxis != null) {
+			org.eclipse.swtchart.Range desired = new org.eclipse.swtchart.Range(selection.getStartAbundance(), selection.getStopAbundance());
+			org.eclipse.swtchart.Range range = yAxis.getRange();
+			if(range == null || range.lower != desired.lower || range.upper != desired.upper) {
+				yAxis.setRange(desired);
+				changed = true;
+			}
+		}
+		if(changed) {
+			editor.getChromatogramChart().redraw();
+		}
+	}
+
+	/**
+	 * The chromatogram series is the red trace. Peak and baseline series stay
+	 * as they are. Area fill stays off so a flat baseline is a line.
+	 */
+	static void applyTraceStyle(ExtendedChromatogramUI editor) {
+
+		if(editor == null || editor.isDisposed() || editor.getChromatogramChart() == null) {
+			return;
+		}
+		org.eclipse.swtchart.ISeries<?> series = editor.getChromatogramChart().getBaseChart().getSeriesSet().getSeries(CHROMATOGRAM_SERIES_ID);
+		if(series instanceof org.eclipse.swtchart.ILineSeries<?> line) {
+			line.enableArea(false);
+			line.setLineWidth(1);
+		}
+	}
+
+	private static boolean seriesReachesStop(ExtendedChromatogramUI editor, IChromatogram chromatogram) {
+
+		if(editor == null || editor.isDisposed() || editor.getChromatogramChart() == null || chromatogram == null) {
+			return false;
+		}
+		org.eclipse.swtchart.ISeries<?> series = editor.getChromatogramChart().getBaseChart().getSeriesSet().getSeries(CHROMATOGRAM_SERIES_ID);
+		if(series == null || series.getXSeries() == null || series.getXSeries().length == 0) {
+			return false;
+		}
+		double maxX = series.getXSeries()[0];
+		for(double x : series.getXSeries()) {
+			if(x > maxX) {
+				maxX = x;
+			}
+		}
+		int stop;
+		synchronized(chromatogram) {
+			stop = chromatogram.getStopRetentionTime();
+		}
+		if(maxX + 1d >= stop) {
+			return true;
+		}
+		/*
+		 * Some charts plot minutes while the model stores milliseconds.
+		 * Either scale counts as caught up. A stale series still fails both.
+		 */
+		return Math.abs(maxX * 60000d - stop) <= 1d || (stop > 60000 && Math.abs(maxX - stop / 60000d) <= 0.002d);
 	}
 
 	private static ExtendedChromatogramUI findExtendedEditor(Object widget) {
