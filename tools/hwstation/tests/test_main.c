@@ -546,7 +546,7 @@ static void test_loopback(void) {
 	addr.sin_family = AF_INET;
 	addr.sin_addr.s_addr = htonl(0x7F000001);
 	addr.sin_port = 0;
-	expect(bind(listen_fd, (struct sockaddr *)&addr, sizeof addr) == 0, "bind");
+	expect(bind(listen_fd, (struct sockaddr *)&addr, (int)sizeof addr) == 0, "bind");
 	expect(listen(listen_fd, 1) == 0, "listen");
 	expect(getsockname(listen_fd, (struct sockaddr *)&addr, &alen) == 0, "port");
 	port = ntohs(addr.sin_port);

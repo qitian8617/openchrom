@@ -25,14 +25,40 @@ if (-not $cmake) {
 	throw "cmake.exe was not found. Visual Studio's CMake component is required."
 }
 
+function Invoke-Logged {
+	param(
+		[Parameter(Mandatory = $true)][string]$File,
+		[Parameter(Mandatory = $true)][string[]]$ArgumentList
+	)
+	$parts = foreach ($arg in $ArgumentList) {
+		if ($arg -match '[\s"]') { '"' + ($arg -replace '"', '\"') + '"' } else { $arg }
+	}
+	$info = New-Object System.Diagnostics.ProcessStartInfo
+	$info.FileName = $File
+	$info.Arguments = ($parts -join ' ')
+	$info.UseShellExecute = $false
+	$info.RedirectStandardOutput = $true
+	$info.RedirectStandardError = $true
+	$info.CreateNoWindow = $true
+	$proc = New-Object System.Diagnostics.Process
+	$proc.StartInfo = $info
+	[void]$proc.Start()
+	$stdout = $proc.StandardOutput.ReadToEndAsync()
+	$stderr = $proc.StandardError.ReadToEndAsync()
+	$proc.WaitForExit()
+	if ($stdout.Result) { Write-Host $stdout.Result }
+	if ($stderr.Result) { Write-Host $stderr.Result }
+	return $proc.ExitCode
+}
+
 function Build-One([string]$Generator, [string]$Arch, [string]$BuildDir) {
 	if (Test-Path $BuildDir) { Remove-Item -Recurse -Force $BuildDir }
 	Write-Host "configure $Generator $Arch"
-	& $cmake -S $Root -B $BuildDir -G $Generator -A $Arch
-	if ($LASTEXITCODE -ne 0) { return $false }
+	$code = Invoke-Logged -File $cmake -ArgumentList @('-S', $Root, '-B', $BuildDir, '-G', $Generator, '-A', $Arch)
+	if ($code -ne 0) { return $false }
 	Write-Host "build $Generator $Arch"
-	& $cmake --build $BuildDir --config Release -- /verbosity:minimal
-	if ($LASTEXITCODE -ne 0) { throw "cmake build failed for $Arch" }
+	$code = Invoke-Logged -File $cmake -ArgumentList @('--build', $BuildDir, '--config', 'Release', '--', '/verbosity:minimal')
+	if ($code -ne 0) { throw "cmake build failed for $Arch" }
 	return $true
 }
 

@@ -241,7 +241,7 @@ static int bridge_start(void) {
 	}
 	_snwprintf(bridge, MAX_PATH, L"%s\\hwbridge.exe", exe);
 	memset(&sa, 0, sizeof sa);
-	sa.nLength = sizeof sa;
+	sa.nLength = (DWORD)sizeof sa;
 	sa.bInheritHandle = TRUE;
 	if (!CreatePipe(&read_out, &write_out, &sa, 0) || !CreatePipe(&read_in, &write_in, &sa, 0)) {
 		return -1;
@@ -249,7 +249,7 @@ static int bridge_start(void) {
 	SetHandleInformation(read_in, HANDLE_FLAG_INHERIT, 0);
 	SetHandleInformation(write_out, HANDLE_FLAG_INHERIT, 0);
 	memset(&si, 0, sizeof si);
-	si.cb = sizeof si;
+	si.cb = (DWORD)sizeof si;
 	si.dwFlags = STARTF_USESTDHANDLES;
 	si.hStdInput = read_in;
 	si.hStdOutput = write_out;

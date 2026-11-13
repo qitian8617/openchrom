@@ -37,7 +37,7 @@ int hs_live_attempt_count(void) {
 static int set_timeout(hs_sock fd, int timeout_ms) {
 #ifdef _WIN32
 	DWORD tv = (DWORD)timeout_ms;
-	return setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof tv);
+	return setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, (int)sizeof tv);
 #else
 	struct timeval tv;
 	tv.tv_sec = timeout_ms / 1000;
