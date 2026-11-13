@@ -141,11 +141,14 @@ static int text_px(HWND hwnd) {
 	if (dc == NULL) {
 		return len * 16;
 	}
-	old = (HFONT)SelectObject(dc, g_font ? g_font : GetStockObject(DEFAULT_GUI_FONT));
+	{
+		HGDIOBJ font = g_font != NULL ? (HGDIOBJ)g_font : GetStockObject(DEFAULT_GUI_FONT);
+		old = (HFONT)SelectObject(dc, font);
+	}
 	GetTextExtentPoint32W(dc, text, len, &size);
 	SelectObject(dc, old);
 	ReleaseDC(hwnd, dc);
-	return size.cx;
+	return (int)size.cx;
 }
 
 static int control_span(HWND hwnd) {
@@ -879,7 +882,9 @@ static void layout(HWND hwnd) {
 	if (hs_layout_columns(cols, mins, 4, width - 16)) {
 		int x = 8;
 		for (i = 0; i < 4; i++) {
-			MoveWindow(g_zones[0][i] ? g_zones[0][i] : NULL, x, content_top, cols[i], 18, TRUE);
+			if (g_zones[0][i] != NULL) {
+				MoveWindow(g_zones[0][i], x, content_top, cols[i], 18, TRUE);
+			}
 			if (g_zones[1][i]) {
 				MoveWindow(g_zones[1][i], x, content_top + 20, cols[i], 18, TRUE);
 			}
