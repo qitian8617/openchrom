@@ -2,6 +2,7 @@
 # Visual Studio that is already installed. This script does not change the
 # user or machine PATH.
 $ErrorActionPreference = "Stop"
+$PSNativeCommandUseErrorActionPreference = $false
 $Root = Split-Path -Parent $PSScriptRoot
 Set-Location $Root
 
@@ -33,7 +34,13 @@ function Build-One([string]$Generator, [string]$Arch, [string]$BuildDir) {
 	return $true
 }
 
-$generators = @("Visual Studio 18 2026", "Visual Studio 17 2022")
+$help = & $cmake --help
+if ($LASTEXITCODE -ne 0) { throw "cmake --help failed" }
+$generators = [regex]::Matches($help, 'Visual Studio \d+ \d{4}') | ForEach-Object { $_.Value } | Select-Object -Unique
+if (-not $generators) {
+	$generators = @("Visual Studio 18 2026", "Visual Studio 17 2022")
+}
+Write-Host "CMake Visual Studio generators: $($generators -join ', ')"
 $x64 = Join-Path $Root "build-msvc-x64"
 $x86 = Join-Path $Root "build-msvc-x86"
 $ok64 = $false
