@@ -1,7 +1,6 @@
 #include "hs.h"
 #include "live.h"
 
-#include <fcntl.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,7 +9,6 @@
 
 #ifdef _WIN32
 #include <direct.h>
-#include <io.h>
 #else
 #include <unistd.h>
 #endif
@@ -226,22 +224,22 @@ void hs_session_free(HsSession *session) {
 
 int hs_instance_try_lock(const char *dir) {
 	char path[560];
-	int fd;
+	FILE *lock_file;
 	if (dir == NULL) {
 		return -1;
 	}
 	ensure_dir(dir);
 	snprintf(path, sizeof path, "%s/single.lock", dir);
-	fd = open(path, O_CREAT | O_EXCL | O_WRONLY, 0600);
-	if (fd < 0) {
+	lock_file = fopen(path, "wx");
+	if (lock_file == NULL) {
 		return -1;
 	}
-	if (write(fd, "locked\n", 7) < 0) {
-		close(fd);
+	if (fputs("locked\n", lock_file) < 0) {
+		fclose(lock_file);
 		remove(path);
 		return -1;
 	}
-	close(fd);
+	fclose(lock_file);
 	return 0;
 }
 

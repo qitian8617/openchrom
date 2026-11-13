@@ -26,11 +26,16 @@ if (-not $cmake) {
 }
 
 function Build-One([string]$Generator, [string]$Arch, [string]$BuildDir) {
+	$log = Join-Path $Root "build-$Arch.log"
 	if (Test-Path $BuildDir) { Remove-Item -Recurse -Force $BuildDir }
-	& $cmake -S $Root -B $BuildDir -G $Generator -A $Arch
+	& $cmake -S $Root -B $BuildDir -G $Generator -A $Arch 2>&1 | Tee-Object -FilePath $log
 	if ($LASTEXITCODE -ne 0) { return $false }
-	& $cmake --build $BuildDir --config Release
-	if ($LASTEXITCODE -ne 0) { throw "cmake build failed for $Arch" }
+	& $cmake --build $BuildDir --config Release -- /verbosity:minimal 2>&1 | Tee-Object -FilePath $log -Append
+	if ($LASTEXITCODE -ne 0) {
+		Write-Host "---- last 200 lines of $log ----"
+		Get-Content $log -Tail 200
+		throw "cmake build failed for $Arch"
+	}
 	return $true
 }
 
