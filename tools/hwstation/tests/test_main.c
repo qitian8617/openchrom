@@ -237,7 +237,12 @@ static void test_program(void) {
 	int n = hs_oven_program_json(450, 1, 30, 0, rate, temp, hold, json, sizeof json);
 	expect(n > 0 && strstr(json, "\"loop\": \"0\"") != NULL, "oven json");
 	expect(hs_oven_program_json(451, 1, 30, 0, rate, temp, hold, json, sizeof json) < 0, "ceiling");
-	expect(hs_setpoint_ok(0.0 / 0.0) == 0, "nan setpoint");
+	{
+		double nan_setpoint;
+		uint64_t nan_bits = 0x7ff8000000000000ULL;
+		memcpy(&nan_setpoint, &nan_bits, sizeof nan_setpoint);
+		expect(hs_setpoint_ok(nan_setpoint) == 0, "nan setpoint");
+	}
 }
 
 static void test_auth_and_session(void) {
