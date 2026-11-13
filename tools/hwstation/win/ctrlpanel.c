@@ -23,6 +23,7 @@ static HWND g_dll, g_hw_ms, g_hw_ok;
 static HWND g_events, g_clock, g_trend;
 static HWND g_note, g_cal_in, g_cal_det;
 static HANDLE g_bridge_in, g_bridge_out, g_bridge_process;
+static int g_smoke;
 
 static void set_utf8(HWND hwnd, const char *text) {
 	wchar_t wide[500];
@@ -167,6 +168,9 @@ static int bridge_read_line(char *out, int cap) {
 
 static int bridge_start(void) {
 	wchar_t exe[MAX_PATH];
+	if (g_smoke) {
+		return -1;
+	}
 	wchar_t bridge[MAX_PATH];
 	SECURITY_ATTRIBUTES sa;
 	STARTUPINFOW si;
@@ -387,8 +391,83 @@ static LRESULT CALLBACK trend_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lp
 	return DefWindowProcW(hwnd, msg, wparam, lparam);
 }
 
+static void layout(HWND hwnd);
+
+static void smoke_line(const char *text) {
+	HANDLE out;
+	DWORD written = 0;
+	AttachConsole(ATTACH_PARENT_PROCESS);
+	out = GetStdHandle(STD_OUTPUT_HANDLE);
+	if (out != NULL && out != INVALID_HANDLE_VALUE && text != NULL) {
+		WriteFile(out, text, (DWORD)strlen(text), &written, NULL);
+	}
+}
+
+static HWND find_child_text(HWND parent, const wchar_t *text) {
+	HWND child = GetWindow(parent, GW_CHILD);
+	wchar_t buf[80];
+	while (child) {
+		GetWindowTextW(child, buf, 80);
+		if (wcscmp(buf, text) == 0) {
+			return child;
+		}
+		child = GetWindow(child, GW_HWNDNEXT);
+	}
+	return NULL;
+}
+
+static int smoke_check(HWND hwnd) {
+	static const wchar_t *need[] = {L"连接仪器", L"停止温控", L"急停", L"点火", L"开空气阀", L"下载温程", L"确认并写入", L"设置口令", L"探测此地址", L"读取状态", L"工作站取数", L"加载 DLL", L"反控", L"温程", L"PID", L"维护", L"工作站"};
+	int index;
+	wchar_t klass[64];
+	MoveWindow(hwnd, 0, 0, 600, 1024, FALSE);
+	GetClassNameW(hwnd, klass, 64);
+	if (wcscmp(klass, L"ControlPanelClass") != 0) {
+		smoke_line("offline-smoke: window class is not ControlPanelClass\n");
+		return 1;
+	}
+	for (index = 0; index < (int)(sizeof need / sizeof need[0]); index++) {
+		int page;
+		int found = 0;
+		for (page = 0; page < 5; page++) {
+			HWND child;
+			RECT rect;
+			RECT client;
+			POINT point;
+			show_page(page);
+			layout(hwnd);
+			child = find_child_text(hwnd, need[index]);
+			if (child == NULL || !IsWindowVisible(child)) {
+				continue;
+			}
+			GetWindowRect(child, &rect);
+			point.x = rect.left;
+			point.y = rect.top;
+			ScreenToClient(hwnd, &point);
+			GetClientRect(hwnd, &client);
+			if (rect.right - rect.left >= 40 && point.x >= 0 && point.x < client.right) {
+				found = 1;
+				break;
+			}
+		}
+		if (!found) {
+			smoke_line("offline-smoke: missing or clipped control\n");
+			return 1;
+		}
+	}
+	if (g_bridge_process != NULL || hs_session_net_writes(g_session) != 0) {
+		smoke_line("offline-smoke: network or bridge was used\n");
+		return 1;
+	}
+	smoke_line("offline-smoke: ok\n");
+	return 0;
+}
+
 static void on_command(int id) {
 	char err[300] = "";
+	if (g_smoke) {
+		return;
+	}
 	char host[64];
 	char port_text[16];
 	char pass[80];
@@ -688,18 +767,23 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev, PWSTR cmd, int show) {
 	WNDCLASSW klass;
 	HWND hwnd;
-	HANDLE mutex;
+	HANDLE mutex = NULL;
 	wchar_t root[MAX_PATH];
 	wchar_t dir[MAX_PATH];
 	char dir_utf8[MAX_PATH];
+	const wchar_t *command_line;
 	int stage;
 	int row;
 	(void)prev;
 	(void)cmd;
-	mutex = CreateMutexW(NULL, TRUE, L"Local\\Hwstation.ControlPanelClass.instance");
-	if (mutex == NULL || GetLastError() == ERROR_ALREADY_EXISTS) {
-		MessageBoxW(NULL, L"反控面板已经打开。", L"反控", MB_OK);
-		return 0;
+	command_line = GetCommandLineW();
+	g_smoke = command_line != NULL && (wcsstr(command_line, L"--offline-smoke") != NULL || wcsstr(command_line, L"--self-test") != NULL);
+	if (!g_smoke) {
+		mutex = CreateMutexW(NULL, TRUE, L"Local\\Hwstation.ControlPanelClass.instance");
+		if (mutex == NULL || GetLastError() == ERROR_ALREADY_EXISTS) {
+			MessageBoxW(NULL, L"反控面板已经打开。", L"反控", MB_OK);
+			return 0;
+		}
 	}
 	GetEnvironmentVariableW(L"LOCALAPPDATA", root, MAX_PATH);
 	_snwprintf(dir, MAX_PATH, L"%s\\hwstation", root);
@@ -719,7 +803,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev, PWSTR cmd, int show) {
 	klass.lpfnWndProc = trend_proc;
 	klass.lpszClassName = L"HsTrend";
 	RegisterClassW(&klass);
-	hwnd = CreateWindowExW(0, L"ControlPanelClass", L"色谱反控", WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, 720, 980, NULL, NULL, instance, NULL);
+	hwnd = CreateWindowExW(0, L"ControlPanelClass", L"色谱反控", WS_OVERLAPPEDWINDOW | (g_smoke ? 0 : WS_VISIBLE), CW_USEDEFAULT, CW_USEDEFAULT, 720, 980, NULL, NULL, instance, NULL);
 	{
 		const wchar_t *names[] = {L"反控", L"温程", L"PID", L"维护", L"工作站"};
 		int nav;
@@ -817,6 +901,12 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev, PWSTR cmd, int show) {
 	show_page(0);
 	layout(hwnd);
 	refresh(hwnd);
+	if (g_smoke) {
+		int code = smoke_check(hwnd);
+		DestroyWindow(hwnd);
+		hs_session_free(g_session);
+		return code;
+	}
 	SetTimer(hwnd, 1, 400, NULL);
 	ShowWindow(hwnd, show);
 	{
@@ -830,7 +920,9 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev, PWSTR cmd, int show) {
 	if (g_bridge_process) {
 		CloseHandle(g_bridge_process);
 	}
-	ReleaseMutex(mutex);
-	CloseHandle(mutex);
+	if (mutex) {
+		ReleaseMutex(mutex);
+		CloseHandle(mutex);
+	}
 	return 0;
 }

@@ -1,23 +1,78 @@
 #include "hs.h"
 #include "live.h"
 
-#include <arpa/inet.h>
-#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
+
+#ifdef _WIN32
+#include <direct.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <windows.h>
+#define hs_mkdir(path) _mkdir(path)
+#else
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#define hs_mkdir(path) mkdir((path), 0700)
+#endif
 
 static int g_failed;
+static int g_checked;
+static char g_root[260];
 
 static void expect(int cond, const char *name) {
+	g_checked++;
 	if (!cond) {
 		fprintf(stderr, "FAIL %s\n", name);
 		g_failed++;
+	} else {
+		printf("PASS %s\n", name);
 	}
+}
+
+static void join_path(char *out, size_t cap, const char *dir, const char *leaf) {
+	size_t dir_len;
+	size_t leaf_len;
+	if (out == NULL || cap == 0) {
+		return;
+	}
+	if (dir == NULL) {
+		dir = "";
+	}
+	if (leaf == NULL) {
+		leaf = "";
+	}
+	dir_len = strlen(dir);
+	leaf_len = strlen(leaf);
+	if (dir_len + 1 + leaf_len >= cap) {
+		out[0] = '\0';
+		return;
+	}
+	memcpy(out, dir, dir_len);
+	out[dir_len] = '/';
+	memcpy(out + dir_len + 1, leaf, leaf_len);
+	out[dir_len + 1 + leaf_len] = '\0';
+}
+
+static void test_path(char *out, size_t cap, const char *name) {
+	snprintf(out, cap, "%s/hwstation-%s", g_root, name);
+#ifdef _WIN32
+	{
+		char *slash = out;
+		while (*slash) {
+			if (*slash == '/') {
+				*slash = '\\';
+			}
+			slash++;
+		}
+	}
+#endif
+	hs_mkdir(out);
 }
 
 static char *read_file(const char *path) {
@@ -35,7 +90,11 @@ static char *read_file(const char *path) {
 		fclose(fp);
 		return NULL;
 	}
-	fread(buf, 1, (size_t)size, fp);
+	if (fread(buf, 1, (size_t)size, fp) != (size_t)size) {
+		free(buf);
+		fclose(fp);
+		return NULL;
+	}
 	buf[size] = '\0';
 	fclose(fp);
 	return buf;
@@ -185,15 +244,16 @@ static void test_auth_and_session(void) {
 	uint8_t out[32];
 	uint8_t expect_hash[32];
 	static const char b64[] = "mhf19FrHRq6/OZJ3/iFi+M/rLZ/4hs9097fLeIBg+wM=";
-	char dir[] = "/tmp/hwstation-test-auth";
-	char path[128];
+	char dir[260];
+	char pace_dir[320];
+	char path[320];
 	HsAuth *auth;
 	HsSession *session;
 	HsSnapshot snap;
 	char err[200];
 	int before;
 	int attempts;
-	mkdir(dir, 0700);
+	test_path(dir, sizeof dir, "test-auth");
 	snprintf(path, sizeof path, "%s/engineer.auth", dir);
 	remove(path);
 	expect(hs_pbkdf2_sha256((const uint8_t *)"test-password", 13, (const uint8_t *)"0123456789abcdef", 16, 2, out) == 0, "pbkdf2");
@@ -269,10 +329,10 @@ static void test_auth_and_session(void) {
 	}
 	hs_session_set_sim_period_ms(session, 50);
 	hs_session_free(session);
-	session = hs_session_create("/tmp/hwstation-test-pace");
-	mkdir("/tmp/hwstation-test-pace", 0700);
+	test_path(pace_dir, sizeof pace_dir, "test-pace");
+	session = hs_session_create(pace_dir);
 	hs_session_free(session);
-	session = hs_session_create("/tmp/hwstation-test-pace");
+	session = hs_session_create(pace_dir);
 	hs_session_set_sim_period_ms(session, 50);
 	hs_session_tick(session, 0);
 	hs_session_tick(session, 50);
@@ -292,21 +352,24 @@ static void test_auth_and_session(void) {
 	expect(hs_session_net_writes(session) == 0, "pid no net");
 	hs_session_snapshot(session, 50, &snap);
 	expect(strcmp(snap.fid_pa, "未知") == 0, "fid not zero");
-	expect(hs_session_write_report(session, "/tmp/hwstation-test-pace/ControlPanelInfo.txt", 50) == 0, "report");
+	join_path(path, sizeof path, pace_dir, "ControlPanelInfo.txt");
+	expect(hs_session_write_report(session, path, 50) == 0, "report");
 	{
-		char *text = read_file("/tmp/hwstation-test-pace/ControlPanelInfo.txt");
+		char *text = read_file(path);
 		expect(text && strstr(text, "未知") != NULL, "report unknown");
 		expect(text && strstr(text, "没有实机") != NULL, "report limit");
 		free(text);
 	}
 	hs_session_free(session);
 	{
-		FILE *fp = fopen("/tmp/hwstation-test-recover/recovery.txt", "wb");
-		mkdir("/tmp/hwstation-test-recover", 0700);
-		fp = fopen("/tmp/hwstation-test-recover/recovery.txt", "wb");
+		char recover[320];
+		FILE *fp;
+		test_path(recover, sizeof recover, "test-recover");
+		join_path(path, sizeof path, recover, "recovery.txt");
+		fp = fopen(path, "wb");
 		fputs("stop_unconfirmed=1\n", fp);
 		fclose(fp);
-		session = hs_session_create("/tmp/hwstation-test-recover");
+		session = hs_session_create(recover);
 		expect(strstr(hs_session_recovery_banner(session), "未确认") != NULL, "recovery");
 		expect(hs_session_net_writes(session) == 0, "recovery no net");
 		hs_session_free(session);
@@ -335,6 +398,13 @@ static void test_layout_and_sources(void) {
 	panel = read_file("win/ctrlpanel.c");
 	bridge = read_file("win/hwbridge.c");
 	repro = read_file("win/ipc_repro.c");
+	if (panel == NULL || bridge == NULL || repro == NULL) {
+		printf("SKIP source scan; run from the hwstation source directory to check window wiring\n");
+		free(panel);
+		free(bridge);
+		free(repro);
+		return;
+	}
 	expect(panel && strstr(panel, "ControlPanelClass") != NULL, "class string");
 	expect(panel && strstr(panel, "FindWindow") == NULL, "panel does not search HW");
 	expect(panel && strstr(panel, "写柱箱PID") == NULL, "no placeholder pid button");
@@ -342,6 +412,11 @@ static void test_layout_and_sources(void) {
 	expect(panel && strstr(panel, "下载温程") != NULL, "program download");
 	expect(panel && strstr(panel, "探测此地址") != NULL, "manual probe");
 	expect(panel && strstr(panel, "设置口令") != NULL, "enroll button");
+	expect(panel && strstr(panel, "--offline-smoke") != NULL, "offline smoke flag");
+	expect(panel && strstr(panel, "hs_session_start_heat") != NULL, "heat wired");
+	expect(panel && strstr(panel, "hs_session_write_pids_confirmed") != NULL, "pid wired");
+	expect(panel && strstr(panel, "hs_session_stop_heat") != NULL, "stop wired");
+	expect(panel && strstr(panel, "hs_session_hw_stop") != NULL, "workstation stop wired");
 	expect(bridge && strstr(bridge, "FindWindow") == NULL, "bridge does not search HW");
 	expect(repro && strstr(repro, "FindWindowA") != NULL, "repro is explicit");
 	expect(repro && strstr(repro, "SendDataToHW41") == NULL, "41 not exported by repro");
@@ -385,14 +460,56 @@ static void test_binaries(void) {
 	}
 }
 
+#ifdef _WIN32
+static SOCKET g_listen_fd = INVALID_SOCKET;
+
+static DWORD WINAPI loop_accept(LPVOID unused) {
+	char buf[128];
+	int n;
+	SOCKET client;
+	(void)unused;
+	client = accept(g_listen_fd, NULL, NULL);
+	if (client == INVALID_SOCKET) {
+		return 1;
+	}
+	n = recv(client, buf, (int)sizeof buf - 1, 0);
+	if (n > 0) {
+		buf[n] = '\0';
+		if (strstr(buf, "HELLO\tPC")) {
+			const char *ok = "HELLO_OK\n";
+			send(client, ok, (int)strlen(ok), 0);
+		}
+	}
+	closesocket(client);
+	return 0;
+}
+#endif
+
 static void test_loopback(void) {
-	int listen_fd;
 	struct sockaddr_in addr;
+#ifdef _WIN32
+	int alen = (int)sizeof addr;
+	SOCKET listen_fd;
+	HANDLE thread;
+	WSADATA data;
+#else
 	socklen_t alen = sizeof addr;
+	int listen_fd;
 	pid_t pid;
+#endif
 	char err[128];
+	char dir[320];
 	HsSession *session;
+	unsigned short port;
+#ifdef _WIN32
+	if (WSAStartup(MAKEWORD(2, 2), &data) != 0) {
+		expect(0, "winsock");
+		return;
+	}
+	listen_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+#else
 	listen_fd = socket(AF_INET, SOCK_STREAM, 0);
+#endif
 	memset(&addr, 0, sizeof addr);
 	addr.sin_family = AF_INET;
 	addr.sin_addr.s_addr = htonl(0x7F000001);
@@ -400,6 +517,12 @@ static void test_loopback(void) {
 	expect(bind(listen_fd, (struct sockaddr *)&addr, sizeof addr) == 0, "bind");
 	expect(listen(listen_fd, 1) == 0, "listen");
 	expect(getsockname(listen_fd, (struct sockaddr *)&addr, &alen) == 0, "port");
+	port = ntohs(addr.sin_port);
+#ifdef _WIN32
+	g_listen_fd = listen_fd;
+	thread = CreateThread(NULL, 0, loop_accept, NULL, 0, NULL);
+	expect(thread != NULL, "accept thread");
+#else
 	pid = fork();
 	if (pid == 0) {
 		int client = accept(listen_fd, NULL, NULL);
@@ -409,7 +532,10 @@ static void test_loopback(void) {
 			buf[n] = '\0';
 			if (strstr(buf, "HELLO\tPC")) {
 				const char *ok = "HELLO_OK\n";
-				write(client, ok, strlen(ok));
+				if (write(client, ok, strlen(ok)) < 0) {
+					close(client);
+					_exit(1);
+				}
 			}
 		}
 		if (client >= 0) {
@@ -417,15 +543,25 @@ static void test_loopback(void) {
 		}
 		_exit(0);
 	}
-	session = hs_session_create("/tmp/hwstation-test-loop");
-	mkdir("/tmp/hwstation-test-loop", 0700);
-	expect(hs_session_connect_live(session, "127.0.0.1", ntohs(addr.sin_port), err, sizeof err) == 0, "loopback hello");
+#endif
+	test_path(dir, sizeof dir, "test-loop");
+	session = hs_session_create(dir);
+	expect(hs_session_connect_live(session, "127.0.0.1", (int)port, err, sizeof err) == 0, "loopback hello");
 	expect(hs_session_net_writes(session) == (int)strlen("GCWS\tHELLO\tPC\r\n"), "only hello");
 	expect(strstr(hs_session_written(session), "START_") == NULL, "hello does not start");
 	hs_session_disconnect(session);
 	hs_session_free(session);
+#ifdef _WIN32
+	closesocket(listen_fd);
+	if (thread) {
+		WaitForSingleObject(thread, 3000);
+		CloseHandle(thread);
+	}
+	WSACleanup();
+#else
 	close(listen_fd);
 	waitpid(pid, NULL, 0);
+#endif
 }
 
 typedef struct ScriptQ {
@@ -494,15 +630,18 @@ static void test_pressure_program_pid_stop(void) {
 	HsIo io;
 	char err[240];
 	char confirm[240];
-	char auth_path[160];
+	char auth_path[320];
 	int i;
 	memset(&program, 0, sizeof program);
 	hs_parse_gas_pressure("{\"h2\":\"0.250\",\"air\":\"0.300\"}", &h2, &air, &h2_kind, &air_kind);
 	expect(h2_kind == HS_PRESSURE_NAMED_MPA && air_kind == HS_PRESSURE_NAMED_MPA, "named pressure");
 	hs_parse_gas_pressure("{\"adc1\":\"0.500\",\"adc2\":\"0.400\"}", &h2, &air, &h2_kind, &air_kind);
 	expect(h2_kind == HS_PRESSURE_ADC_UNIT_UNCONFIRMED && air == 0.4, "adc kept");
-	mkdir("/tmp/hwstation-test-ops", 0700);
-	session = hs_session_create("/tmp/hwstation-test-ops");
+	{
+		char ops[320];
+		test_path(ops, sizeof ops, "test-ops");
+		session = hs_session_create(ops);
+	}
 	hs_session_set_offline(session);
 	expect(hs_session_ingest_pressure_json(session, "{\"adc1\":\"0.8\",\"adc2\":\"0.8\"}", 1000) == 0, "adc parsed");
 	hs_session_snapshot(session, 1000, &snap);
@@ -531,7 +670,11 @@ static void test_pressure_program_pid_stop(void) {
 		script_add(&queue, "WRITE_OK\n");
 	}
 	script_add(&queue, "WRITE_OK\n");
-	session = hs_session_create_with_io("/tmp/hwstation-test-ops", &io);
+	{
+		char ops[320];
+		test_path(ops, sizeof ops, "test-ops");
+		session = hs_session_create_with_io(ops, &io);
+	}
 	hs_session_use_scripted_live(session);
 	hs_session_observe_aux(session, 1000, 0, 0, 0, 0, 0);
 	hs_session_ingest_pressure_json(session, "{\"h2\":\"0.200\",\"air\":\"0.200\"}", 1000);
@@ -551,8 +694,11 @@ static void test_pressure_program_pid_stop(void) {
 		script_add(&queue, "WRITE_OK\n");
 	}
 	script_add(&queue, "{\"owner\":\"PC\",\"heat\":\"0\",\"acq\":\"0\"}\n");
-	session = hs_session_create_with_io("/tmp/hwstation-test-ops2", &io);
-	mkdir("/tmp/hwstation-test-ops2", 0700);
+	{
+		char ops2[320];
+		test_path(ops2, sizeof ops2, "test-ops2");
+		session = hs_session_create_with_io(ops2, &io);
+	}
 	hs_session_use_scripted_live(session);
 	hs_session_observe_aux(session, 1000, 0, 0, 0, 0, 0);
 	hs_session_ingest_pressure_json(session, "{\"h2\":\"0.200\",\"air\":\"0.200\"}", 1000);
@@ -568,8 +714,11 @@ static void test_pressure_program_pid_stop(void) {
 	expect(count_text(queue.written, "START_OVEN_CONTROL") == 0, "cancelled wait");
 	expect(hs_session_net_writes(session) == 0, "script is not a socket");
 	hs_session_free(session);
-	snprintf(auth_path, sizeof auth_path, "/tmp/hwstation-test-pid/engineer.auth");
-	mkdir("/tmp/hwstation-test-pid", 0700);
+	{
+		char pid_dir[320];
+		test_path(pid_dir, sizeof pid_dir, "test-pid");
+		join_path(auth_path, sizeof auth_path, pid_dir, "engineer.auth");
+	}
 	remove(auth_path);
 	{
 		HsAuth *auth = hs_auth_open(auth_path);
@@ -580,7 +729,11 @@ static void test_pressure_program_pid_stop(void) {
 	for (i = 0; i < 3; i++) {
 		script_add(&queue, "WRITE_OK\n");
 	}
-	session = hs_session_create_with_io("/tmp/hwstation-test-pid", &io);
+	{
+		char pid_dir[320];
+		test_path(pid_dir, sizeof pid_dir, "test-pid");
+		session = hs_session_create_with_io(pid_dir, &io);
+	}
 	expect(hs_session_verify(session, "correct-horse", 20, err, sizeof err) == 0, "pid unlock");
 	expect(hs_session_set_pid(session, 0, 1.5, 0.2, 0, err, sizeof err) == 0, "oven pid");
 	expect(hs_session_set_pid(session, 1, 2, 0.1, 0.3, err, sizeof err) == 0, "inlet pid");
@@ -598,17 +751,22 @@ static void test_pressure_program_pid_stop(void) {
 }
 
 static void test_lock_and_log(void) {
-	mkdir("/tmp/hwstation-test-lock", 0700);
-	expect(hs_instance_try_lock("/tmp/hwstation-test-lock") == 0, "lock");
-	expect(hs_instance_try_lock("/tmp/hwstation-test-lock") != 0, "second lock");
-	hs_instance_unlock("/tmp/hwstation-test-lock");
-	expect(hs_instance_try_lock("/tmp/hwstation-test-lock") == 0, "relock");
-	hs_instance_unlock("/tmp/hwstation-test-lock");
 	{
-		HsSession *session = hs_session_create("/tmp/hwstation-test-log");
+		char lock_dir[320];
+		test_path(lock_dir, sizeof lock_dir, "test-lock");
+		expect(hs_instance_try_lock(lock_dir) == 0, "lock");
+		expect(hs_instance_try_lock(lock_dir) != 0, "second lock");
+		hs_instance_unlock(lock_dir);
+		expect(hs_instance_try_lock(lock_dir) == 0, "relock");
+		hs_instance_unlock(lock_dir);
+	}
+	{
+		char log_dir[320];
+		HsSession *session;
 		HsSnapshot snap;
 		int i;
-		mkdir("/tmp/hwstation-test-log", 0700);
+		test_path(log_dir, sizeof log_dir, "test-log");
+		session = hs_session_create(log_dir);
 		for (i = 0; i < 20000; i++) {
 			hs_session_trace(session, "0123456789abcdef0123456789abcdef01234567");
 		}
@@ -619,7 +777,33 @@ static void test_lock_and_log(void) {
 	}
 }
 
-int main(void) {
+int main(int argc, char **argv) {
+#ifdef _WIN32
+	DWORD n = GetTempPathA((DWORD)sizeof g_root, g_root);
+	if (n == 0 || n >= sizeof g_root) {
+		snprintf(g_root, sizeof g_root, ".");
+	} else if (n > 0 && (g_root[n - 1] == '\\' || g_root[n - 1] == '/')) {
+		g_root[n - 1] = '\0';
+	}
+#else
+	snprintf(g_root, sizeof g_root, "/tmp");
+#endif
+	if (argc > 2 || (argc == 2 && strcmp(argv[1], "--offline") != 0 && strcmp(argv[1], "--self-test") != 0)) {
+		fprintf(stderr, "usage: hwstation-tests [--offline]\nThis program only runs offline. It does not search HWClass and does not connect to an instrument.\n");
+		return 2;
+	}
+#if defined(_MSC_VER)
+	printf("compiler: MSVC %d\n", _MSC_VER);
+#elif defined(__clang__)
+	printf("compiler: clang %s\n", __clang_version__);
+#elif defined(__GNUC__)
+	printf("compiler: gcc %d.%d.%d\n", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
+#else
+	printf("compiler: unknown\n");
+#endif
+	printf("mode: offline\n");
+	printf("network: 127.0.0.1 loopback hello only\n");
+	printf("window-search: none\n");
 	test_commands();
 	test_pressure_and_flame();
 	test_units();
@@ -632,8 +816,9 @@ int main(void) {
 	test_loopback();
 	test_pressure_program_pid_stop();
 	test_lock_and_log();
+	printf("cases: %d\n", g_checked);
+	printf("failed: %d\n", g_failed);
 	if (g_failed) {
-		fprintf(stderr, "%d failed\n", g_failed);
 		return 1;
 	}
 	printf("ok\n");

@@ -1,3 +1,6 @@
+ifeq ($(OS),Windows_NT)
+$(error Windows build uses build-windows.bat and the installed Visual Studio. This Makefile is the Linux gcc path.)
+endif
 CC ?= gcc
 CFLAGS ?= -std=c11 -Wall -Wextra -Werror -O2
 CPPFLAGS += -Isrc

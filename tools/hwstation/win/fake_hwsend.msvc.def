@@ -1,0 +1,4 @@
+LIBRARY fake_hwsend
+EXPORTS
+SendDataToHW=_SendDataToHW@12
+HwstationFakeBuild=_HwstationFakeBuild@0

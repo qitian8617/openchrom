@@ -232,7 +232,7 @@ typedef struct HsSnapshot {
 	char heat[96];
 	char stop_confirm[120];
 	char device_acq[80];
-	char hw[180];
+	char hw[320];
 	char alarm[240];
 	char banner[280];
 	char flame[64];

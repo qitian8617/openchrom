@@ -12,18 +12,32 @@
 - 工作站取数和仪器停热是两个按钮
 - 发行包里没有厂商 `HWSendData.dll`
 
-## 云端已编出的文件
+## Windows 构建（已安装的 Visual Studio，不需要 MinGW）
 
-`build/win/CtrlPanel.exe`、`build/win/hwbridge.exe`、`build/win/hwstation_ipc_repro.dll`、`build/win/fake_hwsend.dll`。
+在本目录执行 `build-windows.bat`。脚本只用本机的 `vswhere` 和 CMake，不改全局 PATH。它会编出：
 
-在本目录执行：
+- x64 `CtrlPanel.exe`
+- x64 `hwstation-tests.exe`
+- x86 `hwbridge.exe`、`fake_hwsend.dll`、`hwstation_ipc_repro.dll`
+
+产物在 `dist-msvc\`。不连仪器的检查：
 
 ```
-make test
-make win
+dist-msvc\hwstation-tests.exe --offline
+dist-msvc\CtrlPanel.exe --offline-smoke
 ```
 
-需要 gcc，以及 `x86_64-w64-mingw32-gcc`、`i686-w64-mingw32-gcc`。Windows 上若改用 VS 2026，请先核对 `MSBuild.exe` 的实际路径；本目录没有 VS 工程，因为所附 SDK 没有完整 `.dsp`，而界面不依赖 MFC。
+`--offline` 只跑本地用例和 `127.0.0.1` 回环握手，不查找 `HWClass`。`--offline-smoke` 建立窗口、核对分页按钮后退出，不加载 DLL，不发 `WM_COPYDATA`，不连接网络。
+
+## Linux 上的同一套测试
+
+```
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+./build/hwstation-tests --offline
+```
+
+`make test` 仍可用，但 Windows 机器上的正式入口是上面的 CMake/MSVC 脚本。
 
 `hwstation_ipc_repro.dll` 会查找 `HWClass`。不要在正在运行 HW 工作站的机器上把它当作默认 DLL 加载。测试双份是 `fake_hwsend.dll`，它不查找窗口。
 

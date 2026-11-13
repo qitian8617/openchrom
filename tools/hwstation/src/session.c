@@ -65,7 +65,7 @@ struct HsSession {
 	int stop_unconfirmed;
 	char stop_text[120];
 	int linear_armed;
-	char hw_status[180];
+	char hw_status[320];
 	char alarm[240];
 	int alarm_on;
 	char banner[280];
@@ -90,10 +90,19 @@ static void ensure_dir(const char *dir) {
 }
 
 static void copy_text(char *dst, size_t cap, const char *src) {
+	size_t length;
 	if (dst == NULL || cap == 0) {
 		return;
 	}
-	snprintf(dst, cap, "%s", src ? src : "");
+	if (src == NULL) {
+		src = "";
+	}
+	length = strlen(src);
+	if (length >= cap) {
+		length = cap - 1;
+	}
+	memcpy(dst, src, length);
+	dst[length] = '\0';
 }
 
 static void load_recovery(HsSession *session) {

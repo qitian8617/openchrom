@@ -1,0 +1,10 @@
+本目录的 Windows 可执行文件若随发行 zip 提供，是在 Linux 上用 mingw-w64 交叉编译并链接系统 msvcrt，方便先做离线检查。
+本机正式编译不要安装 MinGW，也不要改全局 PATH。在源码目录执行 build-windows.bat。
+它使用已经安装的 Visual Studio 和 CMake，分别生成 x64 CtrlPanel.exe / hwstation-tests.exe 和 x86 hwbridge.exe。
+
+离线检查（不连接仪器、不查找 HWClass）：
+  hwstation-tests.exe --offline
+  CtrlPanel.exe --offline-smoke
+
+--offline-smoke 建立窗口、核对分页按钮后退出。它不加载外部 DLL，不发送 WM_COPYDATA，不打开网络连接。
+hwstation_ipc_repro.dll 会查找 HWClass，只是可选试验，不是厂商 DLL。验收时不要加载它。
