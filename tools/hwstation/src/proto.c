@@ -544,3 +544,196 @@ void hs_hw_class_name(int index, char *out, size_t cap) {
 int hs_hw_export_blocked(int index) {
 	return index >= 41 && index <= 50;
 }
+
+static int read_named_or_adc(const char *json, const char *named, const char *adc, double *out, HsPressureKind *kind) {
+	int ok = 0;
+	if (hs_json_has(json, named)) {
+		*out = hs_json_number(json, named, &ok);
+		*kind = ok ? HS_PRESSURE_NAMED_MPA : HS_PRESSURE_ABSENT;
+		return ok;
+	}
+	if (hs_json_has(json, adc)) {
+		*out = hs_json_number(json, adc, &ok);
+		*kind = ok ? HS_PRESSURE_ADC_UNIT_UNCONFIRMED : HS_PRESSURE_ABSENT;
+		return ok;
+	}
+	*kind = HS_PRESSURE_ABSENT;
+	*out = 0.0;
+	return 0;
+}
+
+int hs_parse_gas_pressure(const char *json, double *h2, double *air, HsPressureKind *h2_kind, HsPressureKind *air_kind) {
+	HsPressureKind hk = HS_PRESSURE_ABSENT;
+	HsPressureKind ak = HS_PRESSURE_ABSENT;
+	double hv = 0.0;
+	double av = 0.0;
+	if (json == NULL) {
+		return -1;
+	}
+	read_named_or_adc(json, "h2", "adc1", &hv, &hk);
+	read_named_or_adc(json, "air", "adc2", &av, &ak);
+	if (h2) {
+		*h2 = hv;
+	}
+	if (air) {
+		*air = av;
+	}
+	if (h2_kind) {
+		*h2_kind = hk;
+	}
+	if (air_kind) {
+		*air_kind = ak;
+	}
+	return 0;
+}
+
+static int stage_unused(double rate, double temp, double hold) {
+	return rate <= 0.01 && hold <= 0.0 && fabs(temp) <= 0.01;
+}
+
+int hs_program_check(const HsProgram *program, char *err, size_t err_cap) {
+	int i;
+	double previous;
+	int seen = 0;
+	if (program == NULL) {
+		return -1;
+	}
+	if (!hs_setpoint_ok(program->max_c) || program->eq_min < 0 || !isfinite(program->eq_min) || program->stable_sec < 0 || !isfinite(program->stable_sec) || (program->loop != 0 && program->loop != 1)) {
+		if (err && err_cap) {
+			snprintf(err, err_cap, "最高温度须在 0–450 °C，平衡时间和循环标志必须有效");
+		}
+		return -1;
+	}
+	previous = program->temperature[0];
+	for (i = 0; i < HS_OVEN_STAGES; i++) {
+		if (i > 0 && stage_unused(program->rate[i], program->temperature[i], program->hold[i])) {
+			continue;
+		}
+		if (program->rate[i] < 0 || !isfinite(program->rate[i]) || program->hold[i] < 0 || !isfinite(program->hold[i]) || !hs_setpoint_ok(program->temperature[i]) || program->temperature[i] > program->max_c) {
+			if (err && err_cap) {
+				snprintf(err, err_cap, "第 %d 阶超出温度上限或速率/保持为负", i + 1);
+			}
+			return -1;
+		}
+		if (seen && program->rate[i] <= 0.01 && fabs(program->temperature[i] - previous) > 0.05) {
+			if (err && err_cap) {
+				snprintf(err, err_cap, "第 %d 阶速率为 0 却要求变温", i + 1);
+			}
+			return -1;
+		}
+		previous = program->temperature[i];
+		seen = 1;
+	}
+	return 0;
+}
+
+long hs_program_duration_ms(const HsProgram *program) {
+	double minutes;
+	double temp;
+	int i;
+	if (program == NULL) {
+		return -1;
+	}
+	minutes = program->hold[0] > 0 ? program->hold[0] : 0;
+	temp = program->temperature[0];
+	for (i = 1; i < HS_OVEN_STAGES; i++) {
+		if (stage_unused(program->rate[i], program->temperature[i], program->hold[i])) {
+			continue;
+		}
+		if (program->rate[i] > 0.01) {
+			minutes += fabs(program->temperature[i] - temp) / program->rate[i];
+		}
+		if (program->hold[i] > 0) {
+			minutes += program->hold[i];
+		}
+		temp = program->temperature[i];
+	}
+	if (minutes <= 0) {
+		return 0;
+	}
+	return (long)llround(minutes * 60000.0);
+}
+
+int hs_program_from_json(const char *json, HsProgram *program, char *err, size_t err_cap) {
+	int i;
+	int ok = 0;
+	const char *rows;
+	const char *cursor;
+	if (program == NULL || json == NULL) {
+		return -1;
+	}
+	memset(program, 0, sizeof *program);
+	if (!hs_json_has(json, "maxTemperature") || !hs_json_has(json, "rows")) {
+		if (err && err_cap) {
+			snprintf(err, err_cap, "温程报文缺少最高温度或阶梯，未把缺项当成 0");
+		}
+		return -1;
+	}
+	program->max_c = hs_json_number(json, "maxTemperature", &ok);
+	if (!ok) {
+		return -1;
+	}
+	program->eq_min = hs_json_has(json, "equilibriumTime") ? hs_json_number(json, "equilibriumTime", &ok) : 0;
+	program->stable_sec = hs_json_has(json, "equilibriumStableSec") ? hs_json_number(json, "equilibriumStableSec", &ok) : 0;
+	program->loop = 0;
+	if (hs_json_has(json, "loop")) {
+		double loop = hs_json_number(json, "loop", &ok);
+		program->loop = ok && loop != 0.0;
+	}
+	rows = strstr(json, "\"rows\"");
+	cursor = rows ? strchr(rows, '[') : NULL;
+	if (cursor == NULL) {
+		return -1;
+	}
+	cursor++;
+	for (i = 0; i < HS_OVEN_STAGES; i++) {
+		const char *rate = strstr(cursor, "\"rate\"");
+		const char *temperature;
+		const char *hold;
+		const char *end;
+		if (rate == NULL) {
+			if (err && err_cap) {
+				snprintf(err, err_cap, "温程不足 8 阶，未补 0");
+			}
+			return -1;
+		}
+		temperature = strstr(rate, "\"temperature\"");
+		hold = temperature ? strstr(temperature, "\"holdTime\"") : NULL;
+		end = hold ? strchr(hold, '}') : NULL;
+		if (temperature == NULL || hold == NULL || end == NULL) {
+			return -1;
+		}
+		program->rate[i] = hs_json_number(rate, "rate", &ok);
+		program->temperature[i] = hs_json_number(temperature, "temperature", &ok);
+		program->hold[i] = hs_json_number(hold, "holdTime", &ok);
+		cursor = end + 1;
+	}
+	program->known = 1;
+	return hs_program_check(program, err, err_cap);
+}
+
+int hs_pid_in_range(double kp, double ki, double kd) {
+	return isfinite(kp) && isfinite(ki) && isfinite(kd) && kp >= 0 && ki >= 0 && kd >= 0 && kp <= 100 && ki <= 100 && kd <= 100;
+}
+
+int hs_parse_control_heat(const char *json, int *heat_known, int *heat_on, char *owner, size_t owner_cap) {
+	char text[32];
+	if (json == NULL) {
+		return -1;
+	}
+	if (heat_known) {
+		*heat_known = hs_json_has(json, "heat");
+	}
+	if (heat_on) {
+		*heat_on = 0;
+		if (hs_json_quoted(json, "heat", text, sizeof text)) {
+			*heat_on = strcmp(text, "1") == 0 || strcmp(text, "true") == 0;
+		}
+	}
+	if (owner && owner_cap) {
+		if (!hs_json_quoted(json, "owner", owner, owner_cap)) {
+			snprintf(owner, owner_cap, "未知");
+		}
+	}
+	return 0;
+}

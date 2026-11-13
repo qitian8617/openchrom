@@ -184,27 +184,33 @@ int hs_stream_period_ms(const HsStream *stream) {
 	return (int)stream->period_ms;
 }
 
-int hs_hw_interval_compatible(int measured_ms, char *why, size_t why_cap) {
+int hs_hw_interval_matches(int measured_ms, int confirmed_ms, int user_confirmed, char *why, size_t why_cap) {
 	if (why && why_cap) {
 		why[0] = '\0';
 	}
-	if (measured_ms <= 0) {
+	if (!user_confirmed || confirmed_ms <= 0) {
 		if (why && why_cap) {
-			snprintf(why, why_cap, "源周期未知，禁止按默认 50 ms 推送");
+			snprintf(why, why_cap, "工作站采样间隔尚未由操作者核实。说明书默认 50 ms 不能当成已经对接，也不写 HWFrequence.txt");
 		}
 		return 0;
 	}
-	if (measured_ms < HS_HW_DEFAULT_INTERVAL_MS - 5 || measured_ms > HS_HW_DEFAULT_INTERVAL_MS + 5) {
+	if (measured_ms <= 0) {
 		if (why && why_cap) {
-			snprintf(why, why_cap, "源周期 %d ms 与工作站默认 50 ms 不一致。HWFrequence.txt 语法未在所附原文确认，禁止改写，也不复制补点", measured_ms);
+			snprintf(why, why_cap, "源周期未知，未按已核实的 %d ms 推送", confirmed_ms);
+		}
+		return 0;
+	}
+	if (measured_ms < confirmed_ms - 5 || measured_ms > confirmed_ms + 5) {
+		if (why && why_cap) {
+			snprintf(why, why_cap, "源周期 %d ms 与已核实的 %d ms 不一致。不写 HWFrequence.txt，不复制补点", measured_ms, confirmed_ms);
 		}
 		return 0;
 	}
 	return 1;
 }
 
-int hs_stream_next_hw_triple(HsStream *stream, int32_t *data1, int32_t *data2, int32_t *data3, char *note, size_t note_cap) {
-	char why[200];
+int hs_stream_next_hw_triple(HsStream *stream, int confirmed_ms, int user_confirmed, int32_t *data1, int32_t *data2, int32_t *data3, char *note, size_t note_cap) {
+	char why[240];
 	HsFaMap map;
 	if (note && note_cap) {
 		note[0] = '\0';
@@ -212,7 +218,7 @@ int hs_stream_next_hw_triple(HsStream *stream, int32_t *data1, int32_t *data2, i
 	if (stream == NULL || stream->aborted) {
 		return 0;
 	}
-	if (!hs_hw_interval_compatible(hs_stream_period_ms(stream), why, sizeof why)) {
+	if (!hs_hw_interval_matches(hs_stream_period_ms(stream), confirmed_ms, user_confirmed, why, sizeof why)) {
 		if (note && note_cap) {
 			snprintf(note, note_cap, "%s", why);
 		}

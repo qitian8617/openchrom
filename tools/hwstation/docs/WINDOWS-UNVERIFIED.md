@@ -2,7 +2,7 @@
 
 云端完成：
 
-- `tools/hwstation` 的 C 核心用本机 gcc 编译，`./build/hwstation-tests` 输出 `ok`
+- `tools/hwstation` 的 C 核心用本机 gcc 编译，`./build/hwstation-tests` 输出 `ok`。其中包含温程校验、adc 气压不能开门控、10 次稳温后才启动柱箱、停止要有 WRITE_OK 和 heat=0、PID 确认串不一致则零字节写出
 - 测试覆盖命令分类、0.1 MPa 门槛、pA→fA 溢出、10 Hz 不按 50 ms 推送、丢点中止、离线不写套接字、127.0.0.1 假仪器只收到 HELLO、维护口令与 Java PBKDF2 向量、日志上限、单实例锁、按钮换行
 - `x86_64-w64-mingw32-gcc` 生成 `CtrlPanel.exe`（PE32+，窗口类源码字符串是 `ControlPanelClass`）
 - `i686-w64-mingw32-gcc` 生成 `hwbridge.exe` 和 `hwstation_ipc_repro.dll`（PE32 / i386）

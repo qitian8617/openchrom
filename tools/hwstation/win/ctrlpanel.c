@@ -6,50 +6,41 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define IDC_HOST 100
-#define IDC_PORT 101
-#define IDC_INLET 102
-#define IDC_DET 103
-#define IDC_STATUS 104
-#define IDC_ALARM 105
-#define IDC_LINK 106
-#define IDC_HEAT 107
-#define IDC_STOP 108
-#define IDC_ACQ 109
-#define IDC_HW 110
-#define IDC_PASS 111
-#define IDC_DLL 112
-
 static HsSession *g_session;
-static HWND g_buttons[24];
-static int g_button_count;
 static HFONT g_font;
-static HWND g_host, g_port, g_inlet, g_det, g_pass, g_dll;
-static HWND g_link, g_heat, g_stop, g_acq, g_hw, g_alarm, g_banner;
+static int g_page;
+static HWND g_pages[5][48];
+static int g_page_count[5];
+static HWND g_link, g_heat, g_stop, g_acq, g_alarm, g_banner;
 static HWND g_zones[3][4];
-static wchar_t g_dir[MAX_PATH];
-static HANDLE g_bridge_in;
-static HANDLE g_bridge_out;
-static HANDLE g_bridge_process;
+static HWND g_host, g_port, g_inlet, g_det;
+static HWND g_prog[8][3];
+static HWND g_prog_max, g_prog_eq, g_prog_stable, g_prog_loop, g_prog_time;
+static HWND g_pid[3][3];
+static HWND g_pid_state;
+static HWND g_pass, g_pass2;
+static HWND g_dll, g_hw_ms, g_hw_ok;
+static HWND g_events, g_clock, g_trend;
+static HWND g_note, g_cal_in, g_cal_det;
+static HANDLE g_bridge_in, g_bridge_out, g_bridge_process;
 
 static void set_utf8(HWND hwnd, const char *text) {
-	wchar_t wide[400];
+	wchar_t wide[500];
 	if (!hwnd) {
 		return;
 	}
-	if (hs_utf8_to_wide(text ? text : "", wide, 400) < 0) {
-		SetWindowTextW(hwnd, L"?");
+	if (hs_utf8_to_wide(text ? text : "", wide, 500) < 0) {
+		SetWindowTextW(hwnd, L"");
 		return;
 	}
 	SetWindowTextW(hwnd, wide);
 }
 
 static void get_utf8(HWND hwnd, char *out, size_t cap) {
-	wchar_t wide[256];
-	int n;
-	size_t i;
+	wchar_t wide[240];
 	size_t o = 0;
-	GetWindowTextW(hwnd, wide, 256);
+	int n;
+	GetWindowTextW(hwnd, wide, 240);
 	for (n = 0; wide[n] && o + 4 < cap; n++) {
 		unsigned c = (unsigned)wide[n];
 		if (c < 0x80) {
@@ -64,145 +55,96 @@ static void get_utf8(HWND hwnd, char *out, size_t cap) {
 		}
 	}
 	out[o] = '\0';
-	(void)i;
 }
 
-static HWND add_button(HWND parent, const wchar_t *text, int id) {
-	HWND hwnd = CreateWindowExW(0, L"BUTTON", text, WS_CHILD | WS_VISIBLE | WS_TABSTOP, 0, 0, 80, 28, parent, (HMENU)(INT_PTR)id, GetModuleHandleW(NULL), NULL);
-	SendMessageW(hwnd, WM_SETFONT, (WPARAM)g_font, TRUE);
-	if (g_button_count < 24) {
-		g_buttons[g_button_count++] = hwnd;
-	}
-	return hwnd;
-}
-
-static HWND add_static(HWND parent, const wchar_t *text, int id) {
-	HWND hwnd = CreateWindowExW(0, L"STATIC", text, WS_CHILD | WS_VISIBLE, 0, 0, 80, 22, parent, (HMENU)(INT_PTR)id, GetModuleHandleW(NULL), NULL);
-	SendMessageW(hwnd, WM_SETFONT, (WPARAM)g_font, TRUE);
-	return hwnd;
-}
-
-static HWND add_edit(HWND parent, int id, int password) {
-	HWND hwnd = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL | (password ? ES_PASSWORD : 0), 0, 0, 80, 24, parent, (HMENU)(INT_PTR)id, GetModuleHandleW(NULL), NULL);
-	SendMessageW(hwnd, WM_SETFONT, (WPARAM)g_font, TRUE);
-	return hwnd;
-}
-
-static void refresh(HWND hwnd) {
-	HsSnapshot snap;
-	int64_t now = GetTickCount64();
-	char line[240];
-	(void)hwnd;
-	hs_session_tick(g_session, (int64_t)now);
-	hs_session_snapshot(g_session, (int64_t)now, &snap);
-	set_utf8(g_link, snap.link);
-	set_utf8(g_heat, snap.heat);
-	set_utf8(g_stop, snap.stop_confirm);
-	snprintf(line, sizeof line, "%s | %s", snap.device_acq, snap.hw);
-	set_utf8(g_acq, line);
-	snprintf(line, sizeof line, "火焰 %s", snap.flame);
-	set_utf8(g_hw, line);
-	snprintf(line, sizeof line, "%s | H2 %s | 空气 %s | %s", snap.banner[0] ? snap.banner : snap.mode, snap.h2, snap.air, snap.engineer);
-	set_utf8(g_banner, line);
-	if (snap.alarm_on) {
-		set_utf8(g_alarm, snap.alarm);
-	} else {
-		set_utf8(g_alarm, "无异常");
-	}
-	set_utf8(g_zones[0][0], "进样口1");
-	set_utf8(g_zones[0][1], snap.inlet_set);
-	set_utf8(g_zones[0][2], snap.inlet_act);
-	set_utf8(g_zones[0][3], snap.inlet_state);
-	set_utf8(g_zones[1][0], "检测器1");
-	set_utf8(g_zones[1][1], snap.det_set);
-	set_utf8(g_zones[1][2], snap.det_act);
-	set_utf8(g_zones[1][3], snap.det_state);
-	set_utf8(g_zones[2][0], "柱箱");
-	set_utf8(g_zones[2][1], snap.oven_set);
-	set_utf8(g_zones[2][2], snap.oven_act);
-	set_utf8(g_zones[2][3], snap.oven_state);
-}
-
-static void layout(HWND hwnd) {
-	RECT rect;
-	int width;
-	int mins[4] = {72, 72, 72, 88};
-	int cols[4];
-	HsRect buttons[24];
-	int i;
-	int top;
-	GetClientRect(hwnd, &rect);
-	width = rect.right - rect.left;
-	if (width < 320) {
-		width = 320;
-	}
-	MoveWindow(g_banner, 8, 4, width - 16, 22, TRUE);
-	if (!hs_layout_columns(cols, mins, 4, width - 16)) {
-		return;
-	}
-	top = 28;
-	{
-		int x = 8;
-		const wchar_t *heads[] = {L"通道", L"目标°C", L"当前°C", L"状态"};
-		for (i = 0; i < 4; i++) {
-			HWND head = GetDlgItem(hwnd, 200 + i);
-			if (head) {
-				SetWindowTextW(head, heads[i]);
-				MoveWindow(head, x, top, cols[i], 20, TRUE);
-			}
-			x += cols[i];
-		}
-	}
-	for (i = 0; i < 3; i++) {
-		int x = 8;
-		int col;
-		for (col = 0; col < 4; col++) {
-			MoveWindow(g_zones[i][col], x, top + 22 + i * 22, cols[col], 20, TRUE);
-			x += cols[col];
-		}
-	}
-	MoveWindow(g_host, 8, 120, 180, 24, TRUE);
-	MoveWindow(g_port, 196, 120, 80, 24, TRUE);
-	MoveWindow(g_inlet, 284, 120, 70, 24, TRUE);
-	MoveWindow(g_det, 360, 120, 70, 24, TRUE);
-	if (hs_layout_buttons(buttons, g_button_count, 8, 154, width - 16, 88, 30, 6) > 0) {
-		for (i = 0; i < g_button_count; i++) {
-			MoveWindow(g_buttons[i], buttons[i].x, buttons[i].y, buttons[i].w, buttons[i].h, TRUE);
-		}
-		top = buttons[g_button_count - 1].y + buttons[g_button_count - 1].h + 8;
-	} else {
-		top = 400;
-	}
-	MoveWindow(g_pass, 8, top, 160, 24, TRUE);
-	MoveWindow(g_dll, 176, top, width - 190, 24, TRUE);
-	MoveWindow(g_link, 8, rect.bottom - 92, width - 16, 18, TRUE);
-	MoveWindow(g_heat, 8, rect.bottom - 74, width / 2 - 12, 18, TRUE);
-	MoveWindow(g_stop, width / 2, rect.bottom - 74, width / 2 - 12, 18, TRUE);
-	MoveWindow(g_acq, 8, rect.bottom - 56, width - 16, 18, TRUE);
-	MoveWindow(g_hw, 8, rect.bottom - 38, 120, 18, TRUE);
-	MoveWindow(g_alarm, 132, rect.bottom - 38, width - 140, 18, TRUE);
-}
-
-static double edit_number(HWND hwnd, double fallback) {
+static double edit_number(HWND hwnd, int *ok) {
 	char text[64];
 	char *end = NULL;
 	double value;
 	get_utf8(hwnd, text, sizeof text);
 	if (text[0] == '\0') {
-		return fallback;
+		if (ok) {
+			*ok = 0;
+		}
+		return 0;
 	}
 	value = strtod(text, &end);
-	if (end == text) {
-		return fallback;
+	if (ok) {
+		*ok = end != text && *end == '\0';
 	}
 	return value;
 }
 
 static void show_result(const char *text) {
-	wchar_t wide[400];
-	hs_utf8_to_wide(text ? text : "", wide, 400);
+	wchar_t wide[500];
+	hs_utf8_to_wide(text ? text : "", wide, 500);
 	MessageBoxW(NULL, wide, L"反控", MB_OK);
 }
+
+static HWND make_check(HWND parent, int page, const wchar_t *text, int id) {
+	HWND hwnd = CreateWindowExW(0, L"BUTTON", text, WS_CHILD | WS_TABSTOP | BS_AUTOCHECKBOX, 0, 0, 120, 24, parent, (HMENU)(INT_PTR)id, GetModuleHandleW(NULL), NULL);
+	SendMessageW(hwnd, WM_SETFONT, (WPARAM)g_font, TRUE);
+	if (page >= 0) {
+		g_pages[page][g_page_count[page]++] = hwnd;
+	}
+	return hwnd;
+}
+
+static HWND make_button(HWND parent, int page, const wchar_t *text, int id) {
+	HWND hwnd = CreateWindowExW(0, L"BUTTON", text, WS_CHILD | WS_TABSTOP, 0, 0, 80, 28, parent, (HMENU)(INT_PTR)id, GetModuleHandleW(NULL), NULL);
+	SendMessageW(hwnd, WM_SETFONT, (WPARAM)g_font, TRUE);
+	g_pages[page][g_page_count[page]++] = hwnd;
+	return hwnd;
+}
+
+static HWND make_edit(HWND parent, int page, int id) {
+	HWND hwnd = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD | ES_AUTOHSCROLL, 0, 0, 70, 22, parent, (HMENU)(INT_PTR)id, GetModuleHandleW(NULL), NULL);
+	SendMessageW(hwnd, WM_SETFONT, (WPARAM)g_font, TRUE);
+	g_pages[page][g_page_count[page]++] = hwnd;
+	return hwnd;
+}
+
+static HWND make_static(HWND parent, int page, const wchar_t *text) {
+	HWND hwnd = CreateWindowExW(0, L"STATIC", text, WS_CHILD, 0, 0, 80, 18, parent, NULL, GetModuleHandleW(NULL), NULL);
+	SendMessageW(hwnd, WM_SETFONT, (WPARAM)g_font, TRUE);
+	if (page >= 0) {
+		g_pages[page][g_page_count[page]++] = hwnd;
+	}
+	return hwnd;
+}
+
+static void show_page(int page) {
+	int p;
+	int i;
+	g_page = page;
+	for (p = 0; p < 5; p++) {
+		for (i = 0; i < g_page_count[p]; i++) {
+			ShowWindow(g_pages[p][i], p == page ? SW_SHOW : SW_HIDE);
+		}
+	}
+}
+
+static void place_flow(int page, int x, int y, int width, int height, int gap) {
+	int i;
+	int col = 0;
+	int row = 0;
+	int cols = width / 100;
+	if (cols < 1) {
+		cols = 1;
+	}
+	for (i = 0; i < g_page_count[page]; i++) {
+		int cx = x + col * (100 + gap);
+		int cy = y + row * (height + gap);
+		MoveWindow(g_pages[page][i], cx, cy, 96, height, TRUE);
+		col++;
+		if (col >= cols) {
+			col = 0;
+			row++;
+		}
+	}
+}
+
+static int bridge_write_line(const char *cmd, char *reply, int cap);
 
 static int bridge_read_line(char *out, int cap) {
 	int n = 0;
@@ -223,25 +165,14 @@ static int bridge_read_line(char *out, int cap) {
 	return 0;
 }
 
-static int bridge_write(const char *text) {
-	DWORD wrote = 0;
-	if (!g_bridge_in || !WriteFile(g_bridge_in, text, (DWORD)strlen(text), &wrote, NULL)) {
-		return -1;
-	}
-	return 0;
-}
-
 static int bridge_start(void) {
 	wchar_t exe[MAX_PATH];
 	wchar_t bridge[MAX_PATH];
 	SECURITY_ATTRIBUTES sa;
 	STARTUPINFOW si;
 	PROCESS_INFORMATION pi;
-	HANDLE read_out = NULL;
-	HANDLE write_out = NULL;
-	HANDLE read_in = NULL;
-	HANDLE write_in = NULL;
-	char ready[64];
+	HANDLE read_out, write_out, read_in, write_in;
+	char ready[32];
 	if (g_bridge_process) {
 		return 0;
 	}
@@ -269,10 +200,6 @@ static int bridge_start(void) {
 	si.hStdError = write_out;
 	memset(&pi, 0, sizeof pi);
 	if (!CreateProcessW(bridge, NULL, NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi)) {
-		CloseHandle(read_out);
-		CloseHandle(write_out);
-		CloseHandle(read_in);
-		CloseHandle(write_in);
 		return -1;
 	}
 	CloseHandle(read_in);
@@ -281,25 +208,200 @@ static int bridge_start(void) {
 	g_bridge_in = write_in;
 	g_bridge_out = read_out;
 	g_bridge_process = pi.hProcess;
-	if (bridge_read_line(ready, sizeof ready) != 0 || strcmp(ready, "READY") != 0) {
+	return bridge_read_line(ready, sizeof ready) == 0 && strcmp(ready, "READY") == 0 ? 0 : -1;
+}
+
+static void fill_program_edits(void) {
+	HsProgram program;
+	char text[32];
+	int stage;
+	int col;
+	hs_session_get_program(g_session, &program);
+	if (!program.known) {
+		set_utf8(g_prog_time, "温程未读取");
+		return;
+	}
+	snprintf(text, sizeof text, "%.4g", program.max_c);
+	set_utf8(g_prog_max, text);
+	snprintf(text, sizeof text, "%.4g", program.eq_min);
+	set_utf8(g_prog_eq, text);
+	snprintf(text, sizeof text, "%.4g", program.stable_sec);
+	set_utf8(g_prog_stable, text);
+	SendMessageW(g_prog_loop, BM_SETCHECK, program.loop ? BST_CHECKED : BST_UNCHECKED, 0);
+	for (stage = 0; stage < 8; stage++) {
+		double values[3] = {program.rate[stage], program.temperature[stage], program.hold[stage]};
+		for (col = 0; col < 3; col++) {
+			snprintf(text, sizeof text, "%.4g", values[col]);
+			set_utf8(g_prog[stage][col], text);
+		}
+	}
+	snprintf(text, sizeof text, "预计 %.1f min", hs_program_duration_ms(&program) / 60000.0);
+	set_utf8(g_prog_time, text);
+}
+
+static int read_program_edits(HsProgram *program, char *err, size_t cap) {
+	int stage;
+	int ok = 0;
+	memset(program, 0, sizeof *program);
+	program->max_c = edit_number(g_prog_max, &ok);
+	if (!ok) {
+		snprintf(err, cap, "最高温度为空");
 		return -1;
 	}
-	return 0;
+	program->eq_min = edit_number(g_prog_eq, &ok);
+	if (!ok) {
+		snprintf(err, cap, "平衡时间为空");
+		return -1;
+	}
+	program->stable_sec = edit_number(g_prog_stable, &ok);
+	if (!ok) {
+		snprintf(err, cap, "稳定时间为空");
+		return -1;
+	}
+	program->loop = SendMessageW(g_prog_loop, BM_GETCHECK, 0, 0) == BST_CHECKED;
+	for (stage = 0; stage < 8; stage++) {
+		program->rate[stage] = edit_number(g_prog[stage][0], &ok);
+		if (!ok) {
+			snprintf(err, cap, "第 %d 阶速率为空", stage + 1);
+			return -1;
+		}
+		program->temperature[stage] = edit_number(g_prog[stage][1], &ok);
+		if (!ok) {
+			snprintf(err, cap, "第 %d 阶温度为空", stage + 1);
+			return -1;
+		}
+		program->hold[stage] = edit_number(g_prog[stage][2], &ok);
+		if (!ok) {
+			snprintf(err, cap, "第 %d 阶保持为空", stage + 1);
+			return -1;
+		}
+	}
+	return hs_program_check(program, err, cap);
+}
+
+static void fill_pid_edits(void) {
+	int row;
+	int known = 1;
+	for (row = 0; row < 3; row++) {
+		HsPidRow pid;
+		char text[32];
+		hs_session_get_pid(g_session, row, &pid);
+		if (!pid.known) {
+			known = 0;
+			set_utf8(g_pid[row][0], "");
+			set_utf8(g_pid[row][1], "");
+			set_utf8(g_pid[row][2], "");
+			continue;
+		}
+		snprintf(text, sizeof text, "%.4g", pid.kp);
+		set_utf8(g_pid[row][0], text);
+		snprintf(text, sizeof text, "%.4g", pid.ki);
+		set_utf8(g_pid[row][1], text);
+		snprintf(text, sizeof text, "%.4g", pid.kd);
+		set_utf8(g_pid[row][2], text);
+	}
+	set_utf8(g_pid_state, known ? "三路已有数值，写入前仍要确认" : "有路未读取/未填写，不能写入");
+}
+
+static void refresh(HWND hwnd) {
+	HsSnapshot snap;
+	int64_t now = (int64_t)GetTickCount64();
+	char line[300];
+	char clock_text[32];
+	(void)hwnd;
+	if (g_session == NULL) {
+		return;
+	}
+	hs_session_tick(g_session, now);
+	hs_session_snapshot(g_session, now, &snap);
+	set_utf8(g_link, snap.link);
+	set_utf8(g_heat, snap.heat);
+	set_utf8(g_stop, snap.stop_confirm);
+	snprintf(line, sizeof line, "%s | %s", snap.device_acq, snap.hw);
+	set_utf8(g_acq, line);
+	snprintf(line, sizeof line, "%s | H2 %s | 空气 %s | 火焰 %s | %s", snap.banner[0] ? snap.banner : snap.mode, snap.h2, snap.air, snap.flame, snap.engineer);
+	set_utf8(g_banner, line);
+	set_utf8(g_alarm, snap.alarm_on ? snap.alarm : snap.pace);
+	set_utf8(g_zones[0][1], snap.inlet_set);
+	set_utf8(g_zones[0][2], snap.inlet_act);
+	set_utf8(g_zones[0][3], snap.inlet_state);
+	set_utf8(g_zones[1][1], snap.det_set);
+	set_utf8(g_zones[1][2], snap.det_act);
+	set_utf8(g_zones[1][3], snap.det_state);
+	set_utf8(g_zones[2][1], snap.oven_set);
+	set_utf8(g_zones[2][2], snap.oven_act);
+	set_utf8(g_zones[2][3], snap.oven_state);
+	hs_session_stopwatch_text(g_session, now, clock_text, sizeof clock_text);
+	set_utf8(g_clock, clock_text);
+	{
+		char events[1200];
+		hs_session_event_text(g_session, events, sizeof events);
+		set_utf8(g_events, events);
+	}
+	InvalidateRect(g_trend, NULL, TRUE);
+}
+
+static LRESULT CALLBACK trend_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
+	if (msg == WM_PAINT) {
+		PAINTSTRUCT ps;
+		HDC dc = BeginPaint(hwnd, &ps);
+		RECT rect;
+		int count;
+		int i;
+		GetClientRect(hwnd, &rect);
+		FillRect(dc, &rect, (HBRUSH)(COLOR_WINDOW + 1));
+		count = hs_session_trace_count(g_session);
+		if (count > 1 && rect.right > 4 && rect.bottom > 4) {
+			HPEN pens[3];
+			pens[0] = CreatePen(PS_SOLID, 1, RGB(180, 40, 40));
+			pens[1] = CreatePen(PS_SOLID, 1, RGB(30, 90, 160));
+			pens[2] = CreatePen(PS_SOLID, 1, RGB(20, 120, 60));
+			for (i = 0; i < 3; i++) {
+				int index;
+				SelectObject(dc, pens[i]);
+				for (index = 0; index < count; index++) {
+					double inlet, detector, oven, value;
+					hs_session_trace_at(g_session, index, &inlet, &detector, &oven);
+					value = i == 0 ? inlet : i == 1 ? detector : oven;
+					if (value < 0) {
+						continue;
+					}
+					{
+						int x = rect.left + index * (rect.right - rect.left) / count;
+						int y = rect.bottom - (int)(value * (rect.bottom - rect.top) / 450.0);
+						if (index == 0) {
+							MoveToEx(dc, x, y, NULL);
+						} else {
+							LineTo(dc, x, y);
+						}
+					}
+				}
+			}
+			for (i = 0; i < 3; i++) {
+				DeleteObject(pens[i]);
+			}
+		}
+		EndPaint(hwnd, &ps);
+		return 0;
+	}
+	return DefWindowProcW(hwnd, msg, wparam, lparam);
 }
 
 static void on_command(int id) {
-	char err[256];
+	char err[300] = "";
 	char host[64];
-	char port_text[32];
+	char port_text[16];
 	char pass[80];
+	char pass2[80];
 	int64_t now = (int64_t)GetTickCount64();
-	err[0] = '\0';
+	int ok_in = 0;
+	int ok_det = 0;
 	switch (id) {
 	case 1:
 		get_utf8(g_host, host, sizeof host);
 		get_utf8(g_port, port_text, sizeof port_text);
 		if (hs_session_connect_live(g_session, host, atoi(port_text), err, sizeof err) != 0) {
-			show_result(err[0] ? err : "未连接");
+			show_result(err);
 		}
 		break;
 	case 2:
@@ -311,10 +413,17 @@ static void on_command(int id) {
 	case 4:
 		hs_session_set_offline(g_session);
 		break;
-	case 5:
-		hs_session_start_heat(g_session, 1, 1, 1, edit_number(g_inlet, 200), edit_number(g_det, 250), now, err, sizeof err);
+	case 5: {
+		double inlet_c = edit_number(g_inlet, &ok_in);
+		double det_c = edit_number(g_det, &ok_det);
+		if (!ok_in || !ok_det) {
+			show_result("进样口或检测器目标为空，未发送");
+			break;
+		}
+		hs_session_start_heat(g_session, 1, 1, 1, inlet_c, det_c, now, err, sizeof err);
 		show_result(err);
 		break;
+	}
 	case 6:
 		hs_session_stop_heat(g_session, now, err, sizeof err);
 		show_result(err);
@@ -343,81 +452,215 @@ static void on_command(int id) {
 		hs_session_stop_device_acq(g_session, err, sizeof err);
 		show_result(err);
 		break;
-	case 13: {
+	case 30:
+		get_utf8(g_host, host, sizeof host);
+		get_utf8(g_port, port_text, sizeof port_text);
+		hs_session_probe(g_session, host, atoi(port_text), err, sizeof err);
+		show_result(err);
+		break;
+	case 31:
+		if (hs_session_poll(g_session) != 0) {
+			show_result("读取状态失败。需要已连接，且设备返回气压等报文。");
+		}
+		break;
+	case 40: {
+		HsProgram program;
+		if (read_program_edits(&program, err, sizeof err) != 0 || hs_session_set_program(g_session, &program, err, sizeof err) != 0) {
+			show_result(err);
+			break;
+		}
+		hs_session_write_program_now(g_session, err, sizeof err);
+		show_result(err);
+		fill_program_edits();
+		break;
+	}
+	case 41:
+		if (hs_session_read_program(g_session, err, sizeof err) != 0) {
+			show_result(err);
+		}
+		fill_program_edits();
+		break;
+	case 50:
+		if (hs_session_read_pids(g_session, err, sizeof err) != 0) {
+			show_result(err);
+		}
+		fill_pid_edits();
+		break;
+	case 51: {
+		char confirm[300];
+		int row;
+		wchar_t wide[400];
+		for (row = 0; row < 3; row++) {
+			int ok_p = 0, ok_i = 0, ok_d = 0;
+			double kp = edit_number(g_pid[row][0], &ok_p);
+			double ki = edit_number(g_pid[row][1], &ok_i);
+			double kd = edit_number(g_pid[row][2], &ok_d);
+			if (!ok_p || !ok_i || !ok_d || hs_session_set_pid(g_session, row, kp, ki, kd, err, sizeof err) != 0) {
+				show_result(ok_p && ok_i && ok_d ? err : "PID 有空格，未发送");
+				return;
+			}
+		}
+		hs_session_pid_confirm_text(g_session, confirm, sizeof confirm);
+		hs_utf8_to_wide(confirm, wide, 400);
+		if (MessageBoxW(NULL, wide, L"确认写入这三路 PID？", MB_YESNO) != IDYES) {
+			show_result("已取消，没有发送");
+			break;
+		}
+		hs_session_write_pids_confirmed(g_session, confirm, now, err, sizeof err);
+		show_result(err);
+		break;
+	}
+	case 60:
+		get_utf8(g_pass, pass, sizeof pass);
+		get_utf8(g_pass2, pass2, sizeof pass2);
+		hs_session_enroll(g_session, pass, pass2, now, err, sizeof err);
+		show_result(err[0] ? err : "口令已设置");
+		break;
+	case 61:
+		get_utf8(g_pass, pass, sizeof pass);
+		hs_session_verify(g_session, pass, now, err, sizeof err);
+		show_result(err);
+		break;
+	case 62:
+		hs_session_lock_engineer(g_session, now);
+		break;
+	case 63:
+		get_utf8(g_note, pass, sizeof pass);
+		hs_session_save_column_note(g_session, pass, now, err, sizeof err);
+		show_result(err);
+		break;
+	case 64:
+		hs_session_device_apply_blocked(err, sizeof err);
+		show_result(err);
+		break;
+	case 65:
+		hs_session_write_setpoints(g_session, edit_number(g_cal_in, &ok_in), edit_number(g_cal_det, &ok_det), err, sizeof err);
+		if (!ok_in || !ok_det) {
+			show_result("校准目标为空，未发送");
+		} else {
+			show_result(err);
+		}
+		break;
+	case 66:
+		hs_session_reset_stopwatch(g_session);
+		break;
+	case 70: {
+		char path[MAX_PATH];
+		char cmd[MAX_PATH + 16];
+		char reply[180];
+		get_utf8(g_dll, path, sizeof path);
+		if (path[0] == '\0') {
+			show_result("请填写 DLL 路径。不会自动加载，包内没有厂商 HWSendData.dll。hwstation_ipc_repro.dll 只是可选试验，不是官方 DLL。");
+			break;
+		}
+		if (bridge_start() != 0) {
+			show_result("无法启动 hwbridge.exe");
+			break;
+		}
+		snprintf(cmd, sizeof cmd, "LOAD\t%s\n", path);
+		if (bridge_write_line(cmd, reply, sizeof reply) != 0) {
+			show_result("桥接没有返回");
+		} else {
+			show_result(reply);
+		}
+		break;
+	}
+	case 71: {
+		int checked = SendMessageW(g_hw_ok, BM_GETCHECK, 0, 0) == BST_CHECKED;
+		int ms_ok = 0;
+		int ms = (int)edit_number(g_hw_ms, &ms_ok);
+		if (!ms_ok) {
+			show_result("间隔为空");
+			break;
+		}
+		hs_session_set_hw_interval(g_session, ms, checked, err, sizeof err);
+		show_result(err);
+		break;
+	}
+	case 72: {
 		HsTriple triple;
-		char cmd[80];
+		char cmd[64];
 		char reply[160];
 		if (hs_session_hw_start(g_session, &triple, err, sizeof err) != 0) {
 			show_result(err);
 			break;
 		}
 		if (!g_bridge_process) {
-			show_result("三元组已组好，但还没有加载 DLL，所以没有向任何窗口发送。");
+			show_result("三元组已组好，但没有加载 DLL，所以没有向窗口发送。");
 			break;
 		}
 		snprintf(cmd, sizeof cmd, "SEND\t%d\t%d\t%d\n", triple.data1, triple.data2, triple.data3);
-		if (bridge_write(cmd) != 0 || bridge_read_line(reply, sizeof reply) != 0) {
+		if (bridge_write_line(cmd, reply, sizeof reply) != 0) {
 			show_result("桥接没有返回");
-			break;
+		} else {
+			show_result(reply);
 		}
-		show_result(reply);
 		break;
 	}
-	case 14:
+	case 73:
 		hs_session_hw_stop(g_session, err, sizeof err);
 		show_result(err);
 		break;
-	case 15:
+	case 74:
 		hs_session_hw_zero(g_session, err, sizeof err);
 		show_result(err);
 		break;
-	case 16: {
-		char path[MAX_PATH];
-		char cmd[MAX_PATH + 16];
-		char reply[200];
-		get_utf8(g_dll, path, sizeof path);
-		if (path[0] == '\0') {
-			show_result("请先填写 DLL 路径。不会自动加载，目录里也没有厂商 HWSendData.dll。");
-			break;
-		}
-		if (bridge_start() != 0) {
-			show_result("无法启动旁边的 hwbridge.exe。");
-			break;
-		}
-		snprintf(cmd, sizeof cmd, "LOAD\t%s\n", path);
-		if (bridge_write(cmd) != 0 || bridge_read_line(reply, sizeof reply) != 0) {
-			show_result("桥接没有返回加载结果");
-			break;
-		}
-		show_result(reply);
-		break;
-	}
-	case 18: {
-		char confirm[80];
-		get_utf8(g_pass, pass, sizeof pass);
-		get_utf8(g_pass, confirm, sizeof confirm);
-		hs_session_verify(g_session, pass, now, err, sizeof err);
-		show_result(err);
-		break;
-	}
-	case 19:
-		hs_session_lock_engineer(g_session, now);
-		break;
-	case 20:
-		hs_session_write_pid(g_session, 0, 1, 0, 0, now, err, sizeof err);
-		show_result(err);
+	case 80:
+	case 81:
+	case 82:
+	case 83:
+	case 84:
+		show_page(id - 80);
 		break;
 	default:
 		break;
 	}
 }
 
+static int bridge_write_line(const char *cmd, char *reply, int cap) {
+	DWORD wrote = 0;
+	if (!g_bridge_in || !WriteFile(g_bridge_in, cmd, (DWORD)strlen(cmd), &wrote, NULL)) {
+		return -1;
+	}
+	return bridge_read_line(reply, cap);
+}
+
+static void layout(HWND hwnd) {
+	RECT rect;
+	int width;
+	int mins[4] = {72, 72, 72, 88};
+	int cols[4];
+	int i;
+	GetClientRect(hwnd, &rect);
+	width = rect.right > 320 ? rect.right : 320;
+	MoveWindow(g_banner, 8, 32, width - 16, 36, TRUE);
+	if (hs_layout_columns(cols, mins, 4, width - 16)) {
+		int x = 8;
+		for (i = 0; i < 4; i++) {
+			MoveWindow(g_zones[0][i] ? g_zones[0][i] : NULL, x, 72, cols[i], 18, TRUE);
+			if (g_zones[1][i]) {
+				MoveWindow(g_zones[1][i], x, 92, cols[i], 18, TRUE);
+			}
+			if (g_zones[2][i]) {
+				MoveWindow(g_zones[2][i], x, 112, cols[i], 18, TRUE);
+			}
+			x += cols[i];
+		}
+	}
+	place_flow(g_page, 8, 140, width - 16, 26, 4);
+	if (g_page == 3 && g_trend) {
+		MoveWindow(g_events, 8, rect.bottom - 220, width - 16, 60, TRUE);
+		MoveWindow(g_trend, 8, rect.bottom - 150, width - 16, 70, TRUE);
+	}
+	MoveWindow(g_link, 8, rect.bottom - 72, width - 16, 16, TRUE);
+	MoveWindow(g_heat, 8, rect.bottom - 54, width / 2 - 8, 16, TRUE);
+	MoveWindow(g_stop, width / 2, rect.bottom - 54, width / 2 - 8, 16, TRUE);
+	MoveWindow(g_acq, 8, rect.bottom - 36, width - 16, 16, TRUE);
+	MoveWindow(g_alarm, 8, rect.bottom - 18, width - 16, 16, TRUE);
+}
+
 static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 	switch (msg) {
-	case WM_CREATE:
-		layout(hwnd);
-		SetTimer(hwnd, 1, 200, NULL);
-		return 0;
 	case WM_SIZE:
 		layout(hwnd);
 		return 0;
@@ -427,9 +670,10 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 	case WM_COMMAND:
 		on_command(LOWORD(wparam));
 		refresh(hwnd);
+		layout(hwnd);
 		return 0;
 	case WM_CLOSE:
-		MessageBoxW(hwnd, L"关闭本窗口不会向仪器发送停止。需要停止请先点停止或急停。", L"反控", MB_OK);
+		MessageBoxW(hwnd, L"关闭本窗口不会向仪器发送停止。", L"反控", MB_OK);
 		DestroyWindow(hwnd);
 		return 0;
 	case WM_DESTROY:
@@ -444,27 +688,27 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev, PWSTR cmd, int show) {
 	WNDCLASSW klass;
 	HWND hwnd;
-	MSG msg;
 	HANDLE mutex;
+	wchar_t root[MAX_PATH];
 	wchar_t dir[MAX_PATH];
 	char dir_utf8[MAX_PATH];
-	DWORD pid;
-	int i;
+	int stage;
+	int row;
 	(void)prev;
 	(void)cmd;
 	mutex = CreateMutexW(NULL, TRUE, L"Local\\Hwstation.ControlPanelClass.instance");
 	if (mutex == NULL || GetLastError() == ERROR_ALREADY_EXISTS) {
-		MessageBoxW(NULL, L"反控面板已经打开。第二个进程不会写同一份日志。", L"反控", MB_OK);
+		MessageBoxW(NULL, L"反控面板已经打开。", L"反控", MB_OK);
 		return 0;
 	}
-	pid = GetCurrentProcessId();
-	GetEnvironmentVariableW(L"LOCALAPPDATA", dir, MAX_PATH);
-	_snwprintf(g_dir, MAX_PATH, L"%s\\hwstation\\run-%lu", dir, pid);
-	CreateDirectoryW(L"hwstation", NULL);
-	CreateDirectoryW(g_dir, NULL);
-	WideCharToMultiByte(CP_UTF8, 0, g_dir, -1, dir_utf8, MAX_PATH, NULL, NULL);
+	GetEnvironmentVariableW(L"LOCALAPPDATA", root, MAX_PATH);
+	_snwprintf(dir, MAX_PATH, L"%s\\hwstation", root);
+	CreateDirectoryW(dir, NULL);
+	_snwprintf(dir, MAX_PATH, L"%s\\hwstation\\run-%lu", root, GetCurrentProcessId());
+	CreateDirectoryW(dir, NULL);
+	WideCharToMultiByte(CP_UTF8, 0, dir, -1, dir_utf8, MAX_PATH, NULL, NULL);
 	g_session = hs_session_create(dir_utf8);
-	g_font = CreateFontW(-16, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, L"Microsoft YaHei UI");
+	g_font = CreateFontW(-15, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, L"Microsoft YaHei UI");
 	memset(&klass, 0, sizeof klass);
 	klass.lpfnWndProc = wndproc;
 	klass.hInstance = instance;
@@ -472,58 +716,120 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev, PWSTR cmd, int show) {
 	klass.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
 	klass.lpszClassName = L"ControlPanelClass";
 	RegisterClassW(&klass);
-	hwnd = CreateWindowExW(0, L"ControlPanelClass", L"色谱反控", WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, 600, 960, NULL, NULL, instance, NULL);
-	g_banner = add_static(hwnd, L"仿真", IDC_STATUS);
-	for (i = 0; i < 4; i++) {
-		CreateWindowExW(0, L"STATIC", L"", WS_CHILD | WS_VISIBLE, 0, 0, 10, 10, hwnd, (HMENU)(INT_PTR)(200 + i), instance, NULL);
-	}
-	for (i = 0; i < 3; i++) {
-		int col;
-		for (col = 0; col < 4; col++) {
-			g_zones[i][col] = add_static(hwnd, L"--", 0);
+	klass.lpfnWndProc = trend_proc;
+	klass.lpszClassName = L"HsTrend";
+	RegisterClassW(&klass);
+	hwnd = CreateWindowExW(0, L"ControlPanelClass", L"色谱反控", WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, 720, 980, NULL, NULL, instance, NULL);
+	{
+		const wchar_t *names[] = {L"反控", L"温程", L"PID", L"维护", L"工作站"};
+		int nav;
+		for (nav = 0; nav < 5; nav++) {
+			HWND button = CreateWindowExW(0, L"BUTTON", names[nav], WS_CHILD | WS_VISIBLE | WS_TABSTOP, 8 + nav * 92, 4, 88, 24, hwnd, (HMENU)(INT_PTR)(80 + nav), instance, NULL);
+			SendMessageW(button, WM_SETFONT, (WPARAM)g_font, TRUE);
 		}
 	}
-	g_host = add_edit(hwnd, IDC_HOST, 0);
-	g_port = add_edit(hwnd, IDC_PORT, 0);
-	g_inlet = add_edit(hwnd, IDC_INLET, 0);
-	g_det = add_edit(hwnd, IDC_DET, 0);
-	SetWindowTextW(g_inlet, L"200");
-	SetWindowTextW(g_det, L"250");
-	add_button(hwnd, L"连接仪器", 1);
-	add_button(hwnd, L"断开", 2);
-	add_button(hwnd, L"仿真", 3);
-	add_button(hwnd, L"离线", 4);
-	add_button(hwnd, L"启动温控", 5);
-	add_button(hwnd, L"停止温控", 6);
-	add_button(hwnd, L"急停", 7);
-	add_button(hwnd, L"点火", 8);
-	add_button(hwnd, L"开空气阀", 9);
-	add_button(hwnd, L"关空气阀", 10);
-	add_button(hwnd, L"设备采集", 11);
-	add_button(hwnd, L"停设备采集", 12);
-	add_button(hwnd, L"工作站取数", 13);
-	add_button(hwnd, L"停工作站取数", 14);
-	add_button(hwnd, L"工作站归零", 15);
-	add_button(hwnd, L"加载 DLL", 16);
-	add_button(hwnd, L"验证维护", 18);
-	add_button(hwnd, L"锁定维护", 19);
-	add_button(hwnd, L"写柱箱PID", 20);
-	g_pass = add_edit(hwnd, IDC_PASS, 1);
-	g_dll = add_edit(hwnd, IDC_DLL, 0);
-	g_link = add_static(hwnd, L"", IDC_LINK);
-	g_heat = add_static(hwnd, L"", IDC_HEAT);
-	g_stop = add_static(hwnd, L"", IDC_STOP);
-	g_acq = add_static(hwnd, L"", IDC_ACQ);
-	g_hw = add_static(hwnd, L"", IDC_HW);
-	g_alarm = add_static(hwnd, L"", IDC_ALARM);
+	g_banner = make_static(hwnd, -1, L"仿真");
+	for (row = 0; row < 3; row++) {
+		const wchar_t *names[] = {L"进样口1", L"检测器1", L"柱箱"};
+		g_zones[row][0] = make_static(hwnd, -1, names[row]);
+		g_zones[row][1] = make_static(hwnd, -1, L"未知");
+		g_zones[row][2] = make_static(hwnd, -1, L"未知");
+		g_zones[row][3] = make_static(hwnd, -1, L"停止");
+	}
+	g_host = make_edit(hwnd, 0, 100);
+	g_port = make_edit(hwnd, 0, 101);
+	g_inlet = make_edit(hwnd, 0, 102);
+	g_det = make_edit(hwnd, 0, 103);
+	set_utf8(g_inlet, "200");
+	set_utf8(g_det, "250");
+	make_button(hwnd, 0, L"连接仪器", 1);
+	make_button(hwnd, 0, L"断开", 2);
+	make_button(hwnd, 0, L"探测此地址", 30);
+	make_button(hwnd, 0, L"读取状态", 31);
+	make_button(hwnd, 0, L"仿真", 3);
+	make_button(hwnd, 0, L"离线", 4);
+	make_button(hwnd, 0, L"启动温控", 5);
+	make_button(hwnd, 0, L"停止温控", 6);
+	make_button(hwnd, 0, L"急停", 7);
+	make_button(hwnd, 0, L"点火", 8);
+	make_button(hwnd, 0, L"开空气阀", 9);
+	make_button(hwnd, 0, L"关空气阀", 10);
+	make_button(hwnd, 0, L"设备采集", 11);
+	make_button(hwnd, 0, L"停设备采集", 12);
+	g_prog_max = make_edit(hwnd, 1, 200);
+	g_prog_eq = make_edit(hwnd, 1, 201);
+	g_prog_stable = make_edit(hwnd, 1, 202);
+	g_prog_loop = make_check(hwnd, 1, L"循环", 203);
+	for (stage = 0; stage < 8; stage++) {
+		g_prog[stage][0] = make_edit(hwnd, 1, 210 + stage * 3);
+		g_prog[stage][1] = make_edit(hwnd, 1, 211 + stage * 3);
+		g_prog[stage][2] = make_edit(hwnd, 1, 212 + stage * 3);
+		set_utf8(g_prog[stage][0], "0");
+		set_utf8(g_prog[stage][1], stage == 0 ? "50" : "0");
+		set_utf8(g_prog[stage][2], stage == 0 ? "1" : "0");
+	}
+	set_utf8(g_prog_max, "450");
+	set_utf8(g_prog_eq, "1");
+	set_utf8(g_prog_stable, "30");
+	make_button(hwnd, 1, L"读取温程", 41);
+	make_button(hwnd, 1, L"下载温程", 40);
+	g_prog_time = make_static(hwnd, 1, L"温程未下载");
+	for (row = 0; row < 3; row++) {
+		g_pid[row][0] = make_edit(hwnd, 2, 300 + row * 3);
+		g_pid[row][1] = make_edit(hwnd, 2, 301 + row * 3);
+		g_pid[row][2] = make_edit(hwnd, 2, 302 + row * 3);
+	}
+	make_button(hwnd, 2, L"读取三路PID", 50);
+	make_button(hwnd, 2, L"确认并写入", 51);
+	g_pid_state = make_static(hwnd, 2, L"未读取");
+	g_pass = make_edit(hwnd, 3, 400);
+	g_pass2 = make_edit(hwnd, 3, 401);
+	SendMessageW(g_pass, EM_SETPASSWORDCHAR, (WPARAM)L'*', 0);
+	SendMessageW(g_pass2, EM_SETPASSWORDCHAR, (WPARAM)L'*', 0);
+	make_button(hwnd, 3, L"设置口令", 60);
+	make_button(hwnd, 3, L"验证", 61);
+	make_button(hwnd, 3, L"锁定", 62);
+	g_note = make_edit(hwnd, 3, 402);
+	make_button(hwnd, 3, L"保存本机备注", 63);
+	make_button(hwnd, 3, L"下发设备配置", 64);
+	g_cal_in = make_edit(hwnd, 3, 403);
+	g_cal_det = make_edit(hwnd, 3, 404);
+	make_button(hwnd, 3, L"下载温度设定", 65);
+	g_clock = make_static(hwnd, 3, L"00:00");
+	make_button(hwnd, 3, L"秒表归零", 66);
+	g_events = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD | ES_MULTILINE | ES_READONLY | WS_VSCROLL, 0, 0, 200, 80, hwnd, NULL, instance, NULL);
+	g_pages[3][g_page_count[3]++] = g_events;
+	g_trend = CreateWindowExW(0, L"HsTrend", L"", WS_CHILD, 0, 0, 200, 80, hwnd, NULL, instance, NULL);
+	g_pages[3][g_page_count[3]++] = g_trend;
+	g_dll = make_edit(hwnd, 4, 500);
+	make_button(hwnd, 4, L"加载 DLL", 70);
+	g_hw_ms = make_edit(hwnd, 4, 501);
+	g_hw_ok = make_check(hwnd, 4, L"我已核实间隔", 502);
+	make_button(hwnd, 4, L"保存间隔", 71);
+	make_button(hwnd, 4, L"工作站取数", 72);
+	make_button(hwnd, 4, L"停工作站取数", 73);
+	make_button(hwnd, 4, L"工作站归零", 74);
+	g_link = make_static(hwnd, -1, L"未连接");
+	g_heat = make_static(hwnd, -1, L"温控停止");
+	g_stop = make_static(hwnd, -1, L"未请求");
+	g_acq = make_static(hwnd, -1, L"");
+	g_alarm = make_static(hwnd, -1, L"");
+	show_page(0);
 	layout(hwnd);
 	refresh(hwnd);
+	SetTimer(hwnd, 1, 400, NULL);
 	ShowWindow(hwnd, show);
-	while (GetMessageW(&msg, NULL, 0, 0) > 0) {
-		TranslateMessage(&msg);
-		DispatchMessageW(&msg);
+	{
+		MSG msg;
+		while (GetMessageW(&msg, NULL, 0, 0) > 0) {
+			TranslateMessage(&msg);
+			DispatchMessageW(&msg);
+		}
 	}
 	hs_session_free(g_session);
+	if (g_bridge_process) {
+		CloseHandle(g_bridge_process);
+	}
 	ReleaseMutex(mutex);
 	CloseHandle(mutex);
 	return 0;

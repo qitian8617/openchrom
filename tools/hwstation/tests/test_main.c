@@ -77,9 +77,11 @@ static void test_units(void) {
 	expect(map.status == HS_MAP_UNKNOWN_UNIT, "unknown unit");
 	map = hs_vlog_volts_to_fa(0.0);
 	expect(map.status == HS_MAP_OK && map.fa == 100000000, "vlog 0 V formula");
-	expect(hs_hw_interval_compatible(100, why, sizeof why) == 0, "10 Hz blocked");
+	expect(hs_hw_interval_matches(100, 50, 1, why, sizeof why) == 0, "10 Hz blocked");
 	expect(strstr(why, "HWFrequence") != NULL, "frequence blocked");
-	expect(hs_hw_interval_compatible(50, why, sizeof why) == 1, "50 ms ok");
+	expect(hs_hw_interval_matches(50, 50, 0, why, sizeof why) == 0, "unconfirmed 50");
+	expect(hs_hw_interval_matches(50, 50, 1, why, sizeof why) == 1, "confirmed 50");
+	expect(hs_hw_interval_matches(100, 100, 1, why, sizeof why) == 1, "confirmed 100");
 	expect(hs_hw_export_blocked(41) == 1 && hs_hw_export_blocked(0) == 0 && hs_hw_export_blocked(51) == 0, "export gap");
 }
 
@@ -99,7 +101,7 @@ static void test_stream(void) {
 	sample.t_ms = 100;
 	sample.count = 2;
 	expect(hs_stream_push(stream, &sample) == 0, "push 2");
-	expect(hs_stream_next_hw_triple(stream, &a, &b, &c, note, sizeof note) == 0, "100 ms not pushed");
+	expect(hs_stream_next_hw_triple(stream, 50, 1, &a, &b, &c, note, sizeof note) == 0, "100 ms not pushed");
 	expect(strstr(note, "50") != NULL, "reason shown");
 	hs_stream_free(stream);
 	stream = hs_stream_new();
@@ -110,7 +112,7 @@ static void test_stream(void) {
 	sample.t_ms = 50;
 	sample.count = 2;
 	hs_stream_push(stream, &sample);
-	expect(hs_stream_next_hw_triple(stream, &a, &b, &c, note, sizeof note) == 1, "50 ms triple");
+	expect(hs_stream_next_hw_triple(stream, 50, 1, &a, &b, &c, note, sizeof note) == 1, "50 ms triple");
 	expect(a == 1234 && b == 0 && c == 3, "placeholder");
 	expect(strstr(note, "占位") != NULL, "placeholder note");
 	sample.t_ms = 40;
@@ -127,7 +129,7 @@ static void test_stream(void) {
 	sample.t_ms = 50;
 	sample.count = 2;
 	hs_stream_push(stream, &sample);
-	expect(hs_stream_next_hw_triple(stream, &a, &b, &c, note, sizeof note) == 0, "dual missing not zero-filled");
+	expect(hs_stream_next_hw_triple(stream, 50, 1, &a, &b, &c, note, sizeof note) == 0, "dual missing not zero-filled");
 	expect(strstr(note, "未把缺通道填 0") != NULL, "dual note");
 	hs_stream_free(stream);
 }
@@ -277,6 +279,7 @@ static void test_auth_and_session(void) {
 	{
 		HsTriple triple;
 		char note[160];
+		expect(hs_session_set_hw_interval(session, 50, 1, err, sizeof err) == 0, "interval confirmed");
 		expect(hs_session_hw_start(session, &triple, err, sizeof err) == 0, "hw start composed");
 		expect(triple.data3 == 1 && triple.data1 == 1, "data3 start");
 		expect(hs_session_poll_hw_sample(session, &triple, note, sizeof note) == 1, "sample triple");
@@ -284,7 +287,8 @@ static void test_auth_and_session(void) {
 		expect(hs_session_hw_stop(session, err, sizeof err) == 0, "hw stop");
 		expect(strstr(err, "不停热") != NULL, "hw stop not heat");
 	}
-	expect(hs_session_write_pid(session, 0, 1, 0, 0, 0, err, sizeof err) != 0, "pid locked");
+	expect(hs_session_set_pid(session, 0, 1, 0, 0, err, sizeof err) == 0, "pid edit");
+	expect(hs_session_write_pids_confirmed(session, "no", 0, err, sizeof err) != 0, "pid locked");
 	expect(hs_session_net_writes(session) == 0, "pid no net");
 	hs_session_snapshot(session, 50, &snap);
 	expect(strcmp(snap.fid_pa, "未知") == 0, "fid not zero");
@@ -333,6 +337,11 @@ static void test_layout_and_sources(void) {
 	repro = read_file("win/ipc_repro.c");
 	expect(panel && strstr(panel, "ControlPanelClass") != NULL, "class string");
 	expect(panel && strstr(panel, "FindWindow") == NULL, "panel does not search HW");
+	expect(panel && strstr(panel, "写柱箱PID") == NULL, "no placeholder pid button");
+	expect(panel && strstr(panel, "确认并写入") != NULL, "pid confirm button");
+	expect(panel && strstr(panel, "下载温程") != NULL, "program download");
+	expect(panel && strstr(panel, "探测此地址") != NULL, "manual probe");
+	expect(panel && strstr(panel, "设置口令") != NULL, "enroll button");
 	expect(bridge && strstr(bridge, "FindWindow") == NULL, "bridge does not search HW");
 	expect(repro && strstr(repro, "FindWindowA") != NULL, "repro is explicit");
 	expect(repro && strstr(repro, "SendDataToHW41") == NULL, "41 not exported by repro");
@@ -419,6 +428,175 @@ static void test_loopback(void) {
 	waitpid(pid, NULL, 0);
 }
 
+typedef struct ScriptQ {
+	char chunk[24][800];
+	int count;
+	int cursor;
+	char written[24000];
+	int written_len;
+} ScriptQ;
+
+static int script_write(void *ctx, const void *buf, int len) {
+	ScriptQ *queue = ctx;
+	if (queue->written_len + len < (int)sizeof queue->written) {
+		memcpy(queue->written + queue->written_len, buf, (size_t)len);
+		queue->written_len += len;
+		queue->written[queue->written_len] = '\0';
+	}
+	return len;
+}
+
+static int script_read(void *ctx, void *buf, int cap, int timeout_ms) {
+	ScriptQ *queue = ctx;
+	int n;
+	(void)timeout_ms;
+	if (queue->cursor >= queue->count) {
+		return -1;
+	}
+	n = (int)strlen(queue->chunk[queue->cursor]);
+	if (n >= cap) {
+		n = cap - 1;
+	}
+	memcpy(buf, queue->chunk[queue->cursor], (size_t)n);
+	queue->cursor++;
+	return n;
+}
+
+static void script_add(ScriptQ *queue, const char *text) {
+	snprintf(queue->chunk[queue->count], sizeof queue->chunk[0], "%s", text);
+	queue->count++;
+}
+
+static int count_text(const char *hay, const char *needle) {
+	int n = 0;
+	const char *p = hay;
+	size_t len;
+	if (hay == NULL || needle == NULL) {
+		return 0;
+	}
+	len = strlen(needle);
+	while ((p = strstr(p, needle)) != NULL) {
+		n++;
+		p += len;
+	}
+	return n;
+}
+
+static void test_pressure_program_pid_stop(void) {
+	HsPressureKind h2_kind;
+	HsPressureKind air_kind;
+	double h2 = 0;
+	double air = 0;
+	HsProgram program;
+	HsSession *session;
+	HsSnapshot snap;
+	ScriptQ queue;
+	HsIo io;
+	char err[240];
+	char confirm[240];
+	char auth_path[160];
+	int i;
+	memset(&program, 0, sizeof program);
+	hs_parse_gas_pressure("{\"h2\":\"0.250\",\"air\":\"0.300\"}", &h2, &air, &h2_kind, &air_kind);
+	expect(h2_kind == HS_PRESSURE_NAMED_MPA && air_kind == HS_PRESSURE_NAMED_MPA, "named pressure");
+	hs_parse_gas_pressure("{\"adc1\":\"0.500\",\"adc2\":\"0.400\"}", &h2, &air, &h2_kind, &air_kind);
+	expect(h2_kind == HS_PRESSURE_ADC_UNIT_UNCONFIRMED && air == 0.4, "adc kept");
+	mkdir("/tmp/hwstation-test-ops", 0700);
+	session = hs_session_create("/tmp/hwstation-test-ops");
+	hs_session_set_offline(session);
+	expect(hs_session_ingest_pressure_json(session, "{\"adc1\":\"0.8\",\"adc2\":\"0.8\"}", 1000) == 0, "adc parsed");
+	hs_session_snapshot(session, 1000, &snap);
+	expect(strstr(snap.h2, "单位未确认") != NULL, "adc not mpa");
+	expect(hs_session_start_heat(session, 1, 0, 0, 200, 0, 1000, err, sizeof err) != 0, "adc cannot open heat");
+	expect(hs_session_net_writes(session) == 0, "adc gate no net");
+	program.max_c = 450;
+	program.eq_min = 1;
+	program.stable_sec = 30;
+	program.temperature[0] = 50;
+	program.hold[0] = 1;
+	program.rate[1] = 0;
+	program.temperature[1] = 80;
+	program.hold[1] = 1;
+	expect(hs_program_check(&program, err, sizeof err) != 0, "zero rate ramp rejected");
+	program.rate[1] = 10;
+	expect(hs_program_check(&program, err, sizeof err) == 0, "ramp ok");
+	expect(hs_program_duration_ms(&program) > 60000, "duration");
+	expect(hs_session_set_program(session, &program, err, sizeof err) == 0, "program stored");
+	hs_session_free(session);
+	memset(&queue, 0, sizeof queue);
+	io.write = script_write;
+	io.read = script_read;
+	io.ctx = &queue;
+	for (i = 0; i < 3; i++) {
+		script_add(&queue, "WRITE_OK\n");
+	}
+	script_add(&queue, "WRITE_OK\n");
+	session = hs_session_create_with_io("/tmp/hwstation-test-ops", &io);
+	hs_session_use_scripted_live(session);
+	hs_session_observe_aux(session, 1000, 0, 0, 0, 0, 0);
+	hs_session_ingest_pressure_json(session, "{\"h2\":\"0.200\",\"air\":\"0.200\"}", 1000);
+	expect(hs_session_start_heat(session, 1, 0, 1, 200, 0, 1000, err, sizeof err) == 0, "aux start");
+	expect(count_text(queue.written, "START_OVEN_CONTROL") == 0, "oven not early");
+	for (i = 0; i < 9; i++) {
+		expect(hs_session_observe_aux(session, 1000 + i, 1, 200, 0, 0, -1) == 0, "still waiting");
+	}
+	expect(hs_session_observe_aux(session, 2000, 1, 200, 0, 0, -1) == 1, "tenth starts oven");
+	expect(count_text(queue.written, "START_OVEN_CONTROL") == 1, "one oven start");
+	hs_session_free(session);
+	memset(&queue, 0, sizeof queue);
+	for (i = 0; i < 3; i++) {
+		script_add(&queue, "WRITE_OK\n");
+	}
+	for (i = 0; i < 4; i++) {
+		script_add(&queue, "WRITE_OK\n");
+	}
+	script_add(&queue, "{\"owner\":\"PC\",\"heat\":\"0\",\"acq\":\"0\"}\n");
+	session = hs_session_create_with_io("/tmp/hwstation-test-ops2", &io);
+	mkdir("/tmp/hwstation-test-ops2", 0700);
+	hs_session_use_scripted_live(session);
+	hs_session_observe_aux(session, 1000, 0, 0, 0, 0, 0);
+	hs_session_ingest_pressure_json(session, "{\"h2\":\"0.200\",\"air\":\"0.200\"}", 1000);
+	expect(hs_session_start_heat(session, 1, 0, 1, 200, 0, 1000, err, sizeof err) == 0, "start before cancel");
+	for (i = 0; i < 4; i++) {
+		hs_session_observe_aux(session, 1100 + i, 1, 200, 0, 0, -1);
+	}
+	expect(hs_session_stop_heat(session, 1500, err, sizeof err) == 0, "stop confirmed");
+	expect(strstr(err, "heat") != NULL, "stop cites status");
+	for (i = 0; i < 12; i++) {
+		expect(hs_session_observe_aux(session, 1600 + i, 1, 200, 0, 0, -1) == 0, "no late oven");
+	}
+	expect(count_text(queue.written, "START_OVEN_CONTROL") == 0, "cancelled wait");
+	expect(hs_session_net_writes(session) == 0, "script is not a socket");
+	hs_session_free(session);
+	snprintf(auth_path, sizeof auth_path, "/tmp/hwstation-test-pid/engineer.auth");
+	mkdir("/tmp/hwstation-test-pid", 0700);
+	remove(auth_path);
+	{
+		HsAuth *auth = hs_auth_open(auth_path);
+		expect(hs_auth_enroll(auth, "correct-horse", "correct-horse", 10, 210000) == 0, "pid enroll");
+		hs_auth_close(auth);
+	}
+	memset(&queue, 0, sizeof queue);
+	for (i = 0; i < 3; i++) {
+		script_add(&queue, "WRITE_OK\n");
+	}
+	session = hs_session_create_with_io("/tmp/hwstation-test-pid", &io);
+	expect(hs_session_verify(session, "correct-horse", 20, err, sizeof err) == 0, "pid unlock");
+	expect(hs_session_set_pid(session, 0, 1.5, 0.2, 0, err, sizeof err) == 0, "oven pid");
+	expect(hs_session_set_pid(session, 1, 2, 0.1, 0.3, err, sizeof err) == 0, "inlet pid");
+	expect(hs_session_set_pid(session, 2, 3, 0, 4, err, sizeof err) == 0, "det pid");
+	expect(hs_session_set_pid(session, 0, 2, 0, 0, err, sizeof err) == 0, "edited oven pid");
+	hs_session_use_scripted_live(session);
+	expect(hs_session_write_pids_confirmed(session, "确认写入 PID 但数值不对", 30, err, sizeof err) != 0, "bad confirm");
+	expect(queue.written_len == 0, "bad confirm wrote nothing");
+	hs_session_pid_confirm_text(session, confirm, sizeof confirm);
+	expect(hs_session_write_pids_confirmed(session, confirm, 30, err, sizeof err) == 0, "confirmed pid");
+	expect(count_text(queue.written, "WRITE_OVEN_PID") == 1, "oven pid sent");
+	expect(count_text(queue.written, "WRITE_INLET_PID") == 1, "inlet pid sent");
+	expect(strstr(queue.written, "\"kp\": \"2\"") != NULL, "sent edited kp");
+	hs_session_free(session);
+}
+
 static void test_lock_and_log(void) {
 	mkdir("/tmp/hwstation-test-lock", 0700);
 	expect(hs_instance_try_lock("/tmp/hwstation-test-lock") == 0, "lock");
@@ -452,6 +630,7 @@ int main(void) {
 	test_layout_and_sources();
 	test_binaries();
 	test_loopback();
+	test_pressure_program_pid_stop();
 	test_lock_and_log();
 	if (g_failed) {
 		fprintf(stderr, "%d failed\n", g_failed);

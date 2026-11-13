@@ -2,6 +2,7 @@
 #include "live.h"
 
 #include <fcntl.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -35,8 +36,24 @@ struct HsSession {
 	int oven_fault;
 	int64_t oven_ms;
 	int pressure_known;
+	int h2_kind;
+	int air_kind;
 	double h2, air;
 	int64_t pressure_ms;
+	char pressure_note[160];
+	HsProgram program;
+	HsPidRow pid[3];
+	int hw_interval_ms;
+	int hw_interval_ok;
+	int oven_wait_cancelled;
+	int64_t acq_mark_ms;
+	int stopwatch_hold;
+	char events[8][140];
+	int event_n;
+	double trace_inlet[96];
+	double trace_det[96];
+	double trace_oven[96];
+	int trace_n;
 	HsFlame flame;
 	int fid_known;
 	int fid_pa_known;
@@ -165,8 +182,11 @@ static HsSession *session_new(const char *dir, HsIo *io) {
 	session->oven_act = 25;
 	session->inlet_known = session->det_known = session->oven_known = 1;
 	session->pressure_known = 1;
+	session->h2_kind = HS_PRESSURE_NAMED_MPA;
+	session->air_kind = HS_PRESSURE_NAMED_MPA;
 	session->h2 = 0.250;
 	session->air = 0.300;
+	copy_text(session->pressure_note, sizeof session->pressure_note, "仿真气压，键名按 h2/air MPa");
 	session->channel_single = 1;
 	copy_text(session->owner, sizeof session->owner, "未知");
 	copy_text(session->hw_status, sizeof session->hw_status, "未投递");
@@ -228,6 +248,8 @@ void hs_instance_unlock(const char *dir) {
 static void clear_live_values(HsSession *session) {
 	session->inlet_known = session->det_known = session->oven_known = 0;
 	session->pressure_known = 0;
+	session->h2_kind = HS_PRESSURE_ABSENT;
+	session->air_kind = HS_PRESSURE_ABSENT;
 	session->fid_known = 0;
 	session->fid_pa_known = 0;
 	session->owner_known = 0;
@@ -258,6 +280,8 @@ int hs_session_set_sim(HsSession *session) {
 	session->connected = 0;
 	session->mode = 0;
 	session->pressure_known = 1;
+	session->h2_kind = HS_PRESSURE_NAMED_MPA;
+	session->air_kind = HS_PRESSURE_NAMED_MPA;
 	session->h2 = 0.250;
 	session->air = 0.300;
 	session->inlet_known = session->det_known = session->oven_known = 1;
@@ -390,8 +414,8 @@ static int exchange(HsSession *session, const char *line, const char *payload, c
 		}
 	}
 	if (reply && reply_cap) {
-		if (transport_read(session, reply, (int)reply_cap) < 0) {
-			return -1;
+		if (transport_read(session, reply, (int)reply_cap) < 0 || reply[0] == '\0') {
+			return -5;
 		}
 		if (strstr(reply, "DENIED")) {
 			return -3;
@@ -399,8 +423,39 @@ static int exchange(HsSession *session, const char *line, const char *payload, c
 		if (strstr(reply, "WRITE_FAIL")) {
 			return -4;
 		}
+		if ((kind == HS_CMD_OPERATOR || kind == HS_CMD_SAFETY || kind == HS_CMD_ENGINEERING) && strstr(reply, "WRITE_OK") == NULL) {
+			return -4;
+		}
 	}
 	return 0;
+}
+
+static void push_event(HsSession *session, const char *text) {
+	int i;
+	if (session == NULL || text == NULL) {
+		return;
+	}
+	if (session->event_n == 8) {
+		for (i = 1; i < 8; i++) {
+			memcpy(session->events[i - 1], session->events[i], sizeof session->events[0]);
+		}
+		session->event_n = 7;
+	}
+	snprintf(session->events[session->event_n], sizeof session->events[0], "%s", text);
+	session->event_n++;
+}
+
+static void push_trace(HsSession *session) {
+	if (session->trace_n >= 96) {
+		memmove(session->trace_inlet, session->trace_inlet + 1, 95 * sizeof(double));
+		memmove(session->trace_det, session->trace_det + 1, 95 * sizeof(double));
+		memmove(session->trace_oven, session->trace_oven + 1, 95 * sizeof(double));
+		session->trace_n = 95;
+	}
+	session->trace_inlet[session->trace_n] = session->inlet_known ? session->inlet_act : -1;
+	session->trace_det[session->trace_n] = session->det_known ? session->det_act : -1;
+	session->trace_oven[session->trace_n] = session->oven_known ? session->oven_act : -1;
+	session->trace_n++;
 }
 
 int hs_session_connect_live(HsSession *session, const char *host, int port, char *err, size_t err_cap) {
@@ -462,27 +517,27 @@ static int live_ready(const HsSession *session) {
 }
 
 static int apply_pressure_json(HsSession *session, const char *json, int64_t now_ms) {
-	int ok_h2 = 0;
-	int ok_air = 0;
-	double h2;
-	double air;
-	if (!hs_json_has(json, "h2") || !hs_json_has(json, "air")) {
-		session->pressure_known = 0;
-		session->alarm_on = 1;
-		copy_text(session->alarm, sizeof session->alarm, "气压报文没有 h2/air，未把 adc 当成 MPa");
-		return -1;
-	}
-	h2 = hs_json_number(json, "h2", &ok_h2);
-	air = hs_json_number(json, "air", &ok_air);
-	if (!ok_h2 || !ok_air) {
-		session->pressure_known = 0;
-		return -1;
-	}
+	HsPressureKind h2_kind = HS_PRESSURE_ABSENT;
+	HsPressureKind air_kind = HS_PRESSURE_ABSENT;
+	double h2 = 0;
+	double air = 0;
+	hs_parse_gas_pressure(json, &h2, &air, &h2_kind, &air_kind);
 	session->h2 = h2;
 	session->air = air;
-	session->pressure_known = 1;
+	session->h2_kind = h2_kind;
+	session->air_kind = air_kind;
 	session->pressure_ms = now_ms;
-	return 0;
+	session->pressure_known = h2_kind != HS_PRESSURE_ABSENT && air_kind != HS_PRESSURE_ABSENT;
+	if (h2_kind == HS_PRESSURE_NAMED_MPA && air_kind == HS_PRESSURE_NAMED_MPA) {
+		copy_text(session->pressure_note, sizeof session->pressure_note, "h2/air，按现有界面记为 MPa");
+	} else if (h2_kind == HS_PRESSURE_ADC_UNIT_UNCONFIRMED || air_kind == HS_PRESSURE_ADC_UNIT_UNCONFIRMED) {
+		session->alarm_on = 1;
+		copy_text(session->pressure_note, sizeof session->pressure_note, "只有 adc1/adc2，单位未确认，不能用于 0.1 MPa 门槛。需要固件以 h2/air 上报");
+		copy_text(session->alarm, sizeof session->alarm, session->pressure_note);
+	} else {
+		copy_text(session->pressure_note, sizeof session->pressure_note, "气压缺失");
+	}
+	return session->pressure_known ? 0 : -1;
 }
 
 int hs_session_poll(HsSession *session) {
@@ -526,19 +581,8 @@ void hs_session_tick(HsSession *session, int64_t now_ms) {
 				session->oven_act = session->oven_set;
 			}
 		}
-		if (session->want_oven && !session->oven_started) {
-			int inlet_ok = !session->want_inlet || (session->inlet_act + HS_AUX_STABLE_BAND_C >= session->inlet_set);
-			int det_ok = !session->want_det || (session->det_act + HS_AUX_STABLE_BAND_C >= session->det_set);
-			if (inlet_ok) {
-				session->inlet_stable_polls++;
-			}
-			if (det_ok) {
-				session->det_stable_polls++;
-			}
-			if ((!session->want_inlet || session->inlet_stable_polls >= HS_AUX_STABLE_POLLS) && (!session->want_det || session->det_stable_polls >= HS_AUX_STABLE_POLLS)) {
-				session->oven_started = 1;
-			}
-		}
+		hs_session_observe_aux(session, now_ms, session->want_inlet, session->inlet_act, session->want_det, session->det_act, session->oven_fault);
+		push_trace(session);
 	}
 	if (session->last_sample_ms != 0 && now_ms - session->last_sample_ms < session->sim_period) {
 		return;
@@ -582,7 +626,11 @@ void hs_session_snapshot(HsSession *session, int64_t now_ms, HsSnapshot *out) {
 	} else {
 		snprintf(out->link, sizeof out->link, "已连接 %s:%d", session->host, session->port);
 	}
-	copy_text(out->heat, sizeof out->heat, session->heat_running ? (session->oven_started || !session->want_oven ? "温控运行" : "温控运行 · 柱箱等待前置") : "温控停止");
+	if (session->stop_unconfirmed) {
+		copy_text(out->heat, sizeof out->heat, "停止未确认");
+	} else {
+		copy_text(out->heat, sizeof out->heat, session->heat_running ? (session->oven_started || !session->want_oven ? "温控运行" : "温控运行 · 柱箱等待前置") : "温控停止");
+	}
 	copy_text(out->stop_confirm, sizeof out->stop_confirm, session->stop_text);
 	copy_text(out->device_acq, sizeof out->device_acq, session->device_acq ? "设备采集中" : "设备采集停");
 	copy_text(out->hw, sizeof out->hw, session->hw_status);
@@ -596,8 +644,20 @@ void hs_session_snapshot(HsSession *session, int64_t now_ms, HsSnapshot *out) {
 	} else {
 		snprintf(out->fid_pa, sizeof out->fid_pa, "%d（字段 currentPa）", session->fid_pa);
 	}
-	num_or_unknown(out->h2, sizeof out->h2, session->pressure_known, session->pressure_ms, now_ms, session->h2, " MPa");
-	num_or_unknown(out->air, sizeof out->air, session->pressure_known, session->pressure_ms, now_ms, session->air, " MPa");
+	if (session->h2_kind == HS_PRESSURE_NAMED_MPA) {
+		num_or_unknown(out->h2, sizeof out->h2, 1, session->pressure_ms, now_ms, session->h2, " MPa");
+	} else if (session->h2_kind == HS_PRESSURE_ADC_UNIT_UNCONFIRMED) {
+		snprintf(out->h2, sizeof out->h2, "adc %.3f 单位未确认", session->h2);
+	} else {
+		copy_text(out->h2, sizeof out->h2, "未知");
+	}
+	if (session->air_kind == HS_PRESSURE_NAMED_MPA) {
+		num_or_unknown(out->air, sizeof out->air, 1, session->pressure_ms, now_ms, session->air, " MPa");
+	} else if (session->air_kind == HS_PRESSURE_ADC_UNIT_UNCONFIRMED) {
+		snprintf(out->air, sizeof out->air, "adc %.3f 单位未确认", session->air);
+	} else {
+		copy_text(out->air, sizeof out->air, "未知");
+	}
 	num_or_unknown(out->inlet_set, sizeof out->inlet_set, session->inlet_known, session->temp_ms, now_ms, session->inlet_set, "");
 	num_or_unknown(out->inlet_act, sizeof out->inlet_act, session->inlet_known, session->temp_ms, now_ms, session->inlet_act, "");
 	copy_text(out->inlet_state, sizeof out->inlet_state, session->heat_running && session->want_inlet ? "加热" : "停止");
@@ -616,7 +676,11 @@ void hs_session_snapshot(HsSession *session, int64_t now_ms, HsSnapshot *out) {
 		copy_text(out->oven_state, sizeof out->oven_state, session->oven_started ? "程序运行" : "停止");
 	}
 	copy_text(out->engineer, sizeof out->engineer, hs_auth_status(session->auth, now_ms));
-	snprintf(out->pace, sizeof out->pace, "源周期 %d ms；工作站默认 50 ms（未写 HWFrequence.txt）", hs_stream_period_ms(session->stream));
+	if (session->hw_interval_ok) {
+		snprintf(out->pace, sizeof out->pace, "源周期 %d ms；已核实工作站间隔 %d ms；未写 HWFrequence.txt", hs_stream_period_ms(session->stream), session->hw_interval_ms);
+	} else {
+		snprintf(out->pace, sizeof out->pace, "源周期 %d ms；工作站间隔未核实（默认 50 ms 不是对接完成）", hs_stream_period_ms(session->stream));
+	}
 	copy_text(out->unit_note, sizeof out->unit_note, session->linear_armed ? "操作者确认在线浮点按线性 pA 解释（协议未证实）" : "在线采样量纲未确认，默认不映射");
 	copy_text(out->owner, sizeof out->owner, session->owner);
 	out->heat_running = session->heat_running;
@@ -635,7 +699,13 @@ int hs_session_net_writes(const HsSession *session) {
 }
 
 static int heat_blocked(HsSession *session, int64_t now_ms, char *err, size_t err_cap) {
-	HsHeatGate gate = hs_heat_start_gate(session->pressure_known, session->h2, session->pressure_known, session->air, session->pressure_ms, now_ms);
+	int named = session->h2_kind == HS_PRESSURE_NAMED_MPA && session->air_kind == HS_PRESSURE_NAMED_MPA;
+	HsHeatGate gate;
+	if (!named) {
+		copy_text(err, err_cap, session->pressure_note[0] ? session->pressure_note : "气压不是已确认的 h2/air，拒绝启动温控");
+		return -1;
+	}
+	gate = hs_heat_start_gate(1, session->h2, 1, session->air, session->pressure_ms, now_ms);
 	if (gate != HS_HEAT_ALLOW) {
 		copy_text(err, err_cap, hs_heat_gate_text(gate));
 		return -1;
@@ -685,6 +755,7 @@ int hs_session_start_heat(HsSession *session, int inlet, int detector, int oven,
 	if (session->mode == 0) {
 		session->heat_running = 1;
 		session->oven_started = oven && !inlet && !detector;
+		session->oven_wait_cancelled = 0;
 		session->inlet_stable_polls = 0;
 		session->det_stable_polls = 0;
 		session->stop_unconfirmed = 0;
@@ -723,6 +794,9 @@ int hs_session_start_heat(HsSession *session, int inlet, int detector, int oven,
 		session->oven_started = 1;
 	}
 	session->heat_running = 1;
+	session->oven_wait_cancelled = 0;
+	session->inlet_stable_polls = 0;
+	session->det_stable_polls = 0;
 	session->temp_ms = now_ms;
 	session->inlet_known = session->det_known = session->oven_known = 1;
 	copy_text(err, err_cap, session->oven_started || !oven ? "温控命令已收到 WRITE_OK" : "辅助区已启动，柱箱等待前置恒温");
@@ -730,27 +804,39 @@ int hs_session_start_heat(HsSession *session, int inlet, int detector, int oven,
 }
 
 static int stop_commands(HsSession *session, int64_t now_ms, char *err, size_t err_cap) {
-	char reply[256];
+	char reply[512];
 	int failed = 0;
+	int heat_known = 0;
+	int heat_on = 1;
 	const char *lines[] = {"GCWS\tSTOP_INLET_HEAT", "GCWS\tSTOP_DETECTOR_HEAT", "GCWS\tSTOP_OVEN_CONTROL", "GCWS\tSTOP_FID_VALVES"};
 	int i;
+	session->oven_wait_cancelled = 1;
+	session->heat_running = 0;
+	session->oven_started = 0;
 	for (i = 0; i < 4; i++) {
+		reply[0] = '\0';
 		if (exchange(session, lines[i], NULL, reply, sizeof reply, now_ms) != 0) {
 			failed = 1;
 		}
 	}
+	reply[0] = '\0';
+	if (exchange(session, "GCWS\tREAD_CONTROL_STATUS", NULL, reply, sizeof reply, now_ms) != 0) {
+		failed = 1;
+	} else if (hs_parse_control_heat(reply, &heat_known, &heat_on, session->owner, sizeof session->owner) != 0 || !heat_known || heat_on) {
+		failed = 1;
+	}
 	if (failed) {
 		session->stop_unconfirmed = 1;
 		copy_text(session->stop_text, sizeof session->stop_text, "未确认");
-		copy_text(err, err_cap, "停止命令未全部确认，不保证设备已停");
+		copy_text(err, err_cap, "停止未确认：缺少 WRITE_OK、状态超时，或设备仍报告加热");
+		push_event(session, "停止未确认");
 		write_recovery(session);
 		return -1;
 	}
-	session->heat_running = 0;
-	session->oven_started = 0;
 	session->stop_unconfirmed = 0;
-	copy_text(session->stop_text, sizeof session->stop_text, "设备已应答停止");
-	copy_text(err, err_cap, "停止命令已收到 WRITE_OK");
+	copy_text(session->stop_text, sizeof session->stop_text, "设备回报加热已停");
+	copy_text(err, err_cap, "四路停止均 WRITE_OK，且 READ_CONTROL_STATUS 的 heat 为 0");
+	push_event(session, "停止已由设备状态确认");
 	write_recovery(session);
 	return 0;
 }
@@ -912,41 +998,19 @@ int hs_session_write_program(HsSession *session, const char *spec, char *err, si
 	return 0;
 }
 
-int hs_session_write_pid(HsSession *session, int which, double kp, double ki, double kd, int64_t now_ms, char *err, size_t err_cap) {
-	char json[256];
-	char reply[128];
-	const char *line;
-	if (session == NULL) {
+int hs_session_set_pid(HsSession *session, int which, double kp, double ki, double kd, char *err, size_t err_cap) {
+	if (session == NULL || which < 0 || which > 2) {
 		return -1;
 	}
-	if (!hs_auth_allows(session->auth, now_ms)) {
-		copy_text(err, err_cap, "维护未解锁，PID 未发送");
+	if (!hs_pid_in_range(kp, ki, kd)) {
+		copy_text(err, err_cap, "PID 必须在 0–100，空值和占位值都不会写入");
 		return -1;
 	}
-	hs_auth_touch(session->auth, now_ms);
-	if (hs_pid_json(kp, ki, kd, json, sizeof json) < 0) {
-		copy_text(err, err_cap, "PID 数值无效");
-		return -1;
-	}
-	if (which == 1) {
-		line = "GCWS\tWRITE_INLET_PID";
-	} else if (which == 2) {
-		line = "GCWS\tWRITE_DETECTOR_PID";
-	} else if (which == 0) {
-		line = "GCWS\tWRITE_OVEN_PID";
-	} else {
-		copy_text(err, err_cap, "未知 PID 通道");
-		return -1;
-	}
-	if (session->mode != 2) {
-		copy_text(err, err_cap, "PID 未发给仪器（当前不是在线连接）");
-		return -1;
-	}
-	if (exchange(session, line, json, reply, sizeof reply, now_ms) != 0) {
-		copy_text(err, err_cap, "PID 写入未确认");
-		return -1;
-	}
-	copy_text(err, err_cap, "PID 已收到 WRITE_OK");
+	session->pid[which].known = 1;
+	session->pid[which].kp = kp;
+	session->pid[which].ki = ki;
+	session->pid[which].kd = kd;
+	copy_text(err, err_cap, "PID 已记在表里，尚未发送");
 	return 0;
 }
 
@@ -963,6 +1027,7 @@ int hs_session_start_device_acq(HsSession *session, char *err, size_t err_cap) {
 	}
 	if (session->mode == 0) {
 		session->device_acq = 1;
+		session->acq_mark_ms = 0;
 		copy_text(err, err_cap, "仿真设备采集已开始，未联网");
 		return 0;
 	}
@@ -1022,6 +1087,8 @@ void hs_session_set_sim_pressure(HsSession *session, double h2, double air, int 
 	session->pressure_known = known;
 	session->h2 = h2;
 	session->air = air;
+	session->h2_kind = known ? HS_PRESSURE_NAMED_MPA : HS_PRESSURE_ABSENT;
+	session->air_kind = known ? HS_PRESSURE_NAMED_MPA : HS_PRESSURE_ABSENT;
 }
 
 void hs_session_set_sim_period_ms(HsSession *session, int period_ms) {
@@ -1072,7 +1139,7 @@ int hs_session_hw_start(HsSession *session, HsTriple *sent_or_null, char *err, s
 	if (session == NULL) {
 		return -1;
 	}
-	if (!hs_hw_interval_compatible(hs_stream_period_ms(session->stream), why, sizeof why)) {
+	if (!hs_hw_interval_matches(hs_stream_period_ms(session->stream), session->hw_interval_ms, session->hw_interval_ok, why, sizeof why)) {
 		copy_text(session->hw_status, sizeof session->hw_status, why);
 		copy_text(err, err_cap, why);
 		return -1;
@@ -1102,7 +1169,7 @@ int hs_session_poll_hw_sample(HsSession *session, HsTriple *out, char *note, siz
 	if (session == NULL || out == NULL) {
 		return -1;
 	}
-	rc = hs_stream_next_hw_triple(session->stream, &a, &b, &c, note, note_cap);
+	rc = hs_stream_next_hw_triple(session->stream, session->hw_interval_ms, session->hw_interval_ok, &a, &b, &c, note, note_cap);
 	if (rc == 1) {
 		out->data1 = a;
 		out->data2 = b;
@@ -1215,6 +1282,370 @@ const char *hs_session_written(const HsSession *session) {
 
 const char *hs_session_recovery_banner(HsSession *session) {
 	return session ? session->banner : "";
+}
+
+int hs_session_observe_aux(HsSession *session, int64_t now_ms, int inlet_fresh, double inlet_act, int det_fresh, double det_act, int oven_fault) {
+	char reply[128];
+	int inlet_band;
+	int det_band;
+	if (session == NULL) {
+		return -1;
+	}
+	if (oven_fault > 0) {
+		session->oven_fault = 1;
+		session->oven_wait_cancelled = 1;
+		push_event(session, "柱箱故障，取消等待中的柱箱启动");
+		return 0;
+	}
+	if (oven_fault == 0) {
+		session->oven_fault = 0;
+	}
+	if (!session->heat_running || session->oven_wait_cancelled || !session->want_oven || session->oven_started) {
+		return 0;
+	}
+	if (inlet_fresh) {
+		session->inlet_act = inlet_act;
+		session->inlet_known = 1;
+		session->temp_ms = now_ms;
+		inlet_band = fabs(inlet_act - session->inlet_set) <= HS_AUX_STABLE_BAND_C;
+		if (inlet_band) {
+			session->inlet_stable_polls++;
+		} else {
+			session->inlet_stable_polls = 0;
+		}
+	}
+	if (det_fresh) {
+		session->det_act = det_act;
+		session->det_known = 1;
+		session->temp_ms = now_ms;
+		det_band = fabs(det_act - session->det_set) <= HS_AUX_STABLE_BAND_C;
+		if (det_band) {
+			session->det_stable_polls++;
+		} else {
+			session->det_stable_polls = 0;
+		}
+	}
+	if ((session->want_inlet && session->inlet_stable_polls < HS_AUX_STABLE_POLLS) || (session->want_det && session->det_stable_polls < HS_AUX_STABLE_POLLS)) {
+		return 0;
+	}
+	if (!session->want_inlet && !session->want_det) {
+		return 0;
+	}
+	if (session->mode != 2) {
+		session->oven_started = 1;
+		push_event(session, "仿真柱箱在连续 10 次稳温后启动");
+		return 1;
+	}
+	if (exchange(session, "GCWS\tSTART_OVEN_CONTROL", NULL, reply, sizeof reply, now_ms) != 0) {
+		session->oven_wait_cancelled = 1;
+		push_event(session, "柱箱启动未确认，不再补发");
+		return -1;
+	}
+	session->oven_started = 1;
+	push_event(session, "柱箱在连续 10 次新鲜稳温后收到 WRITE_OK");
+	return 1;
+}
+
+int hs_session_set_program(HsSession *session, const HsProgram *program, char *err, size_t err_cap) {
+	if (session == NULL || program == NULL || hs_program_check(program, err, err_cap) != 0) {
+		return -1;
+	}
+	session->program = *program;
+	session->program.known = 1;
+	session->oven_set = program->temperature[0];
+	session->oven_known = 1;
+	copy_text(err, err_cap, "温程已接受，尚未下载");
+	return 0;
+}
+
+void hs_session_get_program(const HsSession *session, HsProgram *program) {
+	if (program == NULL) {
+		return;
+	}
+	if (session == NULL) {
+		memset(program, 0, sizeof *program);
+		return;
+	}
+	*program = session->program;
+}
+
+int hs_session_read_program(HsSession *session, char *err, size_t err_cap) {
+	char reply[HS_JSON_MAX];
+	HsProgram program;
+	if (session == NULL || !live_ready(session)) {
+		copy_text(err, err_cap, "未连接，温程未读");
+		return -1;
+	}
+	if (exchange(session, "GCWS\tREAD_OVEN_PROGRAM", NULL, reply, sizeof reply, 0) != 0) {
+		copy_text(err, err_cap, "读取温程超时或无应答");
+		return -1;
+	}
+	if (hs_program_from_json(reply, &program, err, err_cap) != 0) {
+		return -1;
+	}
+	session->program = program;
+	session->oven_set = program.temperature[0];
+	copy_text(err, err_cap, "已从设备读取温程");
+	return 0;
+}
+
+int hs_session_write_program_now(HsSession *session, char *err, size_t err_cap) {
+	char json[HS_JSON_MAX];
+	char reply[128];
+	if (session == NULL || !session->program.known) {
+		copy_text(err, err_cap, "没有已校验的温程，拒绝下载");
+		return -1;
+	}
+	if (hs_program_check(&session->program, err, err_cap) != 0) {
+		return -1;
+	}
+	if (hs_oven_program_json(session->program.max_c, session->program.eq_min, session->program.stable_sec, session->program.loop, session->program.rate, session->program.temperature, session->program.hold, json, sizeof json) < 0) {
+		copy_text(err, err_cap, "温程无法编码");
+		return -1;
+	}
+	if (session->mode != 2) {
+		copy_text(err, err_cap, "温程只保存在本地，当前没有在线连接");
+		return 0;
+	}
+	if (exchange(session, "GCWS\tWRITE_OVEN_PROGRAM", json, reply, sizeof reply, 0) != 0) {
+		copy_text(err, err_cap, "温程下载没有 WRITE_OK");
+		return -1;
+	}
+	copy_text(err, err_cap, "温程下载已收到 WRITE_OK");
+	return 0;
+}
+
+void hs_session_get_pid(const HsSession *session, int which, HsPidRow *row) {
+	if (row == NULL) {
+		return;
+	}
+	memset(row, 0, sizeof *row);
+	if (session && which >= 0 && which < 3) {
+		*row = session->pid[which];
+	}
+}
+
+int hs_session_read_pids(HsSession *session, char *err, size_t err_cap) {
+	const char *lines[] = {"GCWS\tREAD_OVEN_PID", "GCWS\tREAD_INLET_PID", "GCWS\tREAD_DETECTOR_PID"};
+	int i;
+	if (session == NULL || !live_ready(session)) {
+		copy_text(err, err_cap, "未连接，PID 未读，表保持未读取");
+		return -1;
+	}
+	for (i = 0; i < 3; i++) {
+		char reply[256];
+		int ok_p = 0;
+		int ok_i = 0;
+		int ok_d = 0;
+		double kp;
+		double ki;
+		double kd;
+		if (exchange(session, lines[i], NULL, reply, sizeof reply, 0) != 0) {
+			session->pid[i].known = 0;
+			copy_text(err, err_cap, "PID 读取超时，未把缺测填成 0");
+			return -1;
+		}
+		kp = hs_json_number(reply, "kp", &ok_p);
+		ki = hs_json_number(reply, "ki", &ok_i);
+		kd = hs_json_number(reply, "kd", &ok_d);
+		if (!ok_p || !ok_i || !ok_d || !hs_pid_in_range(kp, ki, kd)) {
+			session->pid[i].known = 0;
+			copy_text(err, err_cap, "PID 报文无效，该路保持未读取");
+			return -1;
+		}
+		session->pid[i].known = 1;
+		session->pid[i].kp = kp;
+		session->pid[i].ki = ki;
+		session->pid[i].kd = kd;
+	}
+	copy_text(err, err_cap, "三路 PID 已读取");
+	return 0;
+}
+
+void hs_session_pid_confirm_text(const HsSession *session, char *out, size_t cap) {
+	if (out == NULL || cap == 0) {
+		return;
+	}
+	if (session == NULL || !session->pid[0].known || !session->pid[1].known || !session->pid[2].known) {
+		out[0] = '\0';
+		return;
+	}
+	snprintf(out, cap, "确认写入 PID 柱箱 %.4g/%.4g/%.4g 进样口 %.4g/%.4g/%.4g 检测器 %.4g/%.4g/%.4g", session->pid[0].kp, session->pid[0].ki, session->pid[0].kd, session->pid[1].kp, session->pid[1].ki, session->pid[1].kd, session->pid[2].kp, session->pid[2].ki, session->pid[2].kd);
+}
+
+int hs_session_write_pids_confirmed(HsSession *session, const char *confirm, int64_t now_ms, char *err, size_t err_cap) {
+	char expected[240];
+	char json[256];
+	char reply[128];
+	const char *lines[] = {"GCWS\tWRITE_OVEN_PID", "GCWS\tWRITE_INLET_PID", "GCWS\tWRITE_DETECTOR_PID"};
+	int i;
+	if (session == NULL) {
+		return -1;
+	}
+	if (!hs_auth_allows(session->auth, now_ms)) {
+		copy_text(err, err_cap, "维护未解锁，PID 未发送");
+		return -1;
+	}
+	hs_session_pid_confirm_text(session, expected, sizeof expected);
+	if (expected[0] == '\0' || confirm == NULL || strcmp(confirm, expected) != 0) {
+		copy_text(err, err_cap, "PID 未确认目标数值，拒绝发送");
+		return -1;
+	}
+	if (session->mode != 2) {
+		copy_text(err, err_cap, "当前不是在线连接，PID 未发送");
+		return -1;
+	}
+	for (i = 0; i < 3; i++) {
+		if (hs_pid_json(session->pid[i].kp, session->pid[i].ki, session->pid[i].kd, json, sizeof json) < 0) {
+			copy_text(err, err_cap, "PID 数值无效");
+			return -1;
+		}
+		if (exchange(session, lines[i], json, reply, sizeof reply, now_ms) != 0) {
+			copy_text(err, err_cap, "PID 写入没有 WRITE_OK，已停止后续路");
+			return -1;
+		}
+	}
+	hs_auth_touch(session->auth, now_ms);
+	copy_text(err, err_cap, "三路 PID 均收到 WRITE_OK");
+	return 0;
+}
+
+int hs_session_set_hw_interval(HsSession *session, int interval_ms, int confirmed, char *err, size_t err_cap) {
+	if (session == NULL || !confirmed || interval_ms < 20 || interval_ms > 10000) {
+		copy_text(err, err_cap, "必须勾选已核实，并填写 20–10000 ms。不会写 HWFrequence.txt");
+		return -1;
+	}
+	session->hw_interval_ms = interval_ms;
+	session->hw_interval_ok = 1;
+	copy_text(err, err_cap, "已记录操作者核实的工作站间隔。HWFrequence.txt 语法未知，未写文件");
+	return 0;
+}
+
+int hs_session_probe(HsSession *session, const char *host, int port, char *err, size_t err_cap) {
+	HsLive *live = NULL;
+	char reply[128];
+	const char *hello = "GCWS\tHELLO\tPROBE\r\n";
+	int n;
+	if (session == NULL || !hs_host_port_ok(host, port, err, err_cap)) {
+		return -1;
+	}
+	if (hs_live_connect(&live, host, port, 2000, err, err_cap) != 0) {
+		return -1;
+	}
+	n = hs_live_write(live, hello, (int)strlen(hello));
+	session->net_writes += n > 0 ? n : 0;
+	if (n != (int)strlen(hello) || hs_live_read(live, reply, (int)sizeof reply - 1, 2000) < 0 || strstr(reply, "HELLO_OK") == NULL) {
+		hs_live_close(live);
+		copy_text(err, err_cap, "探测没有 HELLO_OK，连接已关闭，没有取得控制权");
+		return -1;
+	}
+	hs_live_close(live);
+	copy_text(err, err_cap, "探测收到 HELLO_OK。这是 PROBE，不占用 PC 写入权，连接已关闭");
+	push_event(session, "手动探测地址收到 HELLO_OK");
+	return 0;
+}
+
+int hs_session_ingest_pressure_json(HsSession *session, const char *json, int64_t now_ms) {
+	if (session == NULL) {
+		return -1;
+	}
+	return apply_pressure_json(session, json, now_ms);
+}
+
+int hs_session_write_setpoints(HsSession *session, double inlet_c, double detector_c, char *err, size_t err_cap) {
+	char json[128];
+	char reply[128];
+	if (session == NULL || !live_ready(session)) {
+		copy_text(err, err_cap, "未连接，温度设定未发送");
+		return -1;
+	}
+	if (!hs_setpoint_ok(inlet_c) || !hs_setpoint_ok(detector_c)) {
+		copy_text(err, err_cap, "设定温度无效或超过 450 °C");
+		return -1;
+	}
+	snprintf(json, sizeof json, "{\n  \"setpoint\": \"%.0f\"\n}\n", inlet_c);
+	if (exchange(session, "GCWS\tWRITE_INLET_TEMP", json, reply, sizeof reply, 0) != 0) {
+		copy_text(err, err_cap, "进样口设定没有 WRITE_OK");
+		return -1;
+	}
+	snprintf(json, sizeof json, "{\n  \"setpoint\": \"%.0f\"\n}\n", detector_c);
+	if (exchange(session, "GCWS\tWRITE_DETECTOR_TEMP", json, reply, sizeof reply, 0) != 0) {
+		copy_text(err, err_cap, "检测器设定没有 WRITE_OK");
+		return -1;
+	}
+	session->inlet_set = inlet_c;
+	session->det_set = detector_c;
+	copy_text(err, err_cap, "进样口和检测器设定已收到 WRITE_OK");
+	return 0;
+}
+
+int hs_session_device_apply_blocked(char *err, size_t err_cap) {
+	copy_text(err, err_cap, "这些数字只存在于本工作站文件，不会下发。本页不读取、不修改设备里的跳闸阈值。");
+	return -1;
+}
+
+void hs_session_event_text(const HsSession *session, char *out, size_t cap) {
+	int i;
+	size_t used = 0;
+	if (out == NULL || cap == 0) {
+		return;
+	}
+	out[0] = '\0';
+	if (session == NULL) {
+		return;
+	}
+	for (i = 0; i < session->event_n && used + 2 < cap; i++) {
+		int n = snprintf(out + used, cap - used, "%s\n", session->events[i]);
+		if (n < 0) {
+			break;
+		}
+		used += (size_t)n;
+	}
+}
+
+void hs_session_stopwatch_text(HsSession *session, int64_t now_ms, char *out, size_t cap) {
+	long long elapsed;
+	if (out == NULL || cap == 0) {
+		return;
+	}
+	if (session == NULL || !session->device_acq || session->stopwatch_hold) {
+		snprintf(out, cap, "00:00");
+		return;
+	}
+	if (session->acq_mark_ms == 0) {
+		session->acq_mark_ms = now_ms;
+	}
+	elapsed = now_ms - session->acq_mark_ms;
+	if (elapsed < 0) {
+		elapsed = 0;
+	}
+	snprintf(out, cap, "%02lld:%02lld", elapsed / 60000, (elapsed / 1000) % 60);
+}
+
+void hs_session_reset_stopwatch(HsSession *session) {
+	if (session) {
+		session->stopwatch_hold = 1;
+	}
+}
+
+int hs_session_trace_count(const HsSession *session) {
+	return session ? session->trace_n : 0;
+}
+
+int hs_session_trace_at(const HsSession *session, int index, double *inlet, double *detector, double *oven) {
+	if (session == NULL || index < 0 || index >= session->trace_n) {
+		return -1;
+	}
+	if (inlet) {
+		*inlet = session->trace_inlet[index];
+	}
+	if (detector) {
+		*detector = session->trace_det[index];
+	}
+	if (oven) {
+		*oven = session->trace_oven[index];
+	}
+	return 0;
 }
 
 int hs_utf8_to_wide(const char *utf8, wchar_t *wide, size_t wide_cap) {

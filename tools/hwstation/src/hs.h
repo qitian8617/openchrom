@@ -126,8 +126,41 @@ int hs_stream_aborted(const HsStream *stream);
 const char *hs_stream_abort_reason(const HsStream *stream);
 int hs_stream_count(const HsStream *stream);
 int hs_stream_period_ms(const HsStream *stream);
-int hs_hw_interval_compatible(int measured_ms, char *why, size_t why_cap);
-int hs_stream_next_hw_triple(HsStream *stream, int32_t *data1, int32_t *data2, int32_t *data3, char *note, size_t note_cap);
+int hs_hw_interval_matches(int measured_ms, int confirmed_ms, int user_confirmed, char *why, size_t why_cap);
+int hs_stream_next_hw_triple(HsStream *stream, int confirmed_ms, int user_confirmed, int32_t *data1, int32_t *data2, int32_t *data3, char *note, size_t note_cap);
+
+typedef enum HsPressureKind {
+	HS_PRESSURE_ABSENT = 0,
+	HS_PRESSURE_NAMED_MPA,
+	HS_PRESSURE_ADC_UNIT_UNCONFIRMED
+} HsPressureKind;
+
+int hs_parse_gas_pressure(const char *json, double *h2, double *air, HsPressureKind *h2_kind, HsPressureKind *air_kind);
+
+typedef struct HsProgram {
+	int known;
+	double max_c;
+	double eq_min;
+	double stable_sec;
+	int loop;
+	double rate[HS_OVEN_STAGES];
+	double temperature[HS_OVEN_STAGES];
+	double hold[HS_OVEN_STAGES];
+} HsProgram;
+
+int hs_program_check(const HsProgram *program, char *err, size_t err_cap);
+long hs_program_duration_ms(const HsProgram *program);
+int hs_program_from_json(const char *json, HsProgram *program, char *err, size_t err_cap);
+
+typedef struct HsPidRow {
+	int known;
+	double kp;
+	double ki;
+	double kd;
+} HsPidRow;
+
+int hs_pid_in_range(double kp, double ki, double kd);
+int hs_parse_control_heat(const char *json, int *heat_known, int *heat_on, char *owner, size_t owner_cap);
 
 typedef struct HsTriple {
 	int32_t data1;
@@ -249,7 +282,26 @@ int hs_session_ignite(HsSession *session, char *err, size_t err_cap);
 int hs_session_valves(HsSession *session, int open, char *err, size_t err_cap);
 int hs_session_fid_auto(HsSession *session, int enable, char *err, size_t err_cap);
 int hs_session_write_program(HsSession *session, const char *spec, char *err, size_t err_cap);
-int hs_session_write_pid(HsSession *session, int which, double kp, double ki, double kd, int64_t now_ms, char *err, size_t err_cap);
+int hs_session_set_program(HsSession *session, const HsProgram *program, char *err, size_t err_cap);
+int hs_session_read_program(HsSession *session, char *err, size_t err_cap);
+int hs_session_write_program_now(HsSession *session, char *err, size_t err_cap);
+void hs_session_get_program(const HsSession *session, HsProgram *program);
+int hs_session_set_pid(HsSession *session, int which, double kp, double ki, double kd, char *err, size_t err_cap);
+int hs_session_read_pids(HsSession *session, char *err, size_t err_cap);
+void hs_session_pid_confirm_text(const HsSession *session, char *out, size_t cap);
+int hs_session_write_pids_confirmed(HsSession *session, const char *confirm, int64_t now_ms, char *err, size_t err_cap);
+void hs_session_get_pid(const HsSession *session, int which, HsPidRow *row);
+int hs_session_observe_aux(HsSession *session, int64_t now_ms, int inlet_fresh, double inlet_act, int det_fresh, double det_act, int oven_fault);
+int hs_session_set_hw_interval(HsSession *session, int interval_ms, int confirmed, char *err, size_t err_cap);
+int hs_session_probe(HsSession *session, const char *host, int port, char *err, size_t err_cap);
+int hs_session_ingest_pressure_json(HsSession *session, const char *json, int64_t now_ms);
+int hs_session_write_setpoints(HsSession *session, double inlet_c, double detector_c, char *err, size_t err_cap);
+int hs_session_device_apply_blocked(char *err, size_t err_cap);
+void hs_session_event_text(const HsSession *session, char *out, size_t cap);
+void hs_session_stopwatch_text(HsSession *session, int64_t now_ms, char *out, size_t cap);
+void hs_session_reset_stopwatch(HsSession *session);
+int hs_session_trace_count(const HsSession *session);
+int hs_session_trace_at(const HsSession *session, int index, double *inlet, double *detector, double *oven);
 int hs_session_start_device_acq(HsSession *session, char *err, size_t err_cap);
 int hs_session_stop_device_acq(HsSession *session, char *err, size_t err_cap);
 
