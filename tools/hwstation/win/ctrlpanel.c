@@ -22,6 +22,7 @@ static HWND g_pass, g_pass2;
 static HWND g_dll, g_hw_ms, g_hw_ok;
 static HWND g_events, g_clock, g_trend;
 static HWND g_note, g_cal_in, g_cal_det;
+static HWND g_nav[5];
 static HANDLE g_bridge_in, g_bridge_out, g_bridge_process;
 static int g_smoke;
 
@@ -125,23 +126,71 @@ static void show_page(int page) {
 	}
 }
 
-static void place_flow(int page, int x, int y, int width, int height, int gap) {
+static int text_px(HWND hwnd) {
+	wchar_t text[96];
+	SIZE size;
+	HDC dc;
+	HFONT old;
+	int len;
+	GetWindowTextW(hwnd, text, 96);
+	len = (int)wcslen(text);
+	if (len <= 0) {
+		return 0;
+	}
+	dc = GetDC(hwnd);
+	if (dc == NULL) {
+		return len * 16;
+	}
+	old = (HFONT)SelectObject(dc, g_font ? g_font : GetStockObject(DEFAULT_GUI_FONT));
+	GetTextExtentPoint32W(dc, text, len, &size);
+	SelectObject(dc, old);
+	ReleaseDC(hwnd, dc);
+	return size.cx;
+}
+
+static int control_span(HWND hwnd) {
+	wchar_t klass[32];
+	int text = text_px(hwnd);
+	LONG style;
+	GetClassNameW(hwnd, klass, 32);
+	if (wcscmp(klass, L"Edit") == 0) {
+		return 96;
+	}
+	style = GetWindowLongW(hwnd, GWL_STYLE);
+	if (wcscmp(klass, L"Button") == 0 && (style & 0x0F) == BS_AUTOCHECKBOX) {
+		return text + 28;
+	}
+	if (wcscmp(klass, L"Button") == 0) {
+		return text + 22;
+	}
+	return text + 12;
+}
+
+static void place_flow(int page, int left, int top, int width) {
+	int x = left;
+	int y = top;
 	int i;
-	int col = 0;
-	int row = 0;
-	int cols = width / 100;
-	if (cols < 1) {
-		cols = 1;
+	int gap = 6;
+	int row_h = 28;
+	if (width < 40) {
+		width = 40;
 	}
 	for (i = 0; i < g_page_count[page]; i++) {
-		int cx = x + col * (100 + gap);
-		int cy = y + row * (height + gap);
-		MoveWindow(g_pages[page][i], cx, cy, 96, height, TRUE);
-		col++;
-		if (col >= cols) {
-			col = 0;
-			row++;
+		HWND item = g_pages[page][i];
+		int span;
+		if (item == NULL || item == g_events || item == g_trend) {
+			continue;
 		}
+		span = control_span(item);
+		if (span < 40) {
+			span = 40;
+		}
+		if (x > left && x + span > left + width) {
+			x = left;
+			y += row_h + gap;
+		}
+		MoveWindow(item, x, y, span, row_h, TRUE);
+		x += span + gap;
 	}
 }
 
@@ -393,13 +442,63 @@ static LRESULT CALLBACK trend_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lp
 
 static void layout(HWND hwnd);
 
+static void smoke_log_path(char *path, size_t cap) {
+	DWORD n;
+	char *slash;
+	if (path == NULL || cap == 0) {
+		return;
+	}
+	path[0] = '\0';
+	n = GetModuleFileNameA(NULL, path, (DWORD)cap);
+	if (n == 0 || n >= cap) {
+		path[0] = '\0';
+		return;
+	}
+	slash = strrchr(path, '\\');
+	if (slash == NULL) {
+		slash = strrchr(path, '/');
+	}
+	if (slash == NULL || (size_t)(slash - path) + 18 >= cap) {
+		path[0] = '\0';
+		return;
+	}
+	memcpy(slash + 1, "offline-smoke.txt", 18);
+}
+
 static void smoke_line(const char *text) {
 	HANDLE out;
 	DWORD written = 0;
+	char path[MAX_PATH];
+	FILE *fp;
 	AttachConsole(ATTACH_PARENT_PROCESS);
 	out = GetStdHandle(STD_OUTPUT_HANDLE);
 	if (out != NULL && out != INVALID_HANDLE_VALUE && text != NULL) {
 		WriteFile(out, text, (DWORD)strlen(text), &written, NULL);
+	}
+	smoke_log_path(path, sizeof path);
+	fp = path[0] ? fopen(path, "ab") : NULL;
+	if (fp != NULL) {
+		fputs(text ? text : "", fp);
+		fclose(fp);
+	}
+}
+
+static void smoke_reset_log(void) {
+	char path[MAX_PATH];
+	FILE *fp;
+	smoke_log_path(path, sizeof path);
+	fp = path[0] ? fopen(path, "wb") : NULL;
+	if (fp != NULL) {
+		fclose(fp);
+	}
+}
+
+static void wide_utf8(const wchar_t *wide, char *out, int cap) {
+	if (out == NULL || cap <= 0) {
+		return;
+	}
+	if (WideCharToMultiByte(CP_UTF8, 0, wide ? wide : L"", -1, out, cap, NULL, NULL) <= 0) {
+		out[0] = '\0';
 	}
 }
 
@@ -417,46 +516,95 @@ static HWND find_child_text(HWND parent, const wchar_t *text) {
 }
 
 static int smoke_check(HWND hwnd) {
-	static const wchar_t *need[] = {L"连接仪器", L"停止温控", L"急停", L"点火", L"开空气阀", L"下载温程", L"确认并写入", L"设置口令", L"探测此地址", L"读取状态", L"工作站取数", L"加载 DLL", L"反控", L"温程", L"PID", L"维护", L"工作站"};
+	static const struct {
+		int page;
+		const wchar_t *tab;
+		const wchar_t *text;
+	} need[] = {
+		{0, L"反控", L"连接仪器"},
+		{0, L"反控", L"停止温控"},
+		{0, L"反控", L"急停"},
+		{0, L"反控", L"点火"},
+		{0, L"反控", L"开空气阀"},
+		{0, L"反控", L"探测此地址"},
+		{0, L"反控", L"读取状态"},
+		{1, L"温程", L"下载温程"},
+		{2, L"PID", L"确认并写入"},
+		{3, L"维护", L"设置口令"},
+		{4, L"工作站", L"工作站取数"},
+		{4, L"工作站", L"加载 DLL"},
+		{-1, L"分页", L"反控"},
+		{-1, L"分页", L"温程"},
+		{-1, L"分页", L"PID"},
+		{-1, L"分页", L"维护"},
+		{-1, L"分页", L"工作站"},
+	};
 	int index;
+	int failed = 0;
 	wchar_t klass[64];
-	MoveWindow(hwnd, 0, 0, 600, 1024, FALSE);
+	RECT want;
+	smoke_reset_log();
+	want.left = 0;
+	want.top = 0;
+	want.right = 720;
+	want.bottom = 680;
+	AdjustWindowRect(&want, WS_OVERLAPPEDWINDOW, FALSE);
+	ShowWindow(hwnd, SW_SHOWNA);
+	MoveWindow(hwnd, 40, 40, want.right - want.left, want.bottom - want.top, TRUE);
+	UpdateWindow(hwnd);
 	GetClassNameW(hwnd, klass, 64);
 	if (wcscmp(klass, L"ControlPanelClass") != 0) {
 		smoke_line("offline-smoke: window class is not ControlPanelClass\n");
 		return 1;
 	}
 	for (index = 0; index < (int)(sizeof need / sizeof need[0]); index++) {
-		int page;
-		int found = 0;
-		for (page = 0; page < 5; page++) {
-			HWND child;
-			RECT rect;
-			RECT client;
-			POINT point;
-			show_page(page);
-			layout(hwnd);
-			child = find_child_text(hwnd, need[index]);
-			if (child == NULL || !IsWindowVisible(child)) {
-				continue;
-			}
-			GetWindowRect(child, &rect);
-			point.x = rect.left;
-			point.y = rect.top;
-			ScreenToClient(hwnd, &point);
-			GetClientRect(hwnd, &client);
-			if (rect.right - rect.left >= 40 && point.x >= 0 && point.x < client.right) {
-				found = 1;
-				break;
-			}
+		HWND child;
+		RECT rect;
+		RECT client;
+		POINT origin;
+		POINT far_corner;
+		char tab_utf8[64];
+		char text_utf8[64];
+		char line[240];
+		int page = need[index].page;
+		int own_visible;
+		show_page(page < 0 ? 0 : page);
+		layout(hwnd);
+		child = find_child_text(hwnd, need[index].text);
+		wide_utf8(need[index].tab, tab_utf8, (int)sizeof tab_utf8);
+		wide_utf8(need[index].text, text_utf8, (int)sizeof text_utf8);
+		if (child == NULL) {
+			snprintf(line, sizeof line, "offline-smoke: page=%d tab=%s control=%s reason=missing\n", page, tab_utf8, text_utf8);
+			smoke_line(line);
+			failed = 1;
+			continue;
 		}
-		if (!found) {
-			smoke_line("offline-smoke: missing or clipped control\n");
-			return 1;
+		own_visible = (GetWindowLongW(child, GWL_STYLE) & WS_VISIBLE) != 0;
+		if (!own_visible || !IsWindowVisible(child)) {
+			snprintf(line, sizeof line, "offline-smoke: page=%d tab=%s control=%s reason=hidden\n", page, tab_utf8, text_utf8);
+			smoke_line(line);
+			failed = 1;
+			continue;
+		}
+		GetClientRect(hwnd, &client);
+		GetWindowRect(child, &rect);
+		origin.x = rect.left;
+		origin.y = rect.top;
+		far_corner.x = rect.right;
+		far_corner.y = rect.bottom;
+		ScreenToClient(hwnd, &origin);
+		ScreenToClient(hwnd, &far_corner);
+		if (origin.x < 0 || origin.y < 0 || far_corner.x > client.right || far_corner.y > client.bottom || far_corner.x - origin.x < 40 || far_corner.y - origin.y < 18 || far_corner.x - origin.x < text_px(child) + 8) {
+			snprintf(line, sizeof line, "offline-smoke: page=%d tab=%s control=%s reason=clipped x=%ld y=%ld r=%ld b=%ld client=%ld,%ld text=%d\n", page, tab_utf8, text_utf8, origin.x, origin.y, far_corner.x, far_corner.y, client.right, client.bottom, text_px(child));
+			smoke_line(line);
+			failed = 1;
 		}
 	}
 	if (g_bridge_process != NULL || hs_session_net_writes(g_session) != 0) {
 		smoke_line("offline-smoke: network or bridge was used\n");
+		return 1;
+	}
+	if (failed) {
 		return 1;
 	}
 	smoke_line("offline-smoke: ok\n");
@@ -710,32 +858,47 @@ static void layout(HWND hwnd) {
 	int mins[4] = {72, 72, 72, 88};
 	int cols[4];
 	int i;
+	int content_top;
+	HsRect nav_rects[5];
+	int nav_rows;
 	GetClientRect(hwnd, &rect);
-	width = rect.right > 320 ? rect.right : 320;
-	MoveWindow(g_banner, 8, 32, width - 16, 36, TRUE);
+	width = rect.right > 360 ? rect.right : 360;
+	nav_rows = hs_layout_buttons(nav_rects, 5, 8, 4, width - 16, 72, 28, 6);
+	if (nav_rows > 0) {
+		for (i = 0; i < 5; i++) {
+			if (g_nav[i]) {
+				MoveWindow(g_nav[i], nav_rects[i].x, nav_rects[i].y, nav_rects[i].w, nav_rects[i].h, TRUE);
+			}
+		}
+		content_top = 8 + nav_rows * 34;
+	} else {
+		content_top = 40;
+	}
+	MoveWindow(g_banner, 8, content_top, width - 16, 36, TRUE);
+	content_top += 40;
 	if (hs_layout_columns(cols, mins, 4, width - 16)) {
 		int x = 8;
 		for (i = 0; i < 4; i++) {
-			MoveWindow(g_zones[0][i] ? g_zones[0][i] : NULL, x, 72, cols[i], 18, TRUE);
+			MoveWindow(g_zones[0][i] ? g_zones[0][i] : NULL, x, content_top, cols[i], 18, TRUE);
 			if (g_zones[1][i]) {
-				MoveWindow(g_zones[1][i], x, 92, cols[i], 18, TRUE);
+				MoveWindow(g_zones[1][i], x, content_top + 20, cols[i], 18, TRUE);
 			}
 			if (g_zones[2][i]) {
-				MoveWindow(g_zones[2][i], x, 112, cols[i], 18, TRUE);
+				MoveWindow(g_zones[2][i], x, content_top + 40, cols[i], 18, TRUE);
 			}
 			x += cols[i];
 		}
 	}
-	place_flow(g_page, 8, 140, width - 16, 26, 4);
-	if (g_page == 3 && g_trend) {
+	place_flow(g_page, 8, content_top + 64, width - 16);
+	if (g_page == 3 && g_trend && rect.bottom > 240) {
 		MoveWindow(g_events, 8, rect.bottom - 220, width - 16, 60, TRUE);
 		MoveWindow(g_trend, 8, rect.bottom - 150, width - 16, 70, TRUE);
 	}
-	MoveWindow(g_link, 8, rect.bottom - 72, width - 16, 16, TRUE);
-	MoveWindow(g_heat, 8, rect.bottom - 54, width / 2 - 8, 16, TRUE);
-	MoveWindow(g_stop, width / 2, rect.bottom - 54, width / 2 - 8, 16, TRUE);
-	MoveWindow(g_acq, 8, rect.bottom - 36, width - 16, 16, TRUE);
-	MoveWindow(g_alarm, 8, rect.bottom - 18, width - 16, 16, TRUE);
+	MoveWindow(g_link, 8, rect.bottom - 88, width - 16, 20, TRUE);
+	MoveWindow(g_heat, 8, rect.bottom - 66, width / 2 - 8, 20, TRUE);
+	MoveWindow(g_stop, width / 2, rect.bottom - 66, width / 2 - 8, 20, TRUE);
+	MoveWindow(g_acq, 8, rect.bottom - 44, width - 16, 20, TRUE);
+	MoveWindow(g_alarm, 8, rect.bottom - 22, width - 16, 20, TRUE);
 }
 
 static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
@@ -778,6 +941,16 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev, PWSTR cmd, int show) {
 	(void)cmd;
 	command_line = GetCommandLineW();
 	g_smoke = command_line != NULL && (wcsstr(command_line, L"--offline-smoke") != NULL || wcsstr(command_line, L"--self-test") != NULL);
+	{
+		HMODULE user32 = GetModuleHandleW(L"user32.dll");
+		typedef BOOL(WINAPI * set_dpi_fn)(HANDLE);
+		set_dpi_fn set_dpi = NULL;
+		FARPROC raw = user32 ? GetProcAddress(user32, "SetProcessDpiAwarenessContext") : NULL;
+		if (raw != NULL) {
+			memcpy(&set_dpi, &raw, sizeof set_dpi);
+			set_dpi((HANDLE)(INT_PTR)-4);
+		}
+	}
 	if (!g_smoke) {
 		mutex = CreateMutexW(NULL, TRUE, L"Local\\Hwstation.ControlPanelClass.instance");
 		if (mutex == NULL || GetLastError() == ERROR_ALREADY_EXISTS) {
@@ -808,8 +981,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE prev, PWSTR cmd, int show) {
 		const wchar_t *names[] = {L"反控", L"温程", L"PID", L"维护", L"工作站"};
 		int nav;
 		for (nav = 0; nav < 5; nav++) {
-			HWND button = CreateWindowExW(0, L"BUTTON", names[nav], WS_CHILD | WS_VISIBLE | WS_TABSTOP, 8 + nav * 92, 4, 88, 24, hwnd, (HMENU)(INT_PTR)(80 + nav), instance, NULL);
-			SendMessageW(button, WM_SETFONT, (WPARAM)g_font, TRUE);
+			g_nav[nav] = CreateWindowExW(0, L"BUTTON", names[nav], WS_CHILD | WS_VISIBLE | WS_TABSTOP, 8 + nav * 92, 4, 88, 28, hwnd, (HMENU)(INT_PTR)(80 + nav), instance, NULL);
+			SendMessageW(g_nav[nav], WM_SETFONT, (WPARAM)g_font, TRUE);
 		}
 	}
 	g_banner = make_static(hwnd, -1, L"仿真");

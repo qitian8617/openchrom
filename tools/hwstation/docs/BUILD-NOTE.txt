@@ -1,5 +1,5 @@
-本目录的 Windows 可执行文件若随发行 zip 提供，是在 Linux 上用 mingw-w64 交叉编译并链接系统 msvcrt，方便先做离线检查。
-本机正式编译不要安装 MinGW，也不要改全局 PATH。在源码目录执行 build-windows.bat。
+随这次发行一起提供的 Windows 可执行文件来自 GitHub Actions 的 hwstation / msvc 作业：在 windows-latest 上用已安装的 Visual Studio 原生编译，并已跑过 hwstation-tests.exe --offline 和 CtrlPanel.exe --offline-smoke。这不是 mingw 交叉编译包。提交号写在同目录 COMMIT.txt。
+本机若要重编，不要安装 MinGW，也不要改全局 PATH。在源码目录执行 build-windows.bat。
 它使用已经安装的 Visual Studio 和 CMake，分别生成 x64 CtrlPanel.exe / hwstation-tests.exe 和 x86 hwbridge.exe。
 
 离线检查（不连接仪器、不查找 HWClass）：

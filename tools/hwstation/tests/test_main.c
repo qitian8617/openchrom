@@ -447,15 +447,47 @@ static int pe_machine(const char *path, unsigned *machine) {
 	return 0;
 }
 
+static int pe_named(const char *leaf, unsigned *machine) {
+	char path[4][520];
+	int i;
+	memset(path, 0, sizeof path);
+	snprintf(path[0], sizeof path[0], "build/win/%s", leaf);
+	snprintf(path[1], sizeof path[1], "dist-msvc/%s", leaf);
+	snprintf(path[2], sizeof path[2], "%s", leaf);
+#ifdef _WIN32
+	{
+		char exe[MAX_PATH];
+		DWORD n = GetModuleFileNameA(NULL, exe, MAX_PATH);
+		char *slash;
+		if (n > 0 && n < MAX_PATH) {
+			slash = strrchr(exe, '\\');
+			if (slash == NULL) {
+				slash = strrchr(exe, '/');
+			}
+			if (slash != NULL) {
+				*slash = '\0';
+				snprintf(path[3], sizeof path[3], "%s\\%s", exe, leaf);
+			}
+		}
+	}
+#endif
+	for (i = 0; i < 4; i++) {
+		if (path[i][0] != '\0' && pe_machine(path[i], machine) == 0) {
+			return 0;
+		}
+	}
+	return -1;
+}
+
 static void test_binaries(void) {
 	unsigned machine = 0;
-	if (pe_machine("build/win/hwbridge.exe", &machine) == 0) {
+	if (pe_named("hwbridge.exe", &machine) == 0) {
 		expect(machine == 0x14C, "bridge i386");
 	}
-	if (pe_machine("build/win/CtrlPanel.exe", &machine) == 0) {
+	if (pe_named("CtrlPanel.exe", &machine) == 0) {
 		expect(machine == 0x8664, "panel x64");
 	}
-	if (pe_machine("build/win/hwstation_ipc_repro.dll", &machine) == 0) {
+	if (pe_named("hwstation_ipc_repro.dll", &machine) == 0) {
 		expect(machine == 0x14C, "repro dll i386");
 	}
 }

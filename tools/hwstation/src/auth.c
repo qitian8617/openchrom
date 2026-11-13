@@ -464,9 +464,55 @@ void hs_auth_touch(HsAuth *auth, int64_t now_ms) {
 	}
 }
 
+static void format_i64(char *dst, size_t cap, long long value) {
+	char rev[32];
+	unsigned long long magnitude;
+	int neg = 0;
+	int n = 0;
+	size_t used = 0;
+	if (dst == NULL || cap == 0) {
+		return;
+	}
+	if (value < 0) {
+		neg = 1;
+		magnitude = (unsigned long long)(-(value + 1)) + 1ULL;
+	} else {
+		magnitude = (unsigned long long)value;
+	}
+	do {
+		rev[n++] = (char)('0' + (magnitude % 10ULL));
+		magnitude /= 10ULL;
+	} while (magnitude > 0 && n < (int)sizeof rev);
+	if (neg && used + 1 < cap) {
+		dst[used++] = '-';
+	}
+	while (n > 0 && used + 1 < cap) {
+		dst[used++] = rev[--n];
+	}
+	dst[used] = '\0';
+}
+
+static int replace_file(const char *src, const char *dst) {
+#ifdef _WIN32
+	/* POSIX rename replaces the destination. Win32 rename does not, so a
+	   successful enroll followed by verify used to fail while rewriting
+	   the same engineer.auth. */
+	if (!MoveFileExA(src, dst, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
+		return -1;
+	}
+	return 0;
+#else
+	if (rename(src, dst) != 0) {
+		return -1;
+	}
+	return 0;
+#endif
+}
+
 static int write_record(HsAuth *auth) {
 	char salt_b64[64];
 	char hash_b64[80];
+	char lockout[32];
 	char body[512];
 	char tmp[540];
 	FILE *fp;
@@ -476,7 +522,8 @@ static int write_record(HsAuth *auth) {
 	if (b64_encode(auth->hash, 32, hash_b64, sizeof hash_b64) < 0) {
 		return -1;
 	}
-	snprintf(body, sizeof body, "version=1\nalgorithm=PBKDF2WithHmacSHA256\niterations=%d\nsalt=%s\nhash=%s\nfailures=%d\nlockoutUntilEpochMs=%lld\n", auth->iterations, salt_b64, hash_b64, auth->failures, (long long)auth->lockout_until);
+	format_i64(lockout, sizeof lockout, auth->lockout_until);
+	snprintf(body, sizeof body, "version=1\nalgorithm=PBKDF2WithHmacSHA256\niterations=%d\nsalt=%s\nhash=%s\nfailures=%d\nlockoutUntilEpochMs=%s\n", auth->iterations, salt_b64, hash_b64, auth->failures, lockout);
 	snprintf(tmp, sizeof tmp, "%s.tmp", auth->path);
 	fp = fopen(tmp, "wb");
 	if (!fp) {
@@ -487,11 +534,14 @@ static int write_record(HsAuth *auth) {
 		remove(tmp);
 		return -1;
 	}
-	fclose(fp);
+	if (fclose(fp) != 0) {
+		remove(tmp);
+		return -1;
+	}
 #ifndef _WIN32
 	chmod(tmp, 0600);
 #endif
-	if (rename(tmp, auth->path) != 0) {
+	if (replace_file(tmp, auth->path) != 0) {
 		remove(tmp);
 		return -1;
 	}

@@ -35,4 +35,4 @@
 | 41–50 号窗口 | 明确不做 | cpp 有函数，`.def` 未导出 |
 | Android、三块板、固件报文 | 未做 | 快照不含可改的固件；不新造报文 |
 
-云端跑过的是 Linux 单元测试，以及交叉编译后的 PE 机器类型检查。没有启动 Windows 窗口，没有把命令送到真实仪器或真实 HW 窗口。
+Linux 上的 gcc / clang 离线测试与 Windows CI 上的 Visual Studio 原生编译不是同一次结果。Windows 作业要同时通过原生编译、`hwstation-tests.exe --offline` 和 `CtrlPanel.exe --offline-smoke`。用例数量可以差 1：Windows 的回环服务是线程，多一个 `accept thread`；`bridge i386`、`panel x64`、`repro dll i386` 只在旁边真有这三个 PE 时才执行。两边都只对 127.0.0.1 做一次 HELLO 回环，不查找 `HWClass`，不加载厂商 DLL，不向仪器发命令。气路示意图和校准表第二路真实温度仍然没有。没有把命令送到真实仪器或真实 HW 窗口。

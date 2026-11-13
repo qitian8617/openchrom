@@ -36,13 +36,37 @@ jobs:
 
   msvc:
     runs-on: windows-latest
+    permissions:
+      contents: read
+      actions: write
     steps:
       - uses: actions/checkout@v4
-      - name: MSVC x64 panel and x86 bridge
+      - name: MSVC native build, offline tests, offline smoke
         shell: pwsh
         working-directory: tools/hwstation
+        env:
+          HW_COMMIT: ${{ github.event.pull_request.head.sha }}
         run: |
           ./scripts/build-windows.ps1
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          New-Item -ItemType Directory -Force -Path build/win | Out-Null
+          Copy-Item dist-msvc/hwbridge.exe build/win/
+          Copy-Item dist-msvc/CtrlPanel.exe build/win/
+          Copy-Item dist-msvc/hwstation_ipc_repro.dll build/win/
           ./dist-msvc/hwstation-tests.exe --offline
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          ./dist-msvc/CtrlPanel.exe --offline-smoke
+          if ($LASTEXITCODE -ne 0) {
+            if (Test-Path dist-msvc/offline-smoke.txt) { Get-Content dist-msvc/offline-smoke.txt }
+            exit $LASTEXITCODE
+          }
+          if (Test-Path dist-msvc/offline-smoke.txt) { Get-Content dist-msvc/offline-smoke.txt }
+          if (-not $env:HW_COMMIT) { $env:HW_COMMIT = git rev-parse HEAD }
+          $env:HW_COMMIT | Set-Content -Encoding ascii dist-msvc/COMMIT.txt
+          Remove-Item dist-msvc/offline-smoke.txt -ErrorAction SilentlyContinue
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: hwstation-windows-native
+          path: tools/hwstation/dist-msvc/
+          if-no-files-found: error
