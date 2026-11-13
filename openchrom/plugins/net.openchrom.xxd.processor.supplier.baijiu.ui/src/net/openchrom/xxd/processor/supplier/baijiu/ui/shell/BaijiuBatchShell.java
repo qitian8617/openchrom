@@ -267,6 +267,7 @@ public final class BaijiuBatchShell {
 			item.setText(col++, row.getGbVerdict());
 			item.setText(col, row.getMessage());
 		}
+		BaijiuPlantLayout.fitColumns(table);
 	}
 
 	private static void addColumn(Table table, String title, int width) {

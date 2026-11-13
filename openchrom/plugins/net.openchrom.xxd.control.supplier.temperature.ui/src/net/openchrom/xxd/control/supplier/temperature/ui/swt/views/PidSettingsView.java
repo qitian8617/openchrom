@@ -65,6 +65,8 @@ public class PidSettingsView extends Composite implements LanguageListener {
 	private Button readButton;
 	private Label statusLabel;
 	private boolean chinese = true;
+	private boolean busy;
+	private boolean engineeringUnlocked;
 
 	public PidSettingsView(Composite parent, int style) {
 
@@ -72,7 +74,7 @@ public class PidSettingsView extends Composite implements LanguageListener {
 		setBackground(UiStyles.color(getDisplay(), UiColors.BACKGROUND));
 		setLayout(new GridLayout(1, false));
 
-		table = new Table(this, SWT.BORDER | SWT.FULL_SELECTION | SWT.DOUBLE_BUFFERED);
+		table = new Table(this, SWT.BORDER | SWT.FULL_SELECTION | SWT.H_SCROLL | SWT.DOUBLE_BUFFERED);
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
 		table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
@@ -84,6 +86,7 @@ public class PidSettingsView extends Composite implements LanguageListener {
 			column.setText(chinese ? headersCn[i] : headersEn[i]);
 			column.setWidth(i == 0 ? 100 : 90);
 		}
+		net.openchrom.xxd.control.supplier.temperature.ui.swt.TableBounds.fit(table);
 
 		for(int i = 0; i < CHANNEL_COUNT; i++) {
 			TableItem item = new TableItem(table, SWT.NONE);
@@ -130,6 +133,7 @@ public class PidSettingsView extends Composite implements LanguageListener {
 		connectionManager.addConnectionListener(connectionListener);
 		addDisposeListener(e -> connectionManager.removeConnectionListener(connectionListener));
 		refreshChannelLabels();
+		setEngineeringUnlocked(EngineerSession.shared().allowsEngineeringWrite(System.currentTimeMillis()));
 	}
 
 	/**
@@ -138,6 +142,7 @@ public class PidSettingsView extends Composite implements LanguageListener {
 	public void onShown() {
 
 		refreshChannelLabels();
+		setEngineeringUnlocked(EngineerSession.shared().allowsEngineeringWrite(System.currentTimeMillis()));
 		if(connectionManager.isConnected()) {
 			readPid();
 		} else {
@@ -389,11 +394,23 @@ public class PidSettingsView extends Composite implements LanguageListener {
 		}
 	}
 
+	public void setEngineeringUnlocked(boolean unlocked) {
+
+		engineeringUnlocked = unlocked;
+		updateButtonState();
+	}
+
 	private void setBusy(boolean busy) {
 
-		downloadButton.setEnabled(!busy);
-		readButton.setEnabled(!busy);
+		this.busy = busy;
+		updateButtonState();
 		table.setEnabled(!busy);
+	}
+
+	private void updateButtonState() {
+
+		downloadButton.setEnabled(!busy && engineeringUnlocked);
+		readButton.setEnabled(!busy);
 	}
 
 	private void updateIdleStatus() {

@@ -17,17 +17,30 @@ import org.junit.jupiter.api.Test;
 
 import net.openchrom.xxd.control.supplier.temperature.ui.TemperatureControlIds;
 import net.openchrom.xxd.control.supplier.temperature.ui.communication.FidReadiness;
+import net.openchrom.xxd.control.supplier.temperature.ui.communication.FidReadinessSnapshot;
+import net.openchrom.xxd.control.supplier.temperature.ui.communication.GcTcpConnection;
 
 public class AcquisitionStartGate_1_Test {
 
 	@Test
 	public void disconnectedBlocksStartAnalysis() {
 
+		assertTrue(AcquisitionStartGate.isConnectionBlocked(FidReadinessSnapshot.DISCONNECTED));
 		AcquisitionStartGate.Outcome outcome = AcquisitionStartGate.toggle(true);
 		assertFalse(outcome.ok());
 		assertFalse(outcome.acquiring());
 		assertEquals(FidReadiness.startBlockedTitle(true), outcome.title());
 		assertTrue(outcome.message().contains("连接") || outcome.message().contains("未连接"), outcome.message());
+	}
+
+	@Test
+	public void connectedFlameOutWithZeroCurrentDoesNotBlockStartAnalysis() {
+
+		GcTcpConnection.FidStatus status = new GcTcpConnection.FidStatus(true, false, false, false, false, true, true, 0, 0, 180.0f, true, "idle");
+		FidReadinessSnapshot snapshot = new FidReadinessSnapshot(true, status, null, null, null);
+		assertEquals(FidReadiness.Kind.FLAME_OUT, snapshot.kind());
+		assertEquals("0", snapshot.fidPaText());
+		assertFalse(AcquisitionStartGate.isConnectionBlocked(snapshot));
 	}
 
 	@Test

@@ -33,6 +33,7 @@ public class SettingsView extends Composite implements LanguageListener {
 	public enum SettingsTab {
 		CALIBRATION,
 		PARAMETERS,
+		PID,
 		COMMUNICATION
 	}
 
@@ -77,6 +78,7 @@ public class SettingsView extends Composite implements LanguageListener {
 
 		tabContents.put(SettingsTab.CALIBRATION, new CalibrationSettingsView(contentStack, SWT.NONE));
 		tabContents.put(SettingsTab.PARAMETERS, new ParameterSettingsView(contentStack, SWT.NONE));
+		tabContents.put(SettingsTab.PID, new PidSettingsView(contentStack, SWT.NONE));
 		tabContents.put(SettingsTab.COMMUNICATION, new CommunicationSettingsView(contentStack, SWT.NONE));
 
 		showTab(SettingsTab.CALIBRATION);
@@ -94,19 +96,6 @@ public class SettingsView extends Composite implements LanguageListener {
 			return parameterView.currentChannelIds();
 		}
 		return ParameterSettingsStore.DEFAULT_CHANNEL_IDS.clone();
-	}
-
-	/**
-	 * Live 显示调试信息 checkbox. Hides FID current and the live trend only.
-	 * Connection, flame, and acquiring stay visible. Missing settings page stays off.
-	 */
-	public boolean showDebugInfo() {
-
-		Control content = tabContents.get(SettingsTab.PARAMETERS);
-		if(content instanceof ParameterSettingsView parameterView) {
-			return parameterView.isShowDebugInfo();
-		}
-		return ParameterSettingsStore.loadShowDebugInfo();
 	}
 
 	private Composite createTabButton(Composite parent, SettingsTab tab) {
@@ -130,14 +119,16 @@ public class SettingsView extends Composite implements LanguageListener {
 
 		if(chinese) {
 			return switch(tab) {
-			case CALIBRATION -> "温度校准";
-			case PARAMETERS -> "参数设置";
+				case CALIBRATION -> "温度校准";
+				case PARAMETERS -> "参数设置";
+				case PID -> "PID参数";
 				case COMMUNICATION -> "通讯";
 			};
 		}
 		return switch(tab) {
 			case CALIBRATION -> "Calibration";
 			case PARAMETERS -> "Parameters";
+			case PID -> "PID";
 			case COMMUNICATION -> "Communication";
 		};
 	}
@@ -160,6 +151,8 @@ public class SettingsView extends Composite implements LanguageListener {
 			Control shown = tabContents.get(tab);
 			if(shown instanceof CalibrationSettingsView calibView) {
 				calibView.onShown();
+			} else if(shown instanceof PidSettingsView pidView) {
+				pidView.onShown();
 			}
 		});
 	}

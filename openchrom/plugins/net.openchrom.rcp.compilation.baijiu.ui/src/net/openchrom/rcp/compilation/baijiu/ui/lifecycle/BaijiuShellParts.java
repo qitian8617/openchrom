@@ -435,6 +435,10 @@ public final class BaijiuShellParts {
 			}
 		}
 		concealFixedStackChrome(application, modelService);
+		MPartStack stack = chromatogramStack(application, modelService);
+		if(stack != null && stack.getSelectedElement() instanceof MPart selected && BaijiuShellChrome.CSD_EDITOR_PART_ID.equals(selected.getElementId())) {
+			applyAcquisitionDisplayRange(selected);
+		}
 		return hosted || findPart(modelService, application, BaijiuShellChrome.CHROMATOGRAM_HOME_PART_ID) != null || findPlantChromatogram(application, modelService) != null;
 	}
 
@@ -3421,15 +3425,31 @@ public final class BaijiuShellParts {
 			hosted = true;
 		}
 		if(hosted && last != null) {
+			MPart selected = last;
 			hideEmptyChromatogramHome(home, true);
-			BaijiuShellSelection.selectInParent(last);
+			BaijiuShellSelection.selectInParent(selected);
 			dedupePlantWorkflowStack(application, modelService);
 			revealPlantWindowChrome(application, modelService);
+			org.eclipse.swt.widgets.Display.getDefault().asyncExec(() -> applyAcquisitionDisplayRange(selected));
 		} else {
 			hideEmptyChromatogramHome(home, false);
 		}
 		concealFixedStackChrome(application, modelService);
 		return hosted;
+	}
+
+	private static void applyAcquisitionDisplayRange(MPart part) {
+
+		try {
+			org.osgi.framework.Bundle bundle = org.eclipse.core.runtime.Platform.getBundle("net.openchrom.xxd.control.supplier.temperature.ui");
+			if(bundle == null) {
+				return;
+			}
+			Class<?> type = bundle.loadClass("net.openchrom.xxd.control.supplier.temperature.ui.acquisition.ChromatogramEditorNotifier");
+			type.getMethod("applyDisplayRange", MPart.class).invoke(null, part);
+		} catch(ReflectiveOperationException | LinkageError e) {
+			BaijiuShellLog.warn("Unable to apply acquisition chromatogram display range", e);
+		}
 	}
 
 	/**
@@ -3542,18 +3562,18 @@ public final class BaijiuShellParts {
 		}
 		part.setVisible(true);
 		part.setToBeRendered(true);
-		if(partService != null && part.getWidget() == null) {
-			try {
-				partService.showPart(part, PartState.CREATE);
-			} catch(RuntimeException | LinkageError e) {
-				try {
-					partService.showPart(part, PartState.ACTIVATE);
-				} catch(RuntimeException | LinkageError e2) {
-					// ChemClipse openEditor may already have constructed the widget
-				}
-			}
+		if(part.getWidget() instanceof Control control && !control.isDisposed()) {
+			return true;
 		}
-		return plantStack.getChildren().contains(part);
+		if(partService == null) {
+			return false;
+		}
+		try {
+			partService.showPart(part, PartState.ACTIVATE);
+		} catch(RuntimeException | LinkageError e) {
+			return part.getWidget() instanceof Control control && !control.isDisposed();
+		}
+		return part.getWidget() instanceof Control control && !control.isDisposed();
 	}
 
 	static void hideEmptyChromatogramHome(MPart home, boolean hide) {
@@ -4213,10 +4233,10 @@ public final class BaijiuShellParts {
 	}
 
 	/**
-	 * ChemClipse {@code EditorSupport.MAP_FILE} is {@code "file"}. Branding
-	 * does not Require-Bundle chemclipse.support. Skip leftover
-	 * workbench.xmi CSD parts with no chromatogram so empty chart chrome is
-	 * not embedded into 谱图/采集 on cold start.
+	 * ChemClipse {@code EditorSupport.MAP_FILE} is {@code "File"}. A local
+	 * rebind may also store {@code "file"}. Skip leftover workbench.xmi CSD
+	 * parts with no chromatogram so empty chart chrome is not embedded into
+	 * 谱图/采集 on cold start.
 	 */
 	static boolean hasCsdInput(MPart part) {
 
@@ -4225,7 +4245,10 @@ public final class BaijiuShellParts {
 		}
 		Object object = part.getObject();
 		if(object instanceof Map<?, ?> map) {
-			Object file = map.get("file");
+			Object file = map.get("File");
+			if(!(file instanceof String path && !path.isBlank()) && !(file instanceof File)) {
+				file = map.get("file");
+			}
 			if(file instanceof String path && !path.isBlank()) {
 				return true;
 			}

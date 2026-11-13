@@ -20,7 +20,7 @@ public enum PanelView {
 
 	/**
 	 * Bottom-bar pages on reverse-control. Sequence editing lives on the Baijiu
-	 * workbench, not here. {@link #AUX_PID} is a debug page, not a nav item.
+	 * workbench, not here.
 	 */
 	public static PanelView[] navigationViews() {
 

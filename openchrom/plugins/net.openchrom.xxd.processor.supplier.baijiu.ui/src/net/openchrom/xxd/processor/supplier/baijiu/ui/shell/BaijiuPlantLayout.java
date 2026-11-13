@@ -17,6 +17,7 @@ import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
 import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.FillLayout;
@@ -35,6 +36,7 @@ import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
+import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 
 /**
@@ -45,20 +47,27 @@ import org.eclipse.swt.widgets.Text;
 public final class BaijiuPlantLayout {
 
 	/** 酒精度 %vol, 允许相对偏差 %, 样品量 mL. */
-	public static final int ABV = 90;
+	public static final int ABV = 72;
 	/** 采样 Hz / 跑样 min / RT 窗 / 温度 / 体积. */
-	public static final int NUMERIC = 100;
-	public static final int PERSON = 140;
-	public static final int AROMA = 140;
-	public static final int DATE = 120;
-	public static final int SAMPLE_ID = 240;
-	public static final int SAMPLE_NAME = 280;
-	public static final int ISTD_NAME = 160;
-	public static final int METHOD = 420;
-	public static final int METHOD_MAX = 480;
-	public static final int GAS = 120;
-	public static final int COMPOUND_NAME = 160;
-	public static final int TYPE = 140;
+	public static final int NUMERIC = 84;
+	public static final int PERSON = 120;
+	public static final int AROMA = 128;
+	public static final int DATE = 112;
+	public static final int SAMPLE_ID = 168;
+	public static final int SAMPLE_NAME = 200;
+	public static final int ISTD_NAME = 140;
+	/** 方法名、报告标题、单位名称. */
+	public static final int METHOD = 280;
+	public static final int METHOD_MAX = 360;
+	/** 色谱柱等中等长度技术描述. */
+	public static final int COLUMN_TEXT = 360;
+	/** 备注 / 程序升温. Wider than a name, not the whole sash. */
+	public static final int NOTES = 480;
+	public static final int GAS = 96;
+	public static final int COMPOUND_NAME = 140;
+	public static final int TYPE = 112;
+	/** Last-column ceiling. Wider content stays reachable by horizontal scroll. */
+	public static final int COLUMN_MAX = 240;
 	/**
 	 * Fixed width of the right-hand action column. Wide enough for the longest
 	 * plant label (演示三点 / 从当前谱图添加校正点) without eating the table.
@@ -69,9 +78,10 @@ public final class BaijiuPlantLayout {
 	private static final int INK = 1;
 	private static final int ACCENT = 2;
 	private static final String FLEX_KEY = "baijiu.flex";
-	private static final String FLEX_INDEX = "baijiu.flexIndex";
-	private static final String FLEX_MIN = "baijiu.flexMin";
-	private static final String FLEX_BUSY = "baijiu.flexBusy";
+	private static final String EXPLICIT_WIDTH = "baijiu.explicitWidth";
+	private static final String USER_SIZED = "baijiu.userSized";
+	private static final String CONTENT_GEN = "baijiu.contentGen";
+	private static final String FITTING = "baijiu.fitting";
 
 	private static final Map<Display, Color[]> PALETTE = new HashMap<>();
 
@@ -97,9 +107,9 @@ public final class BaijiuPlantLayout {
 
 	public static GridData remarks() {
 
-		GridData data = new GridData(SWT.FILL, SWT.FILL, true, false);
-		data.heightHint = 48;
-		data.widthHint = METHOD;
+		GridData data = new GridData(SWT.LEFT, SWT.FILL, false, false);
+		data.heightHint = 64;
+		data.widthHint = NOTES;
 		return data;
 	}
 
@@ -112,13 +122,12 @@ public final class BaijiuPlantLayout {
 	}
 
 	/**
-	 * Task-page table band. Fills the main column but does not grow into a
-	 * tall empty grid when only a few rows are present. Leftover width goes
-	 * to {@link #fillTrailingColumn(Table)} instead of a blank tail.
+	 * Task-page table band. Height stays with the rows. Width is rewritten
+	 * by {@link #fillTrailingColumn(Table)} to the real columns, not the page.
 	 */
 	public static GridData tableBand(int heightHint) {
 
-		GridData data = new GridData(SWT.FILL, SWT.FILL, true, false);
+		GridData data = new GridData(SWT.LEFT, SWT.FILL, false, false);
 		data.widthHint = 1;
 		data.heightHint = heightHint > 0 ? heightHint : 148;
 		return data;
@@ -315,9 +324,6 @@ public final class BaijiuPlantLayout {
 			if(host != null && host.getLayout() instanceof FillLayout) {
 				applyWrapWidth(host, width);
 			}
-		}
-		if(root instanceof Text text && (text.getStyle() & SWT.WRAP) != 0 && (text.getStyle() & SWT.BORDER) == 0) {
-			applyWrapWidth(text, width);
 		}
 		if(root instanceof Composite composite) {
 			int inner = width;
@@ -567,7 +573,9 @@ public final class BaijiuPlantLayout {
 	public static Text labeledText(Composite parent, String title, int widthHint) {
 
 		label(parent, title);
-		return new Text(widthHost(parent, widthHint), SWT.BORDER);
+		Text text = new Text(widthHost(parent, widthHint), SWT.BORDER);
+		text.addModifyListener(event -> text.setToolTipText(text.getText()));
+		return text;
 	}
 
 	public static Text labeledFill(Composite parent, String title, int widthHint) {
@@ -580,9 +588,9 @@ public final class BaijiuPlantLayout {
 		label(parent, title);
 		Composite host = new Composite(parent, SWT.NONE);
 		host.setLayout(new FillLayout());
-		GridData data = new GridData(SWT.FILL, SWT.CENTER, true, false, Math.max(1, horizontalSpan), 1);
-		data.widthHint = 1;
-		data.heightHint = heightHint > 0 ? heightHint : 36;
+		GridData data = new GridData(SWT.LEFT, SWT.FILL, false, false, Math.max(1, horizontalSpan), 1);
+		data.widthHint = NOTES;
+		data.heightHint = heightHint > 0 ? heightHint : 48;
 		host.setLayoutData(data);
 		return new Text(host, SWT.BORDER | SWT.MULTI | SWT.WRAP | SWT.V_SCROLL);
 	}
@@ -594,7 +602,6 @@ public final class BaijiuPlantLayout {
 		host.setLayout(new FillLayout());
 		GridData data = remarks();
 		data.horizontalSpan = Math.max(1, horizontalSpan);
-		data.widthHint = 1;
 		host.setLayoutData(data);
 		return new Text(host, SWT.BORDER | SWT.MULTI | SWT.WRAP | SWT.V_SCROLL);
 	}
@@ -626,8 +633,12 @@ public final class BaijiuPlantLayout {
 	public static TableColumn column(Table table, String title, int width) {
 
 		TableColumn column = new TableColumn(table, SWT.NONE);
-		column.setText(title == null ? "" : title);
-		column.setWidth(width);
+		String label = title == null ? "" : title;
+		column.setText(label);
+		int capped = Math.min(Math.max(36, width), COLUMN_MAX);
+		column.setWidth(capped);
+		column.setData(EXPLICIT_WIDTH, Integer.valueOf(capped));
+		column.setToolTipText(label);
 		return column;
 	}
 
@@ -647,9 +658,11 @@ public final class BaijiuPlantLayout {
 	}
 
 	/**
-	 * Grow the last column into leftover client width so row lines do not run
-	 * off into an empty trailing region. Overflowing compound matrices keep
-	 * their horizontal scrollbar.
+	 * Size the table widget to its real columns. {@link #COLUMN_MAX} applies
+	 * only when {@link #column(Table, String, int)} first creates a column.
+	 * A later drag is stored and kept across window resizes. No placeholder
+	 * column is added. When the page is narrower than the columns, the table
+	 * uses that width and its own horizontal scrollbar.
 	 */
 	public static void fillTrailingColumn(Table table) {
 
@@ -661,18 +674,216 @@ public final class BaijiuPlantLayout {
 
 	public static void fillTrailingColumn(Table table, int columnIndex) {
 
-		if(table == null || table.isDisposed() || columnIndex < 0) {
+		if(table == null || table.isDisposed() || columnIndex < 0 || columnIndex >= table.getColumnCount()) {
 			return;
 		}
+		Listener previous = (Listener)table.getData(FLEX_KEY);
+		if(previous != null) {
+			table.removeListener(SWT.Resize, previous);
+			table.removeListener(SWT.MouseUp, previous);
+			table.setData(FLEX_KEY, null);
+		}
+		for(TableColumn column : table.getColumns()) {
+			if(column.getData(EXPLICIT_WIDTH) == null) {
+				column.setData(EXPLICIT_WIDTH, Integer.valueOf(Math.max(36, column.getWidth())));
+			}
+			if(column.getToolTipText() == null || column.getToolTipText().isBlank()) {
+				column.setToolTipText(column.getText());
+			}
+			hookColumnDrag(table, column);
+		}
+		installCellTip(table);
+		Listener fit = event -> {
+			if(event.type == SWT.MouseUp && event.y > table.getHeaderHeight()) {
+				return;
+			}
+			if(event.type == SWT.MouseUp) {
+				rememberDraggedWidths(table);
+			}
+			fitColumns(table);
+		};
+		table.setData(FLEX_KEY, fit);
+		table.addListener(SWT.Resize, fit);
+		table.addListener(SWT.MouseUp, fit);
+		table.addListener(SWT.Dispose, event -> {
+			table.removeListener(SWT.Resize, fit);
+			table.removeListener(SWT.MouseUp, fit);
+		});
+		fitColumns(table);
+	}
+
+	/**
+	 * Measure header and current cells into the column widths, then stop the
+	 * table widget at that sum. A column the user has dragged is left alone.
+	 * An empty table keeps the width it was created with.
+	 */
+	public static void fitColumns(Table table) {
+
+		if(table == null || table.isDisposed() || Boolean.TRUE.equals(table.getData(FITTING))) {
+			return;
+		}
+		int generation = table.getItemCount();
+		Object seen = table.getData(CONTENT_GEN);
+		if(!(seen instanceof Integer value) || value.intValue() != generation) {
+			table.setData(CONTENT_GEN, Integer.valueOf(generation));
+			applyContentWidths(table);
+		}
+		fitTableWidget(table);
+	}
+
+	private static void hookColumnDrag(Table table, TableColumn column) {
+
+		if(column.getData("baijiu.hooked") instanceof Listener) {
+			return;
+		}
+		Listener drag = event -> {
+			if(Boolean.TRUE.equals(table.getData(FITTING)) || column.isDisposed()) {
+				return;
+			}
+			if((event.stateMask & SWT.BUTTON1) == 0) {
+				return;
+			}
+			column.setData(EXPLICIT_WIDTH, Integer.valueOf(Math.max(36, column.getWidth())));
+			column.setData(USER_SIZED, Boolean.TRUE);
+			fitTableWidget(table);
+		};
+		column.setData("baijiu.hooked", drag);
+		column.addListener(SWT.Resize, drag);
+		column.addListener(SWT.Dispose, event -> column.removeListener(SWT.Resize, drag));
+	}
+
+	private static void rememberDraggedWidths(Table table) {
+
 		TableColumn[] columns = table.getColumns();
-		if(columnIndex >= columns.length || Boolean.TRUE.equals(table.getData(FLEX_KEY))) {
+		boolean capped = lastColumnIsFilling(table, columns);
+		for(int i = 0; i < columns.length; i++) {
+			int width = columns[i].getWidth();
+			int known = explicitWidth(columns[i], width);
+			if(capped && i == columns.length - 1 && width > known + 8) {
+				continue;
+			}
+			if(width >= 36 && Math.abs(width - known) > 2) {
+				columns[i].setData(EXPLICIT_WIDTH, Integer.valueOf(width));
+				columns[i].setData(USER_SIZED, Boolean.TRUE);
+			}
+		}
+	}
+
+	private static boolean lastColumnIsFilling(Table table, TableColumn[] columns) {
+
+		int explicitSum = 0;
+		for(TableColumn column : columns) {
+			explicitSum += explicitWidth(column, column.getWidth());
+		}
+		Control sized = table;
+		Composite page = table.getParent();
+		if(page != null && page.getLayout() instanceof FillLayout && page.getLayoutData() instanceof GridData) {
+			sized = page;
+			page = page.getParent();
+		}
+		int available = page == null || page.isDisposed() ? Integer.MAX_VALUE : page.getClientArea().width;
+		return available < explicitSum && sized.getSize().x <= available + 4;
+	}
+
+	private static int explicitWidth(TableColumn column, int fallback) {
+
+		Object explicit = column.getData(EXPLICIT_WIDTH);
+		return explicit instanceof Integer value ? value.intValue() : fallback;
+	}
+
+	private static void applyContentWidths(Table table) {
+
+		if(table.getItemCount() == 0 || Boolean.TRUE.equals(table.getData(FITTING))) {
 			return;
 		}
-		table.setData(FLEX_KEY, Boolean.TRUE);
-		table.setData(FLEX_INDEX, Integer.valueOf(columnIndex));
-		table.setData(FLEX_MIN, Integer.valueOf(Math.max(48, columns[columnIndex].getWidth())));
-		table.addListener(SWT.Resize, e -> applyTrailingColumn(table));
-		applyTrailingColumn(table);
+		table.setData(FITTING, Boolean.TRUE);
+		GC gc = new GC(table);
+		try {
+			TableColumn[] columns = table.getColumns();
+			TableItem[] items = table.getItems();
+			int sample = Math.min(items.length, 40);
+			for(int i = 0; i < columns.length; i++) {
+				TableColumn column = columns[i];
+				if(Boolean.TRUE.equals(column.getData(USER_SIZED))) {
+					continue;
+				}
+				String header = column.getText() == null ? "" : column.getText();
+				int width = gc.stringExtent(header).x + 28;
+				for(int row = 0; row < sample; row++) {
+					String cell = items[row].getText(i);
+					if(cell != null && !cell.isEmpty()) {
+						width = Math.max(width, gc.stringExtent(cell).x + 18);
+					}
+				}
+				width = Math.min(Math.max(width, 36), contentCap(header));
+				if(explicitWidth(column, -1) != width) {
+					column.setData(EXPLICIT_WIDTH, Integer.valueOf(width));
+					column.setWidth(width);
+				}
+			}
+		} finally {
+			gc.dispose();
+			table.setData(FITTING, Boolean.FALSE);
+		}
+	}
+
+	private static int contentCap(String header) {
+
+		if(header.contains("备注") || header.contains("说明") || header.contains("谱图") || header.contains("路径") || header.contains("来源")) {
+			return NOTES;
+		}
+		if(header.contains("方法")) {
+			return METHOD_MAX;
+		}
+		return COLUMN_MAX;
+	}
+
+	private static void fitTableWidget(Table table) {
+
+		if(table == null || table.isDisposed() || Boolean.TRUE.equals(table.getData(FITTING))) {
+			return;
+		}
+		table.setData(FITTING, Boolean.TRUE);
+		try {
+			int columnsWidth = 0;
+			int count = 0;
+			for(TableColumn column : table.getColumns()) {
+				count++;
+				Object explicit = column.getData(EXPLICIT_WIDTH);
+				int width = explicit instanceof Integer value ? value.intValue() : column.getWidth();
+				columnsWidth += Math.max(width, 1);
+			}
+			if(count == 0) {
+				return;
+			}
+			int chrome = table.computeTrim(0, 0, columnsWidth, table.getHeaderHeight() + 8).width - columnsWidth;
+			if(chrome < 6) {
+				chrome = 6;
+			}
+			int wanted = columnsWidth + chrome;
+			Control sized = table;
+			Composite page = table.getParent();
+			if(page != null && page.getLayout() instanceof org.eclipse.swt.layout.FillLayout && page.getLayoutData() instanceof GridData) {
+				sized = page;
+				page = page.getParent();
+			}
+			int available = page == null || page.isDisposed() ? wanted : page.getClientArea().width;
+			if(available < 48) {
+				available = wanted;
+			}
+			int target = Math.min(wanted, available);
+			if(sized.getLayoutData() instanceof GridData data) {
+				boolean changed = data.widthHint != target || data.grabExcessHorizontalSpace || data.horizontalAlignment != SWT.LEFT;
+				data.grabExcessHorizontalSpace = false;
+				data.horizontalAlignment = SWT.LEFT;
+				data.widthHint = target;
+				if(changed && page != null && !page.isDisposed()) {
+					page.layout(true, true);
+				}
+			}
+		} finally {
+			table.setData(FITTING, Boolean.FALSE);
+		}
 	}
 
 	public static void ensureGrid(Composite parent) {
@@ -953,42 +1164,40 @@ public final class BaijiuPlantLayout {
 		update.handleEvent(null);
 	}
 
-	private static void applyTrailingColumn(Table table) {
+	private static void installCellTip(Table table) {
 
-		if(table == null || table.isDisposed() || Boolean.TRUE.equals(table.getData(FLEX_BUSY))) {
+		if(Boolean.TRUE.equals(table.getData("baijiu.tip"))) {
 			return;
 		}
-		Object indexValue = table.getData(FLEX_INDEX);
-		Object minValue = table.getData(FLEX_MIN);
-		if(!(indexValue instanceof Integer columnIndex) || !(minValue instanceof Integer minWidth)) {
-			return;
-		}
+		table.setData("baijiu.tip", Boolean.TRUE);
+		Listener hover = event -> {
+			if(table.isDisposed()) {
+				return;
+			}
+			TableItem item = table.getItem(new Point(event.x, event.y));
+			if(item == null) {
+				table.setToolTipText(null);
+				return;
+			}
+			int index = columnIndexAt(table, event.x);
+			String text = index >= 0 && index < table.getColumnCount() ? item.getText(index) : "";
+			table.setToolTipText(text == null || text.isBlank() ? null : text);
+		};
+		table.addListener(SWT.MouseHover, hover);
+		table.addListener(SWT.Dispose, event -> table.removeListener(SWT.MouseHover, hover));
+	}
+
+	private static int columnIndexAt(Table table, int x) {
+
+		int cursor = 0;
 		TableColumn[] columns = table.getColumns();
-		if(columnIndex < 0 || columnIndex >= columns.length) {
-			return;
-		}
-		int others = 0;
 		for(int i = 0; i < columns.length; i++) {
-			if(i != columnIndex) {
-				others += columns[i].getWidth();
+			cursor += columns[i].getWidth();
+			if(x < cursor) {
+				return i;
 			}
 		}
-		int client = table.getClientArea().width;
-		if(client <= 1) {
-			return;
-		}
-		int target = client - others - 3;
-		if(target < minWidth.intValue()) {
-			target = minWidth.intValue();
-		}
-		table.setData(FLEX_BUSY, Boolean.TRUE);
-		try {
-			if(columns[columnIndex].getWidth() != target) {
-				columns[columnIndex].setWidth(target);
-			}
-		} finally {
-			table.setData(FLEX_BUSY, Boolean.FALSE);
-		}
+		return columns.length - 1;
 	}
 
 	/**

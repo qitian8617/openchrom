@@ -88,6 +88,7 @@ public class EngineerAuthDialog_1_Test {
 							fields.get(0).setText("correct-horse");
 							fields.get(1).setText("correct-horse");
 							click(dialog);
+							click(dialog);
 						}
 						if(beats[0] < 40 && findDialog(display) != null) {
 							display.timerExec(30, this);
@@ -99,7 +100,39 @@ public class EngineerAuthDialog_1_Test {
 			assertEquals(Result.GRANTED, result);
 			assertTrue(Files.isRegularFile(file));
 			assertFalse(Files.readString(file).contains("correct-horse"));
+			assertEquals(1, session.auditSnapshot().stream().filter("enroll"::equals).count(), "repeated selection submitted more than once");
 			assertTrue(beats[0] > 1, "event loop did not run during enrollment");
+		} finally {
+			display.dispose();
+		}
+	}
+
+	@Test
+	public void closingDuringEnrollmentDoesNotLeaveAGrant(@TempDir Path dir) throws Exception {
+
+		Path file = dir.resolve("auth");
+		EngineerSession session = new EngineerSession(new FileEngineerCredentialStore(file), 60_000L);
+		Display display = new Display();
+		try {
+			display.asyncExec(() -> display.timerExec(40, () -> {
+				Shell dialog = findDialog(display);
+				assertTrue(dialog != null);
+				List<Text> fields = texts(dialog);
+				fields.get(0).setText("correct-horse");
+				fields.get(1).setText("correct-horse");
+				click(dialog);
+				dialog.close();
+			}));
+			assertEquals(Result.CANCELLED, EngineerAuthDialog.open(null, session));
+			long deadline = System.currentTimeMillis() + 15_000L;
+			while(System.currentTimeMillis() < deadline && !session.auditSnapshot().contains("cancelled-during-auth")) {
+				if(!display.readAndDispatch()) {
+					Thread.sleep(20L);
+				}
+			}
+			assertTrue(Files.isRegularFile(file));
+			assertTrue(session.auditSnapshot().contains("cancelled-during-auth"));
+			assertFalse(session.allowsEngineeringWrite(System.currentTimeMillis()));
 		} finally {
 			display.dispose();
 		}

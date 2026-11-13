@@ -23,13 +23,13 @@ public class BaijiuPlantLayout_1_Test {
 	public void shortFieldsDoNotGrabExcessWidth() {
 
 		GridData abv = BaijiuPlantLayout.fixed(BaijiuPlantLayout.ABV);
-		assertEquals(90, abv.widthHint);
+		assertEquals(72, abv.widthHint);
 		assertFalse(abv.grabExcessHorizontalSpace);
 		GridData person = BaijiuPlantLayout.fixed(BaijiuPlantLayout.PERSON);
-		assertEquals(140, person.widthHint);
+		assertEquals(120, person.widthHint);
 		assertFalse(person.grabExcessHorizontalSpace);
 		GridData sampleId = BaijiuPlantLayout.fixed(BaijiuPlantLayout.SAMPLE_ID);
-		assertEquals(240, sampleId.widthHint);
+		assertEquals(168, sampleId.widthHint);
 		assertFalse(sampleId.grabExcessHorizontalSpace);
 	}
 
@@ -37,7 +37,7 @@ public class BaijiuPlantLayout_1_Test {
 	public void methodLengthFieldsDoNotGrabTheSash() {
 
 		GridData method = BaijiuPlantLayout.fillHint(BaijiuPlantLayout.METHOD);
-		assertEquals(420, method.widthHint);
+		assertEquals(280, method.widthHint);
 		assertFalse(method.grabExcessHorizontalSpace);
 	}
 
@@ -73,7 +73,7 @@ public class BaijiuPlantLayout_1_Test {
 
 		GridData band = BaijiuPlantLayout.tableBand(148);
 		assertEquals(1, band.widthHint);
-		assertTrue(band.grabExcessHorizontalSpace);
+		assertFalse(band.grabExcessHorizontalSpace);
 		assertFalse(band.grabExcessVerticalSpace);
 		assertEquals(148, band.heightHint);
 		GridData fallback = BaijiuPlantLayout.tableBand(0);
@@ -92,20 +92,22 @@ public class BaijiuPlantLayout_1_Test {
 	public void remarksFillHorizontallyWithHeight() {
 
 		GridData remarks = BaijiuPlantLayout.remarks();
-		assertTrue(remarks.grabExcessHorizontalSpace);
+		assertFalse(remarks.grabExcessHorizontalSpace);
+		assertEquals(BaijiuPlantLayout.NOTES, remarks.widthHint);
 		assertTrue(remarks.heightHint >= 36);
 	}
 
 	@Test
 	public void plantNumericWidthsMatchOperatorData() {
 
-		assertEquals(90, BaijiuPlantLayout.ABV);
-		assertEquals(100, BaijiuPlantLayout.NUMERIC);
-		assertEquals(140, BaijiuPlantLayout.PERSON);
-		assertEquals(140, BaijiuPlantLayout.AROMA);
-		assertEquals(240, BaijiuPlantLayout.SAMPLE_ID);
-		assertEquals(280, BaijiuPlantLayout.SAMPLE_NAME);
-		assertEquals(420, BaijiuPlantLayout.METHOD);
+		assertEquals(72, BaijiuPlantLayout.ABV);
+		assertEquals(84, BaijiuPlantLayout.NUMERIC);
+		assertEquals(120, BaijiuPlantLayout.PERSON);
+		assertEquals(128, BaijiuPlantLayout.AROMA);
+		assertEquals(168, BaijiuPlantLayout.SAMPLE_ID);
+		assertEquals(200, BaijiuPlantLayout.SAMPLE_NAME);
+		assertEquals(280, BaijiuPlantLayout.METHOD);
+		assertTrue(BaijiuPlantLayout.COLUMN_MAX <= 280);
 	}
 
 	@Test

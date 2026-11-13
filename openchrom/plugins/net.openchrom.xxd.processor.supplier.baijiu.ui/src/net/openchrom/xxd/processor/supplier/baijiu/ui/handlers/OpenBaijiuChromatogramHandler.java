@@ -65,6 +65,12 @@ public class OpenBaijiuChromatogramHandler {
 	 */
 	public static final String CREATEGUI_DI_REASON = "Could not find satisfiable constructor in org.eclipse.chemclipse.ux.extension.xxd.ui.editors.ChromatogramEditorCSD";
 	public static final String HOST_FAILED_REASON = "\u65e0\u6cd5\u628a\u8272\u8c31\u56fe\u8f7d\u5165\u300c\u8c31\u56fe/\u91c7\u96c6\u300d\u3002" + CREATEGUI_DI_REASON;
+	/**
+	 * Used when the part was not created and no exception text was captured.
+	 * The 2026-11-10 runtime log shows an icon-path NPE inside the constructor,
+	 * which E4 does not write as {@link #CREATEGUI_DI_REASON}.
+	 */
+	public static final String EDITOR_NOT_CREATED_REASON = "\u65e0\u6cd5\u628a\u8272\u8c31\u56fe\u8f7d\u5165\u300c\u8c31\u56fe/\u91c7\u96c6\u300d\u3002\u7f16\u8f91\u5668\u6ca1\u6709\u521b\u5efa\u51fa\u6765\uff0c\u8bf7\u67e5\u5de5\u4f5c\u53f0\u65e5\u5fd7\u4e2d\u7684\u521d\u59cb\u5316\u5f02\u5e38\u3002";
 
 	private static final Logger logger = Logger.getLogger(OpenBaijiuChromatogramHandler.class);
 
@@ -107,8 +113,17 @@ public class OpenBaijiuChromatogramHandler {
 			if(reuseOpenEditor(file, live)) {
 				return true;
 			}
-			chemclipse = openViaChemClipseSupport(file, live);
-			hosted = hostExistingEditors(live);
+			if(isPlantProduct(live)) {
+				/*
+				 * Do not call ChemClipse openEditor first. It showPart's the
+				 * editor on the unrendered primary stack and the constructor
+				 * fails before this method can move the part.
+				 */
+				hosted = BaijiuWorkbenchParts.openSavedCsdInPlantStack(file, live);
+			} else {
+				chemclipse = openViaChemClipseSupport(file, live);
+				hosted = hostExistingEditors(live);
+			}
 		} catch(RuntimeException | LinkageError e) {
 			logger.warn("ChemClipse CSD open failed for " + file.getAbsolutePath(), e);
 			recordOpenFailure(e);
@@ -123,7 +138,7 @@ public class OpenBaijiuChromatogramHandler {
 		}
 		restorePlantEmptyState(live);
 		if(lastOpenFailure == null) {
-			lastOpenFailure = plantProduct ? HOST_FAILED_REASON : OPEN_FAILED_REASON;
+			lastOpenFailure = plantProduct ? EDITOR_NOT_CREATED_REASON : OPEN_FAILED_REASON;
 		}
 		return false;
 	}
@@ -287,6 +302,10 @@ public class OpenBaijiuChromatogramHandler {
 			return;
 		}
 		String message = t.getMessage();
+		Throwable cause = t.getCause();
+		if((message == null || message.isBlank()) && cause != null && cause.getMessage() != null) {
+			message = cause.getMessage();
+		}
 		if(message != null && message.contains("satisfiable constructor")) {
 			lastOpenFailure = HOST_FAILED_REASON;
 			return;
@@ -299,7 +318,11 @@ public class OpenBaijiuChromatogramHandler {
 	private static void showPlantChromatogramInBranding(MApplication application, EModelService modelService, EPartService partService) {
 
 		try {
-			Class<?> type = Class.forName("net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuShellParts");
+			org.osgi.framework.Bundle bundle = org.eclipse.core.runtime.Platform.getBundle("net.openchrom.rcp.compilation.baijiu.ui");
+			if(bundle == null) {
+				return;
+			}
+			Class<?> type = bundle.loadClass("net.openchrom.rcp.compilation.baijiu.ui.lifecycle.BaijiuShellParts");
 			type.getMethod("showChromatogram", MApplication.class, EModelService.class, EPartService.class).invoke(null, application, modelService, partService);
 		} catch(ClassNotFoundException | LinkageError e) {
 			// community product

@@ -135,7 +135,7 @@ public class ColumnOvenView extends Composite implements LanguageListener {
 
 		phaseLabel = WidgetFactory.createTitle(this, chinese ? "升温阶段设置" : "Heating Phase Settings");
 
-		table = new Table(this, SWT.BORDER | SWT.FULL_SELECTION | SWT.DOUBLE_BUFFERED);
+		table = new Table(this, SWT.BORDER | SWT.FULL_SELECTION | SWT.H_SCROLL | SWT.DOUBLE_BUFFERED);
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
 		{
@@ -155,6 +155,7 @@ public class ColumnOvenView extends Composite implements LanguageListener {
 			column.setText(chinese ? headersCn[i] : headersEn[i]);
 			column.setWidth(i == 0 ? 80 : 120);
 		}
+		net.openchrom.xxd.control.supplier.temperature.ui.swt.TableBounds.fit(table);
 
 		for(int stage = 0; stage < ColumnOvenProgram.STAGE_COUNT; stage++) {
 			TableItem item = new TableItem(table, SWT.NONE);

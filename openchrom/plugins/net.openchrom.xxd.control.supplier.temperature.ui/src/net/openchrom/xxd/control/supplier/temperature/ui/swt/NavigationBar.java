@@ -92,7 +92,7 @@ public class NavigationBar extends Composite implements LanguageListener {
 			return switch(view) {
 				case MAIN -> "主界面";
 				case COLUMN_OVEN -> "柱箱";
-				case AUX_PID -> "进样PID";
+				case AUX_PID -> "PID参数";
 				case DETECTOR -> "检测器";
 				case EVENTS -> "事件";
 				case STOPWATCH -> "秒表";
@@ -102,7 +102,7 @@ public class NavigationBar extends Composite implements LanguageListener {
 		return switch(view) {
 			case MAIN -> "Main";
 			case COLUMN_OVEN -> "Oven";
-			case AUX_PID -> "Aux PID";
+			case AUX_PID -> "PID";
 			case DETECTOR -> "Detector";
 			case EVENTS -> "Events";
 			case STOPWATCH -> "Stopwatch";

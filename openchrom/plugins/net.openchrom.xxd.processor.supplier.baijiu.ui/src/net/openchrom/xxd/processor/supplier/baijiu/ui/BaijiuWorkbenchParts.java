@@ -405,18 +405,135 @@ public final class BaijiuWorkbenchParts {
 		}
 		part.setVisible(true);
 		part.setToBeRendered(true);
-		if(partService != null && part.getWidget() == null) {
+		if(editorWidgetReady(part)) {
+			return true;
+		}
+		if(partService == null) {
+			return false;
+		}
+		try {
+			partService.showPart(part, PartState.ACTIVATE);
+		} catch(RuntimeException | LinkageError e) {
+			if(editorWidgetReady(part)) {
+				return true;
+			}
+			if(e instanceof RuntimeException runtime) {
+				throw runtime;
+			}
+			throw new IllegalStateException(e);
+		}
+		return editorWidgetReady(part);
+	}
+
+	/**
+	 * Open a saved CSD file in the rendered 谱图/采集 stack.
+	 * ChemClipse {@code openEditor} targets {@code org.eclipse.e4.primaryDataStack},
+	 * which the plant shell does not render, so {@code ChromatogramEditorCSD}'s
+	 * {@code Composite} parent is missing and E4 reports an unsatisfiable constructor.
+	 * The part is still the real contribution URI; {@code EPartService.showPart}
+	 * runs the renderer on a stack that already has a widget.
+	 */
+	public static boolean openSavedCsdInPlantStack(java.io.File file, IEclipseContext context) {
+
+		if(file == null || !file.isFile() || context == null) {
+			return false;
+		}
+		MApplication application = context.get(MApplication.class);
+		EModelService modelService = context.get(EModelService.class);
+		EPartService partService = context.get(EPartService.class);
+		if(application == null || modelService == null || partService == null) {
+			return false;
+		}
+		MPartStack plantStack = findPlantChromatogramStack(application, modelService);
+		if(plantStack == null) {
+			return false;
+		}
+		ensureStackRendered(application, plantStack);
+		publishProcessSupplier(application);
+		MPart part = modelService.createModelElement(MPart.class);
+		part.getTags().add(EPartService.REMOVE_ON_HIDE_TAG);
+		part.setElementId(BaijiuPerspectiveIds.CSD_EDITOR_PART_ID);
+		part.setContributionURI("bundleclass://org.eclipse.chemclipse.ux.extension.xxd.ui/org.eclipse.chemclipse.ux.extension.xxd.ui.editors.ChromatogramEditorCSD");
+		java.util.HashMap<String, Object> input = new java.util.HashMap<>();
+		input.put(CsdEditorReusePolicy.CHEMCLIPSE_FILE_KEY, file.getAbsolutePath());
+		input.put("Batch", Boolean.FALSE);
+		input.put("HeaderMap", new java.util.HashMap<Object, Object>());
+		part.setObject(input);
+		part.setLabel(file.getName());
+		part.setCloseable(true);
+		part.setVisible(true);
+		part.setToBeRendered(true);
+		if(!hostCsdInPlantStack(partService, plantStack, part)) {
+			return false;
+		}
+		hideEmptyChromatogramHome(findPart(modelService, application, BaijiuPerspectiveIds.CHROMATOGRAM_HOME_PART_ID), true);
+		selectInParent(part);
+		return editorWidgetReady(part);
+	}
+
+	private static boolean editorWidgetReady(MPart part) {
+
+		return part != null && part.getWidget() instanceof Control control && !control.isDisposed();
+	}
+
+	private static void ensureStackRendered(MApplication application, MPartStack stack) {
+
+		if(stack == null || (stack.getWidget() instanceof Control control && !control.isDisposed())) {
+			return;
+		}
+		java.util.ArrayList<MUIElement> chain = new java.util.ArrayList<>();
+		MUIElement walk = stack;
+		while(walk != null) {
+			chain.add(0, walk);
+			walk = walk.getParent();
+		}
+		IPresentationEngine engine = presentationEngine(application, null);
+		if(engine == null) {
+			return;
+		}
+		for(MUIElement element : chain) {
+			if(element.getWidget() != null) {
+				continue;
+			}
+			element.setToBeRendered(true);
+			element.setVisible(true);
 			try {
-				partService.showPart(part, PartState.CREATE);
+				engine.createGui(element);
 			} catch(RuntimeException | LinkageError e) {
-				try {
-					partService.showPart(part, PartState.ACTIVATE);
-				} catch(RuntimeException | LinkageError e2) {
-					// ChemClipse openEditor may already have constructed the widget
-				}
+				return;
 			}
 		}
-		return plantStack.getChildren().contains(part);
+	}
+
+	private static void publishProcessSupplier(MApplication application) {
+
+		if(application == null || application.getContext() == null) {
+			return;
+		}
+		IEclipseContext app = application.getContext();
+		try {
+			if(app.get(org.eclipse.chemclipse.processing.supplier.IProcessSupplierContext.class) != null) {
+				return;
+			}
+		} catch(RuntimeException | LinkageError e) {
+			return;
+		}
+		try {
+			org.osgi.framework.Bundle bundle = org.eclipse.core.runtime.Platform.getBundle("org.eclipse.chemclipse.processing.ui");
+			if(bundle == null || bundle.getBundleContext() == null) {
+				return;
+			}
+			org.osgi.framework.ServiceReference<org.eclipse.chemclipse.processing.supplier.IProcessSupplierContext> reference = bundle.getBundleContext().getServiceReference(org.eclipse.chemclipse.processing.supplier.IProcessSupplierContext.class);
+			if(reference == null) {
+				return;
+			}
+			org.eclipse.chemclipse.processing.supplier.IProcessSupplierContext service = bundle.getBundleContext().getService(reference);
+			if(service != null) {
+				app.set(org.eclipse.chemclipse.processing.supplier.IProcessSupplierContext.class, service);
+			}
+		} catch(RuntimeException | LinkageError e) {
+			// showPart reports the missing constructor argument
+		}
 	}
 
 	static void hideEmptyChromatogramHome(MPart home, boolean hide) {
@@ -473,7 +590,11 @@ public final class BaijiuWorkbenchParts {
 			return;
 		}
 		try {
-			Class<?> type = Class.forName("net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuHomePanels");
+			org.osgi.framework.Bundle bundle = org.eclipse.core.runtime.Platform.getBundle("net.openchrom.rcp.compilation.baijiu.ui");
+			if(bundle == null) {
+				return;
+			}
+			Class<?> type = bundle.loadClass("net.openchrom.rcp.compilation.baijiu.ui.parts.BaijiuHomePanels");
 			type.getMethod("createChromatogramEmptyState", Composite.class).invoke(null, host);
 		} catch(ClassNotFoundException | LinkageError e) {
 			// community product
@@ -546,11 +667,7 @@ public final class BaijiuWorkbenchParts {
 		}
 		Object object = part.getObject();
 		if(object instanceof java.util.Map<?, ?> map) {
-			Object file = map.get("file");
-			if(file instanceof String path && !path.isBlank()) {
-				return true;
-			}
-			if(file instanceof java.io.File) {
+			if(CsdEditorReusePolicy.fileOf(map) != null) {
 				return true;
 			}
 		} else if(object != null) {

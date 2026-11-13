@@ -10,9 +10,8 @@
 package net.openchrom.xxd.control.supplier.temperature.ui.swt;
 
 /**
- * Engineer-mode pages on the GC console. The plant shell passes these
- * strings and does not link this type. {@link #FID} is the PID debug page
- * and stays off the operator bottom bar.
+ * Engineer-mode page keys retained for compatibility with existing callers.
+ * PID settings also have an operator reverse-control page.
  */
 public final class EngineerConsolePages {
 

@@ -284,6 +284,7 @@ public final class BaijiuSequenceResultsShell {
 			item.setText(col++, row.getGbVerdict());
 			item.setText(col, row.getRemark());
 		}
+		BaijiuPlantLayout.fitColumns(table);
 	}
 
 	private static void exportCsv(Shell shell, List<BaijiuSequenceResultRow> rows, BaijiuMethodSettings settings) {

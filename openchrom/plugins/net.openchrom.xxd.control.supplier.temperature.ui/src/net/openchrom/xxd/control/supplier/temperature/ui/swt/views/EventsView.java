@@ -58,7 +58,7 @@ public class EventsView extends Composite implements LanguageListener, GcEventLi
 		subtitleLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
 		Composite card = WidgetFactory.createCard(this);
-		table = new Table(card, SWT.BORDER | SWT.FULL_SELECTION | SWT.DOUBLE_BUFFERED);
+		table = new Table(card, SWT.BORDER | SWT.FULL_SELECTION | SWT.H_SCROLL | SWT.DOUBLE_BUFFERED);
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
 		table.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
@@ -69,6 +69,7 @@ public class EventsView extends Composite implements LanguageListener, GcEventLi
 			column.setText(headersCn[i]);
 			column.setWidth(i == 0 ? 220 : 110);
 		}
+		net.openchrom.xxd.control.supplier.temperature.ui.swt.TableBounds.fit(table);
 
 		table.addListener(SWT.Selection, e -> updateDetailFromSelection());
 

@@ -73,14 +73,18 @@ public class CommunicationSettingsView extends Composite implements LanguageList
 		ipLabel.setBackground(commCard.getBackground());
 		ipLabel.setText(chinese ? "IP地址" : "IP Address");
 		ipText = new Text(commCard, SWT.BORDER);
-		ipText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		GridData ipData = new GridData(SWT.LEFT, SWT.CENTER, false, false);
+		ipData.widthHint = 160;
+		ipText.setLayoutData(ipData);
 
 		portLabel = new Label(commCard, SWT.NONE);
 		portLabel.setBackground(commCard.getBackground());
 		portLabel.setText(chinese ? "端口" : "Port");
 		portText = new Text(commCard, SWT.BORDER);
 		portText.setText(String.valueOf(GcDeviceScanner.DEFAULT_GC_PORT));
-		portText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		GridData portData = new GridData(SWT.LEFT, SWT.CENTER, false, false);
+		portData.widthHint = 72;
+		portText.setLayoutData(portData);
 
 		Composite buttonRow = new Composite(commCard, SWT.NONE);
 		buttonRow.setBackground(commCard.getBackground());

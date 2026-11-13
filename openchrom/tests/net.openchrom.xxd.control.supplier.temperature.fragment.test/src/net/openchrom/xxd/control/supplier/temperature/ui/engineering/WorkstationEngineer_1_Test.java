@@ -49,8 +49,10 @@ public class WorkstationEngineer_1_Test {
 		assertTrue(ConsoleControlPolicy.pidDebugStopHeatEnabled(true, false, true, false));
 		assertFalse(ConsoleControlPolicy.pidDebugStartEnabled(false, false, false, false, false));
 		assertTrue(ConsoleControlPolicy.columnProgramEditEnabled(false));
+		assertTrue(EngineerPages.isEngineerPage(EngineerPages.TEMPERATURE));
+		assertEquals(EngineerPages.DEVICE, EngineerPages.visiblePage(EngineerPages.TEMPERATURE));
+		assertEquals("设备配置", EngineerPages.title(EngineerPages.TEMPERATURE));
 		assertFalse(EngineerPages.reopensOperatorRemotePanel(EngineerPages.TEMPERATURE));
-		assertEquals("温度标定与整定", EngineerPages.title(EngineerPages.TEMPERATURE));
 	}
 
 	@Test
@@ -246,11 +248,13 @@ public class WorkstationEngineer_1_Test {
 			pool.shutdownNow();
 		}
 		assertFalse(java.nio.file.Files.exists(file.resolveSibling("auth.tmp")));
-		var perms = java.nio.file.Files.getPosixFilePermissions(file);
-		assertTrue(perms.contains(java.nio.file.attribute.PosixFilePermission.OWNER_READ));
-		assertTrue(perms.contains(java.nio.file.attribute.PosixFilePermission.OWNER_WRITE));
-		assertFalse(perms.contains(java.nio.file.attribute.PosixFilePermission.GROUP_READ));
-		assertFalse(perms.contains(java.nio.file.attribute.PosixFilePermission.OTHERS_READ));
+		if(java.nio.file.Files.getFileStore(file).supportsFileAttributeView("posix")) {
+			var perms = java.nio.file.Files.getPosixFilePermissions(file);
+			assertTrue(perms.contains(java.nio.file.attribute.PosixFilePermission.OWNER_READ));
+			assertTrue(perms.contains(java.nio.file.attribute.PosixFilePermission.OWNER_WRITE));
+			assertFalse(perms.contains(java.nio.file.attribute.PosixFilePermission.GROUP_READ));
+			assertFalse(perms.contains(java.nio.file.attribute.PosixFilePermission.OTHERS_READ));
+		}
 		EngineerSession again = new EngineerSession(new FileEngineerCredentialStore(file), 2_000L);
 		assertEquals(Attempt.ALREADY_ENROLLED, again.enroll("correct-horse".toCharArray(), "correct-horse".toCharArray(), 20L));
 		for(java.lang.reflect.Method method : EngineerSession.class.getMethods()) {

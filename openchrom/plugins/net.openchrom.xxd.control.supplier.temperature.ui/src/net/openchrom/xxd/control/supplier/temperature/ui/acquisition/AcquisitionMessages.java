@@ -9,9 +9,20 @@
  *******************************************************************************/
 package net.openchrom.xxd.control.supplier.temperature.ui.acquisition;
 
+import java.util.Locale;
+
 public final class AcquisitionMessages {
 
 	private AcquisitionMessages() {
+	}
+
+	public static String liveStatus(int totalPoints, int retentionTimeMs, float signal, boolean chinese) {
+
+		double seconds = Math.max(0, retentionTimeMs) / 1000.0;
+		if(chinese) {
+			return String.format(Locale.ROOT, "采集状态: 采集中 | 点数: %d | 时长: %.1f s | 信号: %.3f mV", totalPoints, seconds, signal);
+		}
+		return String.format(Locale.ROOT, "Acquisition: Running | Points: %d | Time: %.1f s | Signal: %.3f mV", totalPoints, seconds, signal);
 	}
 
 	public static String saveSuccessTitle(boolean chinese) {
