@@ -190,16 +190,19 @@ public sealed class LiveLink
                         bool wasInvalid = run.Invalid;
                         bool armed = Volatile.Read(ref _samplesArmed) == 1;
                         run.Accept(frame, armed && !wasInvalid, view, emitted);
+                        int sent = 0;
                         foreach (ObservedSample sample in view)
                         {
-                            Sample?.Invoke(sample);
-                        }
-                        foreach (HwTriple triple in emitted)
-                        {
-                            if (!Send(triple))
+                            if (sample.Forwarded)
                             {
-                                break;
+                                if (sent >= emitted.Count || !Send(emitted[sent]))
+                                {
+                                    Sample?.Invoke(sample);
+                                    break;
+                                }
+                                sent++;
                             }
+                            Sample?.Invoke(sample);
                         }
                         if (run.Invalid && !wasInvalid)
                         {

@@ -131,7 +131,10 @@ async Task RunLink()
     var link = new LiveLink(transport, recording, new LinkOptions { HeartbeatMs = 60_000, AckTimeoutMs = 400 });
     var hello = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
     var first = new TaskCompletionSource<ObservedSample>(TaskCreationOptions.RunContinuationsAsynchronously);
-    var second = new TaskCompletionSource<ObservedSample>(TaskCreationOptions.RunContinuationsAsynchronously);
+    // Synchronous continuation. The observer runs before Sample returns.
+// That is the Windows failure: a thread-pool continuation read the sink
+// before Send. Notify-after-send makes this order pass on one core too.
+var second = new TaskCompletionSource<ObservedSample>();
     int samples = 0;
     link.Status += text =>
     {
