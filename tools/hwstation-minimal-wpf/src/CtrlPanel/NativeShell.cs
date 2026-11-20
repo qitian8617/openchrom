@@ -20,6 +20,7 @@ internal static class NativeShell
 
     private static readonly WndProcDelegate Proc = WndProc;
     private static IntPtr _mutex;
+    private static IntPtr _background;
     private static IntPtr _hwnd;
     private static HwndSource? _source;
 
@@ -59,7 +60,7 @@ internal static class NativeShell
             lpfnWndProc = Marshal.GetFunctionPointerForDelegate(Proc),
             hInstance = GetModuleHandleW(null),
             hCursor = LoadCursorW(IntPtr.Zero, 32512),
-            hbrBackground = new IntPtr(6),
+            hbrBackground = WhiteBrush(),
             lpszClassName = ClassName
         };
         RegisterClassW(ref klass);
@@ -183,4 +184,16 @@ internal static class NativeShell
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern IntPtr LoadCursorW(IntPtr instance, int cursor);
+
+    [DllImport("gdi32.dll")]
+    private static extern IntPtr CreateSolidBrush(uint color);
+
+    private static IntPtr WhiteBrush()
+    {
+        if (_background == IntPtr.Zero)
+        {
+            _background = CreateSolidBrush(0x00FFFFFF);
+        }
+        return _background;
+    }
 }

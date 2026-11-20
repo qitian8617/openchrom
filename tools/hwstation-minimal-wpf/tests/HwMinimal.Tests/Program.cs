@@ -120,7 +120,10 @@ _ = new LiveLink(cold, coldSink);
 await Task.Delay(80);
 Check(cold.Calls == 0 && coldSink.Count == 0, "constructing the link does nothing");
 
+var idle = new LiveLink(new ThrowTransport(), new NotReadySink());
+Check(!idle.TryArm(HwFrequence.Parse("10,10"), true, out string missing) && missing.Contains("尚未", StringComparison.Ordinal), "missing dll is not ready");
 await RunLink();
+await RunPairStop();
 Check(failed == 0, "all checks");
 return failed == 0 ? 0 : 1;
 
@@ -131,10 +134,10 @@ async Task RunLink()
     var link = new LiveLink(transport, recording, new LinkOptions { HeartbeatMs = 60_000, AckTimeoutMs = 400 });
     var hello = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
     var first = new TaskCompletionSource<ObservedSample>(TaskCreationOptions.RunContinuationsAsynchronously);
-    // Synchronous continuation. The observer runs before Sample returns.
-// That is the Windows failure: a thread-pool continuation read the sink
-// before Send. Notify-after-send makes this order pass on one core too.
-var second = new TaskCompletionSource<ObservedSample>();
+    // Inline continuation: the observer runs before Sample returns, after both
+    // commands of the pair have been sent.
+    var second = new TaskCompletionSource<ObservedSample>();
+    var third = new TaskCompletionSource<ObservedSample>();
     int samples = 0;
     link.Status += text =>
     {
@@ -154,6 +157,10 @@ var second = new TaskCompletionSource<ObservedSample>();
         {
             second.TrySetResult(sample);
         }
+        if (n == 3)
+        {
+            third.TrySetResult(sample);
+        }
     };
     using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(4));
     Task run = link.RunAsync(cts.Token);
@@ -168,26 +175,84 @@ var second = new TaskCompletionSource<ObservedSample>();
     Check(link.TryArm(HwFrequence.Parse("10,10"), true, out _), "running link accepts 10,10");
     transport.Enqueue(Frames.Encode(2, 1, 100, 0f));
     ObservedSample forwarded = await second.Task.WaitAsync(TimeSpan.FromSeconds(2));
-    Check(forwarded.Forwarded && recording.Count == 1 && recording.Snapshot()[0].Data3 == 3 && recording.Snapshot()[0].Data2 == 0, "second equal sample is forwarded once");
+    HwTriple[] one = recording.Snapshot();
+    Check(forwarded.Forwarded && one.Length == 2 && one[0].Equals(new HwTriple(100_000_000, 0, 3)) && one[1].Equals(new HwTriple(0, 0, 4)), "second equal sample is one A3 then B4=0 pair");
+    transport.Enqueue(Frames.Encode(3, 2, 200, 0f));
+    await third.Task.WaitAsync(TimeSpan.FromSeconds(2));
+    HwTriple[] two = recording.Snapshot();
+    Check(two.Length == 4 && two[2].Equals(one[0]) && two[3].Equals(one[1]), "equal values are two pairs once each");
     link.RequestHwRecordStart();
     link.RequestHwRecordStop();
-    await WaitUntil(() => recording.Count >= 3);
+    await WaitUntil(() => recording.Count >= 6);
     HwTriple[] mid = recording.Snapshot();
-    Check(mid[1].Equals(new HwTriple(1, 0, 1)) && mid[2].Equals(new HwTriple(1, 0, 2)), "A start and stop");
+    Check(mid[4].Equals(new HwTriple(1, 0, 1)) && mid[5].Equals(new HwTriple(1, 0, 2)), "A start and stop");
     int beforeZero = mid.Length;
     link.RequestHwZeroA();
     await WaitUntil(() => recording.Count == beforeZero + 1);
     HwTriple[] withZero = recording.Snapshot();
     Check(withZero[^1].Equals(new HwTriple(1, 0, 5)), "zero is A only and explicit");
-    Check(withZero.All(c => c.Data3 is 1 or 2 or 3 or 5), "no B sample command");
-    transport.Enqueue(Frames.BadCrc(Frames.Encode(3, 2, 200, 0f)));
+    Check(withZero[0].Data3 == 3 && withZero[1].Data3 == 4 && withZero[2].Data3 == 3 && withZero[3].Data3 == 4, "pairs stay adjacent around later commands");
+    transport.Enqueue(Frames.BadCrc(Frames.Encode(4, 3, 300, 0f)));
     await WaitUntil(() => !link.SamplesArmed);
     int frozen = recording.Count;
-    transport.Enqueue(Frames.Encode(4, 3, 300, 0f));
+    transport.Enqueue(Frames.Encode(5, 4, 400, 0f));
     await Task.Delay(200);
     Check(recording.Count == frozen, "crc fault stops later points");
     cts.Cancel();
     await run;
+}
+
+async Task RunPairStop()
+{
+    var transport = new ScriptTransport();
+    var sink = new PairSink { FailOn = 4 };
+    var link = new LiveLink(transport, sink, new LinkOptions { HeartbeatMs = 60_000, AckTimeoutMs = 400 });
+    sink.OnChannelA = () => link.RequestHwRecordStart();
+    var hello = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    link.Status += text =>
+    {
+        if (text.Contains("HELLO_OK", StringComparison.Ordinal))
+        {
+            hello.TrySetResult();
+        }
+    };
+    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+    Task run = link.RunAsync(cts.Token);
+    await hello.Task.WaitAsync(TimeSpan.FromSeconds(2));
+    Check(link.TryArm(HwFrequence.Parse("10,10"), true, out _), "pair test armed");
+    link.RequestDeviceStart();
+    await WaitUntil(() => sink.Count >= 2);
+    HwTriple[] pair = sink.Snapshot();
+    Check(pair.Length >= 2 && pair[0].Equals(new HwTriple(100_000_000, 0, 3)) && pair[1].Equals(new HwTriple(0, 0, 4)), "failed B still follows A with no command between");
+    Check(pair.Take(2).All(c => c.Data3 is 3 or 4), "start does not enter the pair");
+    await WaitUntil(() => !link.SamplesArmed);
+    transport.Enqueue(Frames.Encode(2, 1, 100, 0f));
+    await Task.Delay(200);
+    HwTriple[] after = sink.Snapshot();
+    Check(after.Count(c => c.Data3 == 3) == 1 && after.Skip(2).All(c => c.Data3 is not 3 and not 4), "no further sample after B fails");
+    cts.Cancel();
+    await run;
+
+    var transportA = new ScriptTransport();
+    var sinkA = new PairSink { FailOn = 3 };
+    var linkA = new LiveLink(transportA, sinkA, new LinkOptions { HeartbeatMs = 60_000, AckTimeoutMs = 400 });
+    var helloA = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    linkA.Status += text =>
+    {
+        if (text.Contains("HELLO_OK", StringComparison.Ordinal))
+        {
+            helloA.TrySetResult();
+        }
+    };
+    using var ctsA = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+    Task runA = linkA.RunAsync(ctsA.Token);
+    await helloA.Task.WaitAsync(TimeSpan.FromSeconds(2));
+    Check(linkA.TryArm(HwFrequence.Parse("10,10"), true, out _), "A-fail test armed");
+    linkA.RequestDeviceStart();
+    await WaitUntil(() => sinkA.Count >= 1 && !linkA.SamplesArmed);
+    Check(sinkA.Snapshot().All(c => c.Data3 != 4), "A failure does not invent B");
+    ctsA.Cancel();
+    await runA;
 }
 
 async Task WaitUntil(Func<bool> ready)
@@ -212,6 +277,36 @@ sealed class ThrowTransport : IByteTransport
     {
         Calls++;
         throw new InvalidOperationException("read");
+    }
+}
+
+sealed class NotReadySink : IHwSink
+{
+    public bool IsReady => false;
+    public HwCallResult Send(int data1, int data2, int data3) => throw new InvalidOperationException("send");
+}
+
+sealed class PairSink : IHwSink
+{
+    private readonly List<HwTriple> _calls = new();
+    public int FailOn { get; init; }
+    public Action? OnChannelA { get; set; }
+    public bool IsReady => true;
+    public int Count { get { lock (_calls) return _calls.Count; } }
+    public HwTriple[] Snapshot() { lock (_calls) return _calls.ToArray(); }
+    public HwCallResult Send(int data1, int data2, int data3)
+    {
+        lock (_calls)
+        {
+            _calls.Add(new HwTriple(data1, data2, data3));
+        }
+        if (data3 == 3)
+        {
+            OnChannelA?.Invoke();
+        }
+        int code = data3 == FailOn ? -1 : 1;
+        string text = code == 1 ? "返回 1：已向 HWClass 发出消息。这不是采集成功。" : "失败";
+        return new HwCallResult(data1, data2, data3, code, text);
     }
 }
 

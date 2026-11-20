@@ -66,7 +66,7 @@ public sealed class LiveLink
             return false;
         }
         Interlocked.Exchange(ref _samplesArmed, 1);
-        reason = "转发已允许。样本使用 data3=3，data2=0。返回值不是采集成功。";
+        reason = "转发已允许。每个样本先 data3=3，紧接 data3=4 且 B=0。返回值不是采集成功。";
         return true;
     }
 
@@ -195,7 +195,7 @@ public sealed class LiveLink
                         {
                             if (sample.Forwarded)
                             {
-                                if (sent >= emitted.Count || !Send(emitted[sent]))
+                                if (sent >= emitted.Count || !SendSamplePair(emitted[sent]))
                                 {
                                     Sample?.Invoke(sample);
                                     break;
@@ -322,6 +322,21 @@ public sealed class LiveLink
         }
         _faultAnnounced = true;
         Status?.Invoke(reason + " 请先停止本次采集。" + LogCurrent.Caveat);
+    }
+
+    private bool SendSamplePair(HwTriple channelA)
+    {
+        if (channelA.Data3 != 3)
+        {
+            DisarmSamples();
+            Status?.Invoke("样本不是 A 通道命令，已停止转发。未补 B。");
+            return false;
+        }
+        if (!Send(channelA))
+        {
+            return false;
+        }
+        return Send(new HwTriple(0, 0, 4));
     }
 
     private bool Send(HwTriple triple)
