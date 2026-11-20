@@ -33,11 +33,73 @@
       <TextBlock TextWrapping="Wrap" FontWeight="Bold" Foreground="#8A1C1C"
                  Text="无法验证设备样本新鲜度，仅接入验证，不用于正式定量"/>
       <TextBlock Margin="0,6,0,0" TextWrapping="Wrap"
-                 Text="停止设备采集只发送二进制 STOP_ACQ。它不是急停，也不会关闭温控或气路。工作站的 (1,0,2) 只停止 A 通道取数。本程序不读火焰，不用火焰拦截采集，不发送点火、加热或温控命令。"/>
+                 Text="固件帧没有新鲜度位。未点火、未进样时读数保持未知，不改电流公式。停止分析不是停热。断开或关窗口后加热仍可能继续。"/>
       <TextBlock x:Name="ProcessText" Margin="0,6,0,0" TextWrapping="Wrap"/>
       <TextBlock x:Name="StatusText" Margin="0,6,0,8" TextWrapping="Wrap" Text="未连接。主机和端口都是空的，没有扫描，也没有加载 DLL。"/>
 
-      <TextBlock Margin="0,8,0,0" Text="主机（必填，无默认值）"/>
+      <TabControl Margin="0,8,0,0">
+        <TabItem Header="主界面">
+          <StackPanel Margin="8">
+            <TextBlock TextWrapping="Wrap" Text="布局待 Android 示意图。这里只放已接通的状态和控制，不画旧表格气路。"/>
+            <TextBlock x:Name="ZoneText" Margin="0,6,0,0" TextWrapping="Wrap" Text="进样口、检测器、柱箱：未读取"/>
+            <TextBlock x:Name="HeatText" Margin="0,6,0,0" TextWrapping="Wrap" Text="加热启动：尚未读到 3 秒内的两路气压。2026-11-10 Android 资料以氢气和空气都 ≥ 0.1 MPa 为正常。停止加热可用。"/>
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+              <Button Content="开始分析" Width="110" Margin="0,0,8,0" Click="StartAnalysis_Click"/>
+              <Button Content="停止分析" Width="110" Margin="0,0,8,0" Click="StopAnalysis_Click"/>
+              <Button Content="停止温控" Width="110" Margin="0,0,8,0" Click="StopHeat_Click"/>
+              <Button Content="读取温度" Width="110" Click="ReadTemps_Click"/>
+            </StackPanel>
+            <TextBlock Margin="0,8,0,0" Text="加热启动" Foreground="#666666"/>
+            <Button x:Name="HeatStartButton" Content="启动加热" IsEnabled="False" HorizontalAlignment="Left" Margin="0,2,0,0" Click="StartHeat_Click"/>
+          </StackPanel>
+        </TabItem>
+        <TabItem Header="柱箱">
+          <StackPanel Margin="8">
+            <TextBlock TextWrapping="Wrap" Text="只发送操作者填入的温程。空表不发送，也不填一套默认程序。"/>
+            <TextBlock Margin="0,6,0,0" Text="最高温度 / 平衡 / 稳定秒 / 循环0或1"/>
+            <TextBox x:Name="OvenHead" Margin="0,2,0,0"/>
+            <TextBlock Margin="0,6,0,0" Text="阶梯：每行 速率 温度 保持，最多 8 行"/>
+            <TextBox x:Name="OvenRows" AcceptsReturn="True" Height="90" Margin="0,2,0,0"/>
+            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+              <Button Content="读取温程" Width="100" Margin="0,0,8,0" Click="ReadProgram_Click"/>
+              <Button Content="写入温程" Width="100" Click="WriteProgram_Click"/>
+            </StackPanel>
+            <TextBlock x:Name="OvenText" Margin="0,6,0,0" TextWrapping="Wrap" Text="温程未读取"/>
+          </StackPanel>
+        </TabItem>
+        <TabItem Header="检测器">
+          <StackPanel Margin="8">
+            <TextBlock x:Name="DetText" TextWrapping="Wrap" Text="氢气、空气、火焰、电流：未读取。点火应答不代表火焰已着。"/>
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+              <Button Content="读取气压和FID" Width="130" Margin="0,0,8,0" Click="ReadDetector_Click"/>
+              <Button Content="点火" Width="70" Margin="0,0,8,0" Click="Ignite_Click"/>
+              <Button Content="开空气阀" Width="90" Margin="0,0,8,0" Click="ValveOn_Click"/>
+              <Button Content="关空气阀" Width="90" Margin="0,0,8,0" Click="ValveOff_Click"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+              <Button Content="自动点火开" Width="110" Margin="0,0,8,0" Click="AutoOn_Click"/>
+              <Button Content="自动点火关" Width="110" Click="AutoOff_Click"/>
+            </StackPanel>
+          </StackPanel>
+        </TabItem>
+        <TabItem Header="事件">
+          <ListBox x:Name="Events" Height="220" Margin="8"/>
+        </TabItem>
+        <TabItem Header="秒表">
+          <StackPanel Margin="8">
+            <TextBlock Text="本机计时，不向仪器发送命令。"/>
+            <TextBlock x:Name="WatchText" Margin="0,8,0,0" FontSize="20" Text="00:00"/>
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+              <Button Content="开始" Width="70" Margin="0,0,8,0" Click="WatchStart_Click"/>
+              <Button Content="停止" Width="70" Margin="0,0,8,0" Click="WatchStop_Click"/>
+              <Button Content="归零" Width="70" Click="WatchReset_Click"/>
+            </StackPanel>
+          </StackPanel>
+        </TabItem>
+        <TabItem Header="设置">
+          <StackPanel Margin="8">
+            <TextBlock TextWrapping="Wrap" Text="连接、DLL、频率和日志在这里。日常开始分析不在这些诊断按钮上拼接。"/>
+            <TextBlock Margin="0,8,0,0" Text="主机（必填，无默认值）"/>
       <TextBox x:Name="HostBox" Width="220" HorizontalAlignment="Left" Margin="0,2,0,0"/>
       <TextBlock Margin="0,6,0,0" Text="端口（必填，无默认值）"/>
       <TextBox x:Name="PortBox" Width="80" HorizontalAlignment="Left" Margin="0,2,0,0"/>
@@ -71,7 +133,32 @@
         <Button Content="仅 A 归零 (1,0,5)" Width="140" Click="HwZero_Click"/>
       </StackPanel>
       <TextBlock x:Name="DllText" Margin="0,8,0,0" TextWrapping="Wrap"
-                 Text="尚未加载 DLL。返回 1 只表示找到 HWClass 并发出消息，不是采集成功。返回 0 表示没有找到该窗口。"/>
+                 Text="尚未加载 DLL。返回 1 只表示找到 HWClass 并发出消息，不是采集成功，也不是 HW 已在记录。返回 0 表示没有找到该窗口。"/>
+            <TextBlock Margin="0,10,0,0" Text="温度校准设定（℃），空着不发送"/>
+            <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+              <TextBox x:Name="InletSet" Width="80" Margin="0,0,8,0"/>
+              <TextBox x:Name="DetSet" Width="80" Margin="0,0,8,0"/>
+              <Button Content="写入进样口/检测器设定" Click="WriteCalibration_Click"/>
+            </StackPanel>
+            <TextBlock Margin="0,8,0,0" TextWrapping="Wrap" Text="PID 写入需要本进程口令。不读取 OpenChrom 口令，没有默认口令。"/>
+            <PasswordBox x:Name="EngineerPassword" Width="180" HorizontalAlignment="Left" Margin="0,2,0,0"/>
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+              <Button Content="建立口令" Width="90" Margin="0,0,8,0" Click="Enroll_Click"/>
+              <Button Content="解锁" Width="70" Margin="0,0,8,0" Click="Unlock_Click"/>
+              <Button Content="锁定" Width="70" Click="Lock_Click"/>
+            </StackPanel>
+            <TextBlock Margin="0,8,0,0" Text="柱箱 PID：kp ki kd"/>
+            <TextBox x:Name="PidBox" Width="220" HorizontalAlignment="Left" Margin="0,2,0,0"/>
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+              <Button Content="读取柱箱PID" Width="110" Margin="0,0,8,0" Click="ReadPid_Click"/>
+              <Button Content="写入柱箱PID" Width="110" Click="WritePid_Click"/>
+            </StackPanel>
+            <TextBlock Margin="0,8,0,0" TextWrapping="Wrap" Text="通信页不发送 READ_NET_CONFIG 或写网络。那些命令没有列入可发送集合。"/>
+            <Button Content="读取控制状态" HorizontalAlignment="Left" Margin="0,4,0,0" Click="ReadStatus_Click"/>
+            <TextBlock x:Name="LinkText" Margin="0,4,0,0" TextWrapping="Wrap" Text="控制状态未读取"/>
+          </StackPanel>
+        </TabItem>
+      </TabControl>
     </StackPanel>
   </ScrollViewer>
 </UserControl>

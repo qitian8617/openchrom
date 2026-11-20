@@ -122,10 +122,81 @@ Check(cold.Calls == 0 && coldSink.Count == 0, "constructing the link does nothin
 
 var idle = new LiveLink(new ThrowTransport(), new NotReadySink());
 Check(!idle.TryArm(HwFrequence.Parse("10,10"), true, out string missing) && missing.Contains("尚未", StringComparison.Ordinal), "missing dll is not ready");
+long now = Environment.TickCount64;
+Check(GasSupply.BlockReason(0.1, 0.1, now, now) == null, "both 0.1 MPa current allows heat");
+Check(GasSupply.BlockReason(0.09, 0.2, now, now) != null, "one low channel blocks heat");
+Check(GasSupply.BlockReason(null, 0.2, now, now) != null, "missing channel blocks heat");
+Check(GasSupply.BlockReason(0.2, 0.2, now - 4000, now) != null, "stale pressure blocks heat");
+Check(Gcws.Classify("GCWS\tSTART_OVEN_CONTROL") == GcwsKind.HeatStart, "heat start classified");
+Check(Gcws.Rejection("WRITE_OVEN_PID", false, "{}") != null, "pid write locked");
+Check(Gcws.Rejection("STOP_OVEN_CONTROL", false, null) == null, "heat stop allowed");
+var demux = new StreamDemux();
+var gotFrames = new List<GcFrame>();
+var gotText = new List<string>();
+byte[] mixed = Encoding.ASCII.GetBytes("{\"h2\":\"0.20\"}").Concat(GcCodec.StartAcq(1, 100)).ToArray();
+Check(demux.Push(mixed, 0, mixed.Length, gotFrames, gotText) && gotText.Count == 1 && gotFrames.Count == 1 && !demux.Faulted, "json does not break the frame parser");
 await RunLink();
+await RunAnalysis();
 await RunPairStop();
 Check(failed == 0, "all checks");
 return failed == 0 ? 0 : 1;
+
+async Task RunAnalysis()
+{
+    var transport = new ScriptTransport();
+    var recording = new RecordingSink();
+    var link = new LiveLink(transport, recording, new LinkOptions { HeartbeatMs = 60_000, AckTimeoutMs = 500, FirstPointWaitMs = 800, StopDrainMs = 800 });
+    var hello = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    link.Status += text =>
+    {
+        if (text.Contains("HELLO_OK", StringComparison.Ordinal))
+        {
+            hello.TrySetResult();
+        }
+    };
+    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(4));
+    Task run = link.RunAsync(cts.Token);
+    await hello.Task.WaitAsync(TimeSpan.FromSeconds(2));
+    string heat = await link.ExchangeAsync("START_INLET_HEAT", null, cts.Token);
+    Check(heat.Contains("0.1", StringComparison.Ordinal) || heat.Contains("3", StringComparison.Ordinal), "heat start blocked without current gas");
+    Check(!transport.Writes.Any(w => Encoding.ASCII.GetString(w).Contains("START_INLET_HEAT", StringComparison.Ordinal)), "blocked heat was not written");
+    link.RequestStartAnalysis(HwFrequence.Parse("20,20"), true);
+    await Task.Delay(150);
+    Check(!transport.Writes.Any(w => w.Length > 2 && w[2] == GcCodec.CmdStart), "20,20 does not start acquisition");
+    link.RequestStartAnalysis(HwFrequence.Parse("10,10"), true);
+    await WaitUntil(() => recording.Count >= 3);
+    HwTriple[] started = recording.Snapshot();
+    Check(started[0].Data3 == 3 && started[1].Data3 == 4 && started[2].Equals(new HwTriple(1, 0, 1)), "analysis waits for one real pair before HW take");
+    link.RequestStopAnalysis();
+    transport.Enqueue(Frames.Encode(2, 1, 100, 0f));
+    await WaitUntil(() => recording.Snapshot().Any(c => c.Data3 == 2));
+    HwTriple[] stopped = recording.Snapshot();
+    int hwStop = Array.FindIndex(stopped, c => c.Data3 == 2);
+    int secondA = Array.FindIndex(stopped, 3, c => c.Data3 == 3);
+    Check(secondA >= 0 && secondA < hwStop && stopped[secondA + 1].Data3 == 4, "stop still forwards one bounded real pair before HW stop");
+    cts.Cancel();
+    await run;
+
+    var quiet = new ScriptTransport { IncludeSample = false };
+    var quietSink = new RecordingSink();
+    var quietLink = new LiveLink(quiet, quietSink, new LinkOptions { HeartbeatMs = 60_000, AckTimeoutMs = 400, FirstPointWaitMs = 350 });
+    var hello2 = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    quietLink.Status += text =>
+    {
+        if (text.Contains("HELLO_OK", StringComparison.Ordinal))
+        {
+            hello2.TrySetResult();
+        }
+    };
+    using var cts2 = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+    Task run2 = quietLink.RunAsync(cts2.Token);
+    await hello2.Task.WaitAsync(TimeSpan.FromSeconds(2));
+    quietLink.RequestStartAnalysis(HwFrequence.Parse("10,10"), true);
+    await WaitUntil(() => quiet.Writes.Any(w => w.Length > 2 && w[2] == GcCodec.CmdStop));
+    Check(quietSink.Count == 0, "no real point means HW take is not started");
+    cts2.Cancel();
+    await run2;
+}
 
 async Task RunLink()
 {
@@ -368,6 +439,7 @@ sealed class ScriptTransport : IByteTransport
 {
     private readonly Queue<byte[]> _in = new();
     public List<byte[]> Writes { get; } = new();
+    public bool IncludeSample { get; set; } = true;
 
     public void Enqueue(byte[] data)
     {
@@ -391,7 +463,10 @@ sealed class ScriptTransport : IByteTransport
         else if (copy.Length > 2 && copy[2] == GcCodec.CmdStart)
         {
             Enqueue(GcCodec.Encode(GcCodec.CmdAck, copy[3], new byte[] { GcCodec.CmdStart, 0 }));
-            Enqueue(Frames.Encode(1, 0, 0, 0f));
+            if (IncludeSample)
+            {
+                Enqueue(Frames.Encode(1, 0, 0, 0f));
+            }
         }
         return ValueTask.CompletedTask;
     }

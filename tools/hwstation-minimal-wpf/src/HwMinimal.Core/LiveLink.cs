@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace HwMinimal;
 
 public interface IByteTransport
@@ -18,6 +20,8 @@ public sealed class LinkOptions
 {
     public int HeartbeatMs { get; init; } = 1000;
     public int AckTimeoutMs { get; init; } = 2000;
+    public int FirstPointWaitMs { get; init; } = 3000;
+    public int StopDrainMs { get; init; } = 1200;
 }
 
 public sealed class LiveLink
@@ -32,6 +36,18 @@ public sealed class LiveLink
     private int _hwZero;
     private int _samplesArmed;
     private bool _faultAnnounced;
+    private int _analysisStart;
+    private int _analysisStop;
+    private int _analysisAccepted;
+    private HwFrequenceParse _analysisConfig;
+    private double? _h2;
+    private double? _air;
+    private long _gasAtMs;
+    private readonly SemaphoreSlim _write = new(1, 1);
+    private readonly object _exchangeGate = new();
+    private TaskCompletionSource<string>? _exchange;
+    public EngineerGrant Engineer { get; } = new();
+    public string AnalysisPhase { get; private set; } = "Idle";
 
     public LiveLink(IByteTransport transport, IHwSink sink, LinkOptions? options = null)
     {
@@ -49,6 +65,80 @@ public sealed class LiveLink
     public void RequestHwRecordStart() => Interlocked.Exchange(ref _hwStart, 1);
     public void RequestHwRecordStop() => Interlocked.Exchange(ref _hwStop, 1);
     public void RequestHwZeroA() => Interlocked.Exchange(ref _hwZero, 1);
+    public void RequestStartAnalysis(HwFrequenceParse config, bool acceptedLimits)
+    {
+        _analysisConfig = config;
+        Volatile.Write(ref _analysisAccepted, acceptedLimits ? 1 : 0);
+        Interlocked.Exchange(ref _analysisStart, 1);
+    }
+    public void RequestStopAnalysis() => Interlocked.Exchange(ref _analysisStop, 1);
+
+    public void NoteGas(double? hydrogenMpa, double? airMpa, long sampleAtMs)
+    {
+        _h2 = hydrogenMpa;
+        _air = airMpa;
+        _gasAtMs = sampleAtMs;
+    }
+
+    public async Task<string> ExchangeAsync(string verb, string? payload, CancellationToken cancellationToken)
+    {
+        if (Gcws.Classify(Gcws.Line(verb)) == GcwsKind.HeatStart)
+        {
+            string? gas = GasSupply.BlockReason(_h2, _air, _gasAtMs, Environment.TickCount64);
+            if (gas != null)
+            {
+                return gas;
+            }
+        }
+        string? rejected = Gcws.Rejection(verb, Engineer.IsOpen, payload);
+        if (rejected != null)
+        {
+            return rejected;
+        }
+        var waiter = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        lock (_exchangeGate)
+        {
+            if (_exchange != null)
+            {
+                return "上一条命令尚未结束，未发送。";
+            }
+            _exchange = waiter;
+        }
+        try
+        {
+            await _write.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                byte[] line = Encoding.ASCII.GetBytes(Gcws.Line(verb) + "\r\n");
+                await _transport.WriteAsync(line, cancellationToken).ConfigureAwait(false);
+                if (payload != null)
+                {
+                    await _transport.WriteAsync(Encoding.UTF8.GetBytes(payload + "\n"), cancellationToken).ConfigureAwait(false);
+                }
+            }
+            finally
+            {
+                _write.Release();
+            }
+            using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            limit.CancelAfter(TimeSpan.FromSeconds(3));
+            return await waiter.Task.WaitAsync(limit.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return "命令超时，没有应答。未把超时当成成功。";
+        }
+        finally
+        {
+            lock (_exchangeGate)
+            {
+                if (ReferenceEquals(_exchange, waiter))
+                {
+                    _exchange = null;
+                }
+            }
+        }
+    }
 
     public void DisarmSamples() => Interlocked.Exchange(ref _samplesArmed, 0);
 
@@ -73,9 +163,15 @@ public sealed class LiveLink
     public async Task RunAsync(CancellationToken cancellationToken)
     {
         var hello = new HelloReader();
-        var parser = new FrameParser();
+        var demux = new StreamDemux();
         var run = new AcqRun();
         var frames = new List<GcFrame>();
+        var texts = new List<string>();
+        string phase = "Idle";
+        bool hwTake = false;
+        long pairDeadline = 0;
+        long drainDeadline = 0;
+        int drainPairs = 0;
         byte[] buffer = new byte[2048];
         byte pcSeq = 1;
         bool greeted = false;
@@ -94,6 +190,7 @@ public sealed class LiveLink
                 if (greeted)
                 {
                     await DrainAsync(run, () => pcSeq++, () => acquiring, v => acquiring = v, () => waitStart, v => waitStart = v, () => waitStop, v => waitStop = v, v => startDeadline = v, v => stopDeadline = v, cancellationToken).ConfigureAwait(false);
+                    await DriveAnalysisAsync(() => pcSeq++, () => acquiring, v => acquiring = v, v => waitStart = v, v => startDeadline = v, () => phase, v => phase = v, () => hwTake, v => hwTake = v, v => pairDeadline = v, v => drainDeadline = v, () => drainPairs, v => drainPairs = v, cancellationToken).ConfigureAwait(false);
                     long nowBeat = Environment.TickCount64;
                     if (lastBeat == 0 || nowBeat - lastBeat >= _options.HeartbeatMs)
                     {
@@ -148,7 +245,15 @@ public sealed class LiveLink
                     continue;
                 }
                 frames.Clear();
-                bool parsed = parser.Push(buffer, binaryStart, n - binaryStart, frames);
+                texts.Clear();
+                bool parsed = demux.Push(buffer, binaryStart, n - binaryStart, frames, texts);
+                foreach (string text in texts)
+                {
+                    lock (_exchangeGate)
+                    {
+                        _exchange?.TrySetResult(text);
+                    }
+                }
                 foreach (GcFrame frame in frames)
                 {
                     if (waitStart && (frame.Command is GcCodec.CmdAck or GcCodec.CmdNack) && frame.Payload.Length >= 2 && frame.Payload[0] == GcCodec.CmdStart)
@@ -159,7 +264,23 @@ public sealed class LiveLink
                             acquiring = true;
                             run.Reset();
                             _faultAnnounced = false;
-                            Status?.Invoke("设备已确认 START_ACQ。这只说明设备开始送数，不是工作站采集成功。");
+                            if (phase == "WaitAck")
+                            {
+                                phase = "WaitPair";
+                                _pairDeadlineSeen = Environment.TickCount64 + _options.FirstPointWaitMs;
+                                pairDeadline = _pairDeadlineSeen;
+                                Interlocked.Exchange(ref _samplesArmed, 1);
+                                Status?.Invoke("设备已确认 START_ACQ。尚未通知 HW 取数，要等第一个真实点。");
+                            }
+                            else
+                            {
+                                Status?.Invoke("设备已确认 START_ACQ。这只说明设备开始送数，不是工作站采集成功。");
+                            }
+                        }
+                        else if (phase == "WaitAck")
+                        {
+                            phase = "Idle";
+                            AnalysisPhase = phase;
                         }
                         else
                         {
@@ -171,6 +292,13 @@ public sealed class LiveLink
                     if (waitStop && (frame.Command is GcCodec.CmdAck or GcCodec.CmdNack) && frame.Payload.Length >= 1 && frame.Payload[0] == GcCodec.CmdStop)
                     {
                         waitStop = false;
+                        if (phase == "Draining")
+                        {
+                            Status?.Invoke(frame.Command == GcCodec.CmdAck
+                                ? "设备已确认 STOP_ACQ。仍接收有限的真实点，然后停止 HW。这不是停热。"
+                                : "STOP_ACQ 被拒绝。仍按有限时间收口。这不是停热。");
+                            continue;
+                        }
                         acquiring = false;
                         run.Reset();
                         Status?.Invoke(frame.Command == GcCodec.CmdAck
@@ -198,9 +326,34 @@ public sealed class LiveLink
                                 if (sent >= emitted.Count || !SendSamplePair(emitted[sent]))
                                 {
                                     Sample?.Invoke(sample);
+                                    if (phase is "WaitPair" or "Running" or "Draining")
+                                    {
+                                        await FailAnalysisAsync(() => pcSeq++, hwTake, "样本转发失败").ConfigureAwait(false);
+                                    hwTake = false;
+                                        phase = "Invalid";
+                                    }
                                     break;
                                 }
                                 sent++;
+                                if (phase == "WaitPair")
+                                {
+                                    HwCallResult taken = _sink.Send(1, 0, 1);
+                                    Status?.Invoke(taken.Text + " HW 记录未确认。");
+                                    if (taken.Code != 1)
+                                    {
+                                        await FailAnalysisAsync(() => pcSeq++, false, "HW 开始取数没有发出，本次无效。").ConfigureAwait(false);
+                                        phase = "Invalid";
+                                    }
+                                    else
+                                    {
+                                        hwTake = true;
+                                        phase = "Running";
+                                    }
+                                }
+                                else if (phase == "Draining")
+                                {
+                                    drainPairs++;
+                                }
                             }
                             Sample?.Invoke(sample);
                         }
@@ -237,7 +390,7 @@ public sealed class LiveLink
                 }
                 if (!parsed)
                 {
-                    run.Invalidate(parser.Fault);
+                    run.Invalidate(demux.Fault);
                     MarkInvalid(run.Fault);
                 }
             }
@@ -304,6 +457,125 @@ public sealed class LiveLink
         if (Interlocked.Exchange(ref _hwZero, 0) == 1)
         {
             Send(new HwTriple(1, 0, 5));
+        }
+    }
+
+    private async Task DriveAnalysisAsync(
+        Func<byte> nextSeq,
+        Func<bool> acquiring,
+        Action<bool> setAcquiring,
+        Action<bool> setWaitStart,
+        Action<long> setStartDeadline,
+        Func<string> phase,
+        Action<string> setPhase,
+        Func<bool> hwTake,
+        Action<bool> setHwTake,
+        Action<long> setPairDeadline,
+        Action<long> setDrainDeadline,
+        Func<int> drainPairs,
+        Action<int> setDrainPairs,
+        CancellationToken cancellationToken)
+    {
+        long now = Environment.TickCount64;
+        AnalysisPhase = phase();
+        if (phase() == "WaitPair" && now > _pairDeadlineSeen)
+        {
+            Status?.Invoke("没有等到真实点，未通知 HW 取数。已请求停止设备采集。");
+            await LockedWrite(GcCodec.StopAcq(nextSeq()), cancellationToken).ConfigureAwait(false);
+            DisarmSamples();
+            setAcquiring(false);
+            setPhase("Idle");
+            AnalysisPhase = "Idle";
+            return;
+        }
+        if (phase() == "Draining" && (now > _drainDeadline || drainPairs() >= 4))
+        {
+            if (hwTake())
+            {
+                HwCallResult stop = _sink.Send(1, 0, 2);
+                setHwTake(false);
+                Status?.Invoke(stop.Text + " 停止分析已请求 HW 停止取数。HW 记录未确认。这不是停热。");
+            }
+            else
+            {
+                Status?.Invoke("停止分析结束。没有通知过 HW 取数。这不是停热。");
+            }
+            DisarmSamples();
+            setAcquiring(false);
+            setPhase("Idle");
+            AnalysisPhase = "Idle";
+            return;
+        }
+        if (Interlocked.Exchange(ref _analysisStart, 0) == 1 && phase() == "Idle")
+        {
+            if (!ForwardGate.Allows(_analysisConfig, Volatile.Read(ref _analysisAccepted) == 1, out string reason))
+            {
+                Status?.Invoke(reason + " 未开始分析。");
+                return;
+            }
+            if (!_sink.IsReady)
+            {
+                Status?.Invoke("DLL 尚未成功加载，未开始分析。");
+                return;
+            }
+            await LockedWrite(GcCodec.StartAcq(nextSeq(), AcqRun.IntervalMs), cancellationToken).ConfigureAwait(false);
+            setWaitStart(true);
+            setStartDeadline(now + _options.AckTimeoutMs);
+            setPhase("WaitAck");
+            AnalysisPhase = "WaitAck";
+            Status?.Invoke("开始分析：已请求设备采集，等待确认。尚未通知 HW。");
+        }
+        if (Interlocked.Exchange(ref _analysisStop, 0) == 1)
+        {
+            if (phase() is "WaitPair" or "Running" or "Draining")
+            {
+                await LockedWrite(GcCodec.StopAcq(nextSeq()), cancellationToken).ConfigureAwait(false);
+                setPhase("Draining");
+                _drainDeadline = now + _options.StopDrainMs;
+                setDrainDeadline(_drainDeadline);
+                setDrainPairs(0);
+                AnalysisPhase = "Draining";
+                Status?.Invoke("停止分析：已请求停止设备采集。随后有限真实点仍转发，然后停止 HW。这不是停热。");
+            }
+            else if (phase() == "WaitAck")
+            {
+                setWaitStart(false);
+                setPhase("Idle");
+                AnalysisPhase = "Idle";
+                Status?.Invoke("开始尚未确认，未通知 HW。");
+            }
+        }
+    }
+
+    private long _drainDeadline;
+    private long _pairDeadlineSeen;
+
+    private async Task FailAnalysisAsync(Func<byte> nextSeq, bool hwTake, string why)
+    {
+        DisarmSamples();
+        AnalysisPhase = "Invalid";
+        await LockedWrite(GcCodec.StopAcq(nextSeq()), CancellationToken.None).ConfigureAwait(false);
+        if (hwTake)
+        {
+            HwCallResult stop = _sink.Send(1, 0, 2);
+            Status?.Invoke(why + " " + stop.Text + " 本次无效。");
+        }
+        else
+        {
+            Status?.Invoke(why + " 已请求停止设备采集。本次无效。");
+        }
+    }
+
+    private async Task LockedWrite(byte[] data, CancellationToken cancellationToken)
+    {
+        await _write.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await _transport.WriteAsync(data, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            _write.Release();
         }
     }
 
