@@ -36,6 +36,7 @@ public partial class MainView : UserControl
         PortBox.Text = _settings.Port.ToString(System.Globalization.CultureInfo.InvariantCulture);
         DllBox.Text = _settings.DllPath;
         AcceptBox.IsChecked = _settings.RiskAcknowledged;
+        ReloadEvents();
         _watch.Tick += (_, _) => ShowWatch();
     }
 
@@ -424,9 +425,46 @@ public partial class MainView : UserControl
         string oven = await SendLine("READ_OVEN_TEMP", null);
         string inlet = await SendLine("READ_INLET_TEMP", null);
         string detector = await SendLine("READ_DETECTOR_TEMP", null);
-        ZoneText.Text = "进样口 设定 " + JsonFields.Show(inlet, "setpoint") + " 实测 " + JsonFields.Show(inlet, "actual")
-            + "；检测器 设定 " + JsonFields.Show(detector, "setpoint") + " 实测 " + JsonFields.Show(detector, "actual")
-            + "；柱箱 设定 " + JsonFields.Show(oven, "setpoint") + " 实测 " + JsonFields.Show(oven, "actual");
+        string gas = await SendLine("READ_GAS_PRESSURE", null);
+        InletCard.Text = "进样口\n设定 " + JsonFields.Show(inlet, "setpoint") + "\n实测 " + JsonFields.Show(inlet, "actual");
+        DetCard.Text = "检测器\n设定 " + JsonFields.Show(detector, "setpoint") + "\n实测 " + JsonFields.Show(detector, "actual");
+        OvenCard.Text = "柱箱\n设定 " + JsonFields.Show(oven, "setpoint") + "\n实测 " + JsonFields.Show(oven, "actual");
+        if (JsonFields.TryNumber(oven, "fan", out double fan))
+        {
+            FanCard.Text = fan != 0 ? "柱箱风扇\n运转" : "柱箱风扇\n停止";
+        }
+        else
+        {
+            FanCard.Text = "柱箱风扇\n未知";
+        }
+        if (JsonFields.TryNumber(oven, "vent", out double vent))
+        {
+            VentCard.Text = vent != 0 ? "散热口\n开" : "散热口\n关";
+        }
+        else
+        {
+            VentCard.Text = "散热口\n未知";
+        }
+        bool h2Ok = JsonFields.TryNumber(gas, "h2", out double h2) || JsonFields.TryNumber(gas, "adc1", out h2);
+        bool airOk = JsonFields.TryNumber(gas, "air", out double air) || JsonFields.TryNumber(gas, "adc2", out air);
+        long now = Environment.TickCount64;
+        _link?.NoteGas(h2Ok ? h2 : null, airOk ? air : null, now);
+        string? block = GasSupply.BlockReason(h2Ok ? h2 : null, airOk ? air : null, now, now);
+        HeatText.Text = block ?? "两路气压在 3 秒内都 ≥ 0.1 MPa，允许启动加热。";
+        HeatStartButton.IsEnabled = block == null;
+        GasPaths.Visibility = block == null ? Visibility.Visible : Visibility.Collapsed;
+        GasState.Text = block == null ? "气路：两路气压正常，管路动画开启。没有确认按钮。" : "气路：异常或未知。" + block;
+        ZoneText.Text = "氢气 " + (h2Ok ? h2.ToString(System.Globalization.CultureInfo.InvariantCulture) : "未读取到")
+            + " MPa；空气 " + (airOk ? air.ToString(System.Globalization.CultureInfo.InvariantCulture) : "未读取到") + " MPa";
+        if (JsonFields.Has(oven, "fault") && JsonFields.TryNumber(oven, "fault", out double fault) && fault != 0)
+        {
+            EventLog.Report(EventPath(), "oven-fault", "柱箱故障", "READ_OVEN_TEMP fault=" + fault.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
+        if (JsonFields.Has(inlet, "valid") && JsonFields.TryNumber(inlet, "valid", out double valid) && valid == 0)
+        {
+            EventLog.Report(EventPath(), "inlet-sensor", "进样口温度无效", "READ_INLET_TEMP valid=0。这是记录，没有另发命令。");
+        }
+        ReloadEvents();
     }
 
     private async void ReadProgram_Click(object sender, RoutedEventArgs e)
@@ -512,20 +550,58 @@ public partial class MainView : UserControl
 
     private async void ReadPid_Click(object sender, RoutedEventArgs e)
     {
-        string json = await SendLine("READ_OVEN_PID", null);
-        PidBox.Text = JsonFields.Show(json, "kp") + " " + JsonFields.Show(json, "ki") + " " + JsonFields.Show(json, "kd");
+        PidBox.Text = await ReadPidLine("READ_OVEN_PID");
+        InletPidBox.Text = await ReadPidLine("READ_INLET_PID");
+        DetPidBox.Text = await ReadPidLine("READ_DETECTOR_PID");
+    }
+
+    private async Task<string> ReadPidLine(string verb)
+    {
+        string json = await SendLine(verb, null);
+        return JsonFields.Show(json, "kp") + " " + JsonFields.Show(json, "ki") + " " + JsonFields.Show(json, "kd");
     }
 
     private async void WritePid_Click(object sender, RoutedEventArgs e)
     {
-        string[] part = PidBox.Text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (part.Length != 3)
+        if (!await WritePidLine("WRITE_OVEN_PID", PidBox.Text))
         {
-            Note("PID 不是三个数，未发送。");
             return;
         }
-        await SendLine("WRITE_OVEN_PID", "{\"kp\":\"" + part[0] + "\",\"ki\":\"" + part[1] + "\",\"kd\":\"" + part[2] + "\"}");
+        if (!await WritePidLine("WRITE_INLET_PID", InletPidBox.Text))
+        {
+            return;
+        }
+        await WritePidLine("WRITE_DETECTOR_PID", DetPidBox.Text);
     }
+
+    private async Task<bool> WritePidLine(string verb, string text)
+    {
+        string[] part = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (part.Length != 3 || part.Any(item => item == "未读取到"))
+        {
+            Note(verb + " 不是三个已读取的数，未发送。");
+            return false;
+        }
+        string reply = await SendLine(verb, "{\"kp\":\"" + part[0] + "\",\"ki\":\"" + part[1] + "\",\"kd\":\"" + part[2] + "\"}");
+        return reply.Contains("WRITE_OK", StringComparison.Ordinal);
+    }
+
+    private void ClearEvents_Click(object sender, RoutedEventArgs e)
+    {
+        EventLog.Clear(EventPath());
+        ReloadEvents();
+    }
+
+    private void ReloadEvents()
+    {
+        Events.Items.Clear();
+        foreach (PanelEvent item in EventLog.Load(EventPath()))
+        {
+            Events.Items.Add(item.Time + "  " + item.Name + "  " + item.Detail);
+        }
+    }
+
+    private static string EventPath() => Path.Combine(AppContext.BaseDirectory, "panel.events");
 
     private async void ReadStatus_Click(object sender, RoutedEventArgs e)
     {
@@ -569,10 +645,5 @@ public partial class MainView : UserControl
     private void Note(string text)
     {
         SetStatus(text);
-        Events.Items.Insert(0, text);
-        while (Events.Items.Count > 40)
-        {
-            Events.Items.RemoveAt(Events.Items.Count - 1);
-        }
     }
 }

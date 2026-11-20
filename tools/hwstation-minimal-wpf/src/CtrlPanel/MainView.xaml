@@ -39,19 +39,50 @@
 
       <TabControl Margin="0,8,0,0">
         <TabItem Header="主界面">
-          <StackPanel Margin="8">
-            <TextBlock TextWrapping="Wrap" Text="布局待 Android 示意图。这里只放已接通的状态和控制，不画旧表格气路。"/>
-            <TextBlock x:Name="ZoneText" Margin="0,6,0,0" TextWrapping="Wrap" Text="进样口、检测器、柱箱：未读取"/>
-            <TextBlock x:Name="HeatText" Margin="0,6,0,0" TextWrapping="Wrap" Text="加热启动：尚未读到 3 秒内的两路气压。2026-11-10 Android 资料以氢气和空气都 ≥ 0.1 MPa 为正常。停止加热可用。"/>
-            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-              <Button Content="开始分析" Width="110" Margin="0,0,8,0" Click="StartAnalysis_Click"/>
-              <Button Content="停止分析" Width="110" Margin="0,0,8,0" Click="StopAnalysis_Click"/>
-              <Button Content="停止温控" Width="110" Margin="0,0,8,0" Click="StopHeat_Click"/>
-              <Button Content="读取温度" Width="110" Click="ReadTemps_Click"/>
-            </StackPanel>
-            <TextBlock Margin="0,8,0,0" Text="加热启动" Foreground="#666666"/>
-            <Button x:Name="HeatStartButton" Content="启动加热" IsEnabled="False" HorizontalAlignment="Left" Margin="0,2,0,0" Click="StartHeat_Click"/>
-          </StackPanel>
+          <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+            <Viewbox Stretch="Uniform" MaxWidth="600">
+              <Canvas Width="600" Height="980" Background="#F3F5F7">
+                <TextBlock Canvas.Left="12" Canvas.Top="8" FontSize="16" FontWeight="Bold" Text="色谱反控"/>
+                <TextBlock x:Name="GasState" Canvas.Left="12" Canvas.Top="32" Width="576" TextWrapping="Wrap" Text="气路：未知。尚未读到 3 秒内的两路气压。"/>
+                <Image Source="Assets/gc_fid.png" Canvas.Left="134" Canvas.Top="56" Width="140" Height="200" Stretch="Uniform"/>
+                <Image x:Name="FlameImage" Source="Assets/gc_blue_flame.png" Canvas.Left="160" Canvas.Top="70" Width="48" Height="48" Visibility="Collapsed"/>
+                <Border Canvas.Left="4" Canvas.Top="68" Width="112" Background="#FFFFFF" BorderBrush="#C5CDD6" BorderThickness="1" Padding="4">
+                  <TextBlock x:Name="DetCard" TextWrapping="Wrap" Text="检测器&#10;设定 未读取到&#10;实测 未读取到"/>
+                </Border>
+                <Image Source="Assets/gc_inlet.png" Canvas.Left="326" Canvas.Top="56" Width="140" Height="200" Stretch="Uniform"/>
+                <Border Canvas.Left="484" Canvas.Top="68" Width="112" Background="#FFFFFF" BorderBrush="#C5CDD6" BorderThickness="1" Padding="4">
+                  <TextBlock x:Name="InletCard" TextWrapping="Wrap" Text="进样口&#10;设定 未读取到&#10;实测 未读取到"/>
+                </Border>
+                <Image Source="Assets/gc_column.png" Canvas.Left="225" Canvas.Top="276" Width="150" Height="148" Stretch="Uniform"/>
+                <TextBlock Canvas.Left="268" Canvas.Top="430" Text="色谱柱"/>
+                <Border Canvas.Left="4" Canvas.Top="320" Width="136" Background="#FFFFFF" BorderBrush="#C5CDD6" BorderThickness="1" Padding="4">
+                  <TextBlock x:Name="OvenCard" TextWrapping="Wrap" Text="柱箱&#10;设定 未读取到&#10;实测 未读取到"/>
+                </Border>
+                <Border Canvas.Left="460" Canvas.Top="320" Width="136" Background="#FFFFFF" BorderBrush="#C5CDD6" BorderThickness="1" Padding="4">
+                  <StackPanel>
+                    <TextBlock x:Name="FanCard" TextWrapping="Wrap" Text="柱箱风扇&#10;未知"/>
+                    <Image x:Name="FanImage" Source="Assets/gc_oven_fan.png" Width="28" Height="28" HorizontalAlignment="Left"/>
+                  </StackPanel>
+                </Border>
+                <Border Canvas.Left="484" Canvas.Top="202" Width="112" Height="108" Background="#FFFFFF" BorderBrush="#C5CDD6" BorderThickness="1" Padding="4">
+                  <StackPanel>
+                    <TextBlock x:Name="VentCard" TextWrapping="Wrap" Text="散热口&#10;未知"/>
+                    <Image Source="Assets/gc_oven_vent_frame.png" Width="36" Height="28" HorizontalAlignment="Left"/>
+                  </StackPanel>
+                </Border>
+                <Path x:Name="GasPaths" Stroke="#D4782A" StrokeThickness="4" Visibility="Collapsed" Data="M 200,240 C 200,300 250,320 280,340 M 400,240 C 400,300 350,320 320,340"/>
+                <TextBlock x:Name="HeatText" Canvas.Left="12" Canvas.Top="470" Width="576" TextWrapping="Wrap" Text="加热启动：尚未读到 3 秒内且都 ≥ 0.1 MPa 的两路气压。停止加热可用。"/>
+                <StackPanel Canvas.Left="12" Canvas.Top="520" Orientation="Horizontal">
+                  <Button Content="开始分析" Width="100" Margin="0,0,8,0" Click="StartAnalysis_Click"/>
+                  <Button Content="停止分析" Width="100" Margin="0,0,8,0" Click="StopAnalysis_Click"/>
+                  <Button Content="停止温控" Width="100" Margin="0,0,8,0" Click="StopHeat_Click"/>
+                  <Button Content="读取" Width="70" Margin="0,0,8,0" Click="ReadTemps_Click"/>
+                  <Button x:Name="HeatStartButton" Content="启动加热" Width="100" IsEnabled="False" Click="StartHeat_Click"/>
+                </StackPanel>
+                <TextBlock x:Name="ZoneText" Canvas.Left="12" Canvas.Top="570" Width="576" TextWrapping="Wrap" Text="气压未读取。"/>
+              </Canvas>
+            </Viewbox>
+          </ScrollViewer>
         </TabItem>
         <TabItem Header="柱箱">
           <StackPanel Margin="8">
@@ -83,7 +114,11 @@
           </StackPanel>
         </TabItem>
         <TabItem Header="事件">
-          <ListBox x:Name="Events" Height="220" Margin="8"/>
+          <StackPanel Margin="8">
+            <TextBlock TextWrapping="Wrap" Text="这里只保存已经读到的故障记录，不向仪器发送定时或触发命令，也不放入示例事件。"/>
+            <ListBox x:Name="Events" Height="180" Margin="0,6,0,0"/>
+            <Button Content="清除本机记录" HorizontalAlignment="Left" Margin="0,6,0,0" Click="ClearEvents_Click"/>
+          </StackPanel>
         </TabItem>
         <TabItem Header="秒表">
           <StackPanel Margin="8">
@@ -148,11 +183,13 @@
               <Button Content="解锁" Width="70" Margin="0,0,8,0" Click="Unlock_Click"/>
               <Button Content="锁定" Width="70" Click="Lock_Click"/>
             </StackPanel>
-            <TextBlock Margin="0,8,0,0" Text="柱箱 PID：kp ki kd"/>
+            <TextBlock Margin="0,8,0,0" Text="柱箱 / 进样口 / 检测器 PID，每行三个数 kp ki kd"/>
             <TextBox x:Name="PidBox" Width="220" HorizontalAlignment="Left" Margin="0,2,0,0"/>
+            <TextBox x:Name="InletPidBox" Width="220" HorizontalAlignment="Left" Margin="0,2,0,0"/>
+            <TextBox x:Name="DetPidBox" Width="220" HorizontalAlignment="Left" Margin="0,2,0,0"/>
             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-              <Button Content="读取柱箱PID" Width="110" Margin="0,0,8,0" Click="ReadPid_Click"/>
-              <Button Content="写入柱箱PID" Width="110" Click="WritePid_Click"/>
+              <Button Content="读取三路PID" Width="110" Margin="0,0,8,0" Click="ReadPid_Click"/>
+              <Button Content="写入三路PID" Width="110" Click="WritePid_Click"/>
             </StackPanel>
             <TextBlock Margin="0,8,0,0" TextWrapping="Wrap" Text="通信页不发送 READ_NET_CONFIG 或写网络。那些命令没有列入可发送集合。"/>
             <Button Content="读取控制状态" HorizontalAlignment="Left" Margin="0,4,0,0" Click="ReadStatus_Click"/>
