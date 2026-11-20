@@ -1,0 +1,319 @@
+using System.Buffers.Binary;
+using System.Text;
+using HwMinimal;
+
+int failed = 0;
+void Check(bool ok, string name)
+{
+    if (ok)
+    {
+        Console.WriteLine("PASS " + name);
+        return;
+    }
+    failed++;
+    Console.WriteLine("FAIL " + name);
+}
+
+Check(Crc16.Compute(Encoding.ASCII.GetBytes("123456789")) == 0x4B37, "modbus crc vector");
+byte[] start = GcCodec.StartAcq(1, 100);
+Check(Convert.ToHexString(start).Equals("AA55010102006400177255AA", StringComparison.OrdinalIgnoreCase), "start frame 100 ms");
+byte[] stop = GcCodec.StopAcq(2);
+Check(Convert.ToHexString(stop).Equals("AA5502020000A05C55AA", StringComparison.OrdinalIgnoreCase), "stop frame");
+
+var parser = new FrameParser();
+var frames = new List<GcFrame>();
+Check(parser.Push(start.AsSpan(0, 3), frames) && frames.Count == 0, "fragment holds");
+Check(parser.Push(start.AsSpan(3), frames) && frames.Count == 1 && frames[0].Command == 0x01, "fragment completes");
+byte[] second = GcCodec.StopAcq(2);
+byte[] batch = new byte[start.Length + second.Length];
+start.CopyTo(batch, 0);
+second.CopyTo(batch, start.Length);
+var both = new FrameParser();
+var many = new List<GcFrame>();
+Check(both.Push(batch, many) && many.Count == 2 && many[1].Command == 0x02, "batched frames");
+byte[] bad = (byte[])start.Clone();
+bad[6] ^= 0xFF;
+var badParser = new FrameParser();
+var none = new List<GcFrame>();
+Check(!badParser.Push(bad, none) && none.Count == 0 && badParser.Fault.Contains("CRC", StringComparison.Ordinal), "crc fault");
+Check(!badParser.Push(start, none), "no resync after crc");
+
+Check(LogCurrent.MapMilliVolts(0f).FemtoAmps == 100_000_000, "Y0 -> 100000000 fA");
+Check(LogCurrent.MapMilliVolts(-200f).FemtoAmps == 10_000_000, "Y-200 -> 10000000 fA");
+Check(LogCurrent.MapMilliVolts(200f).FemtoAmps == 1_000_000_000, "Y200 -> 1000000000 fA");
+MapResult overflow = LogCurrent.MapMilliVolts(400f);
+Check(!overflow.Ok && overflow.Error.Contains("int32", StringComparison.Ordinal), "Y400 overflow");
+Check(!LogCurrent.MapMilliVolts(float.NaN).Ok, "NaN rejected");
+Check(!LogCurrent.MapMilliVolts(float.PositiveInfinity).Ok, "Inf rejected");
+Check(LogCurrent.MapMilliVolts(0f).FemtoAmps != int.MaxValue, "no board clamp");
+
+var same = new AcqRun();
+var view = new List<ObservedSample>();
+var sink = new List<HwTriple>();
+same.Accept(Frames.One(1, 0, 0, 0f), true, view, sink);
+same.Accept(Frames.One(2, 1, 100, 0f), true, view, sink);
+Check(view.Count == 2 && sink.Count == 2 && sink[0].Data1 == sink[1].Data1 && sink[0].Data3 == 3 && sink[0].Data2 == 0, "equal values are both forwarded");
+
+var gap = new AcqRun();
+var gapView = new List<ObservedSample>();
+var gapSink = new List<HwTriple>();
+gap.Accept(Frames.One(1, 0, 0, 0f), true, gapView, gapSink);
+gap.Accept(Frames.One(2, 1, 300, 0f), true, gapView, gapSink);
+gap.Accept(Frames.One(3, 2, 400, 0f), true, gapView, gapSink);
+Check(gap.Invalid && gapView.Count == 1 && gapSink.Count == 1 && gap.Fault.Contains("未补点", StringComparison.Ordinal), "time gap invalidates");
+
+var order = new AcqRun();
+var orderView = new List<ObservedSample>();
+order.Accept(Frames.One(1, 0, 100, 0f), false, orderView, sink);
+Check(order.Invalid && orderView.Count == 0, "first time must be 0");
+var backward = new AcqRun();
+var backView = new List<ObservedSample>();
+backward.Accept(Frames.One(1, 0, 0, 0f), false, backView, sink);
+backward.Accept(Frames.One(2, 1, 0, 1f), false, backView, sink);
+Check(backward.Invalid && backView.Count == 1, "time delta 0 is invalid");
+
+var seq = new AcqRun();
+var seqView = new List<ObservedSample>();
+seq.Accept(Frames.One(1, 0, 0, 0f), false, seqView, sink);
+seq.Accept(Frames.One(3, 1, 100, 0f), false, seqView, sink);
+Check(seq.Invalid && seq.Fault.Contains("帧序号", StringComparison.Ordinal) && seqView.Count == 1, "sequence gap");
+
+var batchGap = new AcqRun();
+var batchView = new List<ObservedSample>();
+batchGap.Accept(Frames.One(1, 0, 0, 0f), false, batchView, sink);
+batchGap.Accept(Frames.One(2, 2, 100, 0f), false, batchView, sink);
+Check(batchGap.Invalid && batchView.Count == 1, "batch gap");
+
+var nanRun = new AcqRun();
+var nanView = new List<ObservedSample>();
+var nanSink = new List<HwTriple>();
+nanRun.Accept(Frames.One(1, 0, 0, float.NaN), true, nanView, nanSink);
+nanRun.Accept(Frames.One(2, 1, 100, 0f), true, nanView, nanSink);
+Check(nanRun.Invalid && nanView.Count == 0 && nanSink.Count == 0, "NaN stops before any point");
+
+var hz = new AcqRun();
+var hzView = new List<ObservedSample>();
+var hzSink = new List<HwTriple>();
+hz.Accept(Frames.Pair(), true, hzView, hzSink);
+Check(hzView.Count == 2 && hzSink.Count == 2, "100 ms pair is not expanded to 20 Hz");
+
+HwFrequenceParse twenty = HwFrequence.Parse("20,20\n\n注：不要改文件\n");
+HwFrequenceParse ten = HwFrequence.Parse("10,10\n");
+HwFrequenceParse tenTwenty = HwFrequence.Parse("10,20\n");
+Check(twenty.SyntaxOk && twenty.FileRuleOk && !twenty.CompatibleWith100Ms, "20,20 mismatch");
+Check(ten.CompatibleWith100Ms && ForwardGate.Allows(ten, true, out _), "10,10 allows");
+Check(tenTwenty.CompatibleWith100Ms, "10,20 is also 100 ms");
+Check(!ForwardGate.Allows(ten, false, out _), "limits must be accepted");
+Check(!ForwardGate.Allows(twenty, true, out string blocked) && blocked.Contains("50", StringComparison.Ordinal), "20,20 block text");
+
+string examplePath = Path.Combine(AppContext.BaseDirectory, "examples", "HWFrequence.proposed-10-10.txt");
+string before = File.ReadAllText(examplePath);
+DateTime stamp = File.GetLastWriteTimeUtc(examplePath);
+HwFrequenceParse example = HwFrequence.Parse(before);
+string after = File.ReadAllText(examplePath);
+Check(example.CompatibleWith100Ms && before == after && File.GetLastWriteTimeUtc(examplePath) == stamp, "example 10,10 is not rewritten");
+Check(before.Contains("候选", StringComparison.Ordinal), "example is marked as a candidate");
+
+var coldSink = new RecordingSink();
+var cold = new ThrowTransport();
+_ = new LiveLink(cold, coldSink);
+await Task.Delay(80);
+Check(cold.Calls == 0 && coldSink.Count == 0, "constructing the link does nothing");
+
+await RunLink();
+Check(failed == 0, "all checks");
+return failed == 0 ? 0 : 1;
+
+async Task RunLink()
+{
+    var transport = new ScriptTransport();
+    var recording = new RecordingSink();
+    var link = new LiveLink(transport, recording, new LinkOptions { HeartbeatMs = 60_000, AckTimeoutMs = 400 });
+    var hello = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    var first = new TaskCompletionSource<ObservedSample>(TaskCreationOptions.RunContinuationsAsynchronously);
+    var second = new TaskCompletionSource<ObservedSample>(TaskCreationOptions.RunContinuationsAsynchronously);
+    int samples = 0;
+    link.Status += text =>
+    {
+        if (text.Contains("HELLO_OK", StringComparison.Ordinal))
+        {
+            hello.TrySetResult();
+        }
+    };
+    link.Sample += sample =>
+    {
+        int n = Interlocked.Increment(ref samples);
+        if (n == 1)
+        {
+            first.TrySetResult(sample);
+        }
+        if (n == 2)
+        {
+            second.TrySetResult(sample);
+        }
+    };
+    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(4));
+    Task run = link.RunAsync(cts.Token);
+    await hello.Task.WaitAsync(TimeSpan.FromSeconds(2));
+    Check(recording.Count == 0, "hello does not touch the sink");
+    link.RequestDeviceStart();
+    ObservedSample seen = await first.Task.WaitAsync(TimeSpan.FromSeconds(2));
+    Check(!seen.Forwarded && recording.Count == 0 && seen.FemtoAmps == 100_000_000, "view without forwarding");
+    byte[]? startWrite = transport.Writes.FirstOrDefault(w => w.Length > 2 && w[2] == GcCodec.CmdStart);
+    Check(startWrite != null && Convert.ToHexString(startWrite).Equals("AA55010102006400177255AA", StringComparison.OrdinalIgnoreCase), "live start bytes");
+    Check(!link.TryArm(HwFrequence.Parse("20,20"), true, out _), "running link rejects 20,20");
+    Check(link.TryArm(HwFrequence.Parse("10,10"), true, out _), "running link accepts 10,10");
+    transport.Enqueue(Frames.Encode(2, 1, 100, 0f));
+    ObservedSample forwarded = await second.Task.WaitAsync(TimeSpan.FromSeconds(2));
+    Check(forwarded.Forwarded && recording.Count == 1 && recording.Snapshot()[0].Data3 == 3 && recording.Snapshot()[0].Data2 == 0, "second equal sample is forwarded once");
+    link.RequestHwRecordStart();
+    link.RequestHwRecordStop();
+    await WaitUntil(() => recording.Count >= 3);
+    HwTriple[] mid = recording.Snapshot();
+    Check(mid[1].Equals(new HwTriple(1, 0, 1)) && mid[2].Equals(new HwTriple(1, 0, 2)), "A start and stop");
+    int beforeZero = mid.Length;
+    link.RequestHwZeroA();
+    await WaitUntil(() => recording.Count == beforeZero + 1);
+    HwTriple[] withZero = recording.Snapshot();
+    Check(withZero[^1].Equals(new HwTriple(1, 0, 5)), "zero is A only and explicit");
+    Check(withZero.All(c => c.Data3 is 1 or 2 or 3 or 5), "no B sample command");
+    transport.Enqueue(Frames.BadCrc(Frames.Encode(3, 2, 200, 0f)));
+    await WaitUntil(() => !link.SamplesArmed);
+    int frozen = recording.Count;
+    transport.Enqueue(Frames.Encode(4, 3, 300, 0f));
+    await Task.Delay(200);
+    Check(recording.Count == frozen, "crc fault stops later points");
+    cts.Cancel();
+    await run;
+}
+
+async Task WaitUntil(Func<bool> ready)
+{
+    var deadline = DateTime.UtcNow.AddSeconds(2);
+    while (!ready() && DateTime.UtcNow < deadline)
+    {
+        await Task.Delay(20);
+    }
+    Check(ready(), "wait elapsed");
+}
+
+sealed class ThrowTransport : IByteTransport
+{
+    public int Calls;
+    public ValueTask WriteAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken)
+    {
+        Calls++;
+        throw new InvalidOperationException("write");
+    }
+    public ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+    {
+        Calls++;
+        throw new InvalidOperationException("read");
+    }
+}
+
+sealed class RecordingSink : IHwSink
+{
+    private readonly List<HwTriple> _calls = new();
+    public bool IsReady => true;
+    public int Count { get { lock (_calls) return _calls.Count; } }
+    public HwTriple[] Snapshot() { lock (_calls) return _calls.ToArray(); }
+    public HwCallResult Send(int data1, int data2, int data3)
+    {
+        lock (_calls)
+        {
+            _calls.Add(new HwTriple(data1, data2, data3));
+        }
+        return new HwCallResult(data1, data2, data3, 1, "返回 1：已向 HWClass 发出消息。这不是采集成功。");
+    }
+}
+
+static class Frames
+{
+    public static GcFrame One(byte seq, int batch, int time, float y)
+    {
+        byte[] payload = new byte[14];
+        BinaryPrimitives.WriteInt32LittleEndian(payload, batch);
+        BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(4), 1);
+        BinaryPrimitives.WriteInt32LittleEndian(payload.AsSpan(6), time);
+        BinaryPrimitives.WriteInt32LittleEndian(payload.AsSpan(10), BitConverter.SingleToInt32Bits(y));
+        return new GcFrame(GcCodec.CmdData, seq, payload);
+    }
+
+    public static GcFrame Pair()
+    {
+        byte[] payload = new byte[22];
+        BinaryPrimitives.WriteInt32LittleEndian(payload, 0);
+        BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(4), 2);
+        BinaryPrimitives.WriteInt32LittleEndian(payload.AsSpan(6), 0);
+        BinaryPrimitives.WriteInt32LittleEndian(payload.AsSpan(10), BitConverter.SingleToInt32Bits(0f));
+        BinaryPrimitives.WriteInt32LittleEndian(payload.AsSpan(14), 100);
+        BinaryPrimitives.WriteInt32LittleEndian(payload.AsSpan(18), BitConverter.SingleToInt32Bits(0f));
+        return new GcFrame(GcCodec.CmdData, 1, payload);
+    }
+
+    public static byte[] Encode(byte seq, int batch, int time, float y)
+    {
+        GcFrame frame = One(seq, batch, time, y);
+        return GcCodec.Encode(frame.Command, frame.Sequence, frame.Payload);
+    }
+
+    public static byte[] BadCrc(byte[] frame)
+    {
+        byte[] copy = (byte[])frame.Clone();
+        copy[^3] ^= 0xFF;
+        return copy;
+    }
+}
+
+sealed class ScriptTransport : IByteTransport
+{
+    private readonly Queue<byte[]> _in = new();
+    public List<byte[]> Writes { get; } = new();
+
+    public void Enqueue(byte[] data)
+    {
+        lock (_in)
+        {
+            _in.Enqueue(data);
+        }
+    }
+
+    public ValueTask WriteAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken)
+    {
+        byte[] copy = data.ToArray();
+        lock (Writes)
+        {
+            Writes.Add(copy);
+        }
+        if (copy.AsSpan().StartsWith(GcCodec.HelloPc))
+        {
+            Enqueue(Encoding.ASCII.GetBytes("HELLO_OK\n"));
+        }
+        else if (copy.Length > 2 && copy[2] == GcCodec.CmdStart)
+        {
+            Enqueue(GcCodec.Encode(GcCodec.CmdAck, copy[3], new byte[] { GcCodec.CmdStart, 0 }));
+            Enqueue(Frames.Encode(1, 0, 0, 0f));
+        }
+        return ValueTask.CompletedTask;
+    }
+
+    public async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+    {
+        var deadline = DateTime.UtcNow.AddMilliseconds(40);
+        while (DateTime.UtcNow < deadline)
+        {
+            lock (_in)
+            {
+                if (_in.Count > 0)
+                {
+                    byte[] next = _in.Dequeue();
+                    next.CopyTo(buffer);
+                    return next.Length;
+                }
+            }
+            await Task.Delay(5, cancellationToken);
+        }
+        return 0;
+    }
+}
