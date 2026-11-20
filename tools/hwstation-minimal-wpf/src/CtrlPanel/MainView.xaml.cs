@@ -20,6 +20,7 @@ public partial class MainView : UserControl
     private TcpByteTransport? _transport;
     private CancellationTokenSource? _run;
     private HwFrequenceParse _config;
+    private PanelSettings _settings = new();
     private DateTime? _watchFrom;
     private TimeSpan _watchDone;
     private readonly System.Windows.Threading.DispatcherTimer _watch = new() { Interval = TimeSpan.FromSeconds(1) };
@@ -30,9 +31,11 @@ public partial class MainView : UserControl
         ProcessText.Text = IntPtr.Size == 4
             ? "本进程是 32 位。顶层窗口类名是手写的 ControlPanelClass，WPF 只是里面的内容，不会自动拥有这个类名。"
             : "本进程不是 32 位，不能加载厂商 DLL。请用 x86 的 CtrlPanel.exe。";
-        HostBox.Text = "";
-        PortBox.Text = "";
-        DllBox.Text = "";
+        _settings = PanelSettings.Load(SettingsPath());
+        HostBox.Text = _settings.Host;
+        PortBox.Text = _settings.Port.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        DllBox.Text = _settings.DllPath;
+        AcceptBox.IsChecked = _settings.RiskAcknowledged;
         _watch.Tick += (_, _) => ShowWatch();
     }
 
@@ -156,10 +159,25 @@ public partial class MainView : UserControl
             Filter = "DLL|*.dll|所有文件|*.*",
             CheckFileExists = true
         };
-        if (dialog.ShowDialog() == true)
+        if (dialog.ShowDialog() != true)
         {
-            DllBox.Text = dialog.FileName;
+            return;
         }
+        string problem = VendorDllIdentity.Describe(dialog.FileName);
+        if (problem.Length != 0)
+        {
+            Note(problem);
+            return;
+        }
+        string dest = VendorDllIdentity.FixedPath(AppContext.BaseDirectory);
+        if (!string.Equals(Path.GetFullPath(dialog.FileName), Path.GetFullPath(dest), StringComparison.OrdinalIgnoreCase))
+        {
+            File.Copy(dialog.FileName, dest, true);
+        }
+        _settings.DllPath = dest;
+        DllBox.Text = dest;
+        _settings.Save(SettingsPath());
+        Note("已核对并保存到程序目录的 HWSendData.dll。未改 HW 安装目录。");
     }
 
     private void Arm_Click(object sender, RoutedEventArgs e)
@@ -291,16 +309,80 @@ public partial class MainView : UserControl
         }
     }
 
-    private void StartAnalysis_Click(object sender, RoutedEventArgs e)
+    private async void StartAnalysis_Click(object sender, RoutedEventArgs e)
     {
-        if (_link == null)
+        RememberSettings();
+        string home = _settings.EffectiveHome;
+        string freqPath = Path.Combine(home, "HWFrequence.txt");
+        bool exists = false;
+        string? text = null;
+        try
         {
-            Note("未连接，未开始分析。");
+            exists = File.Exists(freqPath);
+            if (exists)
+            {
+                text = File.ReadAllText(freqPath);
+            }
+        }
+        catch (Exception ex)
+        {
+            Note("读取频率文件失败，未修改它：" + ex.Message);
             return;
         }
-        _link.RequestStartAnalysis(_config, AcceptBox.IsChecked == true);
-        Note("已请求开始分析。先等设备确认和第一个真实点，再通知 HW 取数。");
+        string dll = string.IsNullOrWhiteSpace(_settings.DllPath)
+            ? VendorDllIdentity.FixedPath(AppContext.BaseDirectory)
+            : _settings.DllPath;
+        DailyPrepResult prep = DailyPrep.Evaluate(_settings, exists, text, dll);
+        ConfigText.Text = prep.Detail;
+        if (!prep.Ok)
+        {
+            Note(prep.Detail);
+            return;
+        }
+        if (!_sink.IsReady)
+        {
+            string loaded = _sink.Load(prep.DllPath);
+            if (loaded.Length != 0)
+            {
+                Note(loaded);
+                return;
+            }
+        }
+        _config = prep.Frequence;
+        if (_link == null)
+        {
+            if (_run != null)
+            {
+                Note("正在连接，尚未开始分析。");
+                return;
+            }
+            var cts = new CancellationTokenSource();
+            lock (_life)
+            {
+                _run = cts;
+            }
+            await ConnectAsync(_settings.Host, _settings.Port, cts);
+        }
+        _link?.RequestStartAnalysis(prep.Frequence, true);
+        Note("已按保存的地址请求开始分析。先等设备确认和第一个真实点，再通知 HW 取数。");
     }
+
+    private void SaveSettings_Click(object sender, RoutedEventArgs e)
+    {
+        RememberSettings();
+        Note("已保存主机、端口和 HW 目录。启动时不会连接，也不会改 HWFrequence.txt。");
+    }
+
+    private void RememberSettings()
+    {
+        _settings.Host = HostBox.Text.Trim();
+        _settings.Port = int.TryParse(PortBox.Text.Trim(), out int port) ? port : 0;
+        _settings.RiskAcknowledged = AcceptBox.IsChecked == true;
+        _settings.DllPath = DllBox.Text.Trim();
+        _settings.Save(SettingsPath());
+    }
+
+    private static string SettingsPath() => Path.Combine(AppContext.BaseDirectory, "panel.settings");
 
     private void StopAnalysis_Click(object sender, RoutedEventArgs e)
     {
