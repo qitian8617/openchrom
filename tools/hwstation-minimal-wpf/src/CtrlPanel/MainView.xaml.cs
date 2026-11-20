@@ -426,6 +426,9 @@ public partial class MainView : UserControl
         string inlet = await SendLine("READ_INLET_TEMP", null);
         string detector = await SendLine("READ_DETECTOR_TEMP", null);
         string gas = await SendLine("READ_GAS_PRESSURE", null);
+        string fid = await SendLine("READ_FID_STATUS", null);
+        bool flame = JsonFields.TryNumber(fid, "flame", out double flameValue) && flameValue != 0;
+        FlameImage.Visibility = flame ? Visibility.Visible : Visibility.Collapsed;
         InletCard.Text = "进样口\n设定 " + JsonFields.Show(inlet, "setpoint") + "\n实测 " + JsonFields.Show(inlet, "actual");
         DetCard.Text = "检测器\n设定 " + JsonFields.Show(detector, "setpoint") + "\n实测 " + JsonFields.Show(detector, "actual");
         OvenCard.Text = "柱箱\n设定 " + JsonFields.Show(oven, "setpoint") + "\n实测 " + JsonFields.Show(oven, "actual");
