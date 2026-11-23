@@ -17,7 +17,9 @@ internal static class NativeShell
     private const int WS_CAPTION = 0x00C00000;
     private const int WS_SYSMENU = 0x00080000;
     private const int WS_MINIMIZEBOX = 0x00020000;
-    private const int WS_FIXED = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
+    private const int WS_THICKFRAME = 0x00040000;
+    private const int WS_FIXED = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_THICKFRAME;
+    private const uint WM_GETMINMAXINFO = 0x0024;
     private const int WS_CHILD = 0x40000000;
     private const int WS_VISIBLE = 0x10000000;
     private const int CW_USEDEFAULT = unchecked((int)0x80000000);
@@ -27,6 +29,9 @@ internal static class NativeShell
     private static IntPtr _background;
     private static IntPtr _hwnd;
     private static HwndSource? _source;
+    private static int _trackW;
+    private static int _trackMinH;
+    private static int _trackMaxH;
 
     public static bool ClaimOrActivate()
     {
@@ -68,10 +73,17 @@ internal static class NativeShell
             lpszClassName = ClassName
         };
         RegisterClassW(ref klass);
-        // Content canvas is 600×1024. AdjustWindowRect adds the title bar and border; the window cannot be resized.
-        var client = new RectI { Left = 0, Top = 0, Right = 600, Bottom = 1024 + 48 };
-        AdjustWindowRect(ref client, WS_FIXED, false);
-        _hwnd = CreateWindowExW(0, ClassName, WindowTitle, WS_FIXED, CW_USEDEFAULT, CW_USEDEFAULT, client.Right - client.Left, client.Bottom - client.Top, IntPtr.Zero, IntPtr.Zero, klass.hInstance, IntPtr.Zero);
+        uint dpi = GetDpiForSystem();
+        double scale = dpi >= 96 ? dpi / 96.0 : 1;
+        var work = SystemParameters.WorkArea;
+        int clientW = (int)Math.Round(600 * scale);
+        int clientH = (int)Math.Round(Math.Max(480, work.Height - 24) * scale);
+        var outer = new RectI { Left = 0, Top = 0, Right = clientW, Bottom = clientH };
+        AdjustWindowRect(ref outer, WS_FIXED, false);
+        _trackW = outer.Right - outer.Left;
+        _trackMinH = (int)Math.Round(480 * scale) + 40;
+        _trackMaxH = (int)Math.Round(work.Height * scale);
+        _hwnd = CreateWindowExW(0, ClassName, WindowTitle, WS_FIXED, CW_USEDEFAULT, CW_USEDEFAULT, _trackW, Math.Min(_trackMaxH, outer.Bottom - outer.Top), IntPtr.Zero, IntPtr.Zero, klass.hInstance, IntPtr.Zero);
         if (_hwnd == IntPtr.Zero)
         {
             MessageBoxW(IntPtr.Zero, "没有创建 ControlPanelClass 窗口，错误 " + Marshal.GetLastWin32Error() + "。WPF 不会自动提供这个类名。", "反控", 0);
@@ -101,6 +113,9 @@ internal static class NativeShell
             case WM_SIZE:
                 ResizeChild();
                 return IntPtr.Zero;
+            case WM_GETMINMAXINFO:
+                LockWidth(lParam);
+                return IntPtr.Zero;
             case WM_CLOSE:
                 MessageBoxW(hwnd, "关闭本窗口不会主动发送 STOP_ACQ，也不会关闭温控。\n连接断开后，设备按它自己的逻辑结束采集。这不是急停。", "反控", 0);
                 DestroyWindow(hwnd);
@@ -110,6 +125,16 @@ internal static class NativeShell
                 return IntPtr.Zero;
         }
         return DefWindowProcW(hwnd, msg, wParam, lParam);
+    }
+
+    private static void LockWidth(IntPtr lParam)
+    {
+        var info = Marshal.PtrToStructure<MinMaxInfo>(lParam);
+        info.MinTrack.X = _trackW;
+        info.MaxTrack.X = _trackW;
+        info.MinTrack.Y = _trackMinH;
+        info.MaxTrack.Y = Math.Max(_trackMinH, _trackMaxH);
+        Marshal.StructureToPtr(info, lParam, false);
     }
 
     private static void ResizeChild()
@@ -147,6 +172,23 @@ internal static class NativeShell
         public int Bottom;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MinMaxPoint
+    {
+        public int X;
+        public int Y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MinMaxInfo
+    {
+        public MinMaxPoint Reserved;
+        public MinMaxPoint MaxSize;
+        public MinMaxPoint MaxPosition;
+        public MinMaxPoint MinTrack;
+        public MinMaxPoint MaxTrack;
+    }
+
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern IntPtr CreateMutexW(IntPtr attributes, bool initialOwner, string name);
 
@@ -164,6 +206,9 @@ internal static class NativeShell
 
     [DllImport("user32.dll")]
     private static extern bool AdjustWindowRect(ref RectI rect, int style, bool menu);
+
+    [DllImport("user32.dll")]
+    private static extern uint GetDpiForSystem();
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern IntPtr FindWindowW(string klass, string windowName);

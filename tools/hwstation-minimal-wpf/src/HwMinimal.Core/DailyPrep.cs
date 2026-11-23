@@ -10,7 +10,6 @@ public sealed class PanelSettings
     public const int DefaultPort = 8234;
     public const string DefaultHwHome = @"D:\HWGMP\program";
     public const double ContentWidth = 600;
-    public const double ContentHeight = 1024;
 
     public string Host { get; set; } = DefaultHost;
     public int Port { get; set; } = DefaultPort;

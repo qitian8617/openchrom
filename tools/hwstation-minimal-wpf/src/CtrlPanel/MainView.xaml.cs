@@ -40,8 +40,6 @@ public partial class MainView : UserControl
         AcceptBox.IsChecked = _settings.RiskAcknowledged;
         ReloadEvents();
         StatusText.Text = _settings.StartupStatus();
-        SchematicCanvas.Width = PanelSettings.ContentWidth;
-        SchematicCanvas.Height = PanelSettings.ContentHeight;
         _watch.Tick += (_, _) => ShowWatch();
         _flow.Tick += (_, _) => MoveGasDots();
     }
@@ -462,7 +460,6 @@ public partial class MainView : UserControl
         HeatText.Text = block ?? "两路气压在 3 秒内都 ≥ 0.1 MPa，允许启动加热。";
         HeatStartButton.IsEnabled = block == null;
         bool flow = block == null;
-        GasPaths.Visibility = flow ? Visibility.Visible : Visibility.Collapsed;
         GasDotA.Visibility = flow ? Visibility.Visible : Visibility.Collapsed;
         GasDotB.Visibility = flow ? Visibility.Visible : Visibility.Collapsed;
         if (flow)
@@ -475,8 +472,8 @@ public partial class MainView : UserControl
         }
         bool igniting = fid.Contains("igniting", StringComparison.OrdinalIgnoreCase);
         FilamentImage.Visibility = igniting ? Visibility.Visible : Visibility.Collapsed;
-        GasState.Text = block == null ? "气路：两路气压正常，管路动画开启。没有确认按钮。" : "气路：异常或未知。" + block;
-        ZoneText.Text = "氢气 " + (h2Ok ? h2.ToString(System.Globalization.CultureInfo.InvariantCulture) : "未读取到")
+        ZoneText.Text = (block == null ? "气路动画开。 " : "气路动画停。 ")
+            + "氢气 " + (h2Ok ? h2.ToString(System.Globalization.CultureInfo.InvariantCulture) : "未读取到")
             + " MPa；空气 " + (airOk ? air.ToString(System.Globalization.CultureInfo.InvariantCulture) : "未读取到") + " MPa";
         if (JsonFields.Has(oven, "fault") && JsonFields.TryNumber(oven, "fault", out double fault) && fault != 0)
         {
@@ -653,14 +650,39 @@ public partial class MainView : UserControl
         {
             _flowPhase -= 1;
         }
-        PlaceDot(GasDotA, 160, 290, 220, 540, _flowPhase);
-        PlaceDot(GasDotB, 440, 290, 380, 540, _flowPhase);
+        var left = new (double X, double Y)[] { (91, 168), (16, 168), (6, 178), (6, 352), (22, 368), (62, 368) };
+        var right = new (double X, double Y)[] { (189, 168), (264, 168), (274, 178), (274, 352), (258, 368), (218, 368) };
+        PlaceAlong(GasDotA, left, _flowPhase);
+        PlaceAlong(GasDotB, right, _flowPhase);
     }
 
-    private static void PlaceDot(System.Windows.Shapes.Ellipse dot, double x0, double y0, double x1, double y1, double t)
+    private static void PlaceAlong(System.Windows.Shapes.Ellipse dot, (double X, double Y)[] points, double t)
     {
-        Canvas.SetLeft(dot, x0 + (x1 - x0) * t);
-        Canvas.SetTop(dot, y0 + (y1 - y0) * t);
+        double total = 0;
+        for (int i = 1; i < points.Length; i++)
+        {
+            total += Distance(points[i - 1], points[i]);
+        }
+        double remain = total * t;
+        for (int i = 1; i < points.Length; i++)
+        {
+            double span = Distance(points[i - 1], points[i]);
+            if (remain <= span || i == points.Length - 1)
+            {
+                double f = span <= 0 ? 0 : remain / span;
+                Canvas.SetLeft(dot, points[i - 1].X + (points[i].X - points[i - 1].X) * f);
+                Canvas.SetTop(dot, points[i - 1].Y + (points[i].Y - points[i - 1].Y) * f);
+                return;
+            }
+            remain -= span;
+        }
+    }
+
+    private static double Distance((double X, double Y) a, (double X, double Y) b)
+    {
+        double dx = a.X - b.X;
+        double dy = a.Y - b.Y;
+        return Math.Sqrt(dx * dx + dy * dy);
     }
 
     private void ShowWatch()
