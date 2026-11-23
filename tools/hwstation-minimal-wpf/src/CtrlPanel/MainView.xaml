@@ -33,7 +33,7 @@
   <Grid Width="600" Background="#FFFFFF">
       <TabControl Width="600">
         <TabItem Header="主界面">
-          <DockPanel Background="#F4F5F7">
+          <DockPanel Background="#F4F5F7" LastChildFill="True">
             <TextBlock DockPanel.Dock="Top" Margin="8,4,8,0" FontSize="12" FontWeight="Bold" Foreground="#8A1C1C" Text="无法验证设备样本新鲜度，仅接入验证，不用于正式定量"/>
             <TextBlock x:Name="StatusText" DockPanel.Dock="Top" Margin="8,0,8,4" FontSize="12" Foreground="#1A1A1A" TextWrapping="Wrap" Text="未连接。已保存地址 192.168.1.30:8234。启动不会自动连接，也不会发写命令。"/>
             <StackPanel DockPanel.Dock="Bottom" Margin="8,4,8,8">
@@ -47,49 +47,39 @@
                 <Button x:Name="HeatStartButton" Content="启动加热" Width="96" Height="28" IsEnabled="False" Click="StartHeat_Click"/>
               </StackPanel>
             </StackPanel>
-            <Grid Margin="6,0,6,0">
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="104"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="104"/>
-              </Grid.ColumnDefinitions>
-              <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                <Border Margin="0,0,0,8" Background="#F7F8FA" BorderBrush="#D0D5DD" BorderThickness="1" Padding="4">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Background="#F4F5F7">
+              <Grid Width="600" Background="#F4F5F7">
+              <Canvas x:Name="SchematicCanvas" Width="556" Height="430" HorizontalAlignment="Center" Background="#F4F5F7">
+                <Image x:Name="FidImage" Source="Assets/gc_fid.png" Stretch="Uniform"/>
+                <Image x:Name="FilamentImage" Source="Assets/gc_fid_filament_hot.png" Stretch="Uniform" Visibility="Collapsed"/>
+                <Image x:Name="FlameImage" Source="Assets/gc_blue_flame.png" Stretch="Uniform" Visibility="Collapsed"/>
+                <Image x:Name="InletImage" Source="Assets/gc_inlet.png" Stretch="Uniform"/>
+                <Image x:Name="ColumnImage" Source="Assets/gc_column.png" Stretch="Uniform"/>
+                <Path x:Name="LeftPipe" Stroke="#8A6236" StrokeThickness="2" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                <Path x:Name="RightPipe" Stroke="#8A6236" StrokeThickness="2" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                <Ellipse x:Name="GasDotA" Width="6" Height="6" Fill="#2F6FED" Visibility="Collapsed"/>
+                <Ellipse x:Name="GasDotB" Width="6" Height="6" Fill="#2F6FED" Visibility="Collapsed"/>
+                <Border x:Name="DetBorder" Background="#F7F8FA" BorderBrush="#D0D5DD" BorderThickness="1" Padding="4">
                   <TextBlock x:Name="DetCard" FontSize="12" Foreground="#5C6570" TextWrapping="Wrap" Text="检测器&#10;设定 未读取到&#10;实测 未读取到"/>
                 </Border>
-                <Border Background="#F7F8FA" BorderBrush="#D0D5DD" BorderThickness="1" Padding="4">
-                  <TextBlock x:Name="OvenCard" FontSize="12" Foreground="#5C6570" TextWrapping="Wrap" Text="柱箱&#10;设定 未读取到&#10;实测 未读取到"/>
-                </Border>
-              </StackPanel>
-              <Viewbox Grid.Column="1" Stretch="Uniform">
-                <Canvas Width="280" Height="460">
-                  <Image x:Name="FidImage" Source="Assets/gc_fid.png" Canvas.Left="36" Canvas.Top="0" Width="110" Height="168" Stretch="Uniform"/>
-                  <Image x:Name="FilamentImage" Source="Assets/gc_fid_filament_hot.png" Canvas.Left="40" Canvas.Top="18" Width="28" Height="40" Visibility="Collapsed"/>
-                  <Image x:Name="FlameImage" Source="Assets/gc_blue_flame.png" Canvas.Left="70" Canvas.Top="8" Width="40" Height="40" Visibility="Collapsed"/>
-                  <Image Source="Assets/gc_inlet.png" Canvas.Left="134" Canvas.Top="0" Width="110" Height="168" Stretch="Uniform"/>
-                  <Image Source="Assets/gc_column.png" Canvas.Left="60" Canvas.Top="300" Width="160" Height="140" Stretch="Uniform"/>
-                  <TextBlock Canvas.Left="112" Canvas.Top="436" FontSize="12" Text="色谱柱"/>
-                  <Path Stroke="#8A6236" StrokeThickness="2" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Data="M 91,168 L 16,168 Q 6,168 6,178 L 6,352 Q 6,368 22,368 L 62,368"/>
-                  <Path Stroke="#8A6236" StrokeThickness="2" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Data="M 189,168 L 264,168 Q 274,168 274,178 L 274,352 Q 274,368 258,368 L 218,368"/>
-                  <Ellipse x:Name="GasDotA" Width="6" Height="6" Fill="#2F6FED" Visibility="Collapsed"/>
-                  <Ellipse x:Name="GasDotB" Width="6" Height="6" Fill="#2F6FED" Visibility="Collapsed"/>
-                </Canvas>
-              </Viewbox>
-              <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                <Border Margin="0,0,0,8" Background="#F7F8FA" BorderBrush="#D0D5DD" BorderThickness="1" Padding="4">
+                <Border x:Name="InletBorder" Background="#F7F8FA" BorderBrush="#D0D5DD" BorderThickness="1" Padding="4">
                   <TextBlock x:Name="InletCard" FontSize="12" Foreground="#5C6570" TextWrapping="Wrap" Text="进样口&#10;设定 未读取到&#10;实测 未读取到"/>
                 </Border>
-                <Border Margin="0,0,0,8" Background="#F7F8FA" BorderBrush="#D0D5DD" BorderThickness="1" Padding="4">
+                <Border x:Name="OvenBorder" Background="#F7F8FA" BorderBrush="#D0D5DD" BorderThickness="1" Padding="4">
+                  <TextBlock x:Name="OvenCard" FontSize="12" Foreground="#5C6570" TextWrapping="Wrap" Text="柱箱&#10;设定 未读取到&#10;实测 未读取到"/>
+                </Border>
+                <Border x:Name="VentBorder" Background="#F7F8FA" BorderBrush="#D0D5DD" BorderThickness="1" Padding="4">
                   <TextBlock x:Name="VentCard" FontSize="12" Foreground="#5C6570" TextWrapping="Wrap" Text="散热口&#10;未知"/>
                 </Border>
-                <Border Background="#F7F8FA" BorderBrush="#D0D5DD" BorderThickness="1" Padding="4">
+                <Border x:Name="FanBorder" Background="#F7F8FA" BorderBrush="#D0D5DD" BorderThickness="1" Padding="4">
                   <StackPanel>
                     <TextBlock x:Name="FanCard" FontSize="12" Foreground="#5C6570" TextWrapping="Wrap" Text="柱箱风扇&#10;未知"/>
                     <Image x:Name="FanImage" Source="Assets/gc_oven_fan.png" Width="22" Height="22" HorizontalAlignment="Left"/>
                   </StackPanel>
                 </Border>
-              </StackPanel>
-            </Grid>
+              </Canvas>
+              </Grid>
+            </ScrollViewer>
           </DockPanel>
         </TabItem>
         <TabItem Header="柱箱">

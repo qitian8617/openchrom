@@ -40,6 +40,7 @@ public partial class MainView : UserControl
         AcceptBox.IsChecked = _settings.RiskAcknowledged;
         ReloadEvents();
         StatusText.Text = _settings.StartupStatus();
+        PlaceSchematic();
         _watch.Tick += (_, _) => ShowWatch();
         _flow.Tick += (_, _) => MoveGasDots();
     }
@@ -643,6 +644,51 @@ public partial class MainView : UserControl
         WatchText.Text = "00:00";
     }
 
+    private void PlaceSchematic()
+    {
+        SchematicCanvas.Width = SchematicLayout.Width;
+        SchematicCanvas.Height = SchematicLayout.Height;
+        Put(FidImage, SchematicLayout.Fid);
+        Put(InletImage, SchematicLayout.Inlet);
+        Put(ColumnImage, SchematicLayout.Column);
+        Put(DetBorder, SchematicLayout.DetectorCard);
+        Put(InletBorder, SchematicLayout.InletCard);
+        Put(OvenBorder, SchematicLayout.OvenCard);
+        Put(FanBorder, SchematicLayout.FanCard);
+        Put(VentBorder, SchematicLayout.VentCard);
+        var flame = SchematicLayout.MapUniform(SchematicLayout.Fid, SchematicLayout.FidPixelsW, SchematicLayout.FidPixelsH, 287, 150);
+        Canvas.SetLeft(FlameImage, flame.X - 16);
+        Canvas.SetTop(FlameImage, flame.Y - 16);
+        FlameImage.Width = 32;
+        FlameImage.Height = 32;
+        var filament = SchematicLayout.MapUniform(SchematicLayout.Fid, SchematicLayout.FidPixelsW, SchematicLayout.FidPixelsH, 150, 200);
+        Canvas.SetLeft(FilamentImage, filament.X - 14);
+        Canvas.SetTop(FilamentImage, filament.Y - 10);
+        FilamentImage.Width = 28;
+        FilamentImage.Height = 20;
+        LeftPipe.Data = Pipe(SchematicLayout.LeftPipe);
+        RightPipe.Data = Pipe(SchematicLayout.RightPipe);
+        Panel.SetZIndex(LeftPipe, 2);
+        Panel.SetZIndex(RightPipe, 2);
+    }
+
+    private static void Put(FrameworkElement element, SchematicLayout.Box box)
+    {
+        Canvas.SetLeft(element, box.X);
+        Canvas.SetTop(element, box.Y);
+        element.Width = box.W;
+        element.Height = box.H;
+    }
+
+    private static System.Windows.Media.Geometry Pipe(SchematicLayout.Pt[] points)
+    {
+        var figure = new System.Windows.Media.PathFigure { StartPoint = new System.Windows.Point(points[0].X, points[0].Y) };
+        figure.Segments.Add(new System.Windows.Media.LineSegment(new System.Windows.Point(points[1].X, points[1].Y), true));
+        figure.Segments.Add(new System.Windows.Media.LineSegment(new System.Windows.Point(points[2].X, points[2].Y), true));
+        figure.Segments.Add(new System.Windows.Media.LineSegment(new System.Windows.Point(points[3].X, points[3].Y), true));
+        return new System.Windows.Media.PathGeometry(new[] { figure });
+    }
+
     private void MoveGasDots()
     {
         _flowPhase += 0.04;
@@ -650,38 +696,36 @@ public partial class MainView : UserControl
         {
             _flowPhase -= 1;
         }
-        var left = new (double X, double Y)[] { (91, 168), (16, 168), (6, 178), (6, 352), (22, 368), (62, 368) };
-        var right = new (double X, double Y)[] { (189, 168), (264, 168), (274, 178), (274, 352), (258, 368), (218, 368) };
-        PlaceAlong(GasDotA, left, _flowPhase);
-        PlaceAlong(GasDotB, right, _flowPhase);
+        PlaceAlong(GasDotA, SchematicLayout.LeftPipe, _flowPhase);
+        PlaceAlong(GasDotB, SchematicLayout.RightPipe, _flowPhase);
     }
 
-    private static void PlaceAlong(System.Windows.Shapes.Ellipse dot, (double X, double Y)[] points, double t)
+    private static void PlaceAlong(System.Windows.Shapes.Ellipse dot, SchematicLayout.Pt[] points, double t)
     {
         double total = 0;
         for (int i = 1; i < points.Length; i++)
         {
-            total += Distance(points[i - 1], points[i]);
+            total += Distance(points[i - 1].X, points[i - 1].Y, points[i].X, points[i].Y);
         }
         double remain = total * t;
         for (int i = 1; i < points.Length; i++)
         {
-            double span = Distance(points[i - 1], points[i]);
+            double span = Distance(points[i - 1].X, points[i - 1].Y, points[i].X, points[i].Y);
             if (remain <= span || i == points.Length - 1)
             {
                 double f = span <= 0 ? 0 : remain / span;
-                Canvas.SetLeft(dot, points[i - 1].X + (points[i].X - points[i - 1].X) * f);
-                Canvas.SetTop(dot, points[i - 1].Y + (points[i].Y - points[i - 1].Y) * f);
+                Canvas.SetLeft(dot, points[i - 1].X + (points[i].X - points[i - 1].X) * f - 3);
+                Canvas.SetTop(dot, points[i - 1].Y + (points[i].Y - points[i - 1].Y) * f - 3);
                 return;
             }
             remain -= span;
         }
     }
 
-    private static double Distance((double X, double Y) a, (double X, double Y) b)
+    private static double Distance(double x0, double y0, double x1, double y1)
     {
-        double dx = a.X - b.X;
-        double dy = a.Y - b.Y;
+        double dx = x0 - x1;
+        double dy = y0 - y1;
         return Math.Sqrt(dx * dx + dy * dy);
     }
 

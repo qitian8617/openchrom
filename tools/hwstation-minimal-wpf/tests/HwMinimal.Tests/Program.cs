@@ -142,6 +142,13 @@ var fresh = PanelSettings.Load(settingsPath);
 Check(fresh.Host == PanelSettings.DefaultHost && fresh.Port == PanelSettings.DefaultPort && fresh.EffectiveHome == PanelSettings.DefaultHwHome && !fresh.RiskAcknowledged, "defaults are 192.168.1.30:8234 and D:\\HWGMP\\program");
 Check(fresh.StartupStatus().Contains("192.168.1.30:8234", StringComparison.Ordinal) && fresh.StartupStatus().Contains("未连接", StringComparison.Ordinal) && !fresh.StartupStatus().Contains("空的", StringComparison.Ordinal), "startup status shows the saved address");
 Check(PanelSettings.ContentWidth == 600, "content width stays 600");
+Console.WriteLine($"LAYOUT fid {SchematicLayout.FidOutlet.X:0.0},{SchematicLayout.FidOutlet.Y:0.0} -> col {SchematicLayout.ColumnLeft.X:0.0},{SchematicLayout.ColumnLeft.Y:0.0} | inlet {SchematicLayout.InletOutlet.X:0.0},{SchematicLayout.InletOutlet.Y:0.0} -> col {SchematicLayout.ColumnRight.X:0.0},{SchematicLayout.ColumnRight.Y:0.0}");
+Check(Same(SchematicLayout.LeftPipe[0], SchematicLayout.FidOutlet) && Same(SchematicLayout.LeftPipe[^1], SchematicLayout.ColumnLeft), "left pipe meets FID outlet and column left");
+Check(Same(SchematicLayout.RightPipe[0], SchematicLayout.InletOutlet) && Same(SchematicLayout.RightPipe[^1], SchematicLayout.ColumnRight), "right pipe meets inlet outlet and column right");
+Check(SchematicLayout.Separated(SchematicLayout.DetectorCard, SchematicLayout.Fid) && SchematicLayout.Separated(SchematicLayout.InletCard, SchematicLayout.Inlet) && SchematicLayout.Separated(SchematicLayout.OvenCard, SchematicLayout.Column) && SchematicLayout.Separated(SchematicLayout.FanCard, SchematicLayout.Column) && SchematicLayout.Separated(SchematicLayout.VentCard, SchematicLayout.FanCard), "cards do not cover the parts");
+Check(SchematicLayout.PipesClearCards(), "pipes stay outside the temperature cards");
+Check(SchematicLayout.ButtonsClear(520) && SchematicLayout.ButtonsClear(760), "buttons stay below the canvas at 520 and 760");
+Check(SchematicLayout.FidOutlet.Y > 180 && SchematicLayout.FidOutlet.Y < SchematicLayout.Fid.Bottom && SchematicLayout.ColumnLeft.X > SchematicLayout.Column.X && SchematicLayout.ColumnRight.X < SchematicLayout.Column.Right, "outlets are inside the bitmap, not on the view edge");
 fresh.RiskAcknowledged = true;
 fresh.HwHome = dir;
 fresh.Save(settingsPath);
@@ -362,6 +369,8 @@ async Task RunPairStop()
     ctsA.Cancel();
     await runA;
 }
+
+bool Same(SchematicLayout.Pt a, SchematicLayout.Pt b) => Math.Abs(a.X - b.X) < 0.01 && Math.Abs(a.Y - b.Y) < 0.01;
 
 async Task WaitUntil(Func<bool> ready)
 {
