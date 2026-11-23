@@ -140,6 +140,62 @@ public static class JsonFields
         return double.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture, out value) && double.IsFinite(value);
     }
 
+    public static bool TryToken(string json, string key, out string token)
+    {
+        token = "";
+        int mark = json.IndexOf("\"" + key + "\"", StringComparison.Ordinal);
+        if (mark < 0)
+        {
+            return false;
+        }
+        int colon = json.IndexOf(':', mark);
+        if (colon < 0)
+        {
+            return false;
+        }
+        int i = colon + 1;
+        while (i < json.Length && char.IsWhiteSpace(json[i]))
+        {
+            i++;
+        }
+        if (i >= json.Length)
+        {
+            return false;
+        }
+        bool quoted = json[i] == '"';
+        if (quoted)
+        {
+            i++;
+        }
+        int start = i;
+        while (i < json.Length && json[i] != '"' && json[i] != ',' && json[i] != '}' && json[i] != '\n' && json[i] != '\r')
+        {
+            i++;
+        }
+        token = json[start..i].Trim();
+        return token.Length > 0;
+    }
+
+    public static bool TryBool(string json, string key, out bool value)
+    {
+        value = false;
+        if (!TryToken(json, key, out string token))
+        {
+            return false;
+        }
+        if (token.Equals("true", StringComparison.OrdinalIgnoreCase) || token == "1")
+        {
+            value = true;
+            return true;
+        }
+        if (token.Equals("false", StringComparison.OrdinalIgnoreCase) || token == "0")
+        {
+            value = false;
+            return true;
+        }
+        return false;
+    }
+
     public static string Show(string json, string key)
     {
         return TryNumber(json, key, out double value) ? value.ToString(CultureInfo.InvariantCulture) : "未读取到";

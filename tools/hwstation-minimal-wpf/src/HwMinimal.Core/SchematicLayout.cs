@@ -25,7 +25,9 @@ public static class SchematicLayout
     public const double Height = 430;
     public const double TabHeader = 28;
     public const double TopChrome = 28;
-    public const double BottomChrome = 80;
+    public const double BottomChrome = 248;
+    /// <summary>gc_column.png glyphs for 色谱柱 start after a clear gap. y=305 is empty; y=320 is ink.</summary>
+    public const double ColumnGlyphTop = 305;
 
     public const double FidPixelsW = 480;
     public const double FidPixelsH = 640;
@@ -40,13 +42,13 @@ public static class SchematicLayout
     public static readonly Box DetectorCard = new(4, 28, 112, 78);
     public static readonly Box InletCard = new(Width - 4 - 112, 28, 112, 78);
     public static readonly Box OvenCard = new(4, 280, 136, 72);
-    public static readonly Box FanCard = new(Width - 4 - 136, 280, 136, 72);
+    public static readonly Box FanCard = new(Width - 4 - 136, 280, 136, 118);
     public static readonly Box VentCard = new(Width - 4 - 112, 162, 112, 108);
 
     public static Pt FidOutlet => MapUniform(Fid, FidPixelsW, FidPixelsH, 287, 605);
-    public static Pt InletOutlet => MapUniform(Inlet, InletPixelsW, InletPixelsH, 209, 606);
-    public static Pt ColumnLeft => MapUniform(Column, ColumnPixelsW, ColumnPixelsH, 4, 240);
-    public static Pt ColumnRight => MapUniform(Column, ColumnPixelsW, ColumnPixelsH, 344, 240);
+    public static Pt InletOutlet => MapUniform(Inlet, InletPixelsW, InletPixelsH, 211, 605);
+    public static Pt ColumnLeft => MapUniform(Column, ColumnPixelsW, ColumnPixelsH, 5.493, 240.885);
+    public static Pt ColumnRight => MapUniform(Column, ColumnPixelsW, ColumnPixelsH, 342.518, 240.104);
 
     public static Pt[] LeftPipe => Elbow(FidOutlet, ColumnLeft, left: true);
     public static Pt[] RightPipe => Elbow(InletOutlet, ColumnRight, left: false);
@@ -95,7 +97,7 @@ public static class SchematicLayout
         double buttonTop = clientHeight - BottomChrome;
         double buttonBottom = clientHeight;
         bool bands = buttonTop >= middleTop && buttonBottom <= clientHeight && buttonTop < buttonBottom;
-        bool wide = 96 * 4 + 64 + 6 * 4 <= ScreenWidth - 16;
+        bool wide = 62 + 8 + 62 <= ScreenWidth - 16 && 150 <= ScreenWidth - 32;
         bool cardsInside = Contains(new Box(0, 0, Width, Height), DetectorCard)
             && Contains(new Box(0, 0, Width, Height), InletCard)
             && Contains(new Box(0, 0, Width, Height), OvenCard)

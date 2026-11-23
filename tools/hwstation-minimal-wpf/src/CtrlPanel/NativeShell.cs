@@ -77,11 +77,12 @@ internal static class NativeShell
         double scale = dpi >= 96 ? dpi / 96.0 : 1;
         var work = SystemParameters.WorkArea;
         int clientW = (int)Math.Round(600 * scale);
-        int clientH = (int)Math.Round(Math.Max(480, work.Height - 24) * scale);
+        int clientH = (int)Math.Round(Math.Max(520, work.Height - 24) * scale);
         var outer = new RectI { Left = 0, Top = 0, Right = clientW, Bottom = clientH };
         AdjustWindowRect(ref outer, WS_FIXED, false);
         _trackW = outer.Right - outer.Left;
-        _trackMinH = (int)Math.Round(480 * scale) + 40;
+        int contentMin = (int)Math.Round((SchematicLayout.TabHeader + SchematicLayout.TopChrome + SchematicLayout.BottomChrome + 80) * scale);
+        _trackMinH = Math.Max(contentMin, (int)Math.Round(520 * scale)) + 40;
         _trackMaxH = (int)Math.Round(work.Height * scale);
         _hwnd = CreateWindowExW(0, ClassName, WindowTitle, WS_FIXED, CW_USEDEFAULT, CW_USEDEFAULT, _trackW, Math.Min(_trackMaxH, outer.Bottom - outer.Top), IntPtr.Zero, IntPtr.Zero, klass.hInstance, IntPtr.Zero);
         if (_hwnd == IntPtr.Zero)

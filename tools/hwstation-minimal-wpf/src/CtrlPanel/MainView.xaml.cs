@@ -26,6 +26,11 @@ public partial class MainView : UserControl
     private readonly System.Windows.Threading.DispatcherTimer _watch = new() { Interval = TimeSpan.FromSeconds(1) };
     private readonly System.Windows.Threading.DispatcherTimer _flow = new() { Interval = TimeSpan.FromMilliseconds(80) };
     private double _flowPhase;
+    private bool? _heatConfirmed;
+    private bool? _valveOpen;
+    private bool _igniting;
+    private bool _fanSpin;
+    private bool _gasOk;
 
     public MainView()
     {
@@ -41,7 +46,12 @@ public partial class MainView : UserControl
         ReloadEvents();
         StatusText.Text = _settings.StartupStatus();
         PlaceSchematic();
-        _watch.Tick += (_, _) => ShowWatch();
+        RefreshMainActions();
+        _watch.Tick += (_, _) =>
+        {
+            ShowWatch();
+            RefreshMainActions();
+        };
         _flow.Tick += (_, _) => MoveGasDots();
     }
 
@@ -286,6 +296,7 @@ public partial class MainView : UserControl
     private void SetStatus(string text)
     {
         StatusText.Text = text;
+        RefreshMainActions();
         if (text.Contains("DLL", StringComparison.Ordinal) || text.Contains("返回", StringComparison.Ordinal))
         {
             DllText.Text = text;
@@ -304,6 +315,10 @@ public partial class MainView : UserControl
             _transport = null;
             _link = null;
         }
+        _heatConfirmed = null;
+        _valveOpen = null;
+        _igniting = false;
+        _fanSpin = false;
         if (run != null)
         {
             await run.CancelAsync();
@@ -313,6 +328,139 @@ public partial class MainView : UserControl
         {
             await transport.DisposeAsync();
         }
+        _ = Dispatcher.BeginInvoke(RefreshMainActions);
+    }
+
+    private void OpenSettings_Click(object sender, RoutedEventArgs e)
+    {
+        Pages.SelectedIndex = 5;
+    }
+
+    private void AnalysisToggle_Click(object sender, RoutedEventArgs e)
+    {
+        ActionFace face = PanelActions.Analysis(_link?.AnalysisPhase);
+        if (face.Role == PanelActions.Stop)
+        {
+            StopAnalysis_Click(sender, e);
+        }
+        else if (face.Role == PanelActions.Start)
+        {
+            StartAnalysis_Click(sender, e);
+        }
+        RefreshMainActions();
+    }
+
+    private async void HeatToggle_Click(object sender, RoutedEventArgs e)
+    {
+        ActionFace face = PanelActions.Heat(_link != null, _heatConfirmed, _gasOk);
+        if (face.Role == PanelActions.None)
+        {
+            Note("两路气压未在 3 秒内都 ≥ 0.1 MPa，未发送加热启动。");
+            return;
+        }
+        if (_link == null)
+        {
+            Note("未连接。已发送的停止不会把温控记成关闭。");
+            if (face.Role == PanelActions.Stop)
+            {
+                _heatConfirmed = null;
+            }
+            RefreshMainActions();
+            return;
+        }
+        if (face.Role == PanelActions.Stop)
+        {
+            bool inlet = Accepted(await SendLine("STOP_INLET_HEAT", null));
+            bool detector = Accepted(await SendLine("STOP_DETECTOR_HEAT", null));
+            bool oven = Accepted(await SendLine("STOP_OVEN_CONTROL", null));
+            _heatConfirmed = PanelActions.HeatAfterStop(inlet && detector && oven);
+        }
+        else if (face.Role == PanelActions.Start)
+        {
+            if (string.IsNullOrWhiteSpace(InletSet.Text) || string.IsNullOrWhiteSpace(DetSet.Text))
+            {
+                Note("加热设定是空的，未发送。");
+                return;
+            }
+            string inletSet = InletSet.Text.Trim();
+            string detectorSet = DetSet.Text.Trim();
+            bool ok = Accepted(await SendLine("WRITE_ZONE_SELECT", "{\"sel\":\"7\"}"));
+            ok = Accepted(await SendLine("WRITE_INLET_TEMP", "{\"setpoint\":\"" + inletSet + "\"}")) && ok;
+            ok = Accepted(await SendLine("WRITE_DETECTOR_TEMP", "{\"setpoint\":\"" + detectorSet + "\"}")) && ok;
+            ok = Accepted(await SendLine("START_INLET_HEAT", null)) && ok;
+            ok = Accepted(await SendLine("START_DETECTOR_HEAT", null)) && ok;
+            ok = Accepted(await SendLine("START_OVEN_CONTROL", null)) && ok;
+            _heatConfirmed = PanelActions.HeatAfterStart(_heatConfirmed, _gasOk, ok);
+        }
+        RefreshMainActions();
+    }
+
+    private async void ValveToggle_Click(object sender, RoutedEventArgs e)
+    {
+        ActionFace face = PanelActions.Valve(_valveOpen);
+        if (_link == null)
+        {
+            _valveOpen = null;
+            Note("未连接，空气阀状态未知，未改记为开或关。");
+            RefreshMainActions();
+            return;
+        }
+        string reply = face.Role == PanelActions.ValveOpen
+            ? await SendLine("START_FID_VALVES", null)
+            : await SendLine("STOP_FID_VALVES", null);
+        _valveOpen = PanelActions.ValveAfterReply(_valveOpen, reply, face.Role);
+        RefreshMainActions();
+    }
+
+    private async void IgniteMain_Click(object sender, RoutedEventArgs e)
+    {
+        if (_igniting)
+        {
+            Note("点火进行中。协议没有单独的停止点火命令，关阀不会当作停止点火。");
+            return;
+        }
+        string reply = await SendLine("START_FID_IGNITE", null);
+        _igniting = PanelActions.IgnitionAccepted(reply);
+        if (!_igniting)
+        {
+            Note("点火命令没有被接受，可以再试。没有发送停止点火。");
+        }
+        else
+        {
+            Note("点火已发出。没有停止点火命令。火焰以随后的状态读取为准，这不是已经着火。");
+        }
+        RefreshMainActions();
+    }
+
+    private static bool Accepted(string reply) => reply.Contains("WRITE_OK", StringComparison.Ordinal);
+
+    private void RefreshMainActions()
+    {
+        ActionFace analysis = PanelActions.Analysis(_link?.AnalysisPhase);
+        AnalysisButton.Content = analysis.Text;
+        AnalysisButton.IsEnabled = analysis.Enabled;
+        AnalysisButton.Background = Freeze(analysis.Role == PanelActions.Stop ? "#2F6FEB" : "#2F6FEB");
+        AcqStatusText.Text = PanelActions.AnalysisStatus(_link?.AnalysisPhase);
+        ActionFace heat = PanelActions.Heat(_link != null, _heatConfirmed, _gasOk);
+        HeatButton.Content = heat.Text;
+        HeatButton.IsEnabled = heat.Enabled;
+        HeatButton.Background = Freeze(heat.Role == PanelActions.None ? "#7E8C9E" : heat.Role == PanelActions.Stop ? "#FF7018" : "#2F6FEB");
+        HeatText.Text = PanelActions.HeatStatus(_link != null, _heatConfirmed);
+        ActionFace valve = PanelActions.Valve(_valveOpen);
+        ValveButton.Content = valve.Text;
+        ValveButton.IsEnabled = valve.Enabled;
+        ValveButton.Background = Freeze(_valveOpen == null ? "#7E8C9E" : _valveOpen == true ? "#FF7018" : "#14488C");
+        ActionFace ignite = PanelActions.Ignition(_igniting);
+        IgniteButton.Content = ignite.Text;
+        IgniteButton.IsEnabled = ignite.Enabled;
+        IgniteButton.Background = Freeze("#A32020");
+    }
+
+    private static System.Windows.Media.SolidColorBrush Freeze(string hex)
+    {
+        var brush = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hex));
+        brush.Freeze();
+        return brush;
     }
 
     private async void StartAnalysis_Click(object sender, RoutedEventArgs e)
@@ -401,30 +549,6 @@ public partial class MainView : UserControl
         Note("已请求停止分析。这不是停止温控。");
     }
 
-    private async void StopHeat_Click(object sender, RoutedEventArgs e)
-    {
-        await SendLine("STOP_INLET_HEAT", null);
-        await SendLine("STOP_DETECTOR_HEAT", null);
-        await SendLine("STOP_OVEN_CONTROL", null);
-    }
-
-    private async void StartHeat_Click(object sender, RoutedEventArgs e)
-    {
-        if (string.IsNullOrWhiteSpace(InletSet.Text) || string.IsNullOrWhiteSpace(DetSet.Text))
-        {
-            Note("加热设定是空的，未发送。");
-            return;
-        }
-        string inlet = InletSet.Text.Trim();
-        string detector = DetSet.Text.Trim();
-        await SendLine("WRITE_ZONE_SELECT", "{\"sel\":\"7\"}");
-        await SendLine("WRITE_INLET_TEMP", "{\"setpoint\":\"" + inlet + "\"}");
-        await SendLine("WRITE_DETECTOR_TEMP", "{\"setpoint\":\"" + detector + "\"}");
-        await SendLine("START_INLET_HEAT", null);
-        await SendLine("START_DETECTOR_HEAT", null);
-        await SendLine("START_OVEN_CONTROL", null);
-    }
-
     private async void ReadTemps_Click(object sender, RoutedEventArgs e)
     {
         string oven = await SendLine("READ_OVEN_TEMP", null);
@@ -439,28 +563,37 @@ public partial class MainView : UserControl
         OvenCard.Text = "柱箱\n设定 " + JsonFields.Show(oven, "setpoint") + "\n实测 " + JsonFields.Show(oven, "actual");
         if (JsonFields.TryNumber(oven, "fan", out double fan))
         {
-            FanCard.Text = fan != 0 ? "柱箱风扇\n运转" : "柱箱风扇\n停止";
+            _fanSpin = fan != 0;
+            FanCard.Text = _fanSpin ? "运转" : "停止";
+            if (!_fanSpin)
+            {
+                FanRotate.Angle = 0;
+            }
         }
         else
         {
-            FanCard.Text = "柱箱风扇\n未知";
+            _fanSpin = false;
+            FanRotate.Angle = 0;
+            FanCard.Text = "未知";
         }
         if (JsonFields.TryNumber(oven, "vent", out double vent))
         {
-            VentCard.Text = vent != 0 ? "散热口\n开" : "散热口\n关";
+            VentDoorRotate.Angle = vent != 0 ? -64 : 0;
+            VentCard.Text = vent != 0 ? "开" : "关";
         }
         else
         {
-            VentCard.Text = "散热口\n未知";
+            VentDoorRotate.Angle = 0;
+            VentCard.Text = "未知";
         }
+        ApplyFidRead(fid, fid.Contains("WRITE_FAIL", StringComparison.Ordinal) || fid.Contains("未连接", StringComparison.Ordinal) ? false : true);
         bool h2Ok = JsonFields.TryNumber(gas, "h2", out double h2) || JsonFields.TryNumber(gas, "adc1", out h2);
         bool airOk = JsonFields.TryNumber(gas, "air", out double air) || JsonFields.TryNumber(gas, "adc2", out air);
         long now = Environment.TickCount64;
         _link?.NoteGas(h2Ok ? h2 : null, airOk ? air : null, now);
         string? block = GasSupply.BlockReason(h2Ok ? h2 : null, airOk ? air : null, now, now);
-        HeatText.Text = block ?? "两路气压在 3 秒内都 ≥ 0.1 MPa，允许启动加热。";
-        HeatStartButton.IsEnabled = block == null;
-        bool flow = block == null;
+        _gasOk = block == null;
+        bool flow = _gasOk;
         GasDotA.Visibility = flow ? Visibility.Visible : Visibility.Collapsed;
         GasDotB.Visibility = flow ? Visibility.Visible : Visibility.Collapsed;
         if (flow)
@@ -485,6 +618,19 @@ public partial class MainView : UserControl
             EventLog.Report(EventPath(), "inlet-sensor", "进样口温度无效", "READ_INLET_TEMP valid=0。这是记录，没有另发命令。");
         }
         ReloadEvents();
+        RefreshMainActions();
+    }
+
+    private void ApplyFidRead(string fid, bool readReachedDevice)
+    {
+        _valveOpen = PanelActions.ValveAfterRead(_valveOpen, fid, readReachedDevice);
+        if (!fid.Contains("igniting", StringComparison.OrdinalIgnoreCase))
+        {
+            _igniting = false;
+        }
+        bool flame = JsonFields.TryNumber(fid, "flame", out double flameValue) && flameValue != 0;
+        FlameImage.Visibility = flame ? Visibility.Visible : Visibility.Collapsed;
+        FilamentImage.Visibility = _igniting && !flame ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private async void ReadProgram_Click(object sender, RoutedEventArgs e)
@@ -535,17 +681,38 @@ public partial class MainView : UserControl
         long now = Environment.TickCount64;
         _link?.NoteGas(h2Ok ? h2 : null, airOk ? air : null, now);
         string? block = GasSupply.BlockReason(h2Ok ? h2 : null, airOk ? air : null, now, now);
-        HeatText.Text = block ?? "两路气压在 3 秒内都 ≥ 0.1 MPa，允许启动加热。气路动画条件相同，没有手动确认按钮。";
-        HeatStartButton.IsEnabled = block == null;
+        _gasOk = block == null;
+        ApplyFidRead(fid, !fid.Contains("未连接", StringComparison.Ordinal));
         DetText.Text = "氢气 " + (h2Ok ? h2.ToString(System.Globalization.CultureInfo.InvariantCulture) : "未读取到")
             + " MPa；空气 " + (airOk ? air.ToString(System.Globalization.CultureInfo.InvariantCulture) : "未读取到")
             + " MPa；火焰 " + JsonFields.Show(fid, "flame") + "；电流 pA " + JsonFields.Show(fid, "currentPa")
             + "。点火应答不代表已经着火。";
+        RefreshMainActions();
     }
 
-    private async void Ignite_Click(object sender, RoutedEventArgs e) => DetText.Text = await SendLine("START_FID_IGNITE", null) + " 火焰以随后的状态读取为准。";
-    private async void ValveOn_Click(object sender, RoutedEventArgs e) => DetText.Text = await SendLine("START_FID_VALVES", null);
-    private async void ValveOff_Click(object sender, RoutedEventArgs e) => DetText.Text = await SendLine("STOP_FID_VALVES", null);
+    private async void Ignite_Click(object sender, RoutedEventArgs e)
+    {
+        string reply = await SendLine("START_FID_IGNITE", null);
+        _igniting = PanelActions.IgnitionAccepted(reply);
+        DetText.Text = reply + " 火焰以随后的状态读取为准。没有停止点火命令。";
+        RefreshMainActions();
+    }
+
+    private async void ValveOn_Click(object sender, RoutedEventArgs e)
+    {
+        string reply = await SendLine("START_FID_VALVES", null);
+        _valveOpen = PanelActions.ValveAfterReply(_valveOpen, reply, PanelActions.ValveOpen);
+        DetText.Text = reply;
+        RefreshMainActions();
+    }
+
+    private async void ValveOff_Click(object sender, RoutedEventArgs e)
+    {
+        string reply = await SendLine("STOP_FID_VALVES", null);
+        _valveOpen = PanelActions.ValveAfterReply(_valveOpen, reply, PanelActions.ValveClose);
+        DetText.Text = reply;
+        RefreshMainActions();
+    }
     private async void AutoOn_Click(object sender, RoutedEventArgs e) => DetText.Text = await SendLine("FID_AUTO_ON", null);
     private async void AutoOff_Click(object sender, RoutedEventArgs e) => DetText.Text = await SendLine("FID_AUTO_OFF", null);
 
@@ -656,6 +823,10 @@ public partial class MainView : UserControl
         Put(OvenBorder, SchematicLayout.OvenCard);
         Put(FanBorder, SchematicLayout.FanCard);
         Put(VentBorder, SchematicLayout.VentCard);
+        SchematicLayout.Pt glyph = SchematicLayout.MapUniform(SchematicLayout.Column, SchematicLayout.ColumnPixelsW, SchematicLayout.ColumnPixelsH, 0, SchematicLayout.ColumnGlyphTop);
+        ColumnImage.Clip = new System.Windows.Media.RectangleGeometry(new Rect(0, 0, SchematicLayout.Column.W, Math.Max(1, glyph.Y - SchematicLayout.Column.Y)));
+        Canvas.SetLeft(ColumnCaption, SchematicLayout.Column.X + SchematicLayout.Column.W / 2 - 20);
+        Canvas.SetTop(ColumnCaption, SchematicLayout.Column.Y + SchematicLayout.Column.H * 0.956 - 9);
         var flame = SchematicLayout.MapUniform(SchematicLayout.Fid, SchematicLayout.FidPixelsW, SchematicLayout.FidPixelsH, 287, 150);
         Canvas.SetLeft(FlameImage, flame.X - 16);
         Canvas.SetTop(FlameImage, flame.Y - 16);
@@ -698,6 +869,10 @@ public partial class MainView : UserControl
         }
         PlaceAlong(GasDotA, SchematicLayout.LeftPipe, _flowPhase);
         PlaceAlong(GasDotB, SchematicLayout.RightPipe, _flowPhase);
+        if (_fanSpin)
+        {
+            FanRotate.Angle = (FanRotate.Angle + 12) % 360;
+        }
     }
 
     private static void PlaceAlong(System.Windows.Shapes.Ellipse dot, SchematicLayout.Pt[] points, double t)

@@ -23,15 +23,63 @@
       <Setter Property="Foreground" Value="#1A1A1A"/>
       <Setter Property="Background" Value="#FFFFFF"/>
     </Style>
+    <ControlTemplate x:Key="FlatButton" TargetType="Button">
+      <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="5" SnapsToDevicePixels="True">
+        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+      </Border>
+      <ControlTemplate.Triggers>
+        <Trigger Property="IsMouseOver" Value="True">
+          <Setter TargetName="Bd" Property="Opacity" Value="0.90"/>
+        </Trigger>
+        <Trigger Property="IsPressed" Value="True">
+          <Setter TargetName="Bd" Property="Opacity" Value="0.76"/>
+        </Trigger>
+        <Trigger Property="IsKeyboardFocused" Value="True">
+          <Setter TargetName="Bd" Property="BorderBrush" Value="#1A243A"/>
+          <Setter TargetName="Bd" Property="BorderThickness" Value="2"/>
+        </Trigger>
+        <Trigger Property="IsEnabled" Value="False">
+          <Setter TargetName="Bd" Property="Background" Value="#ECEFF4"/>
+          <Setter Property="Foreground" Value="#5C6570"/>
+          <Setter TargetName="Bd" Property="BorderBrush" Value="#DAE1EA"/>
+          <Setter TargetName="Bd" Property="Opacity" Value="1"/>
+        </Trigger>
+      </ControlTemplate.Triggers>
+    </ControlTemplate>
     <Style TargetType="Button">
-      <Setter Property="Foreground" Value="#1A1A1A"/>
+      <Setter Property="Foreground" Value="#16243A"/>
       <Setter Property="Background" Value="#FFFFFF"/>
-      <Setter Property="BorderBrush" Value="#2F6FED"/>
+      <Setter Property="BorderBrush" Value="#DAE1EA"/>
       <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="FontSize" Value="14"/>
+      <Setter Property="Height" Value="36"/>
+      <Setter Property="Template" Value="{StaticResource FlatButton}"/>
+      <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+    </Style>
+    <Style TargetType="TabItem">
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="TabItem">
+            <Border x:Name="Bd" Background="#EEF2F7" BorderBrush="#DAE1EA" BorderThickness="0,0,0,2" Padding="8,5" TextElement.FontSize="13" TextElement.Foreground="#7E8C9E">
+              <ContentPresenter ContentSource="Header" HorizontalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsSelected" Value="True">
+                <Setter TargetName="Bd" Property="BorderBrush" Value="#2F6FEB"/>
+                <Setter TargetName="Bd" Property="TextElement.Foreground" Value="#2F6FEB"/>
+                <Setter TargetName="Bd" Property="TextElement.FontWeight" Value="Bold"/>
+              </Trigger>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Bd" Property="Background" Value="#E4EAF2"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
     </Style>
   </UserControl.Resources>
   <Grid Width="600" Background="#FFFFFF">
-      <TabControl Width="600">
+      <TabControl x:Name="Pages" Width="600" Background="#EEF2F7" BorderBrush="#DAE1EA">
         <TabItem Header="主界面">
           <DockPanel Background="#F4F5F7" LastChildFill="True">
             <DockPanel DockPanel.Dock="Top" Margin="8,6,8,4" LastChildFill="True">
@@ -40,17 +88,38 @@
               </Border>
               <TextBlock x:Name="StatusText" FontSize="13" VerticalAlignment="Center" Text="未连接  192.168.1.30:8234"/>
             </DockPanel>
-            <StackPanel DockPanel.Dock="Bottom" Margin="8,4,8,8">
-              <TextBlock x:Name="HeatText" FontSize="12" Foreground="#5C6570" TextWrapping="Wrap" Text="加热启动：尚未读到 3 秒内且都 ≥ 0.1 MPa 的两路气压。停止加热可用。"/>
-              <TextBlock x:Name="ZoneText" Margin="0,2,0,6" FontSize="12" Foreground="#5C6570" TextWrapping="Wrap" Text="气压未读取。"/>
-              <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                <Button Content="开始分析" Width="96" Height="28" Margin="0,0,6,0" Click="StartAnalysis_Click"/>
-                <Button Content="停止分析" Width="96" Height="28" Margin="0,0,6,0" Click="StopAnalysis_Click"/>
-                <Button Content="停止温控" Width="96" Height="28" Margin="0,0,6,0" Click="StopHeat_Click"/>
-                <Button Content="读取" Width="64" Height="28" Margin="0,0,6,0" Click="ReadTemps_Click"/>
-                <Button x:Name="HeatStartButton" Content="启动加热" Width="96" Height="28" IsEnabled="False" Click="StartHeat_Click"/>
+            <Border DockPanel.Dock="Bottom" Background="#F1F5FA" BorderBrush="#DAE1EA" BorderThickness="0,1,0,0" Padding="8,4,8,6">
+              <StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                  <Button Content="设置" Width="62" Height="32" FontSize="13" Margin="0,0,8,0" Click="OpenSettings_Click"/>
+                  <Button Content="读取" Width="62" Height="32" FontSize="13" Click="ReadTemps_Click"/>
+                </StackPanel>
+                <TextBlock x:Name="AcqStatusText" Margin="2,6,2,0" FontSize="13" Foreground="#7E8C9E" TextTrimming="CharacterEllipsis" Text="采集状态: 待机"/>
+                <Border Margin="4,8,4,0" Padding="12,8" Background="#FFFFFF" BorderBrush="#DAE1EA" BorderThickness="1">
+                  <StackPanel>
+                    <Grid Margin="0,0,0,8">
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*"/>
+                      </Grid.ColumnDefinitions>
+                      <Button x:Name="ValveButton" Height="48" FontSize="16" FontWeight="Bold" Foreground="#FFFFFF" Background="#7E8C9E" BorderThickness="0" Click="ValveToggle_Click" Content="空气阀状态未知"/>
+                      <Button x:Name="IgniteButton" Grid.Column="2" Height="48" FontSize="16" FontWeight="Bold" Foreground="#FFFFFF" Background="#A32020" BorderThickness="0" Click="IgniteMain_Click" Content="执行点火流程"/>
+                    </Grid>
+                    <DockPanel Height="40" LastChildFill="True">
+                      <Button x:Name="HeatButton" DockPanel.Dock="Right" Width="150" Height="36" FontSize="15" FontWeight="Bold" Foreground="#FFFFFF" Background="#2F6FEB" BorderThickness="0" Click="HeatToggle_Click" Content="启动"/>
+                      <TextBlock Text="温度控制" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+                    </DockPanel>
+                    <TextBlock x:Name="HeatText" FontSize="12" Foreground="#7E8C9E" TextTrimming="CharacterEllipsis" Text="温控状态未知。停止仍可发送。"/>
+                    <TextBlock x:Name="ZoneText" FontSize="12" Foreground="#7E8C9E" TextTrimming="CharacterEllipsis" Text="气压未读取。"/>
+                    <DockPanel Height="40" Margin="0,4,0,0" LastChildFill="True">
+                      <Button x:Name="AnalysisButton" DockPanel.Dock="Right" Width="150" Height="36" FontSize="15" FontWeight="Bold" Foreground="#FFFFFF" Background="#2F6FEB" BorderThickness="0" Click="AnalysisToggle_Click" Content="启动"/>
+                      <TextBlock Text="开始分析" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+                    </DockPanel>
+                  </StackPanel>
+                </Border>
               </StackPanel>
-            </StackPanel>
+            </Border>
             <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Background="#F4F5F7" VerticalAlignment="Stretch">
               <Grid Width="600" Margin="0,8,0,0" VerticalAlignment="Top" Background="#F4F5F7">
               <Canvas x:Name="SchematicCanvas" Width="556" Height="430" HorizontalAlignment="Center" VerticalAlignment="Top" Background="#F4F5F7">
@@ -59,6 +128,7 @@
                 <Image x:Name="FlameImage" Source="Assets/gc_blue_flame.png" Stretch="Uniform" Visibility="Collapsed"/>
                 <Image x:Name="InletImage" Source="Assets/gc_inlet.png" Stretch="Uniform"/>
                 <Image x:Name="ColumnImage" Source="Assets/gc_column.png" Stretch="Uniform"/>
+                <TextBlock x:Name="ColumnCaption" FontSize="13" Foreground="#191C20" Text="色谱柱"/>
                 <Path x:Name="LeftPipe" Stroke="#8A6236" StrokeThickness="2" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
                 <Path x:Name="RightPipe" Stroke="#8A6236" StrokeThickness="2" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
                 <Ellipse x:Name="GasDotA" Width="6" Height="6" Fill="#2F6FED" Visibility="Collapsed"/>
@@ -73,12 +143,28 @@
                   <TextBlock x:Name="OvenCard" FontSize="12" Foreground="#5C6570" TextWrapping="Wrap" Text="柱箱&#10;设定 未读取到&#10;实测 未读取到"/>
                 </Border>
                 <Border x:Name="VentBorder" Background="#F7F8FA" BorderBrush="#D0D5DD" BorderThickness="1" Padding="4">
-                  <TextBlock x:Name="VentCard" FontSize="12" Foreground="#5C6570" TextWrapping="Wrap" Text="散热口&#10;未知"/>
+                  <StackPanel>
+                    <TextBlock FontSize="11" Foreground="#5A7A90" HorizontalAlignment="Center" Text="散热口"/>
+                    <Grid Width="64" Height="64" HorizontalAlignment="Center" Margin="0,2,0,0">
+                      <Image Source="Assets/gc_oven_vent_frame.png" Stretch="Uniform"/>
+                      <Image x:Name="VentDoor" Source="Assets/gc_oven_vent_door.png" Stretch="Uniform" RenderTransformOrigin="0.5,0">
+                        <Image.RenderTransform>
+                          <RotateTransform x:Name="VentDoorRotate" Angle="0"/>
+                        </Image.RenderTransform>
+                      </Image>
+                    </Grid>
+                    <TextBlock x:Name="VentCard" FontSize="11" Foreground="#7E8C9E" HorizontalAlignment="Center" Text="未知"/>
+                  </StackPanel>
                 </Border>
                 <Border x:Name="FanBorder" Background="#F7F8FA" BorderBrush="#D0D5DD" BorderThickness="1" Padding="4">
                   <StackPanel>
-                    <TextBlock x:Name="FanCard" FontSize="12" Foreground="#5C6570" TextWrapping="Wrap" Text="柱箱风扇&#10;未知"/>
-                    <Image x:Name="FanImage" Source="Assets/gc_oven_fan.png" Width="22" Height="22" HorizontalAlignment="Left"/>
+                    <TextBlock FontSize="11" Foreground="#5A7A90" HorizontalAlignment="Center" Text="柱箱风扇"/>
+                    <Image x:Name="FanImage" Source="Assets/gc_oven_fan.png" Width="72" Height="72" HorizontalAlignment="Center" Margin="0,4,0,0" RenderTransformOrigin="0.5,0.5">
+                      <Image.RenderTransform>
+                        <RotateTransform x:Name="FanRotate" Angle="0"/>
+                      </Image.RenderTransform>
+                    </Image>
+                    <TextBlock x:Name="FanCard" FontSize="11" Foreground="#7E8C9E" HorizontalAlignment="Center" Text="未知"/>
                   </StackPanel>
                 </Border>
               </Canvas>
