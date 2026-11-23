@@ -34,8 +34,12 @@
       <TabControl Width="600">
         <TabItem Header="主界面">
           <DockPanel Background="#F4F5F7" LastChildFill="True">
-            <TextBlock DockPanel.Dock="Top" Margin="8,4,8,0" FontSize="12" FontWeight="Bold" Foreground="#8A1C1C" Text="无法验证设备样本新鲜度，仅接入验证，不用于正式定量"/>
-            <TextBlock x:Name="StatusText" DockPanel.Dock="Top" Margin="8,0,8,4" FontSize="12" Foreground="#1A1A1A" TextWrapping="Wrap" Text="未连接。已保存地址 192.168.1.30:8234。启动不会自动连接，也不会发写命令。"/>
+            <DockPanel DockPanel.Dock="Top" Margin="8,6,8,4" LastChildFill="True">
+              <Border DockPanel.Dock="Right" Margin="8,0,0,0" Padding="6,1" BorderBrush="#8A1C1C" BorderThickness="1" Background="#F8ECEC" VerticalAlignment="Center">
+                <TextBlock FontSize="12" Foreground="#8A1C1C" Text="未验证新鲜度"/>
+              </Border>
+              <TextBlock x:Name="StatusText" FontSize="13" VerticalAlignment="Center" Text="未连接  192.168.1.30:8234"/>
+            </DockPanel>
             <StackPanel DockPanel.Dock="Bottom" Margin="8,4,8,8">
               <TextBlock x:Name="HeatText" FontSize="12" Foreground="#5C6570" TextWrapping="Wrap" Text="加热启动：尚未读到 3 秒内且都 ≥ 0.1 MPa 的两路气压。停止加热可用。"/>
               <TextBlock x:Name="ZoneText" Margin="0,2,0,6" FontSize="12" Foreground="#5C6570" TextWrapping="Wrap" Text="气压未读取。"/>
@@ -47,9 +51,9 @@
                 <Button x:Name="HeatStartButton" Content="启动加热" Width="96" Height="28" IsEnabled="False" Click="StartHeat_Click"/>
               </StackPanel>
             </StackPanel>
-            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Background="#F4F5F7">
-              <Grid Width="600" Background="#F4F5F7">
-              <Canvas x:Name="SchematicCanvas" Width="556" Height="430" HorizontalAlignment="Center" Background="#F4F5F7">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Background="#F4F5F7" VerticalAlignment="Stretch">
+              <Grid Width="600" Margin="0,8,0,0" VerticalAlignment="Top" Background="#F4F5F7">
+              <Canvas x:Name="SchematicCanvas" Width="556" Height="430" HorizontalAlignment="Center" VerticalAlignment="Top" Background="#F4F5F7">
                 <Image x:Name="FidImage" Source="Assets/gc_fid.png" Stretch="Uniform"/>
                 <Image x:Name="FilamentImage" Source="Assets/gc_fid_filament_hot.png" Stretch="Uniform" Visibility="Collapsed"/>
                 <Image x:Name="FlameImage" Source="Assets/gc_blue_flame.png" Stretch="Uniform" Visibility="Collapsed"/>
@@ -130,8 +134,11 @@
           </StackPanel>
         </TabItem>
         <TabItem Header="设置">
+          <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
           <StackPanel Margin="8">
-            <TextBlock x:Name="ProcessText" TextWrapping="Wrap" Text="窗口类和进程说明在这里，不占主界面。"/>
+            <TextBlock TextWrapping="Wrap" FontWeight="Bold" Foreground="#8A1C1C" Text="无法验证设备样本新鲜度，仅接入验证，不用于正式定量"/>
+            <TextBlock TextWrapping="Wrap" Margin="0,4,0,0" Text="启动不会自动连接，也不会发写命令。主界面只保留一行连接状态。这里确认一次之后，开始分析不再每次询问。这不是正式定量，也不是完整验收。"/>
+            <TextBlock x:Name="ProcessText" TextWrapping="Wrap" Margin="0,8,0,0" Text="窗口类和进程说明在这里，不占主界面。"/>
             <TextBlock TextWrapping="Wrap" Margin="0,4,0,0" Text="固件帧没有新鲜度位。未点火、未进样时读数保持未知。停止分析不是停热。断开或关窗口后加热仍可能继续。"/>
             <TextBlock TextWrapping="Wrap" Margin="0,4,0,0" Text="连接、DLL、频率和日志在这里。日常开始分析不在这些诊断按钮上拼接。"/>
             <TextBlock Margin="0,8,0,0" Text="主机（默认 192.168.1.30，启动不连接）"/>
@@ -195,6 +202,7 @@
             <Button Content="读取控制状态" HorizontalAlignment="Left" Margin="0,4,0,0" Click="ReadStatus_Click"/>
             <TextBlock x:Name="LinkText" Margin="0,4,0,0" TextWrapping="Wrap" Text="控制状态未读取"/>
           </StackPanel>
+          </ScrollViewer>
         </TabItem>
       </TabControl>
     </Grid>

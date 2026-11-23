@@ -24,7 +24,7 @@ public static class SchematicLayout
     public const double Width = 556;
     public const double Height = 430;
     public const double TabHeader = 28;
-    public const double TopChrome = 40;
+    public const double TopChrome = 28;
     public const double BottomChrome = 80;
 
     public const double FidPixelsW = 480;

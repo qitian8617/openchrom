@@ -7,7 +7,7 @@ namespace HwMinimal.CtrlPanel;
 internal static class NativeShell
 {
     private const string ClassName = "ControlPanelClass";
-    private const string WindowTitle = "色谱反控（最小接入）";
+    private const string WindowTitle = "色谱仪反控面板";
     private const string MutexName = "Local\\HwstationMinimalWpf.ControlPanelClass.instance";
     private const int ErrorAlreadyExists = 183;
     private const uint WM_CLOSE = 0x0010;
@@ -46,7 +46,7 @@ internal static class NativeShell
             }
             else
             {
-                MessageBoxW(IntPtr.Zero, "最小接入面板已经打开，但没有按标题找到 ControlPanelClass。旧的反控程序如果也注册了这个类名，不会被这次启动激活。", "反控", 0);
+                MessageBoxW(IntPtr.Zero, "色谱仪反控面板已经打开，但没有按标题找到 ControlPanelClass。旧的反控程序如果也注册了这个类名，不会被这次启动激活。", "反控", 0);
             }
             if (_mutex != IntPtr.Zero)
             {

@@ -21,7 +21,7 @@ public sealed class PanelSettings
 
     public string StartupStatus()
     {
-        return "未连接。已保存地址 " + Host + ":" + Port.ToString(CultureInfo.InvariantCulture) + "。启动不会自动连接，也不会发写命令。";
+        return "未连接  " + Host + ":" + Port.ToString(CultureInfo.InvariantCulture);
     }
 
     public static PanelSettings Load(string path)
