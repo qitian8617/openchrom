@@ -140,6 +140,8 @@ Directory.CreateDirectory(dir);
 string settingsPath = Path.Combine(dir, "panel.settings");
 var fresh = PanelSettings.Load(settingsPath);
 Check(fresh.Host == PanelSettings.DefaultHost && fresh.Port == PanelSettings.DefaultPort && fresh.EffectiveHome == PanelSettings.DefaultHwHome && !fresh.RiskAcknowledged, "defaults are 192.168.1.30:8234 and D:\\HWGMP\\program");
+Check(fresh.StartupStatus().Contains("192.168.1.30:8234", StringComparison.Ordinal) && fresh.StartupStatus().Contains("未连接", StringComparison.Ordinal) && !fresh.StartupStatus().Contains("空的", StringComparison.Ordinal), "startup status shows the saved address");
+Check(PanelSettings.ContentWidth == 600 && PanelSettings.ContentHeight == 1024, "content canvas is portrait 600 by 1024");
 fresh.RiskAcknowledged = true;
 fresh.HwHome = dir;
 fresh.Save(settingsPath);

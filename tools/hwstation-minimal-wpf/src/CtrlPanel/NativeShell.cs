@@ -13,7 +13,11 @@ internal static class NativeShell
     private const uint WM_CLOSE = 0x0010;
     private const uint WM_DESTROY = 0x0002;
     private const uint WM_SIZE = 0x0005;
-    private const int WS_OVERLAPPEDWINDOW = 0x00CF0000;
+    private const int WS_OVERLAPPED = 0x00000000;
+    private const int WS_CAPTION = 0x00C00000;
+    private const int WS_SYSMENU = 0x00080000;
+    private const int WS_MINIMIZEBOX = 0x00020000;
+    private const int WS_FIXED = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
     private const int WS_CHILD = 0x40000000;
     private const int WS_VISIBLE = 0x10000000;
     private const int CW_USEDEFAULT = unchecked((int)0x80000000);
@@ -64,7 +68,10 @@ internal static class NativeShell
             lpszClassName = ClassName
         };
         RegisterClassW(ref klass);
-        _hwnd = CreateWindowExW(0, ClassName, WindowTitle, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 860, 720, IntPtr.Zero, IntPtr.Zero, klass.hInstance, IntPtr.Zero);
+        // Content canvas is 600×1024. AdjustWindowRect adds the title bar and border; the window cannot be resized.
+        var client = new RectI { Left = 0, Top = 0, Right = 600, Bottom = 1024 + 48 };
+        AdjustWindowRect(ref client, WS_FIXED, false);
+        _hwnd = CreateWindowExW(0, ClassName, WindowTitle, WS_FIXED, CW_USEDEFAULT, CW_USEDEFAULT, client.Right - client.Left, client.Bottom - client.Top, IntPtr.Zero, IntPtr.Zero, klass.hInstance, IntPtr.Zero);
         if (_hwnd == IntPtr.Zero)
         {
             MessageBoxW(IntPtr.Zero, "没有创建 ControlPanelClass 窗口，错误 " + Marshal.GetLastWin32Error() + "。WPF 不会自动提供这个类名。", "反控", 0);
@@ -75,8 +82,8 @@ internal static class NativeShell
         {
             ParentWindow = _hwnd,
             WindowStyle = WS_CHILD | WS_VISIBLE,
-            Width = 840,
-            Height = 680
+            Width = 600,
+            Height = 1024
         };
         _source = new HwndSource(parameters)
         {
@@ -154,6 +161,9 @@ internal static class NativeShell
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern IntPtr CreateWindowExW(int exStyle, string klass, string windowName, int style, int x, int y, int width, int height, IntPtr parent, IntPtr menu, IntPtr instance, IntPtr param);
+
+    [DllImport("user32.dll")]
+    private static extern bool AdjustWindowRect(ref RectI rect, int style, bool menu);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern IntPtr FindWindowW(string klass, string windowName);

@@ -9,6 +9,8 @@ public sealed class PanelSettings
     public const string DefaultHost = "192.168.1.30";
     public const int DefaultPort = 8234;
     public const string DefaultHwHome = @"D:\HWGMP\program";
+    public const double ContentWidth = 600;
+    public const double ContentHeight = 1024;
 
     public string Host { get; set; } = DefaultHost;
     public int Port { get; set; } = DefaultPort;
@@ -17,6 +19,11 @@ public sealed class PanelSettings
     public bool RiskAcknowledged { get; set; }
 
     public string EffectiveHome => string.IsNullOrWhiteSpace(HwHome) ? DefaultHwHome : HwHome.Trim();
+
+    public string StartupStatus()
+    {
+        return "未连接。已保存地址 " + Host + ":" + Port.ToString(CultureInfo.InvariantCulture) + "。启动不会自动连接，也不会发写命令。";
+    }
 
     public static PanelSettings Load(string path)
     {

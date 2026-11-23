@@ -24,6 +24,8 @@ public partial class MainView : UserControl
     private DateTime? _watchFrom;
     private TimeSpan _watchDone;
     private readonly System.Windows.Threading.DispatcherTimer _watch = new() { Interval = TimeSpan.FromSeconds(1) };
+    private readonly System.Windows.Threading.DispatcherTimer _flow = new() { Interval = TimeSpan.FromMilliseconds(80) };
+    private double _flowPhase;
 
     public MainView()
     {
@@ -37,7 +39,11 @@ public partial class MainView : UserControl
         DllBox.Text = _settings.DllPath;
         AcceptBox.IsChecked = _settings.RiskAcknowledged;
         ReloadEvents();
+        StatusText.Text = _settings.StartupStatus();
+        SchematicCanvas.Width = PanelSettings.ContentWidth;
+        SchematicCanvas.Height = PanelSettings.ContentHeight;
         _watch.Tick += (_, _) => ShowWatch();
+        _flow.Tick += (_, _) => MoveGasDots();
     }
 
     private void Connect_Click(object sender, RoutedEventArgs e)
@@ -455,7 +461,20 @@ public partial class MainView : UserControl
         string? block = GasSupply.BlockReason(h2Ok ? h2 : null, airOk ? air : null, now, now);
         HeatText.Text = block ?? "两路气压在 3 秒内都 ≥ 0.1 MPa，允许启动加热。";
         HeatStartButton.IsEnabled = block == null;
-        GasPaths.Visibility = block == null ? Visibility.Visible : Visibility.Collapsed;
+        bool flow = block == null;
+        GasPaths.Visibility = flow ? Visibility.Visible : Visibility.Collapsed;
+        GasDotA.Visibility = flow ? Visibility.Visible : Visibility.Collapsed;
+        GasDotB.Visibility = flow ? Visibility.Visible : Visibility.Collapsed;
+        if (flow)
+        {
+            _flow.Start();
+        }
+        else
+        {
+            _flow.Stop();
+        }
+        bool igniting = fid.Contains("igniting", StringComparison.OrdinalIgnoreCase);
+        FilamentImage.Visibility = igniting ? Visibility.Visible : Visibility.Collapsed;
         GasState.Text = block == null ? "气路：两路气压正常，管路动画开启。没有确认按钮。" : "气路：异常或未知。" + block;
         ZoneText.Text = "氢气 " + (h2Ok ? h2.ToString(System.Globalization.CultureInfo.InvariantCulture) : "未读取到")
             + " MPa；空气 " + (airOk ? air.ToString(System.Globalization.CultureInfo.InvariantCulture) : "未读取到") + " MPa";
@@ -625,6 +644,23 @@ public partial class MainView : UserControl
         _watchFrom = null;
         _watchDone = TimeSpan.Zero;
         WatchText.Text = "00:00";
+    }
+
+    private void MoveGasDots()
+    {
+        _flowPhase += 0.04;
+        if (_flowPhase > 1)
+        {
+            _flowPhase -= 1;
+        }
+        PlaceDot(GasDotA, 160, 290, 220, 540, _flowPhase);
+        PlaceDot(GasDotB, 440, 290, 380, 540, _flowPhase);
+    }
+
+    private static void PlaceDot(System.Windows.Shapes.Ellipse dot, double x0, double y0, double x1, double y1, double t)
+    {
+        Canvas.SetLeft(dot, x0 + (x1 - x0) * t);
+        Canvas.SetTop(dot, y0 + (y1 - y0) * t);
     }
 
     private void ShowWatch()

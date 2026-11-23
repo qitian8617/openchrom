@@ -28,61 +28,59 @@
       <Setter Property="Background" Value="#E0E0E0"/>
     </Style>
   </UserControl.Resources>
-  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Background="#FFFFFF">
-    <StackPanel Margin="10" Background="#FFFFFF">
-      <TextBlock TextWrapping="Wrap" FontWeight="Bold" Foreground="#8A1C1C"
-                 Text="无法验证设备样本新鲜度，仅接入验证，不用于正式定量"/>
-      <TextBlock Margin="0,6,0,0" TextWrapping="Wrap"
-                 Text="固件帧没有新鲜度位。未点火、未进样时读数保持未知，不改电流公式。停止分析不是停热。断开或关窗口后加热仍可能继续。"/>
-      <TextBlock x:Name="ProcessText" Margin="0,6,0,0" TextWrapping="Wrap"/>
-      <TextBlock x:Name="StatusText" Margin="0,6,0,8" TextWrapping="Wrap" Text="未连接。主机和端口都是空的，没有扫描，也没有加载 DLL。"/>
-
-      <TabControl Margin="0,8,0,0">
+  <Grid Width="600" Background="#FFFFFF">
+      <TabControl Width="600">
         <TabItem Header="主界面">
-          <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-            <Viewbox Stretch="Uniform" MaxWidth="600">
-              <Canvas Width="600" Height="980" Background="#F3F5F7">
-                <TextBlock Canvas.Left="12" Canvas.Top="8" FontSize="16" FontWeight="Bold" Text="色谱反控"/>
+              <Canvas x:Name="SchematicCanvas" Width="600" Height="1024" Background="#EEF1F4">
+                <TextBlock Canvas.Left="8" Canvas.Top="2" Width="584" FontWeight="Bold" Foreground="#8A1C1C" Text="无法验证设备样本新鲜度，仅接入验证，不用于正式定量"/>
+                <TextBlock x:Name="StatusText" Canvas.Left="8" Canvas.Top="20" Width="584" TextWrapping="Wrap" Text="未连接。已保存地址 192.168.1.30:8234。启动不会自动连接，也不会发写命令。"/>
+                <TextBlock Canvas.Left="8" Canvas.Top="42" FontSize="16" FontWeight="Bold" Text="色谱反控"/>
                 <TextBlock x:Name="GasState" Canvas.Left="12" Canvas.Top="32" Width="576" TextWrapping="Wrap" Text="气路：未知。尚未读到 3 秒内的两路气压。"/>
-                <Image Source="Assets/gc_fid.png" Canvas.Left="134" Canvas.Top="56" Width="140" Height="200" Stretch="Uniform"/>
-                <Image x:Name="FlameImage" Source="Assets/gc_blue_flame.png" Canvas.Left="160" Canvas.Top="70" Width="48" Height="48" Visibility="Collapsed"/>
-                <Border Canvas.Left="4" Canvas.Top="68" Width="112" Background="#FFFFFF" BorderBrush="#C5CDD6" BorderThickness="1" Padding="4">
+                <Image x:Name="FidImage" Source="Assets/gc_fid.png" Canvas.Left="108" Canvas.Top="52" Width="150" Height="220" Stretch="Uniform"/>
+                <Image x:Name="FilamentImage" Source="Assets/gc_fid_filament_hot.png" Canvas.Left="112" Canvas.Top="78" Width="36" Height="48" Visibility="Collapsed"/>
+                <Image x:Name="FlameImage" Source="Assets/gc_blue_flame.png" Canvas.Left="150" Canvas.Top="64" Width="52" Height="52" Visibility="Collapsed"/>
+                <Border Canvas.Left="4" Canvas.Top="64" Width="100" Background="#F7FBFF" BorderBrush="#9BB4CC" BorderThickness="1" Padding="4">
                   <TextBlock x:Name="DetCard" TextWrapping="Wrap" Text="检测器&#10;设定 未读取到&#10;实测 未读取到"/>
                 </Border>
-                <Image Source="Assets/gc_inlet.png" Canvas.Left="326" Canvas.Top="56" Width="140" Height="200" Stretch="Uniform"/>
-                <Border Canvas.Left="484" Canvas.Top="68" Width="112" Background="#FFFFFF" BorderBrush="#C5CDD6" BorderThickness="1" Padding="4">
+                <Image Source="Assets/gc_inlet.png" Canvas.Left="342" Canvas.Top="52" Width="150" Height="220" Stretch="Uniform"/>
+                <Border Canvas.Left="496" Canvas.Top="64" Width="100" Background="#F7FBFF" BorderBrush="#9BB4CC" BorderThickness="1" Padding="4">
                   <TextBlock x:Name="InletCard" TextWrapping="Wrap" Text="进样口&#10;设定 未读取到&#10;实测 未读取到"/>
                 </Border>
-                <Image Source="Assets/gc_column.png" Canvas.Left="225" Canvas.Top="276" Width="150" Height="148" Stretch="Uniform"/>
-                <TextBlock Canvas.Left="268" Canvas.Top="430" Text="色谱柱"/>
-                <Border Canvas.Left="4" Canvas.Top="320" Width="136" Background="#FFFFFF" BorderBrush="#C5CDD6" BorderThickness="1" Padding="4">
+                <Image Source="Assets/gc_column.png" Canvas.Left="200" Canvas.Top="520" Width="200" Height="180" Stretch="Uniform"/>
+                <TextBlock Canvas.Left="270" Canvas.Top="700" Text="色谱柱"/>
+                <Border Canvas.Left="4" Canvas.Top="560" Width="130" Background="#F7FBFF" BorderBrush="#9BB4CC" BorderThickness="1" Padding="4">
                   <TextBlock x:Name="OvenCard" TextWrapping="Wrap" Text="柱箱&#10;设定 未读取到&#10;实测 未读取到"/>
                 </Border>
-                <Border Canvas.Left="460" Canvas.Top="320" Width="136" Background="#FFFFFF" BorderBrush="#C5CDD6" BorderThickness="1" Padding="4">
+                <Border Canvas.Left="466" Canvas.Top="560" Width="130" Background="#F7FBFF" BorderBrush="#9BB4CC" BorderThickness="1" Padding="4">
                   <StackPanel>
                     <TextBlock x:Name="FanCard" TextWrapping="Wrap" Text="柱箱风扇&#10;未知"/>
                     <Image x:Name="FanImage" Source="Assets/gc_oven_fan.png" Width="28" Height="28" HorizontalAlignment="Left"/>
                   </StackPanel>
                 </Border>
-                <Border Canvas.Left="484" Canvas.Top="202" Width="112" Height="108" Background="#FFFFFF" BorderBrush="#C5CDD6" BorderThickness="1" Padding="4">
+                <Border Canvas.Left="496" Canvas.Top="188" Width="100" Height="108" Background="#F7FBFF" BorderBrush="#9BB4CC" BorderThickness="1" Padding="4">
                   <StackPanel>
                     <TextBlock x:Name="VentCard" TextWrapping="Wrap" Text="散热口&#10;未知"/>
                     <Image Source="Assets/gc_oven_vent_frame.png" Width="36" Height="28" HorizontalAlignment="Left"/>
                   </StackPanel>
                 </Border>
-                <Path x:Name="GasPaths" Stroke="#D4782A" StrokeThickness="4" Visibility="Collapsed" Data="M 200,240 C 200,300 250,320 280,340 M 400,240 C 400,300 350,320 320,340"/>
-                <TextBlock x:Name="HeatText" Canvas.Left="12" Canvas.Top="470" Width="576" TextWrapping="Wrap" Text="加热启动：尚未读到 3 秒内且都 ≥ 0.1 MPa 的两路气压。停止加热可用。"/>
-                <StackPanel Canvas.Left="12" Canvas.Top="520" Orientation="Horizontal">
+                <Path Stroke="#C86A22" StrokeThickness="5" Data="M 160,290 C 160,420 190,470 220,540"/>
+                <Path Stroke="#C86A22" StrokeThickness="5" Data="M 440,290 C 440,420 410,470 380,540"/>
+                <TextBlock Canvas.Left="128" Canvas.Top="360" Foreground="#8A4B12" FontSize="11" Text="空气"/>
+                <TextBlock Canvas.Left="448" Canvas.Top="360" Foreground="#8A4B12" FontSize="11" Text="分流"/>
+                <TextBlock Canvas.Left="250" Canvas.Top="480" Foreground="#8A4B12" FontSize="11" Text="燃气+尾吹气"/>
+                <Ellipse x:Name="GasDotA" Width="8" Height="8" Fill="#E8A15A" Visibility="Collapsed"/>
+                <Ellipse x:Name="GasDotB" Width="8" Height="8" Fill="#E8A15A" Visibility="Collapsed"/>
+                <Path x:Name="GasPaths" Stroke="#E8A15A" StrokeThickness="2" Visibility="Collapsed" Data="M 160,290 C 160,420 190,470 220,540 M 440,290 C 440,420 410,470 380,540"/>
+                <TextBlock x:Name="HeatText" Canvas.Left="12" Canvas.Top="760" Width="576" TextWrapping="Wrap" Text="加热启动：尚未读到 3 秒内且都 ≥ 0.1 MPa 的两路气压。停止加热可用。"/>
+                <StackPanel Canvas.Left="12" Canvas.Top="830" Orientation="Horizontal">
                   <Button Content="开始分析" Width="100" Margin="0,0,8,0" Click="StartAnalysis_Click"/>
                   <Button Content="停止分析" Width="100" Margin="0,0,8,0" Click="StopAnalysis_Click"/>
                   <Button Content="停止温控" Width="100" Margin="0,0,8,0" Click="StopHeat_Click"/>
                   <Button Content="读取" Width="70" Margin="0,0,8,0" Click="ReadTemps_Click"/>
                   <Button x:Name="HeatStartButton" Content="启动加热" Width="100" IsEnabled="False" Click="StartHeat_Click"/>
                 </StackPanel>
-                <TextBlock x:Name="ZoneText" Canvas.Left="12" Canvas.Top="570" Width="576" TextWrapping="Wrap" Text="气压未读取。"/>
+                <TextBlock x:Name="ZoneText" Canvas.Left="12" Canvas.Top="900" Width="576" TextWrapping="Wrap" Text="气压未读取。"/>
               </Canvas>
-            </Viewbox>
-          </ScrollViewer>
         </TabItem>
         <TabItem Header="柱箱">
           <StackPanel Margin="8">
@@ -133,7 +131,9 @@
         </TabItem>
         <TabItem Header="设置">
           <StackPanel Margin="8">
-            <TextBlock TextWrapping="Wrap" Text="连接、DLL、频率和日志在这里。日常开始分析不在这些诊断按钮上拼接。"/>
+            <TextBlock x:Name="ProcessText" TextWrapping="Wrap" Text="窗口类和进程说明在这里，不占主界面。"/>
+            <TextBlock TextWrapping="Wrap" Margin="0,4,0,0" Text="固件帧没有新鲜度位。未点火、未进样时读数保持未知。停止分析不是停热。断开或关窗口后加热仍可能继续。"/>
+            <TextBlock TextWrapping="Wrap" Margin="0,4,0,0" Text="连接、DLL、频率和日志在这里。日常开始分析不在这些诊断按钮上拼接。"/>
             <TextBlock Margin="0,8,0,0" Text="主机（默认 192.168.1.30，启动不连接）"/>
       <TextBox x:Name="HostBox" Width="220" HorizontalAlignment="Left" Margin="0,2,0,0"/>
       <TextBlock Margin="0,6,0,0" Text="端口（默认 8234，启动不连接）"/>
@@ -197,6 +197,5 @@
           </StackPanel>
         </TabItem>
       </TabControl>
-    </StackPanel>
-  </ScrollViewer>
+    </Grid>
 </UserControl>
