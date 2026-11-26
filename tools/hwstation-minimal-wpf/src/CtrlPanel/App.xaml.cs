@@ -8,6 +8,12 @@ public partial class App : Application
     {
         base.OnStartup(e);
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
+        DispatcherUnhandledException += (_, args) =>
+        {
+            MessageBox.Show(args.Exception.ToString(), "反控");
+            args.Handled = true;
+            Shutdown(1);
+        };
         if (!NativeShell.ClaimOrActivate())
         {
             Shutdown(0);

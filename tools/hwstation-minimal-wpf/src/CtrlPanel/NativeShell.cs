@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Threading;
 
 namespace HwMinimal.CtrlPanel;
 
@@ -13,6 +14,8 @@ internal static class NativeShell
     private const uint WM_CLOSE = 0x0010;
     private const uint WM_DESTROY = 0x0002;
     private const uint WM_SIZE = 0x0005;
+    private const uint WM_PAINT = 0x000F;
+    private const uint WM_SHOWWINDOW = 0x0018;
     private const int WS_OVERLAPPED = 0x00000000;
     private const int WS_CAPTION = 0x00C00000;
     private const int WS_SYSMENU = 0x00080000;
@@ -32,6 +35,7 @@ internal static class NativeShell
     private static int _trackW;
     private static int _trackMinH;
     private static int _trackMaxH;
+    private static bool _paintLayoutQueued;
 
     public static bool ClaimOrActivate()
     {
@@ -64,6 +68,19 @@ internal static class NativeShell
         {
             return;
         }
+        try
+        {
+            ShowCore();
+        }
+        catch (Exception ex)
+        {
+            MessageBoxW(IntPtr.Zero, ex.ToString(), "反控", 0);
+            Application.Current?.Shutdown(1);
+        }
+    }
+
+    private static void ShowCore()
+    {
         var klass = new WndClass
         {
             lpfnWndProc = Marshal.GetFunctionPointerForDelegate(Proc),
@@ -74,16 +91,15 @@ internal static class NativeShell
         };
         RegisterClassW(ref klass);
         uint dpi = GetDpiForSystem();
-        double scale = dpi >= 96 ? dpi / 96.0 : 1;
         var work = SystemParameters.WorkArea;
-        int clientW = (int)Math.Round(600 * scale);
-        int clientH = (int)Math.Round(Math.Max(520, work.Height - 24) * scale);
+        int clientW = ShellMetrics.ClientWidthPx(dpi);
+        int clientH = ShellMetrics.ClientHeightPx(work.Height, dpi);
         var outer = new RectI { Left = 0, Top = 0, Right = clientW, Bottom = clientH };
         AdjustWindowRect(ref outer, WS_FIXED, false);
         _trackW = outer.Right - outer.Left;
-        int contentMin = (int)Math.Round((SchematicLayout.TabHeader + SchematicLayout.TopChrome + SchematicLayout.BottomChrome + 80) * scale);
-        _trackMinH = Math.Max(contentMin, (int)Math.Round(520 * scale)) + 40;
-        _trackMaxH = (int)Math.Round(work.Height * scale);
+        double chrome = SchematicLayout.TabHeader + SchematicLayout.TopChrome + SchematicLayout.BottomChrome + 80;
+        _trackMinH = ShellMetrics.TrackMinHeightPx(chrome, dpi);
+        _trackMaxH = ShellMetrics.TrackMaxHeightPx(work.Height, dpi);
         _hwnd = CreateWindowExW(0, ClassName, WindowTitle, WS_FIXED, CW_USEDEFAULT, CW_USEDEFAULT, _trackW, Math.Min(_trackMaxH, outer.Bottom - outer.Top), IntPtr.Zero, IntPtr.Zero, klass.hInstance, IntPtr.Zero);
         if (_hwnd == IntPtr.Zero)
         {
@@ -95,16 +111,22 @@ internal static class NativeShell
         {
             ParentWindow = _hwnd,
             WindowStyle = WS_CHILD | WS_VISIBLE,
-            Width = 600,
-            Height = 1024
+            Width = (int)ShellMetrics.ContentWidthDip,
+            Height = Math.Max(1, (int)Math.Round(ShellMetrics.ClientToDip(clientW, clientH, dpi).Height))
         };
         _source = new HwndSource(parameters)
         {
             RootVisual = new MainView()
         };
+        if (_source.RootVisual is FrameworkElement root)
+        {
+            root.Loaded += (_, _) => ResizeChild();
+        }
         ResizeChild();
         ShowWindow(_hwnd, 5);
         UpdateWindow(_hwnd);
+        ResizeChild();
+        QueueLayout();
     }
 
     private static IntPtr WndProc(IntPtr hwnd, uint msg, IntPtr wParam, IntPtr lParam)
@@ -114,6 +136,18 @@ internal static class NativeShell
             case WM_SIZE:
                 ResizeChild();
                 return IntPtr.Zero;
+            case WM_SHOWWINDOW:
+                if (wParam != IntPtr.Zero)
+                {
+                    QueueLayout();
+                }
+                break;
+            case WM_PAINT:
+                if (!_paintLayoutQueued)
+                {
+                    QueueLayout();
+                }
+                break;
             case WM_GETMINMAXINFO:
                 LockWidth(lParam);
                 return IntPtr.Zero;
@@ -138,13 +172,37 @@ internal static class NativeShell
         Marshal.StructureToPtr(info, lParam, false);
     }
 
+    private static void QueueLayout()
+    {
+        _paintLayoutQueued = true;
+        _ = Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.Render, ResizeChild);
+    }
+
     private static void ResizeChild()
     {
-        if (_source == null || !GetClientRect(_hwnd, out RectI rect))
+        if (_source == null || _source.Handle == IntPtr.Zero || _hwnd == IntPtr.Zero || !GetClientRect(_hwnd, out RectI rect))
         {
             return;
         }
-        MoveWindow(_source.Handle, 0, 0, Math.Max(0, rect.Right - rect.Left), Math.Max(0, rect.Bottom - rect.Top), true);
+        int widthPx = Math.Max(0, rect.Right - rect.Left);
+        int heightPx = Math.Max(0, rect.Bottom - rect.Top);
+        MoveWindow(_source.Handle, 0, 0, widthPx, heightPx, true);
+        if (_source.RootVisual is not FrameworkElement root)
+        {
+            return;
+        }
+        uint dpi = GetDpiForWindow(_hwnd);
+        if (dpi == 0)
+        {
+            dpi = GetDpiForSystem();
+        }
+        ShellMetrics.DipSize size = ShellMetrics.ClientToDip(widthPx, heightPx, dpi);
+        double width = ShellMetrics.ContentWidthDip;
+        double height = Math.Max(1, size.Height);
+        root.Measure(new Size(width, height));
+        root.Arrange(new Rect(0, 0, width, height));
+        root.UpdateLayout();
+        root.InvalidateVisual();
     }
 
     private delegate IntPtr WndProcDelegate(IntPtr hwnd, uint msg, IntPtr wParam, IntPtr lParam);
@@ -210,6 +268,9 @@ internal static class NativeShell
 
     [DllImport("user32.dll")]
     private static extern uint GetDpiForSystem();
+
+    [DllImport("user32.dll")]
+    private static extern uint GetDpiForWindow(IntPtr hwnd);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern IntPtr FindWindowW(string klass, string windowName);

@@ -143,6 +143,13 @@ Check(fresh.Host == PanelSettings.DefaultHost && fresh.Port == PanelSettings.Def
 Check(fresh.StartupStatus().Contains("192.168.1.30:8234", StringComparison.Ordinal) && fresh.StartupStatus().Contains("未连接", StringComparison.Ordinal) && !fresh.StartupStatus().Contains("空的", StringComparison.Ordinal) && !fresh.StartupStatus().Contains("不会发写命令", StringComparison.Ordinal), "startup status is one short line");
 Check(LogCurrent.Caveat.Contains("不用于正式定量", StringComparison.Ordinal), "freshness limit text is still defined");
 Check(PanelSettings.ContentWidth == 600, "content width stays 600");
+ShellMetrics.DipSize at96 = ShellMetrics.ClientToDip(600, 800, 96);
+ShellMetrics.DipSize at144 = ShellMetrics.ClientToDip(900, 1200, 144);
+ShellMetrics.DipSize empty = ShellMetrics.ClientToDip(0, 0, 96);
+double chrome = SchematicLayout.TabHeader + SchematicLayout.TopChrome + SchematicLayout.BottomChrome + 80;
+Check(ShellMetrics.ClientWidthPx(96) == 600 && ShellMetrics.ClientWidthPx(144) == 900 && at96.Width == 600 && at144.Width == 600, "client width stays 600 DIP");
+Check(at96.Height == 800 && at144.Height == 800 && empty.Width == 600 && empty.Height == 520, "client pixels convert to DIP, empty rect uses the minimum");
+Check(ShellMetrics.ClientHeightPx(400, 96) == 520 && ShellMetrics.TrackMinHeightPx(chrome, 96) >= 520 && ShellMetrics.TrackMaxHeightPx(800, 144) == 1200, "track height follows the work area and keeps a minimum");
 Console.WriteLine($"LAYOUT fid {SchematicLayout.FidOutlet.X:0.0},{SchematicLayout.FidOutlet.Y:0.0} -> col {SchematicLayout.ColumnLeft.X:0.0},{SchematicLayout.ColumnLeft.Y:0.0} | inlet {SchematicLayout.InletOutlet.X:0.0},{SchematicLayout.InletOutlet.Y:0.0} -> col {SchematicLayout.ColumnRight.X:0.0},{SchematicLayout.ColumnRight.Y:0.0}");
 Check(Same(SchematicLayout.LeftPipe[0], SchematicLayout.FidOutlet) && Same(SchematicLayout.LeftPipe[^1], SchematicLayout.ColumnLeft), "left pipe meets FID outlet and column left");
 Check(Same(SchematicLayout.RightPipe[0], SchematicLayout.InletOutlet) && Same(SchematicLayout.RightPipe[^1], SchematicLayout.ColumnRight), "right pipe meets inlet outlet and column right");
