@@ -2,6 +2,7 @@ using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using Microsoft.Win32;
 
 namespace HwMinimal.CtrlPanel;
@@ -46,6 +47,8 @@ public partial class MainView : UserControl
         ReloadEvents();
         StatusText.Text = _settings.StartupStatus();
         PlaceSchematic();
+        ShowPage(0);
+        ShowSettings(0);
         RefreshMainActions();
         _watch.Tick += (_, _) =>
         {
@@ -333,7 +336,61 @@ public partial class MainView : UserControl
 
     private void OpenSettings_Click(object sender, RoutedEventArgs e)
     {
-        Pages.SelectedIndex = 5;
+        ShowPage(5);
+    }
+
+    private void Nav_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button button && int.TryParse(button.Tag as string, out int index))
+        {
+            ShowPage(index);
+        }
+    }
+
+    private void SettingTab_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button button && int.TryParse(button.Tag as string, out int index))
+        {
+            ShowSettings(index);
+        }
+    }
+
+    private void ShowPage(int index)
+    {
+        Grid[] pages = { PageMain, PageOven, PageDetector, PageEvents, PageWatch, PageSettings };
+        NavIcon[] icons = { NavIcon0, NavIcon1, NavIcon2, NavIcon3, NavIcon4, NavIcon5 };
+        TextBlock[] labels = { NavLabel0, NavLabel1, NavLabel2, NavLabel3, NavLabel4, NavLabel5 };
+        var blue = new SolidColorBrush(Color.FromRgb(0x2F, 0x6F, 0xEB));
+        var muted = new SolidColorBrush(Color.FromRgb(0x7E, 0x8C, 0x9E));
+        blue.Freeze();
+        muted.Freeze();
+        for (int i = 0; i < pages.Length; i++)
+        {
+            bool on = i == index;
+            pages[i].Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+            icons[i].Active = on;
+            labels[i].Foreground = on ? blue : muted;
+            labels[i].FontWeight = on ? FontWeights.Bold : FontWeights.Normal;
+        }
+    }
+
+    private void ShowSettings(int index)
+    {
+        StackPanel[] panes = { SettingsCalib, SettingsPid, SettingsParams, SettingsComm };
+        Button[] tabs = { SettingTab0, SettingTab1, SettingTab2, SettingTab3 };
+        var ink = new SolidColorBrush(Color.FromRgb(0x2A, 0x35, 0x42));
+        var slate = new SolidColorBrush(Color.FromRgb(0x4E, 0x5C, 0x6B));
+        var idle = new SolidColorBrush(Color.FromRgb(0xEC, 0xEF, 0xF2));
+        ink.Freeze();
+        slate.Freeze();
+        idle.Freeze();
+        for (int i = 0; i < panes.Length; i++)
+        {
+            bool on = i == index;
+            panes[i].Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+            tabs[i].Foreground = on ? Brushes.White : slate;
+            tabs[i].Background = on ? ink : idle;
+        }
     }
 
     private void AnalysisToggle_Click(object sender, RoutedEventArgs e)

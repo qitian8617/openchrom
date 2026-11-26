@@ -8,7 +8,6 @@
     <AssemblyName>CtrlPanel</AssemblyName>
     <RootNamespace>HwMinimal.CtrlPanel</RootNamespace>
     <PlatformTarget>x86</PlatformTarget>
-    <Prefer32Bit>true</Prefer32Bit>
     <RuntimeIdentifier>win-x86</RuntimeIdentifier>
     <SelfContained>false</SelfContained>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>

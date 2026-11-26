@@ -23,7 +23,7 @@ public static class SchematicLayout
     public const double ScreenWidth = 600;
     public const double Width = 556;
     public const double Height = 430;
-    public const double TabHeader = 28;
+    public const double TabHeader = 126;
     public const double TopChrome = 28;
     public const double BottomChrome = 248;
     /// <summary>gc_column.png glyphs for 色谱柱 start after a clear gap. y=305 is empty; y=320 is ink.</summary>
