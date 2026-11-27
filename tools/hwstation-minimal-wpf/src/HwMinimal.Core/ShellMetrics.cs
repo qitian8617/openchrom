@@ -40,4 +40,26 @@ public static class ShellMetrics
 
     public static int TrackMaxHeightPx(double workAreaHeightDip, uint dpi)
         => (int)Math.Round(Math.Max(MinClientHeightDip, workAreaHeightDip) * DpiScale(dpi));
+
+    public readonly record struct PixelSize(int Width, int Height);
+
+    public readonly record struct FirstShowSizes(PixelSize Temporary, PixelSize Final);
+
+    /// <summary>
+    /// A one-pixel height change and the exact size to restore.
+    /// Showing a window that is already this size does not send WM_SIZE.
+    /// </summary>
+    public static FirstShowSizes FirstShowNudge(int widthPx, int heightPx)
+    {
+        int width = Math.Max(1, widthPx);
+        int height = Math.Max(1, heightPx);
+        int temporary = height > 1 ? height - 1 : height + 1;
+        return new FirstShowSizes(new PixelSize(width, temporary), new PixelSize(width, height));
+    }
+
+    public static nint MakeSizeLParam(int widthPx, int heightPx)
+    {
+        uint packed = ((uint)heightPx & 0xFFFF) << 16 | ((uint)widthPx & 0xFFFF);
+        return unchecked((nint)packed);
+    }
 }

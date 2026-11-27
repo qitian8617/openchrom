@@ -14,8 +14,12 @@ internal static class NativeShell
     private const uint WM_CLOSE = 0x0010;
     private const uint WM_DESTROY = 0x0002;
     private const uint WM_SIZE = 0x0005;
-    private const uint WM_PAINT = 0x000F;
     private const uint WM_SHOWWINDOW = 0x0018;
+    private const int SIZE_RESTORED = 0;
+    private const uint RDW_INVALIDATE = 0x0001;
+    private const uint RDW_ERASE = 0x0004;
+    private const uint RDW_ALLCHILDREN = 0x0080;
+    private const uint RDW_UPDATENOW = 0x0100;
     private const int WS_OVERLAPPED = 0x00000000;
     private const int WS_CAPTION = 0x00C00000;
     private const int WS_SYSMENU = 0x00080000;
@@ -35,7 +39,8 @@ internal static class NativeShell
     private static int _trackW;
     private static int _trackMinH;
     private static int _trackMaxH;
-    private static bool _paintLayoutQueued;
+    private static bool _firstFrameQueued;
+    private static bool _presenting;
 
     public static bool ClaimOrActivate()
     {
@@ -107,26 +112,23 @@ internal static class NativeShell
             Application.Current?.Shutdown();
             return;
         }
+        GetClientRect(_hwnd, out RectI created);
+        int createdW = Math.Max(1, created.Right - created.Left);
+        int createdH = Math.Max(1, created.Bottom - created.Top);
         var parameters = new HwndSourceParameters("HwMinimalContent")
         {
             ParentWindow = _hwnd,
             WindowStyle = WS_CHILD | WS_VISIBLE,
-            Width = (int)ShellMetrics.ContentWidthDip,
-            Height = Math.Max(1, (int)Math.Round(ShellMetrics.ClientToDip(clientW, clientH, dpi).Height))
+            Width = createdW,
+            Height = createdH
         };
         _source = new HwndSource(parameters)
         {
             RootVisual = new MainView()
         };
-        if (_source.RootVisual is FrameworkElement root)
-        {
-            root.Loaded += (_, _) => ResizeChild();
-        }
-        ResizeChild();
         ShowWindow(_hwnd, 5);
         UpdateWindow(_hwnd);
-        ResizeChild();
-        QueueLayout();
+        QueueFirstFrame();
     }
 
     private static IntPtr WndProc(IntPtr hwnd, uint msg, IntPtr wParam, IntPtr lParam)
@@ -139,13 +141,7 @@ internal static class NativeShell
             case WM_SHOWWINDOW:
                 if (wParam != IntPtr.Zero)
                 {
-                    QueueLayout();
-                }
-                break;
-            case WM_PAINT:
-                if (!_paintLayoutQueued)
-                {
-                    QueueLayout();
+                    QueueFirstFrame();
                 }
                 break;
             case WM_GETMINMAXINFO:
@@ -172,10 +168,65 @@ internal static class NativeShell
         Marshal.StructureToPtr(info, lParam, false);
     }
 
-    private static void QueueLayout()
+    private static void QueueFirstFrame()
     {
-        _paintLayoutQueued = true;
-        _ = Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.Render, ResizeChild);
+        if (_firstFrameQueued)
+        {
+            return;
+        }
+        _firstFrameQueued = true;
+        Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
+        _ = dispatcher.BeginInvoke(DispatcherPriority.Loaded, PresentFirstFrame);
+        _ = dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, PresentFirstFrame);
+    }
+
+    private static void PresentFirstFrame()
+    {
+        if (_presenting || _source == null || _source.Handle == IntPtr.Zero || _hwnd == IntPtr.Zero || !GetClientRect(_hwnd, out RectI rect))
+        {
+            return;
+        }
+        _presenting = true;
+        try
+        {
+            if (GetWindowRect(_hwnd, out RectI frame))
+            {
+                int frameW = Math.Max(1, frame.Right - frame.Left);
+                int frameH = Math.Max(1, frame.Bottom - frame.Top);
+                ShellMetrics.FirstShowSizes outer = ShellMetrics.FirstShowNudge(frameW, frameH);
+                MoveWindow(_hwnd, frame.Left, frame.Top, outer.Temporary.Width, outer.Temporary.Height, true);
+                MoveWindow(_hwnd, frame.Left, frame.Top, outer.Final.Width, outer.Final.Height, true);
+            }
+            int widthPx = Math.Max(1, rect.Right - rect.Left);
+            int heightPx = Math.Max(1, rect.Bottom - rect.Top);
+            if (GetClientRect(_hwnd, out RectI after))
+            {
+                widthPx = Math.Max(1, after.Right - after.Left);
+                heightPx = Math.Max(1, after.Bottom - after.Top);
+            }
+            ShellMetrics.FirstShowSizes child = ShellMetrics.FirstShowNudge(widthPx, heightPx);
+            IntPtr childHwnd = _source.Handle;
+            MoveWindow(childHwnd, 0, 0, child.Temporary.Width, child.Temporary.Height, true);
+            MoveWindow(childHwnd, 0, 0, child.Final.Width, child.Final.Height, true);
+            nint packed = ShellMetrics.MakeSizeLParam(child.Final.Width, child.Final.Height);
+            SendMessageW(_hwnd, WM_SIZE, (IntPtr)SIZE_RESTORED, packed);
+            SendMessageW(childHwnd, WM_SIZE, (IntPtr)SIZE_RESTORED, packed);
+            ResizeChild();
+            Dispatcher.CurrentDispatcher.Invoke(static () => { }, DispatcherPriority.Render);
+            Present(_hwnd);
+            Present(childHwnd);
+        }
+        finally
+        {
+            _presenting = false;
+        }
+    }
+
+    private static void Present(IntPtr hwnd)
+    {
+        InvalidateRect(hwnd, IntPtr.Zero, true);
+        RedrawWindow(hwnd, IntPtr.Zero, IntPtr.Zero, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN | RDW_UPDATENOW);
+        UpdateWindow(hwnd);
     }
 
     private static void ResizeChild()
@@ -199,6 +250,8 @@ internal static class NativeShell
         ShellMetrics.DipSize size = ShellMetrics.ClientToDip(widthPx, heightPx, dpi);
         double width = ShellMetrics.ContentWidthDip;
         double height = Math.Max(1, size.Height);
+        root.Width = width;
+        root.Height = height;
         root.Measure(new Size(width, height));
         root.Arrange(new Rect(0, 0, width, height));
         root.UpdateLayout();
@@ -289,6 +342,18 @@ internal static class NativeShell
 
     [DllImport("user32.dll")]
     private static extern bool GetClientRect(IntPtr hwnd, out RectI rect);
+
+    [DllImport("user32.dll")]
+    private static extern bool GetWindowRect(IntPtr hwnd, out RectI rect);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern IntPtr SendMessageW(IntPtr hwnd, uint msg, IntPtr wParam, nint lParam);
+
+    [DllImport("user32.dll")]
+    private static extern bool InvalidateRect(IntPtr hwnd, IntPtr rect, bool erase);
+
+    [DllImport("user32.dll")]
+    private static extern bool RedrawWindow(IntPtr hwnd, IntPtr rect, IntPtr region, uint flags);
 
     [DllImport("user32.dll")]
     private static extern bool MoveWindow(IntPtr hwnd, int x, int y, int width, int height, bool repaint);

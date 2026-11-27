@@ -150,6 +150,12 @@ double chrome = SchematicLayout.TabHeader + SchematicLayout.TopChrome + Schemati
 Check(ShellMetrics.ClientWidthPx(96) == 600 && ShellMetrics.ClientWidthPx(144) == 900 && at96.Width == 600 && at144.Width == 600, "client width stays 600 DIP");
 Check(at96.Height == 800 && at144.Height == 800 && empty.Width == 600 && empty.Height == 520, "client pixels convert to DIP, empty rect uses the minimum");
 Check(ShellMetrics.ClientHeightPx(400, 96) == 520 && ShellMetrics.TrackMinHeightPx(chrome, 96) >= 520 && ShellMetrics.TrackMaxHeightPx(800, 144) == 1200, "track height follows the work area and keeps a minimum");
+ShellMetrics.FirstShowSizes nudge = ShellMetrics.FirstShowNudge(600, 800);
+ShellMetrics.FirstShowSizes tiny = ShellMetrics.FirstShowNudge(600, 1);
+nint packed = ShellMetrics.MakeSizeLParam(600, 800);
+Check(nudge.Temporary.Width == 600 && nudge.Temporary.Height == 799 && nudge.Final.Width == 600 && nudge.Final.Height == 800, "first show nudges height by one pixel then restores it");
+Check(tiny.Temporary.Height == 2 && tiny.Final.Height == 1 && tiny.Final.Width == 600, "a one-pixel client still changes size");
+Check(((long)packed & 0xFFFF) == 600 && (((long)packed >> 16) & 0xFFFF) == 800, "WM_SIZE lParam packs width then height");
 Console.WriteLine($"LAYOUT fid {SchematicLayout.FidOutlet.X:0.0},{SchematicLayout.FidOutlet.Y:0.0} -> col {SchematicLayout.ColumnLeft.X:0.0},{SchematicLayout.ColumnLeft.Y:0.0} | inlet {SchematicLayout.InletOutlet.X:0.0},{SchematicLayout.InletOutlet.Y:0.0} -> col {SchematicLayout.ColumnRight.X:0.0},{SchematicLayout.ColumnRight.Y:0.0}");
 Check(Same(SchematicLayout.LeftPipe[0], SchematicLayout.FidOutlet) && Same(SchematicLayout.LeftPipe[^1], SchematicLayout.ColumnLeft), "left pipe meets FID outlet and column left");
 Check(Same(SchematicLayout.RightPipe[0], SchematicLayout.InletOutlet) && Same(SchematicLayout.RightPipe[^1], SchematicLayout.ColumnRight), "right pipe meets inlet outlet and column right");
