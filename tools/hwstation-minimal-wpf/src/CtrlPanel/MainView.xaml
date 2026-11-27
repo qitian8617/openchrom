@@ -180,14 +180,44 @@
                 <Path x:Name="RightPipe" Stroke="#8A6236" StrokeThickness="2" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
                 <Ellipse x:Name="GasDotA" Width="6" Height="6" Fill="#2F6FED" Visibility="Collapsed"/>
                 <Ellipse x:Name="GasDotB" Width="6" Height="6" Fill="#2F6FED" Visibility="Collapsed"/>
-                <Border x:Name="DetBorder" Background="#F7F8FA" BorderBrush="#D0D5DD" BorderThickness="1" Padding="4">
-                  <TextBlock x:Name="DetCard" FontSize="12" Foreground="#5C6570" TextWrapping="Wrap" Text="检测器&#10;设定 未读取到&#10;实测 未读取到"/>
+                <Border x:Name="DetBorder" Background="#FFF7E8" BorderBrush="#D68910" BorderThickness="1" CornerRadius="8" Padding="4,6,4,6">
+                  <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                      <Border Width="14" Height="14" Margin="0,0,4,0" CornerRadius="2" Background="#2F6FEB" VerticalAlignment="Center" IsHitTestVisible="False">
+                        <TextBlock Text="✓" FontSize="10" Foreground="#FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                      </Border>
+                      <TextBlock Text="检测温度" FontSize="11" Foreground="#8A5A00" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock x:Name="DetActual" FontSize="18" FontWeight="Bold" Foreground="#C0392B" Text="—"/>
+                    <TextBlock x:Name="DetSetText" FontSize="11" Foreground="#7E8C9E" Text="设定℃ —"/>
+                    <TextBlock x:Name="DetStatus" FontSize="10" Foreground="#FF7018" Text="状态未知"/>
+                  </StackPanel>
                 </Border>
-                <Border x:Name="InletBorder" Background="#F7F8FA" BorderBrush="#D0D5DD" BorderThickness="1" Padding="4">
-                  <TextBlock x:Name="InletCard" FontSize="12" Foreground="#5C6570" TextWrapping="Wrap" Text="进样口&#10;设定 未读取到&#10;实测 未读取到"/>
+                <Border x:Name="InletBorder" Background="#EEF6FB" BorderBrush="#5A9BC8" BorderThickness="1" CornerRadius="8" Padding="4,6,4,6">
+                  <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                      <Border Width="14" Height="14" Margin="0,0,4,0" CornerRadius="2" Background="#2F6FEB" VerticalAlignment="Center" IsHitTestVisible="False">
+                        <TextBlock Text="✓" FontSize="10" Foreground="#FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                      </Border>
+                      <TextBlock Text="进样温度" FontSize="11" Foreground="#5A7A90" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock x:Name="InletActual" FontSize="18" FontWeight="Bold" Foreground="#C0392B" Text="—"/>
+                    <TextBlock x:Name="InletSetText" FontSize="11" Foreground="#7E8C9E" Text="设定℃ —"/>
+                    <TextBlock x:Name="InletStatus" FontSize="10" Foreground="#FF7018" Text="状态未知"/>
+                  </StackPanel>
                 </Border>
-                <Border x:Name="OvenBorder" Background="#F7F8FA" BorderBrush="#D0D5DD" BorderThickness="1" Padding="4">
-                  <TextBlock x:Name="OvenCard" FontSize="12" Foreground="#5C6570" TextWrapping="Wrap" Text="柱箱&#10;设定 未读取到&#10;实测 未读取到"/>
+                <Border x:Name="OvenBorder" Background="#EEF6FB" BorderBrush="#5A9BC8" BorderThickness="1" CornerRadius="8" Padding="4,6,4,6">
+                  <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                      <Border Width="14" Height="14" Margin="0,0,4,0" CornerRadius="2" Background="#2F6FEB" VerticalAlignment="Center" IsHitTestVisible="False">
+                        <TextBlock Text="✓" FontSize="10" Foreground="#FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                      </Border>
+                      <TextBlock Text="柱箱温度" FontSize="11" Foreground="#5A7A90" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock x:Name="OvenActual" FontSize="18" FontWeight="Bold" Foreground="#C0392B" Text="—"/>
+                    <TextBlock x:Name="OvenSet" FontSize="11" Foreground="#7E8C9E" Text="设定℃ —"/>
+                    <TextBlock x:Name="OvenStatus" FontSize="10" Foreground="#FF7018" Text="状态未知"/>
+                  </StackPanel>
                 </Border>
                 <Border x:Name="VentBorder" Background="#F7F8FA" BorderBrush="#D0D5DD" BorderThickness="1" Padding="4">
                   <StackPanel>

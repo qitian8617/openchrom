@@ -39,9 +39,9 @@ public static class SchematicLayout
     public static readonly Box Fid = new(134, 16, 140, 200);
     public static readonly Box Inlet = new(Width - 134 - 140, 16, 140, 200);
     public static readonly Box Column = new((Width - 150) / 2.0, Height - 6 - 148, 150, 148);
-    public static readonly Box DetectorCard = new(4, 28, 112, 78);
-    public static readonly Box InletCard = new(Width - 4 - 112, 28, 112, 78);
-    public static readonly Box OvenCard = new(4, 280, 136, 72);
+    public static readonly Box DetectorCard = new(4, 28, 112, 104);
+    public static readonly Box InletCard = new(Width - 4 - 112, 28, 112, 104);
+    public static readonly Box OvenCard = new(4, 280, 136, 104);
     public static readonly Box FanCard = new(Width - 4 - 136, 280, 136, 118);
     public static readonly Box VentCard = new(Width - 4 - 112, 162, 112, 108);
 

@@ -668,9 +668,9 @@ public partial class MainView : UserControl
         }
         bool flame = JsonFields.TryNumber(fid, "flame", out double flameValue) && flameValue != 0;
         FlameImage.Visibility = flame ? Visibility.Visible : Visibility.Collapsed;
-        InletCard.Text = "进样口\n设定 " + JsonFields.Show(inlet, "setpoint") + "\n实测 " + JsonFields.Show(inlet, "actual");
-        DetCard.Text = "检测器\n设定 " + JsonFields.Show(detector, "setpoint") + "\n实测 " + JsonFields.Show(detector, "actual");
-        OvenCard.Text = "柱箱\n设定 " + JsonFields.Show(oven, "setpoint") + "\n实测 " + JsonFields.Show(oven, "actual");
+        PaintTemp(InletBorder, InletActual, InletSetText, InletStatus, TempCards.Describe(TempCards.Role.Inlet, inlet, _heatConfirmed));
+        PaintTemp(DetBorder, DetActual, DetSetText, DetStatus, TempCards.Describe(TempCards.Role.Detector, detector, _heatConfirmed));
+        PaintTemp(OvenBorder, OvenActual, OvenSet, OvenStatus, TempCards.Describe(TempCards.Role.Oven, oven, _heatConfirmed));
         if (JsonFields.TryNumber(oven, "fan", out double fan))
         {
             _fanSpin = fan != 0;
@@ -729,6 +729,16 @@ public partial class MainView : UserControl
         }
         ReloadEvents();
         RefreshMainActions();
+    }
+
+    private static void PaintTemp(Border card, TextBlock actual, TextBlock setpoint, TextBlock status, TempCards.Face face)
+    {
+        actual.Text = face.Actual;
+        setpoint.Text = face.Setpoint;
+        status.Text = face.Status;
+        status.Foreground = Freeze(face.StatusColor);
+        card.Background = Freeze(face.Fill);
+        card.BorderBrush = Freeze(face.Stroke);
     }
 
     private void ApplyFidRead(string fid, bool readReachedDevice)

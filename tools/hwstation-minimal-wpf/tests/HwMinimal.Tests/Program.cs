@@ -166,7 +166,14 @@ Check(((long)packed & 0xFFFF) == 600 && (((long)packed >> 16) & 0xFFFF) == 800, 
 Console.WriteLine($"LAYOUT fid {SchematicLayout.FidOutlet.X:0.0},{SchematicLayout.FidOutlet.Y:0.0} -> col {SchematicLayout.ColumnLeft.X:0.0},{SchematicLayout.ColumnLeft.Y:0.0} | inlet {SchematicLayout.InletOutlet.X:0.0},{SchematicLayout.InletOutlet.Y:0.0} -> col {SchematicLayout.ColumnRight.X:0.0},{SchematicLayout.ColumnRight.Y:0.0}");
 Check(Same(SchematicLayout.LeftPipe[0], SchematicLayout.FidOutlet) && Same(SchematicLayout.LeftPipe[^1], SchematicLayout.ColumnLeft), "left pipe meets FID outlet and column left");
 Check(Same(SchematicLayout.RightPipe[0], SchematicLayout.InletOutlet) && Same(SchematicLayout.RightPipe[^1], SchematicLayout.ColumnRight), "right pipe meets inlet outlet and column right");
-Check(SchematicLayout.Separated(SchematicLayout.DetectorCard, SchematicLayout.Fid) && SchematicLayout.Separated(SchematicLayout.InletCard, SchematicLayout.Inlet) && SchematicLayout.Separated(SchematicLayout.OvenCard, SchematicLayout.Column) && SchematicLayout.Separated(SchematicLayout.FanCard, SchematicLayout.Column) && SchematicLayout.Separated(SchematicLayout.VentCard, SchematicLayout.FanCard), "cards do not cover the parts");
+Check(SchematicLayout.Separated(SchematicLayout.DetectorCard, SchematicLayout.Fid) && SchematicLayout.Separated(SchematicLayout.InletCard, SchematicLayout.Inlet) && SchematicLayout.Separated(SchematicLayout.OvenCard, SchematicLayout.Column) && SchematicLayout.Separated(SchematicLayout.FanCard, SchematicLayout.Column) && SchematicLayout.Separated(SchematicLayout.VentCard, SchematicLayout.FanCard) && SchematicLayout.Separated(SchematicLayout.OvenCard, SchematicLayout.VentCard), "cards do not cover the parts");
+var stopped = TempCards.Describe(TempCards.Role.Detector, "{\"actual\":\"23.717\",\"setpoint\":\"0\"}", false);
+var inletStopped = TempCards.Describe(TempCards.Role.Inlet, "{\"actual\":\"23.62\",\"setpoint\":\"0\"}", false);
+var ovenStopped = TempCards.Describe(TempCards.Role.Oven, "{\"actual\":\"24.087\",\"setpoint\":\"50\"}", false);
+var unreadCard = TempCards.Describe(TempCards.Role.Detector, "", null);
+Check(stopped.Actual == "23.7 \u2103" && stopped.Setpoint == "\u8bbe\u5b9a\u2103 0.0" && stopped.Status.Contains("\u505c\u6b62\u6052\u6e29", StringComparison.Ordinal), "actual is one decimal and heat off says stopped");
+Check(unreadCard.Actual == "\u2014" && unreadCard.Setpoint == "\u8bbe\u5b9a\u2103 \u2014" && unreadCard.Status == "\u72b6\u6001\u672a\u77e5", "unread temperature is a dash");
+Check(stopped.Fill == "#FFF7E8" && stopped.Stroke == "#D68910" && inletStopped.Fill == "#EEF6FB" && inletStopped.Stroke == "#5A9BC8" && ovenStopped.Fill == "#EEF6FB" && ovenStopped.Stroke == "#5A9BC8", "idle cards use the Android role colors");
 Check(SchematicLayout.PipesClearCards(), "pipes stay outside the temperature cards");
 Check(SchematicLayout.ButtonsClear(520) && SchematicLayout.ButtonsClear(760), "buttons stay below the canvas at 520 and 760");
 Check(SchematicLayout.ColumnGlyphTop > 240 && SchematicLayout.ColumnGlyphTop < 320, "column caption ink starts after the glass");
