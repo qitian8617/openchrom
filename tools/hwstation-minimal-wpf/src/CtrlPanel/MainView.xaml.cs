@@ -32,6 +32,7 @@ public partial class MainView : UserControl
     private bool _igniting;
     private bool _fanSpin;
     private bool _gasOk;
+    private readonly HomePollGate _homePoll = new();
 
     public MainView()
     {
@@ -245,7 +246,23 @@ public partial class MainView : UserControl
 
     private void OnStatus(string text)
     {
-        Dispatcher.BeginInvoke(() => SetStatus(text));
+        Dispatcher.BeginInvoke(() =>
+        {
+            SetStatus(text);
+            if (!text.Contains("HELLO_OK", StringComparison.Ordinal) || !_homePoll.NoteHelloOk())
+            {
+                return;
+            }
+            CancellationToken token = CancellationToken.None;
+            lock (_life)
+            {
+                if (_run != null)
+                {
+                    token = _run.Token;
+                }
+            }
+            _ = PollHomeAsync(token);
+        });
     }
 
     private void OnSample(ObservedSample sample)
@@ -318,6 +335,7 @@ public partial class MainView : UserControl
             _transport = null;
             _link = null;
         }
+        _homePoll.NoteDisconnected();
         _heatConfirmed = null;
         _valveOpen = null;
         _igniting = false;
@@ -606,13 +624,48 @@ public partial class MainView : UserControl
         Note("已请求停止分析。这不是停止温控。");
     }
 
+    private async Task PollHomeAsync(CancellationToken token)
+    {
+        try
+        {
+            while (!token.IsCancellationRequested && _homePoll.Active)
+            {
+                await RefreshHomeAsync(true, token);
+                await Task.Delay(HomePoll.IntervalMs, token);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
     private async void ReadTemps_Click(object sender, RoutedEventArgs e)
     {
-        string oven = await SendLine("READ_OVEN_TEMP", null);
-        string inlet = await SendLine("READ_INLET_TEMP", null);
-        string detector = await SendLine("READ_DETECTOR_TEMP", null);
-        string gas = await SendLine("READ_GAS_PRESSURE", null);
-        string fid = await SendLine("READ_FID_STATUS", null);
+        await RefreshHomeAsync(false, CancellationToken.None);
+    }
+
+    private async Task RefreshHomeAsync(bool quiet, CancellationToken token)
+    {
+        if (quiet && !_homePoll.Active)
+        {
+            return;
+        }
+        string oven = await SendLine("READ_OVEN_TEMP", null, quiet, token);
+        string inlet = await SendLine("READ_INLET_TEMP", null, quiet, token);
+        string detector = await SendLine("READ_DETECTOR_TEMP", null, quiet, token);
+        string gas = await SendLine("READ_GAS_PRESSURE", null, quiet, token);
+        string fid = await SendLine("READ_FID_STATUS", null, quiet, token);
+        string control = await SendLine("READ_CONTROL_STATUS", null, quiet, token);
+        bool? heat = HomePoll.HeatFlag(control);
+        if (heat != null && _link != null && (!quiet || _homePoll.Active))
+        {
+            _heatConfirmed = heat;
+        }
+        if (!oven.Contains('{') && !inlet.Contains('{') && !gas.Contains('{'))
+        {
+            RefreshMainActions();
+            return;
+        }
         bool flame = JsonFields.TryNumber(fid, "flame", out double flameValue) && flameValue != 0;
         FlameImage.Visibility = flame ? Visibility.Visible : Visibility.Collapsed;
         InletCard.Text = "进样口\n设定 " + JsonFields.Show(inlet, "setpoint") + "\n实测 " + JsonFields.Show(inlet, "actual");
@@ -967,15 +1020,25 @@ public partial class MainView : UserControl
         WatchText.Text = elapsed.ToString(@"mm\:ss", System.Globalization.CultureInfo.InvariantCulture);
     }
 
-    private async Task<string> SendLine(string verb, string? payload)
+    private async Task<string> SendLine(string verb, string? payload, bool quiet = false, CancellationToken token = default)
     {
+        if (quiet && !_homePoll.MaySend(verb))
+        {
+            return "未发送";
+        }
         if (_link == null)
         {
-            Note("未连接，未发送 " + verb + "。");
+            if (!quiet)
+            {
+                Note("未连接，未发送 " + verb + "。");
+            }
             return "未连接";
         }
-        string reply = await _link.ExchangeAsync(verb, payload, CancellationToken.None);
-        Note(verb + " → " + reply);
+        string reply = await _link.ExchangeAsync(verb, payload, token);
+        if (!quiet)
+        {
+            Note(verb + " → " + reply);
+        }
         return reply;
     }
 
