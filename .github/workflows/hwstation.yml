@@ -1,0 +1,79 @@
+name: hwstation
+
+on:
+  pull_request:
+    paths:
+      - "tools/hwstation/**"
+      - ".github/workflows/hwstation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  gcc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: gcc version and offline tests
+        working-directory: tools/hwstation
+        run: |
+          gcc --version
+          cmake -S . -B build-gcc -DCMAKE_C_COMPILER=gcc -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-gcc
+          ./build-gcc/hwstation-tests --offline
+
+  clang:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: clang version and offline tests
+        working-directory: tools/hwstation
+        run: |
+          clang --version
+          cmake -S . -B build-clang -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-clang
+          ./build-clang/hwstation-tests --offline
+
+  msvc:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: MSVC native build
+        shell: pwsh
+        working-directory: tools/hwstation
+        run: ./scripts/build-windows.ps1
+      - name: Offline tests and smoke
+        if: success()
+        shell: cmd
+        working-directory: tools/hwstation
+        run: |
+          if not exist build\win mkdir build\win
+          copy /y dist-msvc\hwbridge.exe build\win\
+          copy /y dist-msvc\CtrlPanel.exe build\win\
+          copy /y dist-msvc\hwstation_ipc_repro.dll build\win\
+          dist-msvc\hwstation-tests.exe --offline > msvc-logs\offline-tests.log 2>&1
+          if errorlevel 1 exit /b 1
+          dist-msvc\CtrlPanel.exe --offline-smoke > msvc-logs\offline-smoke.log 2>&1
+          if errorlevel 1 exit /b 1
+          if not "%HW_COMMIT%"=="" (
+            > dist-msvc\COMMIT.txt echo %HW_COMMIT%
+          )
+        env:
+          HW_COMMIT: ${{ github.event.pull_request.head.sha }}
+      - name: Upload MSVC logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hwstation-msvc-logs
+          path: tools/hwstation/msvc-logs/
+          if-no-files-found: error
+      - name: Upload native Windows binaries
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hwstation-windows-native
+          path: tools/hwstation/dist-msvc/
+          if-no-files-found: error

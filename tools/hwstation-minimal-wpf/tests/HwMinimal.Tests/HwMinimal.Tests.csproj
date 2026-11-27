@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\HwMinimal.Core\HwMinimal.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\examples\HWFrequence.proposed-10-10.txt" Link="examples\HWFrequence.proposed-10-10.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

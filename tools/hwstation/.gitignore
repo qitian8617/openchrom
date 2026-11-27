@@ -1,0 +1,6 @@
+build/
+build-*/
+dist-msvc/
+msvc-logs/
+*.o
+*.log
